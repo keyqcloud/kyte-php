@@ -1,0 +1,20 @@
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
+.DS_Store
+sendgrid.env
+*.swp
+Thumbs.db
+analytics.php
+settings.php
+# schema.sql
+/vendor
+/models/*
+!/models/sample-model-Session.php
+!/models/sample-model-APIKey.php
+!/models/sample-model-Account.php
+/util/*
+!/util/base64url.php
+config.php
+models.php
