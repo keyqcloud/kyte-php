@@ -1,0 +1,19 @@
+{
+    "name": "keyqcloud/kyte-api-php",
+    "description": "Kyte API PHP",
+    "require": {
+        "keyqcloud/kyte": "dev-dev-2020-1"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/keyqcloud/Kyte/"
+        }
+    ],
+    "authors": [
+        {
+            "name": "Kenneth Hough",
+            "email": "kenneth@egtech.us"
+        }
+    ]
+}
