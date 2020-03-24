@@ -16,6 +16,7 @@ class ModelController
     public function new($model, $data, $dateformat)
     {
         $response = [];
+        
         try {
             $obj = new \Kyte\ModelObject($$model);
             if ($obj->create($data)) {

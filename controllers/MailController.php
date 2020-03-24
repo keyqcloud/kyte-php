@@ -8,6 +8,7 @@ class MailController extends ModelController
     public function new($model, $data, $dateformat)
     {
         $response = [];
+        
         try {
             // [ {to_email} => {to_name} ], [ {from_email} => {from_name} ], {subject}, {body}
             \Kyte\Mail::email(
