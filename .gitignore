@@ -13,6 +13,7 @@ settings.php
 /controllers/*
 !/controllers/ModelController.php
 !/controllers/MailController.php
+!/controllers/SessionController.php
 /models/*
 !/models/sample-model-Session.php
 !/models/sample-model-APIKey.php
