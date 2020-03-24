@@ -12,6 +12,7 @@ settings.php
 /vendor
 /controllers/*
 !/controllers/ModelController.php
+!/controllers/MailController.php
 /models/*
 !/models/sample-model-Session.php
 !/models/sample-model-APIKey.php
