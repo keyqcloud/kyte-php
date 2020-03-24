@@ -57,7 +57,7 @@ try {
 
         // check if signature is valid - signature and signature datetime
         $date = new DateTime($elements[3], new DateTimeZone('UTC'));
-        $api->validate($elements[2], $date->format('U'));
+        $api->validate(base64_decode($elements[2]), $date->format('U'));
 
         // if the above checks don't trigger an exception, then allow cross origin
         header("Access-Control-Allow-Origin: $origin");
@@ -65,7 +65,7 @@ try {
         header("Content-Type: application/json; charset=utf-8");
 
         $controllerClass = class_exists($element[4]{'Controller'}) ? $element[4]{'Controller'} : 'ModelController';
-        $controller = new $controllerClass($element[0]);
+        $controller = new $controllerClass(base64_decode($element[0]));
 
         if (!$controller) throw new Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 
