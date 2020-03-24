@@ -7,6 +7,21 @@ Web application development shouldn't have to be a chore.  Kyte was created with
 
 ### Configuration
 
+### Calling the API
+The following HTTP method and URL format must be used to call the API successfully.
+ * POST     `/{token}/{key}/{signature}/{time}/{model}`
+ * PUT      `/{token}/{key}/{signature}/{time}/{model}/{field}/{value}`
+ * GET      `/{token}/{key}/{signature}/{time}/{model}/{field}/{value}`
+ * DELETE   `/{token}/{key}/{signature}/{time}/{model}/{field}/{value}`
+
+`token` is the session token that is stored as a cookie.
+`key` is the public access key.
+`signature` is the API signature returned from the Kyte API, which is used to validate all API requests.
+`time` is the UTC time used to sign the signature for API validation.
+`model` is the name of the model or view controller's virtual model being called.
+`field` is the name of the model field.
+`value` is the value of the model field.
+
 ### Models
 Models are defined in the `/models` directory of the framework.  Models are defined as associative arrays and follows the following format:
 ```
