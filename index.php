@@ -35,9 +35,9 @@ $response = [];
 
 /* parse URI        ** remember to add the following in .htaccess 'FallbackResource /index.php'
  * URL formats:
- * POST   /{token}/{key}/{signature}/{time}/{model}
- * PUT   /{token}/{key}/{signature}/{time}/{model}/{field}/{value}
- * GET  /{token}/{key}/{signature}/{time}/{model}/{field}/{value}
+ * POST     /{token}/{key}/{signature}/{time}/{model}
+ * PUT      /{token}/{key}/{signature}/{time}/{model}/{field}/{value}
+ * GET      /{token}/{key}/{signature}/{time}/{model}/{field}/{value}
  * DELETE   /{token}/{key}/{signature}/{time}/{model}/{field}/{value}
  */
 // Trim leading slash(es)
