@@ -2,8 +2,18 @@
 
 class ModelController
 {
+    public function __construct($token)
+    {
+        try {
+            $session = new \Kyte\SessionManager(Session);
+            $session->validate($token);
+        } catch (Exception $e) {
+            throw $e;
+        }
+    }
+
     // new  :   {model}, {data}
-    public static function new($model, $data, $dateformat)
+    public function new($model, $data, $dateformat)
     {
         $response = [];
         try {
@@ -19,7 +29,7 @@ class ModelController
     }
 
     // update   :   {model}, {field}, {value}, {data}
-    public static function update($model, $field, $value, $data, $dateformat)
+    public function update($model, $field, $value, $data, $dateformat)
     {
         $response = [];
 
@@ -38,7 +48,7 @@ class ModelController
     }
 
     // get  :   {model}, {field}, {value}
-    public static function get($model, $field, $value, $dateformat)
+    public function get($model, $field, $value, $dateformat)
     {
         $response = [];
 
@@ -57,7 +67,7 @@ class ModelController
     }
 
     // delete   :   {model}, {field}, {value}
-    public static function delete($model, $field, $value, $dateformat)
+    public function delete($model, $field, $value, $dateformat)
     {
         $response = [];
 
@@ -68,7 +78,7 @@ class ModelController
                 $obj->delete();
             }
 
-            $response = static::get($model, $field, $value, $dateformat);
+            $response = $this->get($model, $field, $value, $dateformat);
 
         } catch (Exception $e) {
             throw $e;
