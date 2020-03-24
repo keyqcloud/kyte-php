@@ -12,6 +12,13 @@
 	// include models being used by app
     foreach (glob("models/*.php") as $filename) {
         require_once($filename);
-	}
+        $model_name = substr($filename, 0, strrpos($filename, "."));
+        define($model_name, $$model_name);
+    }
+    
+    // include any controllers
+	foreach (glob("controllers/*.php") as $filename) {
+		require_once($filename) ;
+    }
     
 ?>
