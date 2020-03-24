@@ -66,11 +66,7 @@ try {
 
         $session = new \Kyte\SessionManager(Session);
 
-        $controller = class_exists(static::$element[4]) ? static::$element[4] : ModelController;
-        if (class_exists(static::$element[4]))
-        {
-            $object = new MyClass();
-        }
+        $controller = class_exists(static::${$element[4]}{'Controller'}) ? static::$element[4] : ModelController;
 
         switch ($request) {
             case 'POST':
