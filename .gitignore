@@ -10,6 +10,8 @@ analytics.php
 settings.php
 # schema.sql
 /vendor
+/controllers/*
+!/controllers/ModelController.php
 /models/*
 !/models/sample-model-Session.php
 !/models/sample-model-APIKey.php
