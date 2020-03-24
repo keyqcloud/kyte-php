@@ -2,7 +2,8 @@
 	/* APP BASE URL */
 	define('APP_URL', $_SERVER['SERVER_NAME']);
 
-	/* GENERAL APP SETTINGS */
+    /* GENERAL APP SETTINGS */
+    define('APP_NAME', '');
 	define('APP_EMAIL', '');
 	define('SUPPORT_EMAIL', '');
 	define('SUPPORT_PHONE', '');
