@@ -64,29 +64,30 @@ try {
         header('Access-Control-Allow-Credentials: true');
         header("Content-Type: application/json; charset=utf-8");
 
-        $session = new \Kyte\SessionManager(Session);
+        $controllerClass = class_exists($element[4]{'Controller'}) ? $element[4]{'Controller'} : 'ModelController';
+        $controller = new $controllerClass($element[0]);
 
-        $controller = class_exists(static::${$element[4]}{'Controller'}) ? static::$element[4] : ModelController;
+        if (!$controller) throw new Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 
         switch ($request) {
             case 'POST':
                 // new  :   {model}, {data}
-                $response = $controller::new($element[4], $data, APP_DATE_FORMAT);
+                $response = $controller->new($element[4], $data, APP_DATE_FORMAT);
                 break;
 
             case 'PUT':
                 // update   :   {model}, {field}, {value}, {data}
-                $response = $controller::update($element[4], $element[5], $element[6], $data, APP_DATE_FORMAT);
+                $response = $controller->update($element[4], $element[5], $element[6], $data, APP_DATE_FORMAT);
                 break;
 
             case 'GET':
                 // get  :   {model}, {field}, {value}
-                $response = $controller::get($element[4], $element[5], $element[5], APP_DATE_FORMAT);
+                $response = $controller->get($element[4], $element[5], $element[5], APP_DATE_FORMAT);
                 break;
 
             case 'DELETE':
                 // delete   :   {model}, {field}, {value}
-                $response = $controller::delete($element[4], $element[5], $element[5], APP_DATE_FORMAT);
+                $response = $controller->delete($element[4], $element[5], $element[5], APP_DATE_FORMAT);
                 break;
             
             default:
