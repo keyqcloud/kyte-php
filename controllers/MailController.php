@@ -2,8 +2,10 @@
 
 class MailController extends ModelController
 {
+    public function __construct($token) {}
+
     // new  :   {model}, {data}
-    public static function new($model, $data, $dateformat)
+    public function new($model, $data, $dateformat)
     {
         $response = [];
         try {
@@ -21,21 +23,21 @@ class MailController extends ModelController
     }
 
     // update   :   {model}, {field}, {value}, {data}
-    public static function update($model, $field, $value, $data, $dateformat)
+    public function update($model, $field, $value, $data, $dateformat)
     {
-        throw "Undefined request method";
+        throw new \Exception("Undefined request method");
     }
 
     // get  :   {model}, {field}, {value}
-    public static function get($model, $field, $value, $dateformat)
+    public function get($model, $field, $value, $dateformat)
     {
-        throw "Undefined request method";
+        throw new \Exception("Undefined request method");
     }
 
     // delete   :   {model}, {field}, {value}
-    public static function delete($model, $field, $value, $dateformat)
+    public function delete($model, $field, $value, $dateformat)
     {
-        throw "Undefined request method";
+        throw new \Exception("Undefined request method");
     }
 }
 
