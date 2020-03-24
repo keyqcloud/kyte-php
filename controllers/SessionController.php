@@ -40,7 +40,7 @@ class SessionController extends ModelController
     public function get($model, $field, $value, $dateformat)
     {
         try {
-            $response = [ 'token' => $this->session->validate($value) ];
+            $response = [ 'token' => $this->session->validate(base64_decode($value)) ];
         } catch (Exception $e) {
             throw $e;
         }
@@ -52,7 +52,7 @@ class SessionController extends ModelController
     public function delete($model, $field, $value, $dateformat)
     {
         try {
-            $this->session->validate($value);
+            $this->session->validate(base64_decode($value));
             $this->session->destroy();
         } catch (Exception $e) {
             throw $e;
