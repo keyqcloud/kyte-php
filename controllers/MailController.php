@@ -3,7 +3,7 @@
 class MailController extends ModelController
 {
     /* override constructor and authenticate as we don't need any of the initialization defined in the parent class for Mail */
-    public function __construct($model, $dateformat, $publickey, $token) {}
+    public function __construct($model, $dateformat, $token) {}
     private function authenticate() {}
 
     // new - send new email

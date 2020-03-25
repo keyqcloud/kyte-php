@@ -3,12 +3,11 @@
 class ModelController
 {
 
-    private $publickey;
     private $token;
     public $dateformat;
     public $model;
 
-    public function __construct($model, $dateformat, $publickey, $token)
+    public function __construct($model, $dateformat, $token)
     {
         try {
             $this->token = $token;
