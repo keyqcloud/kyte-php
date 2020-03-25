@@ -27,27 +27,46 @@ if ($request == 'OPTIONS') {
     exit(0);
 }
 
-// read in data and parse into array
-parse_str(file_get_contents("php://input"), $data);
+header("Access-Control-Allow-Origin: $origin");
+header('Access-Control-Allow-Credentials: true');
+header("Content-Type: application/json; charset=utf-8");
 
 // initialie empty array for response data
 $response = [];
 
-/* parse URI        ** remember to add the following in .htaccess 'FallbackResource /index.php'
- * URL formats:
- * POST     /{token}/{key}/{signature}/{time}/{model}
- * PUT      /{token}/{key}/{signature}/{time}/{model}/{field}/{value}
- * GET      /{token}/{key}/{signature}/{time}/{model}/{field}/{value}
- * DELETE   /{token}/{key}/{signature}/{time}/{model}/{field}/{value}
- */
-// Trim leading slash(es)
-$path = ltrim($_SERVER['REQUEST_URI'], '/');
-// Split path on slashes
-$elements = explode('/', $path);
-
 try {
-    // minimum of 4 params is required - return version number is not met
-    if(count($elements) < 5) $response['version'] = \Kyte\ApplicationVersion::get();
+    // read in data and parse into array
+    parse_str(file_get_contents("php://input"), $data);
+
+    /* parse URI        ** remember to add the following in .htaccess 'FallbackResource /index.php'
+    * URL formats:
+    * POST     /{token}/{key}/{signature}/{time}/{model}
+    * PUT      /{token}/{key}/{signature}/{time}/{model}/{field}/{value}
+    * GET      /{token}/{key}/{signature}/{time}/{model}/{field}/{value}
+    * DELETE   /{token}/{key}/{signature}/{time}/{model}/{field}/{value}
+    */
+    // Trim leading slash(es)
+    $path = ltrim($_SERVER['REQUEST_URI'], '/');
+    // Split path on slashes
+    $elements = explode('/', $path);
+
+    // If minimum params are not passed, then generate signature and return
+    if(count($elements) < 5) {
+        if(count($elements) == 1) {
+            /* POST     /{key} */
+            $obj = new \Kyte\ModelObject(APIKey);
+            if ($obj->retrieve('public_key', $elements[0])) {
+            } else throw new Exception("Invalid API access key");
+    
+            $date = new DateTime($data['kyte-time'], new DateTimeZone('UTC'));
+    
+            $hash1 = hash_hmac('SHA256', $date->format('U'), $obj->getParam('secret_key'), true);
+            $hash2 = hash_hmac('SHA256', $data['kyte-identifier'], $hash1, true);
+            $response['signature'] = hash_hmac('SHA256', $elements[0], $hash2);
+        } else {
+            $response['version'] = \Kyte\ApplicationVersion::get();
+        }
+    }
     // if there are elements then process api request based on request type
     else {
 
@@ -56,17 +75,12 @@ try {
         $api->init($elements[1]);
 
         // check if signature is valid - signature and signature datetime
-        $date = new DateTime($elements[3], new DateTimeZone('UTC'));
-        $api->validate(base64_decode($elements[2]), $date->format('U'));
-
-        // if the above checks don't trigger an exception, then allow cross origin
-        header("Access-Control-Allow-Origin: $origin");
-        header('Access-Control-Allow-Credentials: true');
-        header("Content-Type: application/json; charset=utf-8");
+        $date = new DateTime(urldecode($elements[3]), new DateTimeZone('UTC'));
+        $api->validate($elements[2], $date->format('U'));
 
         // initialize controller for model or view ("abstract" controller)
         $controllerClass = class_exists($element[4]{'Controller'}) ? $element[4]{'Controller'} : 'ModelController';
-        $controller = new $controllerClass($element[4], APP_DATE_FORMAT, $elements[1], base64_decode($element[0]));
+        $controller = new $controllerClass($element[4], APP_DATE_FORMAT, urldecode($element[0]));
         if (!$controller) throw new Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 
         switch ($request) {
