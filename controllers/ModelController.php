@@ -2,25 +2,40 @@
 
 class ModelController
 {
-    public function __construct($token)
+
+    private $publickey;
+    private $token;
+    public $dateformat;
+    public $model;
+
+    public function __construct($model, $dateformat, $publickey, $token)
     {
         try {
-            $session = new \Kyte\SessionManager(Session);
-            $session->validate($token);
+            $this->token = $token;
+            $this->dateformat = $dateformat;
+            $this->model = $$model;
+            $this->authenticate();
         } catch (Exception $e) {
             throw $e;
         }
     }
 
-    // new  :   {model}, {data}
-    public function new($model, $data, $dateformat)
+    // * for subclasses that are public, override with empty function
+    private function authenticate()
+    {
+        $session = new \Kyte\SessionManager(Session, Account);
+        $session->validate($this->token);   
+    }
+
+    // new - create new entry in db
+    public function new($data)
     {
         $response = [];
-        
+
         try {
-            $obj = new \Kyte\ModelObject($$model);
+            $obj = new \Kyte\ModelObject($this->model);
             if ($obj->create($data)) {
-                $response = $obj->getAllParams($dateformat);
+                $response = $obj->getAllParams($this->dateformat);
             }
         } catch (Exception $e) {
             throw $e;
@@ -29,17 +44,16 @@ class ModelController
         return $response;
     }
 
-    // update   :   {model}, {field}, {value}, {data}
-    public function update($model, $field, $value, $data, $dateformat)
+    // update - update entry in db
+    public function update($field, $value, $data)
     {
         $response = [];
 
         try {
-            $obj = new \Kyte\ModelObject($$model);
-            $obj->retrieve($field, $value);
-            if ($obj) {
+            $obj = new \Kyte\ModelObject($this->model);
+            if ($obj->retrieve($field, $value)) {
                 $obj->save($data);
-                $response = $obj->getAllParams($dateformat);
+                $response = $obj->getAllParams($this->dateformat);
             }
         } catch (Exception $e) {
             throw $e;
@@ -48,17 +62,17 @@ class ModelController
         return $response;
     }
 
-    // get  :   {model}, {field}, {value}
-    public function get($model, $field, $value, $dateformat)
+    // get - retrieve objects from db
+    public function get($field, $value)
     {
         $response = [];
 
         try {
-            $objs = new \Kyte\Model($$model);
+            $objs = new \Kyte\Model($this->model);
             $objs->retrieve($field, $value);
             foreach ($objs->objects as $obj) {
                 // return list of data
-                $response[] = $obj->getAllParams($dateformat);
+                $response[] = $obj->getAllParams($this->dateformat);
             }
         } catch (Exception $e) {
             throw $e;
@@ -67,19 +81,19 @@ class ModelController
         return $response;
     }
 
-    // delete   :   {model}, {field}, {value}
-    public function delete($model, $field, $value, $dateformat)
+    // delete - delete objects from db
+    public function delete($field, $value)
     {
         $response = [];
 
         try {
-            $objs = new \Kyte\Model($$model);
+            $objs = new \Kyte\Model($this->model);
             $objs->retrieve($field, $value);
             foreach ($objs->objects as $obj) {
                 $obj->delete();
             }
 
-            $response = $this->get($model, $field, $value, $dateformat);
+            $response = $this->get($field, $value);
 
         } catch (Exception $e) {
             throw $e;

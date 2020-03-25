@@ -9,7 +9,7 @@ $APIKey = [
 			'date'		=> false,
 		],
 
-		'domain'		=> [
+		'identifier'		=> [
 			'type'		=> 's',
 			'required'	=> true,
 			'date'		=> false,
