@@ -2,11 +2,10 @@
 
 class EnrollmentController extends ModelController
 {
-    /* override authenticate to make public controller */
-    private function authenticate() {}
+    public function __construct($token) {}
 
-    // new - create new user with sign up token
-    public function new($data)
+    // new  :   {model}, {data}
+    public function new($model, $data, $dateformat)
     {
         $response = [];
 
@@ -14,7 +13,7 @@ class EnrollmentController extends ModelController
             $obj = new \Kyte\ModelObject(Account);
             $data['password'] = 't0k3n'.password_hash($data['password'], PASSWORD_DEFAULT);
             if ($obj->create($data)) {
-                $response = $obj->getAllParams($this->dateformat);
+                $response = $obj->getAllParams($dateformat);
             }
         } catch (Exception $e) {
             throw $e;
@@ -23,8 +22,8 @@ class EnrollmentController extends ModelController
         return $response;
     }
 
-    // update - finish user registration and udpate
-    public function update($field, $value, $data)
+    // update   :   {model}, {field}, {value}, {data}
+    public function update($model, $field, $value, $data, $dateformat)
     {
         $response = [];
 
@@ -34,7 +33,7 @@ class EnrollmentController extends ModelController
             if ($obj) {
                 $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
                 $obj->save($data);
-                $response = $obj->getAllParams($this->dateformat);
+                $response = $obj->getAllParams($dateformat);
                 $response['password'] = '';     // better leave password hash empty - no need for front-end to get it
             }
         } catch (Exception $e) {
@@ -44,14 +43,14 @@ class EnrollmentController extends ModelController
         return $response;
     }
 
-    // get
-    public function get($field, $value)
+    // get  :   {model}, {field}, {value}
+    public function get($model, $field, $value, $dateformat)
     {
         throw new \Exception("Undefined request method");
     }
 
-    // delete
-    public function delete($field, $value)
+    // delete   :   {model}, {field}, {value}
+    public function delete($model, $field, $value, $dateformat)
     {
         throw new \Exception("Undefined request method");
     }

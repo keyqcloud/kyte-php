@@ -4,13 +4,16 @@ class SessionController extends ModelController
 {
     private $session;
 
-    private function authenticate()
-    {
-        $session = new \Kyte\SessionManager(Session, Account);
+    public function __construct($token) {
+        try {
+            $this->session = new \Kyte\SessionManager(Session);
+        } catch (Exception $e) {
+            throw $e;
+        }
     }
     
-    // new - creates new session
-    public function new($data)
+    // new session  :   {model}, {data}
+    public function new($model, $data, $dateformat)
     {
         $response = [];
 
@@ -19,7 +22,7 @@ class SessionController extends ModelController
 				if (!isset($data[$param]))
 					throw new Exception("Incomplete data passed");
 			}
-			$response = [ 'token' => $this->session->create($data['email'], $data['password']) ];
+			$response = [ 'token' => $this->session->create(Account, $data['email'], $data['password']) ];
         } catch (Exception $e) {
             throw $e;
         }
@@ -27,17 +30,17 @@ class SessionController extends ModelController
         return $response;
     }
 
-    // update
-    public function update($field, $value, $data)
+    // update   :   {model}, {field}, {value}, {data}
+    public function update($model, $field, $value, $data, $dateformat)
     {
         throw new \Exception("Undefined request method");
     }
 
-    // get - validate session
-    public function get($field, $value)
+    // get  :   {model}, {field}, {value}
+    public function get($model, $field, $value, $dateformat)
     {
         try {
-            $response = [ 'token' => $this->session->validate($this->token) ];
+            $response = [ 'token' => $this->session->validate(base64_decode($value)) ];
         } catch (Exception $e) {
             throw $e;
         }
@@ -45,8 +48,8 @@ class SessionController extends ModelController
         return $response;
     }
 
-    // delete - destroy session
-    public function delete($field, $value)
+    // delete   :   {model}, {field}, {value}
+    public function delete($model, $field, $value, $dateformat)
     {
         try {
             $this->session->validate(base64_decode($value));
