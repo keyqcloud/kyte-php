@@ -15,7 +15,7 @@ The first step to calling the API is requesting a signature.  The signature can 
 To request a signature from Kyte, simply submit a get request in the following format:
 GET      `/{key}/{time}/{identifier}`
 
-The response is json formated with `signature` containing the hash necessary for making API calls.  Once a signature has been generated or obtained, the following HTTP method and URL format must be used to call the API successfully.
+The response is json formated with `signature` containing the hash necessary for making API calls.  Once a signature has been generated or obtained, the following HTTP method and URL format can be used to call the API successfully.
  * POST     `/{token}/{key}/{signature}/{time}/{model}`
  * PUT      `/{token}/{key}/{signature}/{time}/{model}/{field}/{value}`
  * GET      `/{token}/{key}/{signature}/{time}/{model}/{field}/{value}`
