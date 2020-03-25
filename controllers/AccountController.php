@@ -2,16 +2,16 @@
 
 class AccountController extends ModelController
 {
-    // new  :   {model}, {data}
-    public function new($model, $data, $dateformat)
+    // new - create new account
+    public function new($data)
     {
         $response = [];
         
         try {
-            $obj = new \Kyte\ModelObject($$model);
+            $obj = new \Kyte\ModelObject($this->model);
             $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
             if ($obj->create($data)) {
-                $response = $obj->getAllParams($dateformat);
+                $response = $obj->getAllParams($this->dateformat);
                 $response['password'] = '';     // better leave password hash empty - no need for front-end to get it
             }
         } catch (Exception $e) {
@@ -21,18 +21,18 @@ class AccountController extends ModelController
         return $response;
     }
 
-    // update   :   {model}, {field}, {value}, {data}
-    public function update($model, $field, $value, $data, $dateformat)
+    // update - update account
+    public function update($field, $value, $data)
     {
         $response = [];
 
         try {
-            $obj = new \Kyte\ModelObject($$model);
+            $obj = new \Kyte\ModelObject($this->model);
             $obj->retrieve($field, $value);
             if ($obj) {
                 $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
                 $obj->save($data);
-                $response = $obj->getAllParams($dateformat);
+                $response = $obj->getAllParams($this->dateformat);
                 $response['password'] = '';     // better leave password hash empty - no need for front-end to get it
             }
         } catch (Exception $e) {
@@ -42,17 +42,17 @@ class AccountController extends ModelController
         return $response;
     }
 
-    // get  :   {model}, {field}, {value}
-    public function get($model, $field, $value, $dateformat)
+    // get - get list of accounts
+    public function get($field, $value)
     {
         $response = [];
 
         try {
-            $objs = new \Kyte\Model($$model);
+            $objs = new \Kyte\Model($this->model);
             $objs->retrieve($field, $value);
             foreach ($objs->objects as $obj) {
                 // return list of data
-                $response[] = $obj->getAllParams($dateformat);
+                $response[] = $obj->getAllParams($this->dateformat);
                 $response['password'] = '';     // better leave password hash empty - no need for front-end to get it
             }
         } catch (Exception $e) {
@@ -62,19 +62,19 @@ class AccountController extends ModelController
         return $response;
     }
 
-    // delete   :   {model}, {field}, {value}
-    public function delete($model, $field, $value, $dateformat)
+    // delete - delete account
+    public function delete($field, $value)
     {
         $response = [];
 
         try {
-            $objs = new \Kyte\Model($$model);
+            $objs = new \Kyte\Model($this->model);
             $objs->retrieve($field, $value);
             foreach ($objs->objects as $obj) {
                 $obj->delete();
             }
 
-            $response = $this->get($model, $field, $value, $dateformat);
+            $response = $this->get($field, $value);
 
         } catch (Exception $e) {
             throw $e;

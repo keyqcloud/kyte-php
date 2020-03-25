@@ -2,13 +2,15 @@
 
 class MailController extends ModelController
 {
-    public function __construct($token) {}
+    /* override constructor and authenticate as we don't need any of the initialization defined in the parent class for Mail */
+    public function __construct($model, $dateformat, $publickey, $token) {}
+    private function authenticate() {}
 
-    // new  :   {model}, {data}
-    public function new($model, $data, $dateformat)
+    // new - send new email
+    public function new($data)
     {
         $response = [];
-        
+
         try {
             // [ {to_email} => {to_name} ], [ {from_email} => {from_name} ], {subject}, {body}
             \Kyte\Mail::email(
@@ -23,20 +25,20 @@ class MailController extends ModelController
         return $response;
     }
 
-    // update   :   {model}, {field}, {value}, {data}
-    public function update($model, $field, $value, $data, $dateformat)
+    // update
+    public function update($field, $value, $data)
     {
         throw new \Exception("Undefined request method");
     }
 
-    // get  :   {model}, {field}, {value}
-    public function get($model, $field, $value, $dateformat)
+    // get
+    public function get($field, $value)
     {
         throw new \Exception("Undefined request method");
     }
 
-    // delete   :   {model}, {field}, {value}
-    public function delete($model, $field, $value, $dateformat)
+    // delete
+    public function delete($field, $value)
     {
         throw new \Exception("Undefined request method");
     }
