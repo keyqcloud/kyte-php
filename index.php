@@ -58,11 +58,14 @@ try {
             if ($obj->retrieve('public_key', $elements[0])) {
             } else throw new Exception("Invalid API access key");
     
-            $date = new DateTime(urldecode($elements[1]), new DateTimeZone('UTC'));
+            $date = new DateTime($elements[1], new DateTimeZone('UTC'));
     
             $hash1 = hash_hmac('SHA256', $date->format('U'), $obj->getParam('secret_key'), true);
-            $hash2 = hash_hmac('SHA256', urldecode($elements[2]), $hash1, true);
+            $hash2 = hash_hmac('SHA256', $elements[2], $hash1, true);
             $response['signature'] = hash_hmac('SHA256', $elements[0], $hash2);
+            $time = time();
+            $exp_time = $time+(60*60);
+            $response['token'] = hash_hmac('SHA256', 'anon-'.$time, $exp_time);
         } else {
             $response['version'] = \Kyte\ApplicationVersion::get();
         }
@@ -80,7 +83,7 @@ try {
 
         // initialize controller for model or view ("abstract" controller)
         $controllerClass = class_exists($elements[4]{'Controller'}) ? $elements[4]{'Controller'} : 'ModelController';
-        $controller = new $controllerClass($elements[4], APP_DATE_FORMAT, urldecode($elements[0]));
+        $controller = new $controllerClass($elements[4], APP_DATE_FORMAT, $elements[0]);
         if (!$controller) throw new Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 
         switch ($request) {
