@@ -49,7 +49,7 @@ class SessionController extends ModelController
     public function delete($field, $value)
     {
         try {
-            $this->session->validate(base64_decode($value));
+            $this->session->validate($this->token);
             $this->session->destroy();
         } catch (Exception $e) {
             throw $e;
