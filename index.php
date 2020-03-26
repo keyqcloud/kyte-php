@@ -98,7 +98,7 @@ try {
 
     } else {
         // If minimum params are not passed, then generate signature and return
-        if(count($elements) == 2) {
+        if(count($elements) == 3) {
             /* GET     /{key}/{time}/{identifier} */
             $obj = new \Kyte\ModelObject(APIKey);
             if ($obj->retrieve('public_key', $elements[0])) {
