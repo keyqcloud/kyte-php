@@ -10,7 +10,7 @@ analytics.php
 settings.php
 # schema.sql
 /vendor
-/app/
+/app
 /util/*
 !/util/base64url.php
 config.php
