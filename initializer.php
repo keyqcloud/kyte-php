@@ -12,6 +12,7 @@
         require_once($filename);
         error_log("Loading model $model_name");
         $model_name = substr($filename, 0, strrpos($filename, "."));
+        $model_name = str_replace('models/','',$model_name);
         define($model_name, $$model_name);
     }
     
