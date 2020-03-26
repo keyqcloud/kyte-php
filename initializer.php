@@ -8,17 +8,32 @@
     }
     
 	// include models being used by app
-    foreach (glob("models/*.php") as $filename) {
+    foreach (glob("builtin/models/*.php") as $filename) {
         require_once($filename);
         $model_name = substr($filename, 0, strrpos($filename, "."));
-        $model_name = str_replace('models/','',$model_name);
+        $model_name = str_replace('builtin/models/','',$model_name);
         error_log("Loading model $model_name");
         define($model_name, $$model_name);
     }
     
     // include any controllers
-    require 'controllers/ModelController.php';
-	foreach (glob("controllers/*.php") as $filename) {
+    require 'builtin/controllers/ModelController.php';
+	foreach (glob("builtin/controllers/*.php") as $filename) {
+        error_log("Loading controller $filename");
+        require_once($filename) ;
+    }
+
+    // load user defined models and controllers (allow override of builtin)
+    foreach (glob("app/models/*.php") as $filename) {
+        require_once($filename);
+        $model_name = substr($filename, 0, strrpos($filename, "."));
+        $model_name = str_replace('app/models/','',$model_name);
+        error_log("Loading model $model_name");
+        define($model_name, $$model_name);
+    }
+    
+    // include any controllers
+	foreach (glob("app/controllers/*.php") as $filename) {
         error_log("Loading controller $filename");
         require_once($filename) ;
     }
