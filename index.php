@@ -15,6 +15,8 @@ if (array_key_exists('HTTP_ORIGIN', $_SERVER)) {
 // get request type
 $request = $_SERVER['REQUEST_METHOD'];
 
+error_log("Access from $origin for request method $request");
+
 // Access-Control headers are received during OPTIONS requests
 if ($request == 'OPTIONS') {
 
