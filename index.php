@@ -107,7 +107,7 @@ try {
             $date = new DateTime($elements[1], new DateTimeZone('UTC'));
     
             $hash1 = hash_hmac('SHA256', $date->format('U'), $obj->getParam('secret_key'), true);
-            $hash2 = hash_hmac('SHA256', $elements[2], $hash1, true);
+            $hash2 = hash_hmac('SHA256', urldecode($elements[2]), $hash1, true);
             $response['signature'] = hash_hmac('SHA256', $elements[0], $hash2);
             $time = time();
             $exp_time = $time+(60*60);
