@@ -17,6 +17,7 @@
     }
     
     // include any controllers
+    require 'models/ModelController.php';
 	foreach (glob("controllers/*.php") as $filename) {
         require_once($filename) ;
         error_log("Loading controller $model_name");
