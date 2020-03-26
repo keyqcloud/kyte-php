@@ -11,7 +11,7 @@
     foreach (glob("models/*.php") as $filename) {
         require_once($filename);
         $model_name = substr($filename, 0, strrpos($filename, "."));
-        define($model_name, $$model_name);
+        define($$model_name, $model_name);
     }
     
     // include any controllers
