@@ -10,16 +10,15 @@ analytics.php
 settings.php
 # schema.sql
 /vendor
-/controllers/*
-!/controllers/ModelController.php
-!/controllers/MailController.php
-!/controllers/SessionController.php
-!/controllers/EnrollmentController.php
-!/controllers/AccountController.php
-/models/*
-!/models/Session.php
-!/models/APIKey.php
-!/models/Account.php
+/app/*
+!/app/controllers/ModelController.php
+!/app/controllers/MailController.php
+!/app/controllers/SessionController.php
+!/app/controllers/EnrollmentController.php
+!/app/controllers/AccountController.php
+!/app/models/Session.php
+!/app/models/APIKey.php
+!/app/models/Account.php
 /util/*
 !/util/base64url.php
 config.php
