@@ -17,9 +17,9 @@ settings.php
 !/controllers/EnrollmentController.php
 !/controllers/AccountController.php
 /models/*
-!/models/sample-model-Session.php
-!/models/sample-model-APIKey.php
-!/models/sample-model-Account.php
+!/models/Session.php
+!/models/APIKey.php
+!/models/Account.php
 /util/*
 !/util/base64url.php
 config.php
