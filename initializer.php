@@ -10,13 +10,15 @@
 	// include models being used by app
     foreach (glob("models/*.php") as $filename) {
         require_once($filename);
+        error_log("Loading model $model_name");
         $model_name = substr($filename, 0, strrpos($filename, "."));
-        define($$model_name, $model_name);
+        define($model_name, $$model_name);
     }
     
     // include any controllers
 	foreach (glob("controllers/*.php") as $filename) {
-		require_once($filename) ;
+        require_once($filename) ;
+        error_log("Loading controller $model_name");
     }
 
     require_once __DIR__.'/config.php';
