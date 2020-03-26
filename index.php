@@ -50,28 +50,8 @@ try {
     // Split path on slashes
     $elements = explode('/', $path);
 
-    // If minimum params are not passed, then generate signature and return
-    if(count($elements) < 5) {
-        if(count($elements) == 2) {
-            /* GET     /{key}/{time}/{identifier} */
-            $obj = new \Kyte\ModelObject(APIKey);
-            if ($obj->retrieve('public_key', $elements[0])) {
-            } else throw new Exception("Invalid API access key");
-    
-            $date = new DateTime($elements[1], new DateTimeZone('UTC'));
-    
-            $hash1 = hash_hmac('SHA256', $date->format('U'), $obj->getParam('secret_key'), true);
-            $hash2 = hash_hmac('SHA256', $elements[2], $hash1, true);
-            $response['signature'] = hash_hmac('SHA256', $elements[0], $hash2);
-            $time = time();
-            $exp_time = $time+(60*60);
-            $response['token'] = hash_hmac('SHA256', 'anon-'.$time, $exp_time);
-        } else {
-            $response['version'] = \Kyte\ApplicationVersion::get();
-        }
-    }
     // if there are elements then process api request based on request type
-    else {
+    if (count($elements) > 4) {
 
         $api = new \Kyte\API(APIKey);
         // init new api with key
@@ -112,6 +92,25 @@ try {
                 break;
         }
 
+    } else {
+        // If minimum params are not passed, then generate signature and return
+        if(count($elements) == 2) {
+            /* GET     /{key}/{time}/{identifier} */
+            $obj = new \Kyte\ModelObject(APIKey);
+            if ($obj->retrieve('public_key', $elements[0])) {
+            } else throw new Exception("Invalid API access key");
+    
+            $date = new DateTime($elements[1], new DateTimeZone('UTC'));
+    
+            $hash1 = hash_hmac('SHA256', $date->format('U'), $obj->getParam('secret_key'), true);
+            $hash2 = hash_hmac('SHA256', $elements[2], $hash1, true);
+            $response['signature'] = hash_hmac('SHA256', $elements[0], $hash2);
+            $time = time();
+            $exp_time = $time+(60*60);
+            $response['token'] = hash_hmac('SHA256', 'anon-'.$time, $exp_time);
+        } else {
+            $response['version'] = \Kyte\ApplicationVersion::get();
+        }
     }
 
 } catch (Exception $e) {
