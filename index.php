@@ -43,7 +43,7 @@ try {
     /* parse URI        ** remember to add the following in .htaccess 'FallbackResource /index.php'
     * URL formats:
     * POST     /{token}/{key}/{signature}/{time}/{model}
-    * PUT      /{token}/{key}/{signature}/{time}/{model}/{field}/{value}
+    * PUT      /{token}/{key}/{signature}/{time}/{model}/{field}/{value} + data
     * GET      /{token}/{key}/{signature}/{time}/{model}/{field}/{value}
     * DELETE   /{token}/{key}/{signature}/{time}/{model}/{field}/{value}
     */
