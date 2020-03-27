@@ -32,6 +32,12 @@ $APIKey = [
 			'date'		=> false,
 		],
 
+		'epoch'		=> [
+			'type'		=> 'i',
+			'required'	=> true,
+			'date'		=> true,
+		],
+
 		'deleted'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
