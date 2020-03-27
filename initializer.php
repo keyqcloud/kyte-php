@@ -24,8 +24,8 @@
     }
 
     /* Load user-defined files */
-    if ( file_exists( "app/" ) && !is_dir( "app/" ) ) {
-        if ( file_exists( "app/models/" ) && !is_dir( "app/models/" ) ) {
+    if ( file_exists( "app/" ) && is_dir( "app/" ) ) {
+        if ( file_exists( "app/models/" ) && is_dir( "app/models/" ) ) {
             // load user defined models and controllers (allow override of builtin)
             foreach (glob("app/models/*.php") as $filename) {
                 require_once($filename);
@@ -35,7 +35,7 @@
                 define($model_name, $$model_name);
             }
         }
-        if ( file_exists( "app/controllers/" ) && !is_dir( "app/controllers/" ) ) {
+        if ( file_exists( "app/controllers/" ) && is_dir( "app/controllers/" ) ) {
             // include any controllers
             foreach (glob("app/controllers/*.php") as $filename) {
                 error_log("Loading controller $filename");
