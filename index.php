@@ -12,6 +12,8 @@ if (array_key_exists('HTTP_ORIGIN', $_SERVER)) {
     $origin = $_SERVER['REMOTE_ADDR'];
 }
 
+error_log("Access from $origin");
+
 // get request type
 $request = $_SERVER['REQUEST_METHOD'];
 
