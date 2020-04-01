@@ -13,7 +13,7 @@
         $model_name = substr($filename, 0, strrpos($filename, "."));
         $model_name = str_replace('builtin/models/','',$model_name);
         error_log("Loading model $model_name");
-        error_log("Checking if model has been defined...".(!isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
+        error_log("Checking if model has been defined...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
         define($model_name, $$model_name);
     }
     
