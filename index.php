@@ -69,7 +69,7 @@ try {
         // initialize controller for model or view ("abstract" controller)
         $controllerClass = class_exists($elements[4].'Controller') ? $elements[4].'Controller' : 'ModelController';
         error_log("Controller $controllerClass instantiated...");
-        $controller = new $controllerClass($elements[4], APP_DATE_FORMAT, $elements[0]);
+        $controller = new $controllerClass(${$elements[4]}, APP_DATE_FORMAT, $elements[0]);
         if (!$controller) throw new Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 
         switch ($request) {

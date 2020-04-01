@@ -12,7 +12,7 @@ class ModelController
         try {
             $this->token = $token;
             $this->dateformat = $dateformat;
-            $this->model = $$model;
+            $this->model = $model;
             $this->authenticate();
         } catch (Exception $e) {
             throw $e;
