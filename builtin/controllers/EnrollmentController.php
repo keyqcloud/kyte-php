@@ -26,6 +26,8 @@ class EnrollmentController extends ModelController
     // update - finish user registration and udpate
     public function update($field, $value, $data)
     {
+        if (!field || !$value) throw new \Exception("Field and Value params not set");
+        
         $response = [];
 
         try {

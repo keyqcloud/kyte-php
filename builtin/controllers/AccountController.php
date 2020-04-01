@@ -24,6 +24,8 @@ class AccountController extends ModelController
     // update - update account
     public function update($field, $value, $data)
     {
+        if (!field || !$value) throw new \Exception("Field and Value params not set");
+
         $response = [];
 
         try {
@@ -45,6 +47,8 @@ class AccountController extends ModelController
     // get - get list of accounts
     public function get($field, $value)
     {
+        if (!field || !$value) throw new \Exception("Field and Value params not set");
+
         $response = [];
 
         try {
@@ -65,6 +69,8 @@ class AccountController extends ModelController
     // delete - delete account
     public function delete($field, $value)
     {
+        if (!field || !$value) throw new \Exception("Field and Value params not set");
+        
         $response = [];
 
         try {

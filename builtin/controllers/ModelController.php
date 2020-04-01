@@ -46,6 +46,8 @@ class ModelController
     // update - update entry in db
     public function update($field, $value, $data)
     {
+        if (!field || !$value) throw new \Exception("Field and Value params not set");
+
         $response = [];
 
         try {
@@ -64,6 +66,8 @@ class ModelController
     // get - retrieve objects from db
     public function get($field, $value)
     {
+        if (!field || !$value) throw new \Exception("Field and Value params not set");
+
         $response = [];
 
         try {
@@ -83,6 +87,8 @@ class ModelController
     // delete - delete objects from db
     public function delete($field, $value)
     {
+        if (!field || !$value) throw new \Exception("Field and Value params not set");
+        
         $response = [];
 
         try {

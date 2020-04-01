@@ -51,6 +51,7 @@ try {
     $path = ltrim($_SERVER['REQUEST_URI'], '/');
     // Split path on slashes
     $elements = explode('/', $path);
+    //** change element split method to allow for fewer uri fields for some requests */
 
     error_log("Access from $origin with element count of ".count($elements));
 
@@ -78,17 +79,17 @@ try {
 
             case 'PUT':
                 // update   :   {field}, {value}, {data}
-                $response = $controller->update($elements[5], $elements[6], $data);
+                $response = $controller->update((isset($elements[5]) ? $elements[5] : null), (isset($elements[6]) ? $elements[6] : null), $data);
                 break;
 
             case 'GET':
                 // get  :   {field}, {value}
-                $response = $controller->get($elements[5], $elements[5]);
+                $response = $controller->get((isset($elements[5]) ? $elements[5] : null), (isset($elements[6]) ? $elements[6] : null));
                 break;
 
             case 'DELETE':
                 // delete   :   {field}, {value}
-                $response = $controller->delete($elements[5], $elements[5]);
+                $response = $controller->delete((isset($elements[5]) ? $elements[5] : null), (isset($elements[6]) ? $elements[6] : null));
                 break;
             
             default:
