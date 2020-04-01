@@ -23,8 +23,8 @@
         $controller_name = substr($filename, 0, strrpos($filename, "."));
         $controller_name = str_replace('builtin/controllers/','',$controller_name);
         error_log("Loading controller $filename");
+        require_once($filename);
         error_log("Checking if controller has been defined...".(class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
-        require_once($filename) ;
     }
 
     /* Load user-defined files */
@@ -46,8 +46,8 @@
                 $controller_name = substr($filename, 0, strrpos($filename, "."));
                 $controller_name = str_replace('app/controllers/','',$controller_name);
                 error_log("Loading user defined controller $filename");
+                require_once($filename);
                 error_log("Checking if user defined controller has been defined...".(class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
-                require_once($filename) ;
             }
         }      
     } 
