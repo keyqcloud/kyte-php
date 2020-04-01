@@ -64,7 +64,7 @@ class ModelController
     }
 
     // get - retrieve objects from db
-    public function get($field = null, $value = null)
+    public function get($field, $value)
     {
         $response = [];
 
