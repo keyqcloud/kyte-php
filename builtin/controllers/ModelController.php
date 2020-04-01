@@ -3,7 +3,7 @@
 class ModelController
 {
 
-    private $token;
+    protected $token;
     public $dateformat;
     public $model;
 
@@ -20,7 +20,7 @@ class ModelController
     }
 
     // * for subclasses that are public, override with empty function
-    private function authenticate()
+    protected function authenticate()
     {
         $session = new \Kyte\SessionManager(Session, Account);
         $session->validate($this->token);   

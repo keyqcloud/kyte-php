@@ -3,7 +3,7 @@
 class EnrollmentController extends ModelController
 {
     /* override authenticate to make public controller */
-    private function authenticate() {}
+    protected function authenticate() {}
 
     // new - create new user with sign up token
     public function new($data)
@@ -27,7 +27,7 @@ class EnrollmentController extends ModelController
     public function update($field, $value, $data)
     {
         if (!field || !$value) throw new \Exception("Field and Value params not set");
-        
+
         $response = [];
 
         try {

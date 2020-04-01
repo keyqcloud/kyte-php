@@ -2,9 +2,9 @@
 
 class SessionController extends ModelController
 {
-    private $session;
+    protected $session;
 
-    private function authenticate()
+    protected function authenticate()
     {
         $session = new \Kyte\SessionManager(Session, Account);
     }
