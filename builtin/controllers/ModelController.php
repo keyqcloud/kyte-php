@@ -64,10 +64,8 @@ class ModelController
     }
 
     // get - retrieve objects from db
-    public function get($field, $value)
+    public function get($field = null, $value = null)
     {
-        if (!field || !$value) throw new \Exception("Field and Value params not set");
-
         $response = [];
 
         try {
@@ -88,7 +86,7 @@ class ModelController
     public function delete($field, $value)
     {
         if (!field || !$value) throw new \Exception("Field and Value params not set");
-        
+
         $response = [];
 
         try {
