@@ -7,7 +7,10 @@
 	define('APP_EMAIL', '');
 	define('SUPPORT_EMAIL', '');
 	define('SUPPORT_PHONE', '');
-	define('APP_DATE_FORMAT', 'Y/m/d');
+    define('APP_DATE_FORMAT', 'Y/m/d');
+    
+    /* BASE PATH for API - for example if in www.example.com/api/ then specify 'api/' */
+    define('API_BASE', '');
 
 	/* AWS INTEGRATION */
 	define('AWS_ACCESS_KEY_ID', '');
