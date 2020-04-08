@@ -82,17 +82,17 @@ try {
 
             case 'PUT':
                 // update   :   {field}, {value}, {data}
-                $response = $controller->update((isset($elements[5]) ? $elements[5] : null), (isset($elements[6]) ? $elements[6] : null), $data);
+                $response = $controller->update((isset($elements[5]) ? $elements[5] : null), (isset($elements[6]) ? urldecode($elements[6]) : null), $data);
                 break;
 
             case 'GET':
                 // get  :   {field}, {value}
-                $response = $controller->get((isset($elements[5]) ? $elements[5] : null), (isset($elements[6]) ? $elements[6] : null));
+                $response = $controller->get((isset($elements[5]) ? $elements[5] : null), (isset($elements[6]) ? urldecode($elements[6]) : null));
                 break;
 
             case 'DELETE':
                 // delete   :   {field}, {value}
-                $response = $controller->delete((isset($elements[5]) ? $elements[5] : null), (isset($elements[6]) ? $elements[6] : null));
+                $response = $controller->delete((isset($elements[5]) ? $elements[5] : null), (isset($elements[6]) ? urldecode($elements[6]) : null));
                 break;
             
             default:
