@@ -37,7 +37,14 @@ class SessionController extends ModelController
     public function get($field, $value)
     {
         try {
-            $response = [ 'token' => $this->session->validate($this->token) ];
+            // ***************************************************
+            // code to get user id should move to Kyte lib instead
+            $s = new \Kyte\ModelObject(Session);
+            if (!$s->retrieve('token', $this->token)) {
+                throw new Exception("Must be logged in.");
+            }
+            $response = [ 'token' => $this->session->validate($this->token), 'uid' => $s->getParam('id') ];
+            // ***************************************************
         } catch (Exception $e) {
             throw $e;
         }
