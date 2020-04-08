@@ -43,7 +43,7 @@ class SessionController extends ModelController
             if (!$s->retrieve('token', $this->token)) {
                 throw new Exception("Must be logged in.");
             }
-            $response = [ 'token' => $this->session->validate($this->token), 'uid' => $s->getParam('id') ];
+            $response = [ 'token' => $this->session->validate($this->token), 'uid' => $s->getParam('uid') ];
             // ***************************************************
         } catch (Exception $e) {
             throw $e;
