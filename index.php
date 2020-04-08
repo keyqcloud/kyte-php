@@ -1,7 +1,5 @@
 <?php
 
-require_once __DIR__.'/initializer.php';
-
 /* CORS VALIDATION */
 // get origin of requester
 if (array_key_exists('HTTP_ORIGIN', $_SERVER)) {
@@ -32,6 +30,8 @@ if ($request == 'OPTIONS') {
 header("Access-Control-Allow-Origin: $origin");
 header('Access-Control-Allow-Credentials: true');
 header("Content-Type: application/json; charset=utf-8");
+
+require_once __DIR__.'/initializer.php';
 
 // initialie empty array for response data
 $response = [];
