@@ -37,21 +37,29 @@
 
 	// include models being used by app
     foreach (glob("builtin/models/*.php") as $filename) {
-        require_once($filename);
         $model_name = substr($filename, 0, strrpos($filename, "."));
         $model_name = str_replace('builtin/models/','',$model_name);
-        error_log("Loading model $model_name");
-        error_log("Checking if model has been defined...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
-        define($model_name, $$model_name);
+        if (isset($$model_name)) {
+            error_log("Skipping model $model_name as already defined...");
+        } else {
+            require_once($filename);
+            error_log("Loading model $model_name");
+            error_log("Checking if model has been defined...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
+            define($model_name, $$model_name);
+        }
     }
     
     // include any controllers
 	foreach (glob("builtin/controllers/*.php") as $filename) {
         $controller_name = substr($filename, 0, strrpos($filename, "."));
         $controller_name = str_replace('builtin/controllers/','',$controller_name);
-        error_log("Loading controller $filename");
-        require_once($filename);
-        error_log("Checking if controller has been defined...".(class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
+        if (class_exists($controller_name)) {
+            error_log("Skipping controller $filename as already defined...");
+        } else {
+            error_log("Loading controller $filename");
+            require_once($filename);
+            error_log("Checking if controller has been defined...".(class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
+        }
     }
 
     require_once __DIR__.'/config.php';
