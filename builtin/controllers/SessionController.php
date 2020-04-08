@@ -6,7 +6,7 @@ class SessionController extends ModelController
 
     protected function authenticate()
     {
-        $session = new \Kyte\SessionManager(Session, Account);
+        $this->session = new \Kyte\SessionManager(Session, Account);
     }
     
     // new - creates new session
