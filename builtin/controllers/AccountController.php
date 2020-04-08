@@ -56,8 +56,9 @@ class AccountController extends ModelController
             $objs->retrieve($field, $value);
             foreach ($objs->objects as $obj) {
                 // return list of data
-                $response[] = $obj->getAllParams($this->dateformat);
-                $response['password'] = '';     // better leave password hash empty - no need for front-end to get it
+                $item = $obj->getAllParams($this->dateformat);
+                $item['password'] = '';     // better leave password hash empty - no need for front-end to get it
+                $response[] = $item;
             }
         } catch (Exception $e) {
             throw $e;
