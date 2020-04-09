@@ -49,7 +49,24 @@ class EnrollmentController extends ModelController
     // get
     public function get($field, $value)
     {
-        throw new \Exception("Undefined request method");
+        if (!$field || !$value) throw new \Exception("Field and Value params not set");
+
+        $response = [];
+
+        try {
+            $objs = new \Kyte\Model($this->model);
+            $objs->retrieve($field, $value);
+            foreach ($objs->objects as $obj) {
+                // return list of data
+                $item = $obj->getAllParams($this->dateformat);
+                $item['password'] = '';     // better leave password hash empty - no need for front-end to get it
+                $response[] = $item;
+            }
+        } catch (Exception $e) {
+            throw $e;
+        }
+
+        return $response;
     }
 
     // delete
