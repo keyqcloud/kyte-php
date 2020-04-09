@@ -14,8 +14,8 @@ class MailController extends ModelController
         try {
             // [ {to_email} => {to_name} ], [ {from_email} => {from_name} ], {subject}, {body}
             \Kyte\Mail::email(
-                [ APP_EMAIL => APP_NAME ],
-                [ $data['email'] => $data['name'] ],
+                [ 'address' => $data['email'], 'name' => $data['name'] ],
+                [ 'address' => APP_EMAIL, 'name' => APP_NAME ],
 				$data['subject'],
 				$data['body']
 			);
