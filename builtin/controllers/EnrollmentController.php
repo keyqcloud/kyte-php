@@ -37,7 +37,7 @@ class EnrollmentController extends ModelController
 
         try {
             $obj = new \Kyte\ModelObject(Account);
-            $obj->retrieve('password', $value);
+            $obj->retrieve('id', $value);
             if ($obj) {
                 $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
                 $obj->save($data);
