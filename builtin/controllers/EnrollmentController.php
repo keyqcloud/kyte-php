@@ -54,7 +54,7 @@ class EnrollmentController extends ModelController
         $response = [];
 
         try {
-            $objs = new \Kyte\Model($this->model);
+            $objs = new \Kyte\Model(Account);
             $objs->retrieve($field, $value);
             foreach ($objs->objects as $obj) {
                 // return list of data
