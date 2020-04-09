@@ -9,6 +9,9 @@ class AccountController extends ModelController
         
         try {
             $obj = new \Kyte\ModelObject($this->model);
+            if ($obj->retrieve('email', $data['email'])) {
+                throw new \Exception("Account already exists");
+            }
             $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
             if ($obj->create($data)) {
                 $response = $obj->getAllParams($this->dateformat);

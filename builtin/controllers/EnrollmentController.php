@@ -12,6 +12,9 @@ class EnrollmentController extends ModelController
 
         try {
             $obj = new \Kyte\ModelObject(Account);
+            if ($obj->retrieve('email', $data['email'])) {
+                throw new \Exception("Account already exists");
+            }
             $time = time();
 			$exp_time = $time+(60*60);
             $data['password'] = 't0k3n'.hash_hmac('sha256', $data['email'].'-'.$time, $exp_time);
