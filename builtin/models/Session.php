@@ -38,6 +38,26 @@ $Session = [
 			'date'		=> false,
 		],
 
+		// audit attributes
+
+		'date_created'		=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'date'		=> true,
+		],
+
+		'date_modified'		=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'date'		=> true,
+		],
+
+		'date_deleted'		=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'date'		=> true,
+		],
+
 		'deleted'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
