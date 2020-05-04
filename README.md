@@ -1,4 +1,6 @@
 # Kyte-PHP
+![GitHub Logo](https://www.keyq.cloud/img/kytelogo_dark.png)
+(c) 2020 [KeyQ, Inc.](https://www.keyq.cloud)
 
 ## About Kyte-PHP
 Web application development shouldn't have to be a chore.  Kyte was created with the intention to make things more enjoyable and to simplify the development workflow.  The Kyte-php framework works as the backend API and can be integrated into different types of application architectures and front-end languages/frameworks.
