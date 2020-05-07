@@ -2,10 +2,6 @@
 
 class MailController extends ModelController
 {
-    /* override constructor and authenticate as we don't need any of the initialization defined in the parent class for Mail */
-    public function __construct($model, $dateformat, $token) {}
-    protected function authenticate() { return; }
-
     // new - send new email
     public function new($data)
     {

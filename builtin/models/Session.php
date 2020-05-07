@@ -31,7 +31,14 @@ $Session = [
 			'date'		=> true,
 		],
 
-		'token'		=> [
+		'sessionToken'		=> [
+			'type'		=> 's',
+			'required'	=> true,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'txToken'		=> [
 			'type'		=> 's',
 			'required'	=> true,
 			'size'		=> 255,

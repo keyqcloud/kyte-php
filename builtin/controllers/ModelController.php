@@ -3,14 +3,16 @@
 class ModelController
 {
 
-    protected $token;
+    protected $txToken;
+    protected $sessionToken;
     public $dateformat;
     public $model;
 
-    public function __construct($model, $dateformat, $token)
+    public function __construct($model, $dateformat, $xToken, $sessionToken)
     {
         try {
-            $this->token = $token;
+            $this->txToken = $txToken;
+            $this->sessionToken = $sessionToken;
             $this->dateformat = $dateformat;
             $this->model = $model;
             $this->authenticate();
@@ -23,7 +25,7 @@ class ModelController
     protected function authenticate()
     {
         $session = new \Kyte\SessionManager(Session, Account);
-        $session->validate($this->token);   
+        $session->validate($this->txToken, $this->sessionToken, false);
     }
 
     // new - create new entry in db

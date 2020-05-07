@@ -34,7 +34,30 @@ if ($request == 'OPTIONS') {
 require_once __DIR__.'/initializer.php';
 
 // initialie empty array for response data
+//
+// return json form:
+// {
+// 	token: ‘TRANSACTION_TOKEN’,
+// 	session: ‘SESSION_TOKEN’,
+// 	error: ‘ERROR_MESSAGE’,
+// 	model: ‘MyModel’,
+// 	transaction: ‘PUT’,
+// 	txTimestamp: ‘Thu, 30 Apr 2020 07:11:46 GMT’,
+// 	data: {}
+// }
 $response = [];
+$response['token'] = '';
+$response['session'] = '';
+$response['error'] = '';
+$response['model'] = '';
+$response['transaction'] = $request;
+$now = new DateTime();
+$now->setTimezone(new DateTimeZone('UTC'));    // Another way
+$response['txTimestamp'] = $now->format('U');
+
+// URL format
+// https://uri-to-api-endpoint/ {signature} / {identity string} / {model} [ / {field} / {value} ]
+ 
 
 try {
     // read in data and parse into array
@@ -42,10 +65,10 @@ try {
 
     /* parse URI        ** remember to add the following in .htaccess 'FallbackResource /index.php'
     * URL formats:
-    * POST     /{token}/{key}/{signature}/{time}/{model}
-    * PUT      /{token}/{key}/{signature}/{time}/{model}/{field}/{value} + data
-    * GET      /{token}/{key}/{signature}/{time}/{model}/{field}/{value}
-    * DELETE   /{token}/{key}/{signature}/{time}/{model}/{field}/{value}
+    * POST     /{signature}/{identity string}/{model}
+    * PUT      /{signature}/{identity string}/{model}/{field}/{value} + data
+    * GET      /{signature}/{identity string}/{model}/{field}/{value}
+    * DELETE   /{signature}/{identity string}/{model}/{field}/{value}
     */
     // Trim leading slash(es)
     $path = ltrim($_SERVER['REQUEST_URI'], '/');
@@ -58,41 +81,99 @@ try {
     error_log("Access from $origin with element count of ".count($elements));
 
     // if there are elements then process api request based on request type
-    if (count($elements) > 4) {
+    if (count($elements) >= 3) {
+        // model
+        $response['model'] = $elements[2];
+
+        // get the identity string and verify
+        $idenstr = base64_decode(urldecode($elements[1]));
+        // identity string format:
+        // public_key:session_token:UTC date format
+        $iden = explode(':', $idenstr);
+        if (count($iden) != 3) {
+            throw new Exception("[ERROR] Invalid identity string: $request.");
+        }
+
+        // session token
+        $response['session'] = $iden[1];
 
         $api = new \Kyte\API(APIKey);
         // init new api with key
-        $api->init($elements[1]);
+        $api->init($iden[0]);
 
         // check if signature is valid - signature and signature datetime
-        $date = new DateTime(urldecode($elements[3]), new DateTimeZone('UTC'));
-        $api->validate($elements[2], $date->format('U'));
+        $date = new DateTime(urldecode($iden[2]), new DateTimeZone('UTC'));
+
+        $txToken = 0;	// default to public token
+
+        // if sessionToken is not 0, then private API access
+        if ($iden[1] != 0) {
+            // retrieve transaction token corresponding to session token
+            $sessionObj = new \Kyte\ModelObject(Session);
+            if ($sessionObj->retrieve('sessionToken', $iden[1])) {
+                $txToken = $sessionObj->getParam('txToken');
+            }
+        }
+
+		// calculate hash based on provided information
+        $hash1 = hash_hmac('SHA256', $txToken, $this->key->getParam('secret_key'), true);
+        $hash2 = hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1, true);
+        $calculated_signature = hash_hmac('SHA256', $date->format('U'), $hash2);
+
+        if ($calculated_signature != $elements[0])
+            throw new \Exception("Calculated signature does not match provided signature.");
+				
+        if (time() > $date->format('U') + (60*30)) {
+            throw new \Exception("API request has expired.");
+        }
+
+        // update token string
+        if ($iden[1] == 0) {
+            $response['token'] = 0; // if public api access, set token to 0
+        } else {
+            // if all looks good, then generate new txToken
+            $session = new \Kyte\SessionManager(Session, Account);
+            $session_ret = $session->validate($txToken, $iden[1]);
+            $response['token'] = $session_ret['txToken'];
+        }
 
         // initialize controller for model or view ("abstract" controller)
-        $controllerClass = class_exists($elements[4].'Controller') ? $elements[4].'Controller' : 'ModelController';
+        $controllerClass = class_exists($elements[2].'Controller') ? $elements[2].'Controller' : 'ModelController';
         error_log("Controller $controllerClass instantiated...");
-        $controller = new $controllerClass(isset(${$elements[4]}) ? ${$elements[4]} : null, APP_DATE_FORMAT, $elements[0]);
+        if (!isset(${$elements[2]})) {
+            throw new Exception("[ERROR] Model not found for: ".$elements[2].".");
+        }
+        // create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
+        $controller = new $controllerClass(${$elements[2]}, APP_DATE_FORMAT, $response['token'], $iden[1]);
         if (!$controller) throw new Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 
         switch ($request) {
             case 'POST':
+                // post data = data
                 // new  :   {data}
-                $response = $controller->new($data);
+                $response['data'] = $controller->new($data);
                 break;
 
             case 'PUT':
+                // element[3] = field
+                // element[4] = value
+                // post data = data
                 // update   :   {field}, {value}, {data}
-                $response = $controller->update((isset($elements[5]) ? $elements[5] : null), (isset($elements[6]) ? urldecode($elements[6]) : null), $data);
+                $response['data'] = $controller->update((isset($elements[3]) ? $elements[3] : null), (isset($elements[4]) ? urldecode($elements[4]) : null), $data);
                 break;
 
             case 'GET':
+                // element[3] = field
+                // element[4] = value
                 // get  :   {field}, {value}
-                $response = $controller->get((isset($elements[5]) ? $elements[5] : null), (isset($elements[6]) ? urldecode($elements[6]) : null));
+                $response['data'] = $controller->get((isset($elements[3]) ? $elements[3] : null), (isset($elements[4]) ? urldecode($elements[4]) : null));
                 break;
 
             case 'DELETE':
+                // element[3] = field
+                // element[4] = value
                 // delete   :   {field}, {value}
-                $response = $controller->delete((isset($elements[5]) ? $elements[5] : null), (isset($elements[6]) ? urldecode($elements[6]) : null));
+                $response['data'] = $controller->delete((isset($elements[3]) ? $elements[3] : null), (isset($elements[4]) ? urldecode($elements[4]) : null));
                 break;
             
             default:
@@ -101,30 +182,41 @@ try {
         }
 
     } else {
-        // If minimum params are not passed, then generate signature and return
-        if(count($elements) == 3) {
-            /* GET     /{key}/{time}/{identifier} */
-            $obj = new \Kyte\ModelObject(APIKey);
-            if ($obj->retrieve('public_key', $elements[0])) {
-            } else throw new Exception("Invalid API access key");
-    
-            $date = new DateTime(urldecode($elements[1]), new DateTimeZone('UTC'));
-    
-            $hash1 = hash_hmac('SHA256', $date->format('U'), $obj->getParam('secret_key'), true);
-            $hash2 = hash_hmac('SHA256', $elements[2], $hash1, true);
-            $response['signature'] = hash_hmac('SHA256', $elements[0], $hash2);
-            $time = time();
-            $exp_time = $time+(60*60);
-            $response['token'] = hash_hmac('SHA256', 'anon-'.$time, $exp_time);
-        } else {
-            $response['version'] = \Kyte\ApplicationVersion::get();
+        // If a post request is made to the api endpoint with no signature, identity string, or model being passed then generate a new signature based on the post data
+        // format of the data being passed should be:
+        // {
+        //     key: ‘public_key’,
+        //     identifier: ‘api_key_identifier’,
+        //     token: ‘transaction_token’,
+        //     time: ‘Thu, 30 Apr 2020 07:11:46 GMT’
+        // }
+            
+        if(count($elements) == 0) {
+            /* POST REQUEST */
+            if ($request == 'POST') {
+                // get api key using the public_key and identifier being passed
+                $obj = new \Kyte\ModelObject(APIKey);
+                if (!$obj->retrieve('public_key', $data['key'], [[ 'field' => 'identifier', 'value' => $data['identifier'] ]])) {
+                    throw new Exception("Invalid API access key");
+                }
+        
+                // get date and convert to php datetime in UTC timezone
+                $date = new DateTime($data['time'], new DateTimeZone('UTC'));
+        
+                $hash1 = hash_hmac('SHA256', $data['token'], $obj->getParam('secret_key'), true);
+                $hash2 = hash_hmac('SHA256', $data['identifier'], $hash1, true);
+                $response['signature'] = hash_hmac('SHA256', $date->format('U'), $hash2);
+            } else {
+                $response['version'] = \Kyte\ApplicationVersion::get();
+            }
         }
     }
 
 } catch (Exception $e) {
 	error_log($e->getMessage());
-	http_response_code(400);
-	echo json_encode(['status' => 400, 'error' => $e->getMessage()]);
+    http_response_code(400);
+    $response['error'] = $e->getMessage();
+	echo json_encode($response);
 	exit(0);
 }
 
