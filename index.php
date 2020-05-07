@@ -46,6 +46,7 @@ require_once __DIR__.'/initializer.php';
 // 	data: {}
 // }
 $response = [];
+$response['version'] = \Kyte\ApplicationVersion::get();
 $response['token'] = '';
 $response['session'] = '';
 $response['error'] = '';
@@ -191,7 +192,7 @@ try {
         //     time: ‘Thu, 30 Apr 2020 07:11:46 GMT’
         // }
             
-        if(count($elements) == 0) {
+        if(count($elements) == 1) {
             /* POST REQUEST */
             if ($request == 'POST') {
                 // get api key using the public_key and identifier being passed
@@ -206,8 +207,6 @@ try {
                 $hash1 = hash_hmac('SHA256', $data['token'], $obj->getParam('secret_key'), true);
                 $hash2 = hash_hmac('SHA256', $data['identifier'], $hash1, true);
                 $response['signature'] = hash_hmac('SHA256', $date->format('U'), $hash2);
-            } else {
-                $response['version'] = \Kyte\ApplicationVersion::get();
             }
         }
     }
