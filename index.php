@@ -73,8 +73,6 @@ try {
     */
     // Trim leading slash(es)
     $path = ltrim($_SERVER['REQUEST_URI'], '/');
-    // if api is in subdir, remove from path request
-    $path = str_replace(API_BASE,'', $path);
     // Split path on slashes
     $elements = explode('/', $path);
     //** change element split method to allow for fewer uri fields for some requests */
