@@ -50,8 +50,6 @@ class AccountController extends ModelController
     // get - get list of accounts
     public function get($field, $value)
     {
-        if (!$field || !$value) throw new \Exception("Field and Value params not set");
-
         $response = [];
 
         try {
