@@ -88,7 +88,7 @@ try {
         $idenstr = base64_decode(urldecode($elements[1]));
         // identity string format:
         // public_key:session_token:UTC date format
-        $iden = explode(':', $idenstr);
+        $iden = explode('%', $idenstr);
         if (count($iden) != 3) {
             throw new Exception("[ERROR] Invalid identity string: $request.");
         }
@@ -104,6 +104,9 @@ try {
         $date = new DateTime(urldecode($iden[2]), new DateTimeZone('UTC'));
 
         $txToken = 0;	// default to public token
+
+        // if undefined is passed from front end then set to zero
+        $iden[1] = $iden[1] == 'undefined' ? 0 : $iden[1];
 
         // if sessionToken is not 0, then private API access
         if ($iden[1] != 0) {
