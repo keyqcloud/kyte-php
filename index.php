@@ -204,6 +204,9 @@ try {
         
                 // get date and convert to php datetime in UTC timezone
                 $date = new DateTime($data['time'], new DateTimeZone('UTC'));
+
+                // if undefined is passed from front end then set to zero
+                $data['token'] = $data['token'] == 'undefined' ? 0 : $data['token'];
         
                 $hash1 = hash_hmac('SHA256', $data['token'], $obj->getParam('secret_key'), true);
                 $hash2 = hash_hmac('SHA256', $data['identifier'], $hash1, true);
