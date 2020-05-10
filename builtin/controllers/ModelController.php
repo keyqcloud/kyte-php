@@ -8,7 +8,7 @@ class ModelController
     public $dateformat;
     public $model;
 
-    public function __construct($model, $dateformat, $xToken, $sessionToken)
+    public function __construct($model, $dateformat, $txToken, $sessionToken)
     {
         try {
             $this->txToken = $txToken;
