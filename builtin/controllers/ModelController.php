@@ -33,6 +33,12 @@ class ModelController
     {
         $response = [];
 
+        foreach($data as $key => $value) {
+            if ($this->model['struct'][$key]['date']) {
+                $data[$key] = strtotime($value);
+            }
+        }
+
         try {
             $obj = new \Kyte\ModelObject($this->model);
             if ($obj->create($data)) {
@@ -51,6 +57,12 @@ class ModelController
         if (!$field || !$value) throw new \Exception("Field and Value params not set");
 
         $response = [];
+
+        foreach($data as $key => $value) {
+            if ($this->model['struct'][$key]['date']) {
+                $data[$key] = strtotime($value);
+            }
+        }
 
         try {
             $obj = new \Kyte\ModelObject($this->model);
