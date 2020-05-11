@@ -58,15 +58,14 @@ class ModelController
 
         $response = [];
 
-        foreach($data as $key => $value) {
-            if ($this->model['struct'][$key]['date']) {
-                $data[$key] = strtotime($value);
-            }
-        }
-
         try {
             $obj = new \Kyte\ModelObject($this->model);
             if ($obj->retrieve($field, $value)) {
+                foreach($data as $key => $value) {
+                    if ($this->model['struct'][$key]['date']) {
+                        $data[$key] = strtotime($value);
+                    }
+                }
                 $obj->save($data);
                 $response = $obj->getAllParams($this->dateformat);
             }
