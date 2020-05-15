@@ -34,8 +34,10 @@ class ModelController
         $response = [];
 
         foreach($data as $key => $value) {
-            if ($this->model['struct'][$key]['date']) {
-                $data[$key] = strtotime($value);
+            if (isset($this->model['struct'][$key])) {
+                if ($this->model['struct'][$key]['date']) {
+                    $data[$key] = strtotime($value);
+                }
             }
         }
 
@@ -62,8 +64,10 @@ class ModelController
             $obj = new \Kyte\ModelObject($this->model);
             if ($obj->retrieve($field, $value)) {
                 foreach($data as $key => $value) {
-                    if ($this->model['struct'][$key]['date']) {
-                        $data[$key] = strtotime($value);
+                    if (isset($this->model['struct'][$key])) {
+                        if ($this->model['struct'][$key]['date']) {
+                            $data[$key] = strtotime($value);
+                        }
                     }
                 }
                 $obj->save($data);
