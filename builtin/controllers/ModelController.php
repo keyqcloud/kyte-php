@@ -5,6 +5,7 @@ class ModelController
 
     protected $txToken;
     protected $sessionToken;
+    protected $getFKTable;
     public $dateformat;
     public $model;
 
@@ -15,10 +16,15 @@ class ModelController
             $this->sessionToken = $sessionToken;
             $this->dateformat = $dateformat;
             $this->model = $model;
-            $this->authenticate();
+            $this->init();
         } catch (Exception $e) {
             throw $e;
         }
+    }
+
+    protected function init() {
+        $this->authenticate();
+        $this->getFKTable = true;
     }
 
     // * for subclasses that are public, override with empty function
@@ -26,6 +32,42 @@ class ModelController
     {
         $session = new \Kyte\SessionManager(Session, Account);
         $session->validate($this->txToken, $this->sessionToken, false);
+    }
+
+    protected function getObject($ojb) {
+        $response = [];
+
+        try {
+            $response = $obj->getAllParams($this->dateformat);
+            foreach($data as $key => $value) {
+                if (isset($this->model['struct'][$key])) {
+                    // if protected attribute then return empty string
+                    if (isset($this->model['struct'][$key]['protected'])) {
+                        if ($this->model['struct'][$key]['protected']) {
+                            $response[$key] = '';
+                        }
+                    }
+                    // if foreign key, retrieve data from fk table
+                    if (isset($this->model['struct'][$key]['fk'])) {
+                        if ($this->model['struct'][$key]['fk']) {
+                            $fk = explode('_', $key);
+                            if (count($fk) == 2) {
+                                $fk_objs = new \Kyte\Model($$fk[0]);
+                                $fk_objs->retrieve($fk[1], $response[$key]);
+                                foreach ($fk_objs->objects as $fk_obj) {
+                                    // return list of data
+                                    $response[$fk[0]][] = $this->getObject($obj);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            throw $e;
+        }
+
+        return $response;
     }
 
     // new - create new entry in db
@@ -44,7 +86,7 @@ class ModelController
         try {
             $obj = new \Kyte\ModelObject($this->model);
             if ($obj->create($data)) {
-                $response = $obj->getAllParams($this->dateformat);
+                $response = $this->getObject($obj);
             }
         } catch (Exception $e) {
             throw $e;
@@ -71,7 +113,7 @@ class ModelController
                     }
                 }
                 $obj->save($data);
-                $response = $obj->getAllParams($this->dateformat);
+                $response = $this->getObject($obj);
             }
         } catch (Exception $e) {
             throw $e;
@@ -90,7 +132,7 @@ class ModelController
             $objs->retrieve($field, $value);
             foreach ($objs->objects as $obj) {
                 // return list of data
-                $response[] = $obj->getAllParams($this->dateformat);
+                $response[] = $response = $this->getObject($obj);
             }
         } catch (Exception $e) {
             throw $e;

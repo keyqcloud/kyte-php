@@ -30,6 +30,7 @@ $Account = [
 			'required'	=> true,
 			'size'		=> 255,
 			'date'		=> false,
+			'protected'	=> true,
 		],
 
 		'role_id'	=> [

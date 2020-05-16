@@ -30,6 +30,7 @@ $APIKey = [
 			'required'	=> true,
 			'size'		=> 11,
 			'date'		=> false,
+			'protected'	=> true,
 		],
 
 		'epoch'		=> [
