@@ -34,7 +34,7 @@ class ModelController
         $session->validate($this->txToken, $this->sessionToken, false);
     }
 
-    protected function getObject($ojb) {
+    protected function getObject($obj) {
         $response = [];
 
         try {
