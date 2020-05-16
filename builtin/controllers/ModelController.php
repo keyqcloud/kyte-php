@@ -39,7 +39,7 @@ class ModelController
 
         try {
             $response = $obj->getAllParams($this->dateformat);
-            foreach($data as $key => $value) {
+            foreach($response as $key => $value) {
                 if (isset($this->model['struct'][$key])) {
                     // if protected attribute then return empty string
                     if (isset($this->model['struct'][$key]['protected'])) {
