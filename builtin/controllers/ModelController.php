@@ -51,6 +51,7 @@ class ModelController
                     if (isset($this->model['struct'][$key]['fk'])) {
                         if ($this->model['struct'][$key]['fk']) {
                             $fk = explode('_', $key);
+                            error_log("FK Identified for $key; explode count ".count($fk));
                             if (count($fk) == 2) {
                                 $fk_objs = new \Kyte\Model($$fk[0]);
                                 $fk_objs->retrieve($fk[1], $response[$key]);
