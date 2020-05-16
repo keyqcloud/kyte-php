@@ -132,7 +132,7 @@ class ModelController
             $objs->retrieve($field, $value);
             foreach ($objs->objects as $obj) {
                 // return list of data
-                $response[] = $response = $this->getObject($obj);
+                $response[] = $this->getObject($obj);
             }
         } catch (Exception $e) {
             throw $e;
