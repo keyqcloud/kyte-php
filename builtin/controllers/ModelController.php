@@ -53,7 +53,7 @@ class ModelController
                             $fk = explode('_', $key);
                             error_log("FK Identified for $key; explode count ".count($fk));
                             if (count($fk) == 2) {
-                                $fk_objs = new \Kyte\Model($$fk[0]);
+                                $fk_objs = new \Kyte\Model(${fk[0]});
                                 $fk_objs->retrieve($fk[1], $response[$key]);
                                 foreach ($fk_objs->objects as $fk_obj) {
                                     // return list of data
