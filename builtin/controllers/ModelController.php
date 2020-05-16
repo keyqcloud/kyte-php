@@ -40,16 +40,16 @@ class ModelController
         try {
             $response = $obj->getAllParams($this->dateformat);
             foreach($response as $key => $value) {
-                if (isset($this->model['struct'][$key])) {
+                if (isset($obj->model['struct'][$key])) {
                     // if protected attribute then return empty string
-                    if (isset($this->model['struct'][$key]['protected'])) {
-                        if ($this->model['struct'][$key]['protected']) {
+                    if (isset($obj->model['struct'][$key]['protected'])) {
+                        if ($obj->model['struct'][$key]['protected']) {
                             $response[$key] = '';
                         }
                     }
                     // if foreign key, retrieve data from fk table
-                    if (isset($this->model['struct'][$key]['fk'])) {
-                        if ($this->model['struct'][$key]['fk']) {
+                    if (isset($obj->model['struct'][$key]['fk'])) {
+                        if ($obj->model['struct'][$key]['fk']) {
                             $fk = explode('_', $key);
                             error_log("FK Identified for $key; explode count ".count($fk));
                             if (count($fk) == 2) {
