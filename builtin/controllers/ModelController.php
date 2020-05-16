@@ -58,7 +58,7 @@ class ModelController
                                 $fk_objs->retrieve($fk[1], $response[$key]);
                                 foreach ($fk_objs->objects as $fk_obj) {
                                     // return list of data
-                                    $response[$fk[0]][] = $this->getObject($obj);
+                                    $response[$fk[0]][] = $this->getObject($fk_obj);
                                 }
                             }
                         }
