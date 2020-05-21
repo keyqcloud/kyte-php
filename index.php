@@ -122,12 +122,13 @@ try {
             }
         }
 
-        error_log('signature: '.$elements[0]);
-
 		// calculate hash based on provided information
         $hash1 = hash_hmac('SHA256', $txToken, $api->key->getParam('secret_key'), true);
         $hash2 = hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1, true);
         $calculated_signature = hash_hmac('SHA256', $date->format('U'), $hash2);
+
+        error_log('signature: '.$elements[0]);
+        error_log('calculated: '.$calculated_signature);
 
         if ($calculated_signature != $elements[0])
             throw new \Exception("Calculated signature does not match provided signature.");
