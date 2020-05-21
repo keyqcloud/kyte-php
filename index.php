@@ -124,7 +124,9 @@ try {
 
 		// calculate hash based on provided information
         $hash1 = hash_hmac('SHA256', $txToken, $api->key->getParam('secret_key'), true);
+        error_log('hash1: '.hash_hmac('SHA256', $txToken, $api->key->getParam('secret_key')));
         $hash2 = hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1, true);
+        error_log('hash2: '.hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1));
         $calculated_signature = hash_hmac('SHA256', $date->format('U'), $hash2);
 
         error_log('signature: '.$elements[0]);
