@@ -128,6 +128,7 @@ try {
         $hash2 = hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1, true);
         error_log('hash2: '.hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1));
         $calculated_signature = hash_hmac('SHA256', $date->format('U'), $hash2);
+        error_log('epoch: '.$date->format('U'));
 
         error_log('signature: '.$elements[0]);
         error_log('calculated: '.$calculated_signature);
