@@ -6,6 +6,8 @@ class ModelController
     protected $txToken;
     protected $sessionToken;
     protected $getFKTable;
+    protected $session;
+    protected $user;
     public $dateformat;
     public $model;
 
@@ -16,22 +18,24 @@ class ModelController
             $this->sessionToken = $sessionToken;
             $this->dateformat = $dateformat;
             $this->model = $model;
+            $this->session = new \Kyte\SessionManager(Session, Account);
+            $this->getFKTable = true;
+            $this->user = [];
             $this->init();
         } catch (Exception $e) {
             throw $e;
         }
     }
 
-    protected function init() {
+    protected function init()
+    {
         $this->authenticate();
-        $this->getFKTable = true;
     }
 
     // * for subclasses that are public, override with empty function
     protected function authenticate()
     {
-        $session = new \Kyte\SessionManager(Session, Account);
-        $session->validate($this->txToken, $this->sessionToken, false);
+        $this->user = $this->session->validate($this->txToken, $this->sessionToken, false);
     }
 
     protected function getObject($obj) {
@@ -47,18 +51,20 @@ class ModelController
                             $response[$key] = '';
                         }
                     }
-                    // if foreign key, retrieve data from fk table
-                    if (isset($obj->model['struct'][$key]['fk'])) {
-                        if ($obj->model['struct'][$key]['fk']) {
-                            $fk = explode('_', $key);
-                            error_log("FK Identified for $key; explode count ".count($fk));
-                            if (count($fk) == 2) {
-                                error_log("FK explode ".$fk[0].' '.$fk[1]);
-                                $fk_objs = new \Kyte\Model(constant($fk[0]));
-                                $fk_objs->retrieve($fk[1], $response[$key]);
-                                foreach ($fk_objs->objects as $fk_obj) {
-                                    // return list of data
-                                    $response[$fk[0]][] = $this->getObject($fk_obj);
+                    if ($this->getFKTable) {
+                        // if foreign key, retrieve data from fk table
+                        if (isset($obj->model['struct'][$key]['fk'])) {
+                            if ($obj->model['struct'][$key]['fk']) {
+                                $fk = explode('_', $key);
+                                error_log("FK Identified for $key; explode count ".count($fk));
+                                if (count($fk) == 2) {
+                                    error_log("FK explode ".$fk[0].' '.$fk[1]);
+                                    $fk_objs = new \Kyte\Model(constant($fk[0]));
+                                    $fk_objs->retrieve($fk[1], $response[$key]);
+                                    foreach ($fk_objs->objects as $fk_obj) {
+                                        // return list of data
+                                        $response[$fk[0]][] = $this->getObject($fk_obj);
+                                    }
                                 }
                             }
                         }
