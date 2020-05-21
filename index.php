@@ -63,6 +63,10 @@ $response['txTimestamp'] = $now->format('U');
 try {
     // read in data and parse into array
     parse_str(file_get_contents("php://input"), $data);
+    // if data is empty on post or put then maybe it's json, parse json
+    if (count($data) == 0) {
+        $data = json_decode(file_get_contents("php://input"), true);
+    }
 
     /* parse URI        ** remember to add the following in .htaccess 'FallbackResource /index.php'
     * URL formats:
