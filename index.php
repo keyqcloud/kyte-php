@@ -122,6 +122,8 @@ try {
             }
         }
 
+        error_log('signature: '.$elements[0]);
+
 		// calculate hash based on provided information
         $hash1 = hash_hmac('SHA256', $txToken, $api->key->getParam('secret_key'), true);
         $hash2 = hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1, true);
