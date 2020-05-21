@@ -142,11 +142,8 @@ try {
         // initialize controller for model or view ("abstract" controller)
         $controllerClass = class_exists($elements[2].'Controller') ? $elements[2].'Controller' : 'ModelController';
         error_log("Controller $controllerClass instantiated...");
-        if (!isset(${$elements[2]})) {
-            throw new Exception("[ERROR] Model not found for: ".$elements[2].".");
-        }
         // create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
-        $controller = new $controllerClass(${$elements[2]}, APP_DATE_FORMAT, $response['token'], $iden[1]);
+        $controller = new $controllerClass(isset(${$elements[2]}) ? ${$elements[2]} : null, APP_DATE_FORMAT, $response['token'], $iden[1]);
         if (!$controller) throw new Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 
         switch ($request) {
