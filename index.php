@@ -65,7 +65,8 @@ try {
     parse_str(file_get_contents("php://input"), $data);
     error_log($contentType);
     // if content type is json, then parse json
-    if ($contentType == 'application/json') {
+    $pattern = '/json/';
+    if (preg_match($pattern, $contentType)) {
         $data = json_decode(file_get_contents("php://input"), true);
     }
 
