@@ -93,6 +93,7 @@ try {
         // identity string format:
         // public_key:session_token:UTC date format
         $iden = explode('%', $idenstr);
+        error_log('identity: '.$idenstr);
         if (count($iden) != 3) {
             throw new Exception("[ERROR] Invalid identity string: $request.");
         }
@@ -208,6 +209,8 @@ try {
 
                 // if undefined is passed from front end then set to zero
                 $data['token'] = $data['token'] == 'undefined' ? 0 : $data['token'];
+
+                error_log('token: '.$data['token'].'; identifier: '.$data['identifier'].'; date: '.$data['time']);
         
                 $hash1 = hash_hmac('SHA256', $data['token'], $obj->getParam('secret_key'), true);
                 $hash2 = hash_hmac('SHA256', $data['identifier'], $hash1, true);
