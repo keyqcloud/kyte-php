@@ -64,7 +64,7 @@ try {
     // read in data and parse into array
     parse_str(file_get_contents("php://input"), $data);
     error_log($contentType);
-    // if data is empty on post or put then maybe it's json, parse json
+    // if content type is json, then parse json
     if ($contentType == 'application/json') {
         $data = json_decode(file_get_contents("php://input"), true);
     }
