@@ -54,7 +54,7 @@ class ModelController
                     if ($this->getFKTable) {
                         // if foreign key, retrieve data from fk table
                         if (isset($obj->model['struct'][$key]['fk'])) {
-                            if ($obj->model['struct'][$key]['fk']) {
+                            if ($obj->model['struct'][$key]['fk'] && $response[$key]) {
                                 $fk = explode('_', $key);
                                 error_log("FK Identified for $key; explode count ".count($fk));
                                 if (count($fk) == 2) {
