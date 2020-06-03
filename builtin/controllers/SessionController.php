@@ -6,7 +6,8 @@ class SessionController extends ModelController
 
     protected function authenticate()
     {
-        $this->session = new \Kyte\SessionManager(Session, Account);
+        // default user identifiers as email and password - override with custom abstract controller
+        $this->session = new \Kyte\SessionManager(Session, Account, 'email', 'password');
     }
     
     // new - creates new session
