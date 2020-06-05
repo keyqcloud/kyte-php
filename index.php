@@ -110,7 +110,7 @@ try {
         // check if signature is valid - signature and signature datetime
         $date = new DateTime($iden[2], new DateTimeZone('UTC'));
 
-        $txToken = 0;	// default to public token
+        $response['token'] = 0;	// default to public token
 
         // if undefined is passed from front end then set to zero
         $iden[1] = $iden[1] == 'undefined' ? 0 : $iden[1];
@@ -120,13 +120,13 @@ try {
         $sessionObj = new \Kyte\ModelObject(Session);
         error_log('Querying session for txToken at '.time());
         if ($sessionObj->retrieve('sessionToken', $iden[1])) {
-            $txToken = $sessionObj->getParam('txToken');
-            error_log('txToken found for corresponding session token: '.$txToken);
+            $response['token'] = $sessionObj->getParam('txToken');
+            error_log('txToken found for corresponding session token: '.$response['token']);
         }
 
 		// calculate hash based on provided information
-        $hash1 = hash_hmac('SHA256', $txToken, $api->key->getParam('secret_key'), true);
-        error_log('hash1: '.hash_hmac('SHA256', $txToken, $api->key->getParam('secret_key')));
+        $hash1 = hash_hmac('SHA256', $response['token'], $api->key->getParam('secret_key'), true);
+        error_log('hash1: '.hash_hmac('SHA256', $response['token'], $api->key->getParam('secret_key')));
         $hash2 = hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1, true);
         error_log('hash2: '.hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1));
         $calculated_signature = hash_hmac('SHA256', $date->format('U'), $hash2);
@@ -143,12 +143,10 @@ try {
         }
 
         // update token string
-        if ($iden[1] == 0) {
-            $response['token'] = 0; // if public api access, set token to 0
-        } else {
+        if ($response['token']) {
             // if all looks good, then generate new txToken
             $session = new \Kyte\SessionManager(Session, Account);
-            $session_ret = $session->validate($txToken, $iden[1]);
+            $session_ret = $session->validate($response['token'], $iden[1]);
             $response['token'] = $session_ret['txToken'];
         }
 
