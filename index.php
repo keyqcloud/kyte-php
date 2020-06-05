@@ -120,6 +120,7 @@ try {
         if ($iden[1] != 0) {
             // retrieve transaction token corresponding to session token
             $sessionObj = new \Kyte\ModelObject(Session);
+            error_log('Querying session for txToken at '.time());
             if ($sessionObj->retrieve('sessionToken', $iden[1])) {
                 $txToken = $sessionObj->getParam('txToken');
                 error_log('txToken found for corresponding session token: '.$txToken);
