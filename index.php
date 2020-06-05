@@ -108,7 +108,7 @@ try {
         $api->init($iden[0]);
 
         // check if signature is valid - signature and signature datetime
-        $date = new DateTime(urldecode($iden[2]), new DateTimeZone('UTC'));
+        $date = new DateTime($iden[2], new DateTimeZone('UTC'));
 
         $txToken = 0;	// default to public token
 
