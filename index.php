@@ -114,6 +114,7 @@ try {
 
         // if undefined is passed from front end then set to zero
         $iden[1] = $iden[1] == 'undefined' ? 0 : $iden[1];
+        error_log('Session token from identity string: '.$iden[1]);
 
         // if sessionToken is not 0, then private API access
         if ($iden[1] != 0) {
@@ -121,6 +122,7 @@ try {
             $sessionObj = new \Kyte\ModelObject(Session);
             if ($sessionObj->retrieve('sessionToken', $iden[1])) {
                 $txToken = $sessionObj->getParam('txToken');
+                error_log('txToken found for corresponding session token: '.$txToken);
             }
         }
 
