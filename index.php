@@ -116,15 +116,12 @@ try {
         $iden[1] = $iden[1] == 'undefined' ? 0 : $iden[1];
         error_log('Session token from identity string: '.$iden[1]);
 
-        // if sessionToken is not 0, then private API access
-        if ($iden[1] != 0) {
-            // retrieve transaction token corresponding to session token
-            $sessionObj = new \Kyte\ModelObject(Session);
-            error_log('Querying session for txToken at '.time());
-            if ($sessionObj->retrieve('sessionToken', $iden[1])) {
-                $txToken = $sessionObj->getParam('txToken');
-                error_log('txToken found for corresponding session token: '.$txToken);
-            }
+        // retrieve transaction token corresponding to session token
+        $sessionObj = new \Kyte\ModelObject(Session);
+        error_log('Querying session for txToken at '.time());
+        if ($sessionObj->retrieve('sessionToken', $iden[1])) {
+            $txToken = $sessionObj->getParam('txToken');
+            error_log('txToken found for corresponding session token: '.$txToken);
         }
 
 		// calculate hash based on provided information
