@@ -63,7 +63,7 @@ $contentType = $_SERVER['CONTENT_TYPE'];
 try {
     // read in data and parse into array
     parse_str(file_get_contents("php://input"), $data);
-    error_log($contentType);
+    error_log('Content type is '.$contentType);
     // if content type is json, then parse json
     $pattern = '/json/';
     if (preg_match($pattern, $contentType)) {
