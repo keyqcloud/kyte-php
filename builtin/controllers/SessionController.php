@@ -39,6 +39,10 @@ class SessionController extends ModelController
     {
         try {
             $response = $this->session->validate($this->txToken, $this->sessionToken);
+            $obj = new \Kyte\ModelObject(Account);
+            if ($obj->retrieve('id', $response['uid'])) {
+                $response['Account'] = $this->getObject($obj);
+            }
         } catch (Exception $e) {
             throw $e;
         }
