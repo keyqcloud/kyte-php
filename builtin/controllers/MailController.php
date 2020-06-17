@@ -8,12 +8,14 @@ class MailController extends ModelController
         $response = [];
 
         try {
+            $type = isset($data['type']) ? $data['type'] : 'text/plain';
             // [ {to_email} => {to_name} ], [ {from_email} => {from_name} ], {subject}, {body}
             \Kyte\Mail::email(
                 [ 'address' => $data['email'], 'name' => $data['name'] ],
                 [ 'address' => APP_EMAIL, 'name' => APP_NAME ],
 				$data['subject'],
-				$data['body']
+                $data['body'],
+                $type
 			);
         } catch (Exception $e) {
             throw $e;
