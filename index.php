@@ -99,7 +99,7 @@ try {
         $iden = explode('%', $idenstr);
         error_log('identity: '.$idenstr);
         if (count($iden) != 3) {
-            throw new Exception("[ERROR] Invalid identity string: $request.");
+            throw new \Kyte\SessionException("[ERROR] Invalid identity string: $request.");
         }
 
         // session token
@@ -138,10 +138,10 @@ try {
         error_log('calculated: '.$calculated_signature);
 
         if ($calculated_signature != $elements[0])
-            throw new \Exception("Calculated signature does not match provided signature.");
+            throw new \Kyte\SessionException("Calculated signature does not match provided signature.");
 				
         if (time() > $date->format('U') + (60*30)) {
-            throw new \Exception("API request has expired.");
+            throw new \Kyte\SessionException("Calculated signature does not match provided signature.");
         }
 
         // update token string
