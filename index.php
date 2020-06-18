@@ -226,7 +226,12 @@ try {
             }
         }
     }
-
+} catch (Kyte\SessionException $e) {
+    error_log($e->getMessage());
+    http_response_code(403);
+    $response['error'] = $e->getMessage();
+	echo json_encode($response);
+	exit(0);
 } catch (Exception $e) {
 	error_log($e->getMessage());
     http_response_code(400);
