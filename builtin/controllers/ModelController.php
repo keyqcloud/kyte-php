@@ -54,6 +54,8 @@ class ModelController
                     // if date format is specified
                     if (isset($obj->model['struct'][$key]['dateformat'])) {
                         $response[$key] = date($obj->model['struct'][$key]['dateformat'], $response[$key]);
+                    } else {
+                        $response[$key] = date($this->dateformat = $dateformat;, $response[$key]);
                     }
                     if ($this->getFKTable) {
                         // if foreign key, retrieve data from fk table
