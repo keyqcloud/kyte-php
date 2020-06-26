@@ -85,7 +85,7 @@ try {
     $elements = explode('/', $path);
     //** change element split method to allow for fewer uri fields for some requests */
 
-    error_log("Access from $origin with element count of ".count($elements));
+    error_log("Access from $origin to [".$_SERVER['REQUEST_URI']."] with element count of ".count($elements));
 
     // if there are elements then process api request based on request type
     if (count($elements) >= 3) {
