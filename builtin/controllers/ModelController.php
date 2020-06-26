@@ -42,7 +42,7 @@ class ModelController
         $response = [];
 
         try {
-            $response = $obj->getAllParams($this->dateformat);
+            $response = $obj->getAllParams();
             foreach($response as $key => $value) {
                 if (isset($obj->model['struct'][$key])) {
                     // if protected attribute then return empty string
@@ -50,6 +50,10 @@ class ModelController
                         if ($obj->model['struct'][$key]['protected']) {
                             $response[$key] = '';
                         }
+                    }
+                    // if date format is specified
+                    if (isset($obj->model['struct'][$key]['dateformat'])) {
+                        $response[$key] = date($obj->model['struct'][$key]['dateformat'], $response[$key]);
                     }
                     if ($this->getFKTable) {
                         // if foreign key, retrieve data from fk table
