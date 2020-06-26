@@ -52,11 +52,16 @@ class ModelController
                         }
                     }
                     // if date format is specified
-                    if (isset($obj->model['struct'][$key]['dateformat'])) {
-                        $response[$key] = date($obj->model['struct'][$key]['dateformat'], $response[$key]);
-                    } else {
-                        $response[$key] = date($this->dateformat, $response[$key]);
+                    if (isset($obj->model['struct'][$key]['date'])) {
+                        if ($obj->model['struct'][$key]['date']) {
+                            if (isset($obj->model['struct'][$key]['dateformat'])) {
+                                $response[$key] = date($obj->model['struct'][$key]['dateformat'], $response[$key]);
+                            } else {
+                                $response[$key] = date($this->dateformat, $response[$key]);
+                            }
+                        }
                     }
+
                     if ($this->getFKTable) {
                         // if foreign key, retrieve data from fk table
                         if (isset($obj->model['struct'][$key]['fk'])) {
