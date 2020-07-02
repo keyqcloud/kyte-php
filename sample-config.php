@@ -20,7 +20,11 @@
 	/* STRIPE INTEGRATION */
 	define('STRIPE_API_SK', '');
 	define('STRIPE_API_PK', '');
-	define('STRIPE_WEBHOOK_PAYMENT', '');
+    define('STRIPE_WEBHOOK_PAYMENT', '');
+    
+    /* OneSignal INTEGRATION */
+    define('ONESIGNAL_APP_ID', '');
+    define('ONESIGNAL_API_KEY', '');
 
 	/* SENDGRID INTEGRATION */
 	\Kyte\Mail::setSendGridAPIKey('');
