@@ -62,6 +62,8 @@ class ModelController
                                 }
                             }
                         }
+                    } else {
+                        $response[$key] = '';
                     }
 
                     if ($this->getFKTable) {
