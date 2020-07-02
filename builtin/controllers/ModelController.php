@@ -52,18 +52,18 @@ class ModelController
                         }
                     }
                     // if date format is specified
-                    if (!empty($response[$key])) {
-                        if (isset($obj->model['struct'][$key]['date'])) {
-                            if ($obj->model['struct'][$key]['date']) {
+                    if (isset($obj->model['struct'][$key]['date'])) {
+                        if ($obj->model['struct'][$key]['date']) {
+                            if (!empty($response[$key])) {
                                 if (isset($obj->model['struct'][$key]['dateformat'])) {
                                     $response[$key] = date($obj->model['struct'][$key]['dateformat'], $response[$key]);
                                 } else {
                                     $response[$key] = date($this->dateformat, $response[$key]);
                                 }
+                            } else {
+                                $response[$key] = '';
                             }
                         }
-                    } else {
-                        $response[$key] = '';
                     }
 
                     if ($this->getFKTable) {
