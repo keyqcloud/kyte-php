@@ -75,7 +75,9 @@ class ModelController
                                 if (count($fk) == 2) {
                                     error_log("FK explode ".$fk[0].' '.$fk[1]);
                                     $fk_objs = new \Kyte\Model(constant($fk[0]));
-                                    $fk_objs->retrieve($fk[1], $response[$key]);
+                                    // retrieve deleted items as well
+                                    // retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null)
+                                    $fk_objs->retrieve($fk[1], $response[$key], false, null, true);
                                     foreach ($fk_objs->objects as $fk_obj) {
                                         // return list of data
                                         $response[$fk[0]][] = $this->getObject($fk_obj);
