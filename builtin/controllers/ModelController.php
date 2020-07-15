@@ -68,21 +68,23 @@ class ModelController
 
                     if ($this->getFKTable) {
                         // if foreign key, retrieve data from fk table
-                        if (isset($obj->model['struct'][$key]['fk'])) {
-                            if ($obj->model['struct'][$key]['fk'] && $response[$key]) {
-                                $fk = explode('_', $key);
-                                error_log("FK Identified for $key; explode count ".count($fk));
-                                if (count($fk) == 2) {
-                                    error_log("FK explode ".$fk[0].' '.$fk[1]);
-                                    $fk_objs = new \Kyte\Model(constant($fk[0]));
-                                    // retrieve deleted items as well
-                                    // retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null)
-                                    $fk_objs->retrieve($fk[1], $response[$key], false, null, true);
-                                    foreach ($fk_objs->objects as $fk_obj) {
-                                        // return list of data
-                                        $response[$fk[0]][] = $this->getObject($fk_obj);
-                                    }
-                                }
+                        if (isset($obj->model['struct'][$key]['fk'], $obj->model['struct'][$key]['fkCol'])) {
+                            if ($obj->model['struct'][$key]['fk'] && $obj->model['struct'][$key]['fkCol'] && $response[$key]) {
+                                // get table name
+                                $fk = $obj->model['struct'][$key]['fk'];
+                                // get column name
+                                $field = $obj->model['struct'][$key]['fkCol'];
+
+                                error_log("FK Identified for $key for table $fk on field $field");
+                            
+                                $fk_objs = new \Kyte\Model(constant($fk));
+                                // retrieve deleted items as well
+                                // retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null)
+                                $fk_objs->retrieve($field, $response[$key], false, null, true);
+                                foreach ($fk_objs->objects as $fk_obj) {
+                                    // return list of data
+                                    $response[$fk][] = $this->getObject($fk_obj);
+                                }            
                             }
                         }
                     }
