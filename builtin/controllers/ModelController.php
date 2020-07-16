@@ -81,6 +81,7 @@ class ModelController
                                 // retrieve deleted items as well
                                 // retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null)
                                 $fk_objs->retrieve($field, $response[$key], false, null, true);
+                                $response[$key] = [];
                                 foreach ($fk_objs->objects as $fk_obj) {
                                     // return list of data
                                     $response[$key][] = $this->getObject($fk_obj);
