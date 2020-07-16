@@ -115,7 +115,7 @@ class ModelController
             $this->hook_preprocess('new', $data);
             if ($obj->create($data)) {
                 $ret = $this->getObject($obj);
-                $this->hook_response_data('new', $ret);
+                $this->hook_response_data('new', $obj, $ret);
                 $response = $ret;
             }
         } catch (Exception $e) {
@@ -145,7 +145,7 @@ class ModelController
                 $this->hook_preprocess('update', $data);
                 $obj->save($data);
                 $ret = $this->getObject($obj);
-                $this->hook_response_data('update', $ret);
+                $this->hook_response_data('update', $obj, $ret);
                 $response = $ret;
             }
         } catch (Exception $e) {
@@ -166,7 +166,7 @@ class ModelController
             foreach ($objs->objects as $obj) {
                 // return list of data
                 $ret = $this->getObject($obj);
-                $this->hook_response_data('get', $ret);
+                $this->hook_response_data('get', $obj, $ret);
                 $response[] = $ret;
             }
         } catch (Exception $e) {
@@ -198,8 +198,8 @@ class ModelController
     }
 
     // hook function - user defined
-    public function hook_preprocess($method, &$o) {}
-    public function hook_response_data($method, &$o) {}
+    public function hook_preprocess($method, &$r) {}
+    public function hook_response_data($method, $o, &$r) {}
 }
 
 ?>
