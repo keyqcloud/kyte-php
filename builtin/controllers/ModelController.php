@@ -114,6 +114,7 @@ class ModelController
             $obj = new \Kyte\ModelObject($this->model);
             $this->hook_preprocess('new', $data);
             if ($obj->create($data)) {
+                $ret = [];
                 $ret = $this->getObject($obj);
                 $this->hook_response_data('new', $obj, $ret);
                 $response = $ret;
@@ -144,6 +145,7 @@ class ModelController
                 }
                 $this->hook_preprocess('update', $data);
                 $obj->save($data);
+                $ret = [];
                 $ret = $this->getObject($obj);
                 $this->hook_response_data('update', $obj, $ret);
                 $response = $ret;
@@ -165,6 +167,7 @@ class ModelController
             $objs->retrieve($field, $value);
             foreach ($objs->objects as $obj) {
                 // return list of data
+                $ret = [];
                 $ret = $this->getObject($obj);
                 $this->hook_response_data('get', $obj, $ret);
                 $response[] = $ret;
