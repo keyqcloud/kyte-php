@@ -112,8 +112,11 @@ class ModelController
 
         try {
             $obj = new \Kyte\ModelObject($this->model);
+            $this->hook_preprocess('new', $data);
             if ($obj->create($data)) {
-                $response = $this->getObject($obj);
+                $ret = $this->getObject($obj);
+                $this->hook_response_data('new', $ret);
+                $response = $ret;
             }
         } catch (Exception $e) {
             throw $e;
@@ -139,8 +142,11 @@ class ModelController
                         }
                     }
                 }
+                $this->hook_preprocess('update', $data);
                 $obj->save($data);
-                $response = $this->getObject($obj);
+                $ret = $this->getObject($obj);
+                $this->hook_response_data('update', $ret);
+                $response = $ret;
             }
         } catch (Exception $e) {
             throw $e;
@@ -159,7 +165,9 @@ class ModelController
             $objs->retrieve($field, $value);
             foreach ($objs->objects as $obj) {
                 // return list of data
-                $response[] = $this->getObject($obj);
+                $ret = $this->getObject($obj);
+                $this->hook_response_data('get', $ret);
+                $response[] = $ret;
             }
         } catch (Exception $e) {
             throw $e;
@@ -182,14 +190,16 @@ class ModelController
                 $obj->delete();
             }
 
-            $response = $this->get($field, $value);
-
         } catch (Exception $e) {
             throw $e;
         }
 
         return $response;
     }
+
+    // hook function - user defined
+    public function hook_preprocess($method, &$o) {}
+    public function hook_response_data($method, &$o) {}
 }
 
 ?>
