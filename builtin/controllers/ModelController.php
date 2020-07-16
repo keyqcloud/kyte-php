@@ -27,7 +27,7 @@ class ModelController
         }
     }
 
-    protected function init()
+    public function init()
     {
         $this->authenticate();
     }
@@ -83,7 +83,7 @@ class ModelController
                                 $fk_objs->retrieve($field, $response[$key], false, null, true);
                                 foreach ($fk_objs->objects as $fk_obj) {
                                     // return list of data
-                                    $response[$fk][] = $this->getObject($fk_obj);
+                                    $response[$key][] = $this->getObject($fk_obj);
                                 }            
                             }
                         }
