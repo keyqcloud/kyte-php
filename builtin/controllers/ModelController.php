@@ -27,7 +27,7 @@ class ModelController
         }
     }
 
-    public function init()
+    protected function init()
     {
         $this->authenticate();
     }
