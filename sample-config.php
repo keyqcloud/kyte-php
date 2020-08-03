@@ -35,13 +35,6 @@
 	\Kyte\DBI::setDbHost('');
 	\Kyte\DBI::setDbName('');
 
-	/* LOCALIZATION SUPPORT */
-	// determine browser local
-	$lang = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
-	// supported languages - add additional language support here
-	$acceptLang = ['ja', 'en']; 
-	define('APP_LANG', in_array($lang, $acceptLang) ? $lang : 'en');
-
 	/* APP TIMEZONE */
 	date_default_timezone_set("Asia/Tokyo");
 	/* LIST OF AVAILABLE TIMEZONES */

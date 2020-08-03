@@ -2,6 +2,18 @@
     /* LOG OUTPUT */
     define('VERBOSE_LOG', false);
 
+    /* LOCALIZATION SUPPORT */
+    // default to English
+    $lang = 'en';
+    // determine browser local
+    if (array_key_exists('HTTP_ACCEPT_LANGUAGE', $_SERVER)) {
+        $lang = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
+    }
+	
+	// supported languages - add additional language support here
+	$acceptLang = ['ja', 'en']; 
+	define('APP_LANG', in_array($lang, $acceptLang) ? $lang : 'en');
+
     /* load classes from composer */
 	require 'vendor/autoload.php';
 	// include any utility scripts
