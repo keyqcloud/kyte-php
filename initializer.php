@@ -45,7 +45,9 @@
         $model_name = substr($filename, 0, strrpos($filename, "."));
         $model_name = str_replace('builtin/models/','',$model_name);
         if (isset($$model_name)) {
-            error_log("Skipping model $model_name as already defined...");
+            if (VERBOSE_LOG) {
+                error_log("Skipping model $model_name as already defined...");
+            }
         } else {
             require_once($filename);
             if (VERBOSE_LOG) {
@@ -60,7 +62,9 @@
         $controller_name = substr($filename, 0, strrpos($filename, "."));
         $controller_name = str_replace('builtin/controllers/','',$controller_name);
         if (class_exists($controller_name)) {
-            error_log("Skipping controller $filename as already defined...");
+            if (VERBOSE_LOG) {
+                error_log("Skipping controller $filename as already defined...");
+            }
         } else {
             require_once($filename);
             if (VERBOSE_LOG) {
