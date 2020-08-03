@@ -1,7 +1,4 @@
 <?php
-    /* LOG OUTPUT */
-    define('VERBOSE_LOG', false);
-
 	/* APP BASE URL */
 	define('APP_URL', $_SERVER['SERVER_NAME']);
 

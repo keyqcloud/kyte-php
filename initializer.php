@@ -1,4 +1,6 @@
 <?php
+    /* LOG OUTPUT */
+    define('VERBOSE_LOG', false);
 
     /* load classes from composer */
 	require 'vendor/autoload.php';
