@@ -1,6 +1,9 @@
 <?php
 
-/* CORS VALIDATION */
+/*******************************************/
+/************* CORS VALIDATION *************/
+/*******************************************/
+
 // get origin of requester
 if (array_key_exists('HTTP_ORIGIN', $_SERVER)) {
     $origin = $_SERVER['HTTP_ORIGIN'];
@@ -10,14 +13,12 @@ if (array_key_exists('HTTP_ORIGIN', $_SERVER)) {
     $origin = $_SERVER['REMOTE_ADDR'];
 }
 
-// get request type
-$request = $_SERVER['REQUEST_METHOD'];
-
-error_log("Access from $origin for request method $request");
-
 header("Access-Control-Allow-Origin: $origin");
 header('Access-Control-Allow-Credentials: true');
 header("Content-Type: application/json; charset=utf-8");
+
+// get request type
+$request = $_SERVER['REQUEST_METHOD'];
 
 // Access-Control headers are received during OPTIONS requests
 if ($request == 'OPTIONS') {
@@ -31,6 +32,11 @@ if ($request == 'OPTIONS') {
     exit(0);
 }
 
+/*******************************************/
+/*********** END CORS VALIDATION ***********/
+/*******************************************/
+
+// initialize api
 require_once __DIR__.'/initializer.php';
 
 // initialie empty array for response data
@@ -63,14 +69,27 @@ $contentType = $_SERVER['CONTENT_TYPE'];
 try {
     // read in data and parse into array
     parse_str(file_get_contents("php://input"), $data);
-    error_log('Content type is '.$contentType);
+    $response['CONTENT_TYPE'] = $contentType;
     // if content type is json, then parse json
     $pattern = '/json/';
     if (preg_match($pattern, $contentType)) {
         $data = json_decode(file_get_contents("php://input"), true);
     }
 
-    error_log(print_r($data, true));
+    // setup transaction log
+    $log = new \Kyte\ModelObject(SecurityTransactionHistory);
+    // create new transaction record and update throughout api call
+    if (!$log->create([
+        'url_path'      => $_SERVER['REQUEST_URI'],
+        'origin'        => $origin,
+        'ip_address'    => $_SERVER['REMOTE_ADDR'],
+        'user_agent'    => $_SERVER['HTTP_USER_AGENT'],
+        'method'        => $request,
+        'data'          => print_r($data, true),
+    ])) {
+        // if log creation fails, don't quit but report in system log
+        error_log("[ERROR] Unable to create new transaction log for access from $origin for request method $request");
+    }
 
     /* parse URI        ** remember to add the following in .htaccess 'FallbackResource /index.php'
     * URL formats:
@@ -85,8 +104,6 @@ try {
     $elements = explode('/', $path);
     //** change element split method to allow for fewer uri fields for some requests */
 
-    error_log("Access from $origin to [".$_SERVER['REQUEST_URI']."] with element count of ".count($elements));
-
     // if there are elements then process api request based on request type
     if (count($elements) >= 3) {
         // model
@@ -97,7 +114,7 @@ try {
         // identity string format:
         // public_key:session_token:UTC date format
         $iden = explode('%', $idenstr);
-        error_log('identity: '.$idenstr);
+
         if (count($iden) != 3) {
             throw new \Kyte\SessionException("[ERROR] Invalid identity string: $request.");
         }
@@ -116,26 +133,20 @@ try {
 
         // if undefined is passed from front end then set to zero
         $iden[1] = $iden[1] == 'undefined' ? 0 : $iden[1];
-        error_log('Session token from identity string: '.$iden[1]);
 
         // retrieve transaction token corresponding to session token
         $sessionObj = new \Kyte\ModelObject(Session);
-        error_log('Querying session for txToken at '.time());
         if ($sessionObj->retrieve('sessionToken', $iden[1])) {
             $response['token'] = $sessionObj->getParam('txToken');
-            error_log('txToken found for corresponding session token: '.$response['token']);
         }
+
+        // update log with tx token
+        $log->save(['txToken' => $response['token']]);
 
 		// calculate hash based on provided information
         $hash1 = hash_hmac('SHA256', $response['token'], $api->key->getParam('secret_key'), true);
-        error_log('hash1: '.hash_hmac('SHA256', $response['token'], $api->key->getParam('secret_key')));
         $hash2 = hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1, true);
-        error_log('hash2: '.hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1));
         $calculated_signature = hash_hmac('SHA256', $date->format('U'), $hash2);
-        error_log('epoch: '.$date->format('U'));
-
-        error_log('signature: '.$elements[0]);
-        error_log('calculated: '.$calculated_signature);
 
         if ($calculated_signature != $elements[0])
             throw new \Kyte\SessionException("Calculated signature does not match provided signature.");
@@ -154,7 +165,6 @@ try {
 
         // initialize controller for model or view ("abstract" controller)
         $controllerClass = class_exists($elements[2].'Controller') ? $elements[2].'Controller' : 'ModelController';
-        error_log("Controller $controllerClass instantiated...");
         // create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
         $controller = new $controllerClass(isset(${$elements[2]}) ? ${$elements[2]} : null, APP_DATE_FORMAT, $response['token'], $iden[1]);
         if (!$controller) throw new Exception("[ERROR] Unable to create controller for model: $controllerClass.");
@@ -217,8 +227,6 @@ try {
 
                 // if undefined is passed from front end then set to zero
                 $data['token'] = $data['token'] == 'undefined' ? 0 : $data['token'];
-
-                error_log('token: '.$data['token'].'; identifier: '.$data['identifier'].'; date: '.$data['time']);
         
                 $hash1 = hash_hmac('SHA256', $data['token'], $obj->getParam('secret_key'), true);
                 $hash2 = hash_hmac('SHA256', $data['identifier'], $hash1, true);
@@ -227,18 +235,23 @@ try {
         }
     }
 } catch (Kyte\SessionException $e) {
-    error_log($e->getMessage());
     http_response_code(403);
     $response['error'] = $e->getMessage();
+    // log return response
+    $log->save(['return' => print_r($response, true)]);
 	echo json_encode($response);
 	exit(0);
 } catch (Exception $e) {
-	error_log($e->getMessage());
     http_response_code(400);
     $response['error'] = $e->getMessage();
+    // log return response
+    $log->save(['return' => print_r($response, true)]);
 	echo json_encode($response);
 	exit(0);
 }
+
+// log return response
+$log->save(['return' => print_r($response, true)]);
 
 // return response data
 echo json_encode($response);
