@@ -73,12 +73,14 @@ $SecurityTransactionHistory = [
 			'type'		=> 'i',
 			'required'	=> false,
 			'date'		=> true,
+			'dateformat'	=> 'Y/m/d H:i:s',
 		],
 
 		'date_modified'		=> [
 			'type'		=> 'i',
 			'required'	=> false,
 			'date'		=> true,
+			'dateformat'	=> 'Y/m/d H:i:s',
 		],
 
 		'date_deleted'		=> [
