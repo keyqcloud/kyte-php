@@ -39,16 +39,19 @@ class SecurityTransactionHistoryController extends ModelController
     // hook function - user defined
     public function hook_response_data($method, $o, &$r) {
         $tx_session = new \Kyte\ModelObject(Session);
-        // retrieve all
-        if (!$tx_session->retrieve('txToken', $o->getParam('txToken'), null, null, true)) {
-            throw new \Exception("[ERROR] **PROBLEM WITH SECURITY & AUDIT FEATURE** Unable to find session info! This is a security related issue - please contact your administrator.");
-        }
         $tx_user = new \Kyte\ModelObject(Account);
-        if (!$tx_user->retrieve('id', $tx_session->getParam('uid'), null, null, true)) {
-            throw new \Exception("[ERROR] **PROBLEM WITH SECURITY & AUDIT FEATURE** Unable to find user info! This is a security related issue - please contact your administrator.");
+        // retrieve all
+        if ($tx_session->retrieve('txToken', $o->getParam('txToken'), null, null, true)) {
+            $r['TX_SESSION'] = $ret = $this->getObject($tx_session);
+            if (!$tx_user->retrieve('id', $tx_session->getParam('uid'), null, null, true)) {
+                throw new \Exception("[ERROR] **PROBLEM WITH SECURITY & AUDIT FEATURE** Unable to find user info! This is a security related issue - please contact your administrator.");
+            }
+            $r['TX_ACCOUNT'] = $ret = $this->getObject($tx_user);
+        } else {
+            $r['TX_SESSION'] = 'Anonymous';
+            $r['TX_ACCOUNT']['name'] = 'Anonymous';
         }
-        $r['TX_SESSION'] = $ret = $this->getObject($tx_session);
-        $r['TX_ACCOUNT'] = $ret = $this->getObject($tx_user);
+        
     }
 }
 
