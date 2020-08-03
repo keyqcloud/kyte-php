@@ -21,7 +21,7 @@ $SecurityTransactionHistory = [
 		'url_path'		=> [
 			'type'		=> 's',
 			'required'	=> true,
-			'size'		=> 255,
+			'size'		=> 1024,
 			'date'		=> false,
 		],
 
