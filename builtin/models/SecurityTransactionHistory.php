@@ -25,6 +25,13 @@ $SecurityTransactionHistory = [
 			'date'		=> false,
 		],
 
+		'origin'	=> [
+			'type'		=> 's',
+			'required'	=> true,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
 		'ip_address'	=> [
 			'type'		=> 's',
 			'required'	=> true,
