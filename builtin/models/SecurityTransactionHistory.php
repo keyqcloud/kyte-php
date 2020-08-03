@@ -58,6 +58,7 @@ $SecurityTransactionHistory = [
 			'text'		=> true,
 			'required'	=> false,
 			'date'		=> false,
+			'protected'	=> true,
 		],
 
 		'return'	=> [
@@ -65,6 +66,7 @@ $SecurityTransactionHistory = [
 			'text'		=> true,
 			'required'	=> false,
 			'date'		=> false,
+			'protected'	=> true,
 		],
 
 		// audit attributes
