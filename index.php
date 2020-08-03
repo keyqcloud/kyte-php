@@ -61,7 +61,10 @@ $response['transaction'] = $request;
 $now = new DateTime();
 $now->setTimezone(new DateTimeZone('UTC'));    // Another way
 $response['txTimestamp'] = $now->format('U');
-$contentType = $_SERVER['CONTENT_TYPE'];
+$contentType = '';
+if (array_key_exists('CONTENT_TYPE', $_SERVER)) {
+    $contentType = $_SERVER['CONTENT_TYPE'];
+}
 // URL format
 // https://uri-to-api-endpoint/ {signature} / {identity string} / {model} [ / {field} / {value} ]
  
