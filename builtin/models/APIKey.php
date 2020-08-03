@@ -28,7 +28,7 @@ $APIKey = [
 		'secret_key'	=> [
 			'type'		=> 's',
 			'required'	=> true,
-			'size'		=> 11,
+			'size'		=> 255,
 			'date'		=> false,
 			'protected'	=> true,
 		],
