@@ -132,10 +132,10 @@ try {
         // check if signature is valid - signature and signature datetime
         $date = new DateTime($iden[2], new DateTimeZone('UTC'));
 
-        $response['token'] = 0;	// default to public token
+        $response['token'] = "0";	// default to public token
 
         // if undefined is passed from front end then set to zero
-        $iden[1] = $iden[1] == 'undefined' ? 0 : $iden[1];
+        $iden[1] = $iden[1] == 'undefined' ? "0" : $iden[1];
 
         // retrieve transaction token corresponding to session token
         $sessionObj = new \Kyte\ModelObject(Session);
