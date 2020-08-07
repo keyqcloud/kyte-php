@@ -190,6 +190,7 @@ class ModelController
             $order = null;
             $this->hook_prequery('get', $field, $value, $conditions, $all, $order);
             $objs = new \Kyte\Model($this->model);
+            error_log(print_r($conditions));
             $objs->retrieve($field, $value, false, $conditions, $all, $order);
             foreach ($objs->objects as $obj) {
                 // return list of data
