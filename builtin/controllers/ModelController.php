@@ -155,7 +155,7 @@ class ModelController
             $conditions = null;
             $all = false;
             $order = null;
-            $this->hook_prequery($field, $value, $conditions, $all, $order);
+            $this->hook_prequery('update', $field, $value, $conditions, $all, $order);
             $obj = new \Kyte\ModelObject($this->model);
             if ($objs->retrieve($field, $value, false, $conditions, $all, $order)) {
                 foreach($data as $key => $value) {
@@ -188,7 +188,7 @@ class ModelController
             $conditions = null;
             $all = false;
             $order = null;
-            $this->hook_prequery($field, $value, $conditions, $all, $order);
+            $this->hook_prequery('get', $field, $value, $conditions, $all, $order);
             $objs = new \Kyte\Model($this->model);
             $objs->retrieve($field, $value, false, $conditions, $all, $order);
             foreach ($objs->objects as $obj) {
@@ -227,7 +227,7 @@ class ModelController
     }
 
     // hook function - user defined
-    public function hook_prequery(&$field, &$value, &$conditions, &$all, &$order) {}
+    public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
     public function hook_preprocess($method, &$r) {}
     public function hook_response_data($method, $o, &$r) {}
 }
