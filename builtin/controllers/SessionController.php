@@ -20,7 +20,11 @@ class SessionController extends ModelController
 				if (!isset($data[$param]))
 					throw new Exception("Incomplete data passed");
 			}
-			$response = $this->session->create($data['email'], $data['password']);
+            $response = $this->session->create($data['email'], $data['password']);
+            $obj = new \Kyte\ModelObject(Account);
+            if ($obj->retrieve('id', $response['uid'])) {
+                $response['Account'] = $this->getObject($obj);
+            }
         } catch (Exception $e) {
             throw $e;
         }
