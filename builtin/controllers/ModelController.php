@@ -66,19 +66,21 @@ class ModelController
                         }
                     }
 
-                    if (isset($obj->model['struct'][$key]['fk'])) {
-                        if ($obj->model['struct'][$key]['fk'] && $response[$key]) {
-                            $fk = explode('_', $key);
-                            error_log("FK Identified for $key; explode count ".count($fk));
-                            if (count($fk) == 2) {
-                                error_log("FK explode ".$fk[0].' '.$fk[1]);
-                                $fk_objs = new \Kyte\Model(constant($fk[0]));
-                                // retrieve deleted items as well
-                                // retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null)
-                                $fk_objs->retrieve($fk[1], $response[$key], false, null, true);
-                                foreach ($fk_objs->objects as $fk_obj) {
-                                    // return list of data
-                                    $response[$fk[0]][] = $this->getObject($fk_obj);
+                    if ($this->getFKTable) {
+                        if (isset($obj->model['struct'][$key]['fk'])) {
+                            if ($obj->model['struct'][$key]['fk'] && $response[$key]) {
+                                $fk = explode('_', $key);
+                                error_log("FK Identified for $key; explode count ".count($fk));
+                                if (count($fk) == 2) {
+                                    error_log("FK explode ".$fk[0].' '.$fk[1]);
+                                    $fk_objs = new \Kyte\Model(constant($fk[0]));
+                                    // retrieve deleted items as well
+                                    // retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null)
+                                    $fk_objs->retrieve($fk[1], $response[$key], false, null, true);
+                                    foreach ($fk_objs->objects as $fk_obj) {
+                                        // return list of data
+                                        $response[$fk[0]][] = $this->getObject($fk_obj);
+                                    }
                                 }
                             }
                         }
