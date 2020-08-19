@@ -193,8 +193,8 @@ try {
         // update token string
         if ($response['token']) {
             // if all looks good, then generate new txToken
-            $session = new \Kyte\SessionManager(Session, Account);
-            $session_ret = $session->validate($response['token'], $iden[1]);
+            $session = new \Kyte\SessionManager(Session, Account, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
+            $session_ret = $session->validate($response['token'], $iden[1], ALLOW_SAME_TXTOKEN);
             $response['token'] = $session_ret['txToken'];
         }
 
