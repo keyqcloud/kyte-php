@@ -169,7 +169,7 @@ try {
             throw new \Kyte\SessionException("Calculated signature does not match provided signature.");
 				
         if (time() > $date->format('U') + (60*30)) {
-            throw new \Kyte\SessionException("Calculated signature does not match provided signature.");
+            throw new \Kyte\SessionException("Calculated signature has expired and does not match provided signature.");
         }
 
         // update token string
