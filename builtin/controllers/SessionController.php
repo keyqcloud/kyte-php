@@ -7,7 +7,7 @@ class SessionController extends ModelController
     protected function authenticate()
     {
         // default user identifiers as email and password - override with custom abstract controller
-        $this->session = new \Kyte\SessionManager(Session, Account, 'email', 'password');
+        $this->session = new \Kyte\SessionManager(Session, Account, 'email', 'password', ALLOW_MULTILOGON);
     }
     
     // new - creates new session
@@ -42,7 +42,7 @@ class SessionController extends ModelController
     public function get($field, $value)
     {
         try {
-            $response = $this->session->validate($this->txToken, $this->sessionToken);
+            $response = $this->session->validate($this->txToken, $this->sessionToken, ALLOW_SAME_TXTOKEN);
             $obj = new \Kyte\ModelObject(Account);
             if ($obj->retrieve('id', $response['uid'])) {
                 $response['Account'] = $this->getObject($obj);
@@ -58,8 +58,6 @@ class SessionController extends ModelController
     public function delete($field, $value)
     {
         try {
-            // generate a new token and invalidate it
-            $response = $this->session->validate($this->txToken, $this->sessionToken, true);
             $this->session->destroy();
         } catch (Exception $e) {
             throw $e;

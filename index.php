@@ -43,6 +43,13 @@ require_once __DIR__.'/initializer.php';
 if (!defined('ALLOW_ENC_HANDOFF')) {
     define('ALLOW_ENC_HANDOFF', true);
 }
+if (!defined('ALLOW_MULTILOGON')) {
+    define('ALLOW_MULTILOGON', false);
+}
+if (!defined('ALLOW_SAME_TXTOKEN')) {
+    define('ALLOW_SAME_TXTOKEN', false);
+}
+
 // initialie empty array for response data
 //
 // return json form:

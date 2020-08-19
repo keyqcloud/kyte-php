@@ -27,6 +27,8 @@
     define('ONESIGNAL_API_KEY', '');
 
     define('ALLOW_ENC_HANDOFF', true);
+    define('ALLOW_MULTILOGON', false);
+    define('ALLOW_SAME_TXTOKEN', false);
 
 	/* SENDGRID INTEGRATION */
 	\Kyte\Mail::setSendGridAPIKey('');
