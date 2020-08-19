@@ -39,6 +39,10 @@ if ($request == 'OPTIONS') {
 // initialize api
 require_once __DIR__.'/initializer.php';
 
+// compatibility for older config files
+if (!defined('ALLOW_ENC_HANDOFF')) {
+    define('ALLOW_ENC_HANDOFF', true);
+}
 // initialie empty array for response data
 //
 // return json form:
@@ -216,7 +220,7 @@ try {
         //     time: ‘Thu, 30 Apr 2020 07:11:46 GMT’
         // }
             
-        if(count($elements) == 1) {
+        if(count($elements) == 1 && ALLOW_ENC_HANDOFF) {
             /* POST REQUEST */
             if ($request == 'POST') {
                 // get api key using the public_key and identifier being passed

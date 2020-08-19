@@ -26,6 +26,8 @@
     define('ONESIGNAL_APP_ID', '');
     define('ONESIGNAL_API_KEY', '');
 
+    define('ALLOW_ENC_HANDOFF', true);
+
 	/* SENDGRID INTEGRATION */
 	\Kyte\Mail::setSendGridAPIKey('');
 
