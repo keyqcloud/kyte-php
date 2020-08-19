@@ -49,6 +49,9 @@ if (!defined('ALLOW_MULTILOGON')) {
 if (!defined('ALLOW_SAME_TXTOKEN')) {
     define('ALLOW_SAME_TXTOKEN', false);
 }
+if (!defined('SESSION_TIMEOUT')) {
+    define('SESSION_TIMEOUT', 3600);
+}
 
 // initialie empty array for response data
 //
