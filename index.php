@@ -162,11 +162,13 @@ try {
 
 		// calculate hash based on provided information
         $hash1 = hash_hmac('SHA256', $response['token'], $api->key->getParam('secret_key'), true);
+        $hash1_debug = hash_hmac('SHA256', $response['token'], $api->key->getParam('secret_key'));
         $hash2 = hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1, true);
+        $hash2_debug = hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1);
         $calculated_signature = hash_hmac('SHA256', $date->format('U'), $hash2);
 
         error_log("Time: ".$date->format('U')." ".$iden[2]."\n");
-        error_log("hash1: $hash1\thash2:$hash2\tFinal:$calculated_signature\n");
+        error_log("hash1: $hash1_debug\thash2:$hash2_debug\tFinal:$calculated_signature\n");
         error_log("Client: ".$elements[0]."\n");
 
         if ($calculated_signature != $elements[0])
