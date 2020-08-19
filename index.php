@@ -42,15 +42,19 @@ require_once __DIR__.'/initializer.php';
 // compatibility for older config files
 if (!defined('ALLOW_ENC_HANDOFF')) {
     define('ALLOW_ENC_HANDOFF', true);
+    error_log('ALLOW_ENC_HANDOFF contant not defined...using defaults');
 }
 if (!defined('ALLOW_MULTILOGON')) {
     define('ALLOW_MULTILOGON', false);
+    error_log('ALLOW_MULTILOGON contant not defined...using defaults');
 }
 if (!defined('ALLOW_SAME_TXTOKEN')) {
     define('ALLOW_SAME_TXTOKEN', false);
+    error_log('ALLOW_SAME_TXTOKEN contant not defined...using defaults');
 }
 if (!defined('SESSION_TIMEOUT')) {
     define('SESSION_TIMEOUT', 3600);
+    error_log('SESSION_TIMEOUT contant not defined...using defaults');
 }
 
 // initialie empty array for response data
