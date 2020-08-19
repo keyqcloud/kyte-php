@@ -165,6 +165,10 @@ try {
         $hash2 = hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1, true);
         $calculated_signature = hash_hmac('SHA256', $date->format('U'), $hash2);
 
+        error_log("Time: ".$date->format('U')." ".$iden[2]."\n");
+        error_log("hash1: $hash1\thash2:$hash2\tFinal:$calculated_signature\n");
+        error_log("Client: ".$elements[0]."\n");
+
         if ($calculated_signature != $elements[0])
             throw new \Kyte\SessionException("Calculated signature does not match provided signature.");
 				
