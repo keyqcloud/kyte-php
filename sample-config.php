@@ -26,10 +26,13 @@
     define('ONESIGNAL_APP_ID', '');
     define('ONESIGNAL_API_KEY', '');
 
+    /* KYTE FRAMEWORK SPECIFIC SETTINGS */
     define('ALLOW_ENC_HANDOFF', true);
     define('ALLOW_MULTILOGON', false);
     define('ALLOW_SAME_TXTOKEN', false);
     define('SESSION_TIMEOUT', 3600);
+    define('USERNAME_FIELD', 'email');
+    define('PASSWORD_FIELD', 'password');
 
 	/* SENDGRID INTEGRATION */
 	\Kyte\Mail::setSendGridAPIKey('');

@@ -56,6 +56,14 @@ if (!defined('SESSION_TIMEOUT')) {
     define('SESSION_TIMEOUT', 3600);
     error_log('SESSION_TIMEOUT contant not defined...using defaults');
 }
+if (!defined('USERNAME_FIELD')) {
+    define('USERNAME_FIELD', 'email');
+    error_log('USERNAME_FIELD contant not defined...using defaults');
+}
+if (!defined('PASSWORD_FIELD')) {
+    define('PASSWORD_FIELD', 'password');
+    error_log('PASSWORD_FIELD contant not defined...using defaults');
+}
 
 // initialie empty array for response data
 //

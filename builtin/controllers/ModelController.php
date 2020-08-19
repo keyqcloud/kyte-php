@@ -18,7 +18,7 @@ class ModelController
             $this->sessionToken = $sessionToken;
             $this->dateformat = $dateformat;
             $this->model = $model;
-            $this->session = new \Kyte\SessionManager(Session, Account);
+            $this->session = new \Kyte\SessionManager(Session, Account, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
             $this->getFKTable = true;
             $this->user = [];
             $this->init();
@@ -35,7 +35,7 @@ class ModelController
     // * for subclasses that are public, override with empty function
     protected function authenticate()
     {
-        $this->user = $this->session->validate($this->txToken, $this->sessionToken, false);
+        $this->user = $this->session->validate($this->txToken, $this->sessionToken, ALLOW_SAME_TXTOKEN);
     }
 
     protected function getObject($obj) {
