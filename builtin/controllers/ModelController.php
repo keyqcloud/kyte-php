@@ -8,6 +8,9 @@ class ModelController
     protected $getFKTable;
     protected $session;
     protected $user;
+    protected $failOnNull;
+    protected $exceptionMessages;
+    protected $requireAuth;
     public $dateformat;
     public $model;
 
@@ -20,6 +23,22 @@ class ModelController
             $this->model = $model;
             $this->session = new \Kyte\SessionManager(Session, Account, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
             $this->getFKTable = true;
+            $this->failOnNull = false;
+            $this->requireAuth = true;
+            $this->exceptionMessages = [
+                'new' => [
+                    'failOnNull' => 'Unable to create new object',
+                ],
+                'update' => [
+                    'failOnNull' => 'Unable to update object',
+                ],
+                'get' => [
+                    'failOnNull' => 'Unable to get object(s)',
+                ],
+                'delete' => [
+                    'failOnNull' => 'Unable to delete object(s)',
+                ],
+            ];
             $this->user = [];
             $this->init();
         } catch (Exception $e) {
@@ -29,7 +48,10 @@ class ModelController
 
     protected function init()
     {
-        $this->authenticate();
+        $this->hook_init();
+        if ($this->requireAuth) {
+            $this->authenticate();
+        }
     }
 
     // * for subclasses that are public, override with empty function
@@ -136,6 +158,10 @@ class ModelController
                 $ret = $this->getObject($obj);
                 $this->hook_response_data('new', $obj, $ret);
                 $response = $ret;
+            } else {
+                if ($this->failOnNull) {
+                    throw new \Exception($this->exceptionMessages['new']['failOnNull']);
+                }
             }
         } catch (Exception $e) {
             throw $e;
@@ -171,6 +197,10 @@ class ModelController
                 $ret = $this->getObject($obj);
                 $this->hook_response_data('update', $obj, $ret);
                 $response = $ret;
+            } else {
+                if ($this->failOnNull) {
+                    throw new \Exception($this->exceptionMessages['update']['failOnNull']);
+                }
             }
         } catch (Exception $e) {
             throw $e;
@@ -192,6 +222,11 @@ class ModelController
             $objs = new \Kyte\Model($this->model);
             
             $objs->retrieve($field, $value, false, $conditions, $all, $order);
+
+            if ($this->failOnNull && count($objs->objects) < 1) {
+                throw new \Exception($this->exceptionMessages['get']['failOnNull']);
+            }
+
             foreach ($objs->objects as $obj) {
                 // return list of data
                 $ret = [];
@@ -217,6 +252,11 @@ class ModelController
         try {
             $objs = new \Kyte\Model($this->model);
             $objs->retrieve($field, $value);
+            
+            if ($this->failOnNull && count($objs->objects) < 1) {
+                throw new \Exception($this->exceptionMessages['delete']['failOnNull']);
+            }
+
             foreach ($objs->objects as $obj) {
                 $obj->delete();
             }
@@ -229,6 +269,7 @@ class ModelController
     }
 
     // hook function - user defined
+    public function hook_init() {}
     public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
     public function hook_preprocess($method, &$r) {}
     public function hook_response_data($method, $o, &$r) {}
