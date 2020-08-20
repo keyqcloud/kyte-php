@@ -58,6 +58,7 @@ class ModelController
     protected function authenticate()
     {
         $this->user = $this->session->validate($this->txToken, $this->sessionToken, ALLOW_SAME_TXTOKEN);
+        $this->hook_authenticate();
     }
 
     protected function getObject($obj) {
@@ -271,6 +272,7 @@ class ModelController
 
     // hook function - user defined
     public function hook_init() {}
+    public function hook_authenticate() {}
     public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
     public function hook_preprocess($method, &$r) {}
     public function hook_response_data($method, $o, &$r) {}
