@@ -30,7 +30,7 @@ class ModelController
                     'failOnNull' => 'Unable to create new object',
                 ],
                 'update' => [
-                    'failOnNull' => 'Unable to update object',
+                    'failOnNull' => 'Unable to update object(s)',
                 ],
                 'get' => [
                     'failOnNull' => 'Unable to get object(s)',
@@ -184,6 +184,11 @@ class ModelController
             $this->hook_prequery('update', $field, $value, $conditions, $all, $order);
             $obj = new \Kyte\ModelObject($this->model);
             if ($objs->retrieve($field, $value, false, $conditions, $all, $order)) {
+
+                if ($this->failOnNull && count($objs->objects) < 1) {
+                    throw new \Exception($this->exceptionMessages['update']['failOnNull']);
+                }
+
                 foreach($data as $key => $value) {
                     if (isset($this->model['struct'][$key])) {
                         if ($this->model['struct'][$key]['date']) {
@@ -197,10 +202,6 @@ class ModelController
                 $ret = $this->getObject($obj);
                 $this->hook_response_data('update', $obj, $ret);
                 $response = $ret;
-            } else {
-                if ($this->failOnNull) {
-                    throw new \Exception($this->exceptionMessages['update']['failOnNull']);
-                }
             }
         } catch (Exception $e) {
             throw $e;
