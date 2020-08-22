@@ -193,7 +193,7 @@ class ModelController
                         }
                     }
                 }
-                $this->hook_preprocess('update', $data);
+                $this->hook_preprocess('update', $data, $obj);
                 $obj->save($data);
                 $ret = [];
                 $ret = $this->getObject($obj);
@@ -274,7 +274,7 @@ class ModelController
     public function hook_init() {}
     public function hook_auth() {}
     public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
-    public function hook_preprocess($method, &$r) {}
+    public function hook_preprocess($method, &$r, &$o = null) {}
     public function hook_response_data($method, $o, &$r) {}
     public function hook_process_get_response(&$r) {}
 }
