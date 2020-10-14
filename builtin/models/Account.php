@@ -18,26 +18,10 @@ $Account = [
 			'date'		=> false,
 		],
 
-		'email'		=> [
+		'number'		=> [
 			'type'		=> 's',
 			'required'	=> true,
 			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'password'	=> [
-			'type'		=> 's',
-			'required'	=> true,
-			'size'		=> 255,
-			'date'		=> false,
-			'protected'	=> true,
-		],
-
-		'role_id'	=> [
-			'type'		=> 'i',
-			'required'	=> true,
-			'size'		=> 11,
-			'unsigned'	=> true,
 			'date'		=> false,
 		],
 
