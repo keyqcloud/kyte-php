@@ -218,7 +218,7 @@ try {
             case 'POST':
                 // post data = data
                 // new  :   {data}
-                $response['data'] = $controller->new($data);
+                $controller->new($data);
                 break;
 
             case 'PUT':
@@ -226,21 +226,21 @@ try {
                 // element[4] = value
                 // post data = data
                 // update   :   {field}, {value}, {data}
-                $response['data'] = $controller->update((isset($elements[3]) ? $elements[3] : null), (isset($elements[4]) ? urldecode($elements[4]) : null), $data);
+                $controller->update((isset($elements[3]) ? $elements[3] : null), (isset($elements[4]) ? urldecode($elements[4]) : null), $data);
                 break;
 
             case 'GET':
                 // element[3] = field
                 // element[4] = value
                 // get  :   {field}, {value}
-                $response['data'] = $controller->get((isset($elements[3]) ? $elements[3] : null), (isset($elements[4]) ? urldecode($elements[4]) : null));
+                $controller->get((isset($elements[3]) ? $elements[3] : null), (isset($elements[4]) ? urldecode($elements[4]) : null));
                 break;
 
             case 'DELETE':
                 // element[3] = field
                 // element[4] = value
                 // delete   :   {field}, {value}
-                $response['data'] = $controller->delete((isset($elements[3]) ? $elements[3] : null), (isset($elements[4]) ? urldecode($elements[4]) : null));
+                $controller->delete((isset($elements[3]) ? $elements[3] : null), (isset($elements[4]) ? urldecode($elements[4]) : null));
                 break;
             
             default:
