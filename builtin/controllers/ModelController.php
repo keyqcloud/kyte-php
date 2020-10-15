@@ -59,7 +59,7 @@ class ModelController
     protected function authenticate()
     {
         if (!$this->user && !this->session) {
-            throw new \Kyte\SessionException("Unauthorized API request.");
+            throw new SessionException("Unauthorized API request.");
         }
         $this->hook_auth();
     }

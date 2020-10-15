@@ -15,7 +15,13 @@
 	define('APP_LANG', in_array($lang, $acceptLang) ? $lang : 'en');
 
     /* load classes from composer */
-	require __DIR__ . '/vendor/autoload.php';
+    require __DIR__ . '/vendor/autoload.php';
+    
+    // include library
+    foreach (glob(__DIR__ . "/lib/*.php") as $filename) {
+        require_once($filename) ;
+    }
+
 	// include any utility scripts
 	foreach (glob(__DIR__ . "/util/*.php") as $filename) {
         require_once($filename) ;

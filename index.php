@@ -146,7 +146,7 @@ try {
         $iden = explode('%', $idenstr);
 
         if (count($iden) != 4) {
-            throw new \Kyte\SessionException("[ERROR] Invalid identity string: $request.");
+            throw new SessionException("[ERROR] Invalid identity string: $request.");
         }
 
         // #1
@@ -154,7 +154,7 @@ try {
         $date = new DateTime($iden[2], new DateTimeZone('UTC'));
         // check expiration
         if (time() > $date->format('U') + (60*30)) {
-            throw new \Kyte\SessionException("API request has expired.");
+            throw new SessionException("API request has expired.");
         }
 
         // #2
@@ -178,7 +178,7 @@ try {
         $response['token'] = "0";	// default to public token
         $response['uid'] = "0";
         // retrieve transaction and user token corresponding to session token
-        $session = new \Kyte\SessionManager(Session, User, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
+        $session = new SessionManager(Session, User, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
         $user = new \Kyte\ModelObject(User);
         if ($iden[1]) {
             $session_ret = $session->validate($iden[1]);
@@ -186,7 +186,7 @@ try {
             $response['uid'] = $session_ret['uid'];
             
             if (!$user->retrieve('id', $session_ret['uid'], [[ 'field' => 'account_id', 'value' => $account->getParam('id')]])) {
-                throw new \Kyte\SessionException("Invalid user session.");
+                throw new SessionException("Invalid user session.");
             }
         }
         // update log with tx token
@@ -204,7 +204,7 @@ try {
         // error_log("hash1: $hash1_debug\thash2:$hash2_debug\tFinal:$calculated_signature\n");
         // error_log("Client: ".$elements[0]."\n");
         if ($calculated_signature != $elements[0])
-            throw new \Kyte\SessionException("Calculated signature does not match provided signature.");
+            throw new SessionException("Calculated signature does not match provided signature.");
         /* **** VERIFY SIGNATURE - END **** */
         /* ********************************** */
 
