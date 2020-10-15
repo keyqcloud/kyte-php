@@ -3,25 +3,28 @@
 class ModelController
 {
 
-    protected $txToken;
-    protected $sessionToken;
-    protected $getFKTable;
-    protected $session;
     protected $user;
+    protected $account;
+    protected $session;
+    protected $response;
     protected $failOnNull;
     protected $exceptionMessages;
     protected $requireAuth;
     public $dateformat;
     public $model;
 
-    public function __construct($model, $dateformat, $txToken, $sessionToken)
+    public function __construct($model, $dateformat, &$account, &$session, &$user, &$response)
     {
         try {
-            $this->txToken = $txToken;
-            $this->sessionToken = $sessionToken;
-            $this->dateformat = $dateformat;
             $this->model = $model;
-            $this->session = new \Kyte\SessionManager(Session, Account, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
+            // session related variables
+            $this->user = &$user;
+            $this->account = &$account;
+            $this->session = &$session;
+            // response
+            $this->response = &$response;
+            // controller behaviour
+            $this->dateformat = $dateformat;
             $this->getFKTable = true;
             $this->failOnNull = false;
             $this->requireAuth = true;
@@ -39,7 +42,6 @@ class ModelController
                     'failOnNull' => 'Unable to delete object(s)',
                 ],
             ];
-            $this->user = [];
             $this->init();
         } catch (Exception $e) {
             throw $e;
@@ -54,10 +56,11 @@ class ModelController
         }
     }
 
-    // * for subclasses that are public, override with empty function
     protected function authenticate()
     {
-        $this->user = $this->session->validate($this->txToken, $this->sessionToken, ALLOW_SAME_TXTOKEN);
+        if (!$this->user && !this->session) {
+            throw new \Kyte\SessionException("Unauthorized API request.");
+        }
         $this->hook_auth();
     }
 
@@ -143,6 +146,7 @@ class ModelController
     {
         $response = [];
 
+        // convert all dates to unix time
         foreach($data as $key => $value) {
             if (isset($this->model['struct'][$key])) {
                 if ($this->model['struct'][$key]['date']) {
@@ -152,8 +156,13 @@ class ModelController
         }
 
         try {
+            // init new object
             $obj = new \Kyte\ModelObject($this->model);
+            // hook for any custom behaviours before creating object
             $this->hook_preprocess('new', $data);
+            // add account information
+            $data['account_id'] = $this->account->getParam('id');
+            // create object & get return
             if ($obj->create($data)) {
                 $ret = [];
                 $ret = $this->getObject($obj);
@@ -168,7 +177,7 @@ class ModelController
             throw $e;
         }
 
-        return $response;
+        $this->response['data'] = $response;
     }
 
     // update - update entry in db
@@ -179,13 +188,16 @@ class ModelController
         $response = [];
 
         try {
-            $conditions = null;
+            $conditions = [];
             $all = false;
-            $order = null;
             $this->hook_prequery('update', $field, $value, $conditions, $all, $order);
+            // add account id to query
+            $conditions[] = ['field' => 'account_id', 'value' => $this->account->getParam('id')];
+            // init object
             $obj = new \Kyte\ModelObject($this->model);
-            if ($obj->retrieve($field, $value, false, $conditions, $all, $order)) {
+            if ($obj->retrieve($field, $value, $conditions, null, $all)) {
 
+                // convert all date time strings to unix time
                 foreach($data as $key => $value) {
                     if (isset($this->model['struct'][$key])) {
                         if ($this->model['struct'][$key]['date']) {
@@ -208,7 +220,7 @@ class ModelController
             throw $e;
         }
 
-        return $response;
+        $this->response['data'] = $response;
     }
 
     // get - retrieve objects from db
@@ -217,12 +229,14 @@ class ModelController
         $response = [];
 
         try {
-            $conditions = null;
+            $conditions = [];
             $all = false;
             $order = null;
             $this->hook_prequery('get', $field, $value, $conditions, $all, $order);
+            // add account id to query
+            $conditions[] = ['field' => 'account_id', 'value' => $this->account->getParam('id')];
+            // init model
             $objs = new \Kyte\Model($this->model);
-            
             $objs->retrieve($field, $value, false, $conditions, $all, $order);
 
             if ($this->failOnNull && count($objs->objects) < 1) {
@@ -241,7 +255,7 @@ class ModelController
             throw $e;
         }
 
-        return $response;
+        $this->response['data'] = $response;
     }
 
     // delete - delete objects from db
@@ -253,7 +267,7 @@ class ModelController
 
         try {
             $objs = new \Kyte\Model($this->model);
-            $objs->retrieve($field, $value);
+            $objs->retrieve($field, $value, false, [['field' => 'account_id', 'value' => $this->account->getParam('id')]]);
             
             if ($this->failOnNull && count($objs->objects) < 1) {
                 throw new \Exception($this->exceptionMessages['delete']['failOnNull']);
@@ -267,7 +281,7 @@ class ModelController
             throw $e;
         }
 
-        return $response;
+        $this->response['data'] = $response;
     }
 
     // hook function - user defined

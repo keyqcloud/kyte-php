@@ -2,14 +2,12 @@
 
 class SessionController extends ModelController
 {
-    protected $session;
-
-    protected function authenticate()
+    public function hook_init() {}
     {
-        // default user identifiers as email and password - override with custom abstract controller
-        $this->session = new \Kyte\SessionManager(Session, Account, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
+        // make a public controller
+        $this->requireAuth = false;
     }
-    
+
     // new - creates new session
     public function new($data)
     {
@@ -21,15 +19,16 @@ class SessionController extends ModelController
 					throw new Exception("Incomplete data passed");
 			}
             $response = $this->session->create($data['email'], $data['password']);
-            $obj = new \Kyte\ModelObject(Account);
+            $obj = new \Kyte\ModelObject(User);
             if ($obj->retrieve('id', $response['uid'])) {
-                $response['Account'] = $this->getObject($obj);
+                $response['User'] = $this->getObject($obj);
             }
         } catch (Exception $e) {
             throw $e;
         }
 
-        return $response;
+        $this->response['token'] = $response['txToken'];
+        $this->response['data'] = $response;
     }
 
     // update
@@ -41,17 +40,7 @@ class SessionController extends ModelController
     // get - validate session
     public function get($field, $value)
     {
-        try {
-            $response = $this->session->validate($this->txToken, $this->sessionToken, ALLOW_SAME_TXTOKEN);
-            $obj = new \Kyte\ModelObject(Account);
-            if ($obj->retrieve('id', $response['uid'])) {
-                $response['Account'] = $this->getObject($obj);
-            }
-        } catch (Exception $e) {
-            throw $e;
-        }
-
-        return $response;
+        throw new \Exception("Undefined request method");
     }
 
     // delete - destroy session
@@ -63,7 +52,9 @@ class SessionController extends ModelController
             throw $e;
         }
 
-        return [ 'txToken' => 0, 'sessionToken' => 0 ];
+        $this->response['token'] = 0;
+        $this->response['session'] = 0;
+        $this->response['data'] = [ 'txToken' => 0, 'sessionToken' => 0 ];
     }
 }
 

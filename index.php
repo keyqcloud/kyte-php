@@ -140,68 +140,78 @@ try {
 
         // get the identity string and verify
         $idenstr = base64_decode(urldecode($elements[1]));
+
         // identity string format:
-        // public_key:session_token:UTC date format
+        // public_key%session_token%UTC date format%account #
         $iden = explode('%', $idenstr);
 
-        if (count($iden) != 3) {
+        if (count($iden) != 4) {
             throw new \Kyte\SessionException("[ERROR] Invalid identity string: $request.");
         }
 
-        // session token
-        $response['session'] = $iden[1];
-
-        $api = new \Kyte\API(APIKey);
-        // init new api with key
-        $api->init($iden[0]);
-
-        // check if signature is valid - signature and signature datetime
+        // #1
+        // get UTC date from identity signature
         $date = new DateTime($iden[2], new DateTimeZone('UTC'));
-
-        $response['token'] = "0";	// default to public token
-
-        // if undefined is passed from front end then set to zero
-        $iden[1] = $iden[1] == 'undefined' ? "0" : $iden[1];
-
-        // retrieve transaction token corresponding to session token
-        $sessionObj = new \Kyte\ModelObject(Session);
-        if ($sessionObj->retrieve('sessionToken', $iden[1])) {
-            $response['token'] = $sessionObj->getParam('txToken');
+        // check expiration
+        if (time() > $date->format('U') + (60*30)) {
+            throw new \Kyte\SessionException("API request has expired.");
         }
 
+        // #2
+        // initialize API with public key from idneity signature
+        $api = new \Kyte\API(APIKey);
+        $api->init($iden[0]);
+
+        // #3
+        // get account number from identity signature
+        $account = new \Kyte\ModelObject(Account);
+        if (!$account->retrieve('number', $iden[3])) {
+            throw new Exception("[ERROR] Unable to find account for {$iden[3]}.");
+        }
+
+        // #4
+        // if undefined is passed from front end then set to zero
+        $iden[1] = $iden[1] == 'undefined' ? "0" : $iden[1];
+        // get session token from identity signature
+        $response['session'] = $iden[1];
+        // initialize tx token to 0
+        $response['token'] = "0";	// default to public token
+        $response['uid'] = "0";
+        // retrieve transaction and user token corresponding to session token
+        $session = new \Kyte\SessionManager(Session, User, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
+        $user = new \Kyte\ModelObject(User);
+        if ($iden[1]) {
+            $session_ret = $session->validate($iden[1]);
+            $response['token'] = $session_ret['txToken'];
+            $response['uid'] = $session_ret['uid'];
+            
+            if (!$user->retrieve('id', $session_ret['uid'], [[ 'field' => 'account_id', 'value' => $account->getParam('id')]])) {
+                throw new \Kyte\SessionException("Invalid user session.");
+            }
+        }
         // update log with tx token
         $log->save(['txToken' => $response['token']]);
 
+        /* ********************************** */
+        /* **** VERIFY SIGNATURE - START **** */
 		// calculate hash based on provided information
         $hash1 = hash_hmac('SHA256', $response['token'], $api->key->getParam('secret_key'), true);
         $hash1_debug = hash_hmac('SHA256', $response['token'], $api->key->getParam('secret_key'));
         $hash2 = hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1, true);
         $hash2_debug = hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1);
         $calculated_signature = hash_hmac('SHA256', $date->format('U'), $hash2);
-
-        error_log("Time: ".$date->format('U')." ".$iden[2]."\n");
-        error_log("hash1: $hash1_debug\thash2:$hash2_debug\tFinal:$calculated_signature\n");
-        error_log("Client: ".$elements[0]."\n");
-
+        // error_log("Time: ".$date->format('U')." ".$iden[2]."\n");
+        // error_log("hash1: $hash1_debug\thash2:$hash2_debug\tFinal:$calculated_signature\n");
+        // error_log("Client: ".$elements[0]."\n");
         if ($calculated_signature != $elements[0])
             throw new \Kyte\SessionException("Calculated signature does not match provided signature.");
-				
-        if (time() > $date->format('U') + (60*30)) {
-            throw new \Kyte\SessionException("Calculated signature has expired and does not match provided signature.");
-        }
-
-        // update token string
-        if ($response['token']) {
-            // if all looks good, then generate new txToken
-            $session = new \Kyte\SessionManager(Session, Account, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
-            $session_ret = $session->validate($response['token'], $iden[1], ALLOW_SAME_TXTOKEN);
-            $response['token'] = $session_ret['txToken'];
-        }
+        /* **** VERIFY SIGNATURE - END **** */
+        /* ********************************** */
 
         // initialize controller for model or view ("abstract" controller)
         $controllerClass = class_exists($elements[2].'Controller') ? $elements[2].'Controller' : 'ModelController';
         // create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
-        $controller = new $controllerClass(isset(${$elements[2]}) ? ${$elements[2]} : null, APP_DATE_FORMAT, $response['token'], $iden[1]);
+        $controller = new $controllerClass(isset(${$elements[2]}) ? ${$elements[2]} : null, APP_DATE_FORMAT, $account, $session, $user, &$response);
         if (!$controller) throw new Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 
         switch ($request) {
