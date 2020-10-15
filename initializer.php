@@ -23,6 +23,50 @@
 
     // load base controller
     require __DIR__ . '/builtin/controllers/ModelController.php';
+
+    function addKyteAttributes(&$modeldef) {
+        $modeldef['struct'][] = [
+
+            // framework attributes
+
+            'account_id'	=> [
+                'type'		=> 'i',
+                'required'	=> true,
+                'size'		=> 11,
+                'unsigned'	=> true,
+                'date'		=> false,
+            ],
+    
+            // audit attributes
+    
+            'date_created'		=> [
+                'type'		=> 'i',
+                'required'	=> false,
+                'date'		=> true,
+            ],
+    
+            'date_modified'		=> [
+                'type'		=> 'i',
+                'required'	=> false,
+                'date'		=> true,
+            ],
+    
+            'date_deleted'		=> [
+                'type'		=> 'i',
+                'required'	=> false,
+                'date'		=> true,
+            ],
+    
+            'deleted'	=> [
+                'type'		=> 'i',
+                'required'	=> false,
+                'size'		=> 1,
+                'unsigned'	=> true,
+                'default'	=> 0,
+                'date'		=> false,
+            ]
+        ];
+    }
     
     /* Load user-defined files first in case there are overrides */
     if ( file_exists( __DIR__ . "/app/" ) && is_dir( __DIR__ . "/app/" ) ) {
@@ -36,6 +80,7 @@
                     error_log("Loading user defined model $model_name");
                     error_log("Checking if user defined model has been defined...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
                 }
+                addKyteAttributes($$model_name);
                 define($model_name, $$model_name);
             }
         }
