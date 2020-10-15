@@ -78,23 +78,26 @@ if (!defined('PASSWORD_FIELD')) {
 // 	data: {}
 // }
 $response = [];
-$response['version'] = \Kyte\ApplicationVersion::get();
-$response['token'] = '';
-$response['session'] = '';
+$response['engine_version'] = \Kyte\Version::get();
+$response['framework_version'] = Version::get();
+$response['session'] = '0';
+$response['token'] = "0";	// default to public token
+$response['uid'] = "0";
 $response['error'] = '';
 $response['model'] = '';
 $response['transaction'] = $request;
 $now = new DateTime();
 $now->setTimezone(new DateTimeZone('UTC'));    // Another way
 $response['txTimestamp'] = $now->format('U');
+
 $contentType = '';
 if (array_key_exists('CONTENT_TYPE', $_SERVER)) {
     $contentType = $_SERVER['CONTENT_TYPE'];
 }
+
 // URL format
 // https://uri-to-api-endpoint/ {signature} / {identity string} / {model} [ / {field} / {value} ]
  
-
 try {
     // read in data and parse into array
     parse_str(file_get_contents("php://input"), $data);
@@ -174,9 +177,6 @@ try {
         $iden[1] = $iden[1] == 'undefined' ? "0" : $iden[1];
         // get session token from identity signature
         $response['session'] = $iden[1];
-        // initialize tx token to 0
-        $response['token'] = "0";	// default to public token
-        $response['uid'] = "0";
         // retrieve transaction and user token corresponding to session token
         $session = new SessionManager(Session, User, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
         $user = new \Kyte\ModelObject(User);
