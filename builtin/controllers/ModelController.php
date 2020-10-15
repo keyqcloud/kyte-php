@@ -64,6 +64,18 @@ class ModelController
         $this->hook_auth();
     }
 
+    protected function verifyRoles($roles = null) {
+        if ($roles && is_array($roles)) {
+            foreach ($roles as $roleName) {
+                $role = new \Kyte\ModelObject(Role);
+                if ($role->retrieve('name', $roleName, [[ 'field' => 'account_id', 'value' => $this->account->getParam('id')]])) {
+                    return true;
+                }
+            }
+            return false;
+        } else return true;
+    }
+
     protected function getObject($obj) {
         $response = [];
 
