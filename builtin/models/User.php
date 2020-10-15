@@ -41,6 +41,16 @@ $User = [
 			'date'		=> false,
 		],
 
+		// framework attributes
+
+		'account_id'	=> [
+			'type'		=> 'i',
+			'required'	=> true,
+			'size'		=> 11,
+			'unsigned'	=> true,
+			'date'		=> false,
+		],
+
 		// audit attributes
 
 		'date_created'		=> [
