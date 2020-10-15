@@ -19,12 +19,6 @@ $Session = [
 			'date'		=> false,
 		],
 
-		'create_date'	=> [
-			'type'		=> 'i',
-			'required'	=> true,
-			'date'		=> true,
-		],
-
 		'exp_date'		=> [
 			'type'		=> 'i',
 			'required'	=> true,
