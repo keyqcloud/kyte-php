@@ -3,12 +3,6 @@
 class SecurityTransactionHistoryController extends ModelController
 {
 
-    // * for subclasses that are public, override with empty function
-    protected function authenticate()
-    {
-        $this->user = $this->session->validate($this->txToken, $this->sessionToken, false);
-    }
-
     // disallowed methods
     public function new($data) { throw new \Exception("Undefined request method"); }
     public function update($field, $value, $data) { throw new \Exception("Undefined request method"); }
