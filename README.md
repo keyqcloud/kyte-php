@@ -40,38 +40,41 @@ $ModelName = [
 	'name' => 'ModelName',          // must correspond with the table name in the database
 	'struct' => [
 		'id'			=> [        // required field and must correspond with the column name of table
-			'type'		=> 'i',     // availble types are i, s, d.
-			'required'	=> false,
-			'date'		=> false,
-		],
-
-		'data1'		=> [            // must correspond with the column name of table
-			'type'		=> 's',
-			'required'	=> true,
-			'date'		=> false,
-		],
-
-		'data2'	=> [                // must correspond with the column name of table
-			'type'		=> 's',
-			'required'	=> true,
-			'date'		=> false,
-		],
-
-		'data3'	=> [                // must correspond with the column name of table
-			'type'		=> 's',
-			'required'	=> true,
-			'date'		=> false,
-		],
-
-		'deleted'	=> [            // required field and must correspond with the column name of table
 			'type'		=> 'i',
-			'required'	=> false,
+			'pk'		=> true,
+			'required'	=> true,
 			'date'		=> false,
 		],
+
+		'field1'		=> [...attributes...],
+
+		'field2'	=> [...attributes...],
+
+		'field3'	=> [...attributes...],
 	],
 ];
 ```
-All models must have the fields `id` and `deleted` to work with the Kyte-PHP framework.
+All models must have the `id` field.
+
+### Model Attributes
+The following are allowed model attributes used when declaring a field - some are required.
+`type: {s/i/d/t}`
+`required: {true/false}`
+`pk: {true/false}`
+`size: {int}`
+`date: {true/false}`
+`protected: {true/false}`
+`dateformat: {ex: YYYY/MM/DD H:i:s}`
+`unsigned: {true/false}`
+`default: {default value}`
+`precision: {int}`
+`scale: {int}`
+`fk: {array with FK attributes}`
+
+For FK attributes, the following are required:
+`table: {true/false}`
+`field: {true/false}`
+`cascade: {true/false}`
 
 ### Controllers
 Coming soon
