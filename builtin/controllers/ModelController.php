@@ -11,7 +11,8 @@ class ModelController
     public $model;
 
     // controller behaviour flags
-    protected $getFKTable;
+    protected $getFKTables;
+    protected $getExternalTables;
     protected $requireAuth;
     protected $requireRoles;
     protected $requireAccount;
@@ -36,7 +37,8 @@ class ModelController
             $this->dateformat = $dateformat;
             
             // controller behaviour flags
-            $this->getFKTable = true;
+            $this->getFKTables = true;
+            $this->getExternalTables = true;
             $this->requireAuth = true;
             $this->requireRoles = true;
             $this->requireAccount = true;
@@ -79,8 +81,10 @@ class ModelController
         $this->hook_auth();
     }
 
-    protected function checkPermissions($requestType) {
+    protected function checkPermissions($requestType, $modelName = null) {
         if ($this->requireAuth && $this->requireRoles) {
+            // if model name is set then use it, otherwise use clas model
+            $modelName = $modelName ? $modelName : $this->model['name']
 
             // check if user assigned role exists
             $role = new \Kyte\ModelObject(Role)
@@ -91,7 +95,7 @@ class ModelController
 
             // check if assigned role has permission for request type
             $permission = new \Kyte\ModelObject(Permission);
-            if (!$permission->retrieve('role', $role->getParam('id'), [ ['field' => 'model', 'value' => $this->model['name']], ['field' => 'action', 'value' => $requestType], $cond ])) {
+            if (!$permission->retrieve('role', $role->getParam('id'), [ ['field' => 'model', 'value' => $modelName], ['field' => 'action', 'value' => $requestType], $cond ])) {
                 return false;
             }
         }
@@ -104,6 +108,8 @@ class ModelController
 
         try {
             $response = $obj->getAllParams();
+
+            // iterate through each param and apply filter
             foreach($response as $key => $value) {
                 if (isset($obj->model['struct'][$key])) {
                     // if protected attribute then return empty string
@@ -112,6 +118,7 @@ class ModelController
                             $response[$key] = '';
                         }
                     }
+
                     // if date format is specified
                     if (isset($obj->model['struct'][$key]['date'])) {
                         if ($obj->model['struct'][$key]['date']) {
@@ -127,46 +134,57 @@ class ModelController
                         }
                     }
 
-                    if ($this->getFKTable) {
-                        if (isset($obj->model['struct'][$key]['fk'])) {
-                            if ($obj->model['struct'][$key]['fk'] && $response[$key]) {
-                                $fk = explode('_', $key);
-                                if (count($fk) == 2) {
-                                    $fk_objs = new \Kyte\Model(constant($fk[0]));
+                    // if get FK is set then check for FK
+                    if ($this->getFKTables) {
+                        if (isset($obj->model['struct'][$key]['fk']) && !empty($response[$key])) {
+
+                            $fk = $obj->model['struct'][$key]['fk'];
+
+                            if (isset($fk['model'], $fk['field'])) {
+                                
+                                // check if permissions allow for this behaviour
+                                if ($this->checkPermissions('get', $fk['model'])) {
+
+                                    $fk_obj = new \Kyte\ModelObject(constant($fk['model']));
+                                    // check if account is required
+                                    $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
+
                                     // retrieve deleted items as well
-                                    // retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null)
-                                    $fk_objs->retrieve($fk[1], $response[$key], false, null, true);
-                                    foreach ($fk_objs->objects as $fk_obj) {
+                                    if ($fk_obj->retrieve($fk['field'], $response[$key], $conditions, null, true)) {
                                         // return list of data
-                                        $response[$fk[0]][] = $this->getObject($fk_obj);
+                                        $response[$key] = $this->getObject($fk_obj);
                                     }
                                 }
                             }
                         }
                     }
-                    // if ($this->getFKTable) {
-                    //     // if foreign key, retrieve data from fk table
-                    //     if (isset($obj->model['struct'][$key]['fk'], $obj->model['struct'][$key]['fkCol'])) {
-                    //         if ($obj->model['struct'][$key]['fk'] && $obj->model['struct'][$key]['fkCol'] && $response[$key]) {
-                    //             // get table name
-                    //             $fk = $obj->model['struct'][$key]['fk'];
-                    //             // get column name
-                    //             $field = $obj->model['struct'][$key]['fkCol'];
+                }
+            }
 
-                    //             error_log("FK Identified for $key for table $fk on field $field");
-                            
-                    //             $fk_objs = new \Kyte\Model(constant($fk));
-                    //             // retrieve deleted items as well
-                    //             // retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null)
-                    //             $fk_objs->retrieve($field, $response[$key], false, null, true);
-                    //             $response[$key] = [];
-                    //             foreach ($fk_objs->objects as $fk_obj) {
-                    //                 // return list of data
-                    //                 $response[$key][] = $this->getObject($fk_obj);
-                    //             }            
-                    //         }
-                    //     }
-                    // }
+            // next, get external tables that have fk to this
+            if ($this->getExternalTables && isset($obj->model['externalTables'])) {
+                // define array
+                $response['ExternalTables'] = [];
+
+                foreach ($obj->model['externalTables'] as $et) {
+
+                    if (isset($et['model'], $et['field'])) {
+
+                        // check if permissions allow for this behaviour
+                        if ($this->checkPermissions('get', $et['model'])) {
+
+                            $et_objs = new \Kyte\Model(constant($et['model']));
+                            // check if account is required
+                            $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
+
+                            // retrieve deleted items as well
+                            $et_objs->retrieve($et['field'], $response['id'], false, $conditions, true);
+                            foreach ($et_objs->objects as $et_obj) {
+                                // return list of data
+                                $response['ExternalTables'][] = $this->getObject($fk_obj);
+                            }
+                        }
+                    }
                 }
             }
         } catch (Exception $e) {
