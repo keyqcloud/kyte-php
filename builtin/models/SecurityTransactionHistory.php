@@ -3,14 +3,6 @@
 $SecurityTransactionHistory = [
 	'name' => 'SecurityTransactionHistory',
 	'struct' => [
-		'id'		=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'pk'		=> true,
-			'size'		=> 11,
-			'date'		=> false,
-		],
-
 		'txToken'		=> [
 			'type'		=> 's',
 			'required'	=> false,

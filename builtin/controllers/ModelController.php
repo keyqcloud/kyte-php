@@ -84,7 +84,7 @@ class ModelController
 
             // check if user assigned role exists
             $role = new \Kyte\ModelObject(Role)
-            $cond = $this->requireAccount ? [ 'field' => 'account_id', 'value' => $this->account->getParam('id')] : null;
+            $cond = $this->requireAccount ? [ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')] : null;
             if (!$role->retrieve('id', $this->user->getparam('role'), [$cond])) {
                 return false;
             }
@@ -200,7 +200,7 @@ class ModelController
             // hook for any custom behaviours before creating object
             $this->hook_preprocess('new', $data);
             // add account information
-            $data['account_id'] = $this->account->getParam('id');
+            $data['kyte_account'] = $this->account->getParam('id');
             // create object & get return
             if ($obj->create($data)) {
                 $ret = [];
@@ -231,7 +231,7 @@ class ModelController
         $response = [];
 
         try {
-            $conditions = $this->requireAccount ? [[ 'field' => 'account_id', 'value' => $this->account->getParam('id')]] : null;
+            $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
             $all = false;
             $this->hook_prequery('update', $field, $value, $conditions, $all, $order);
             // init object
@@ -274,7 +274,7 @@ class ModelController
         $response = [];
 
         try {
-            $conditions = $this->requireAccount ? [[ 'field' => 'account_id', 'value' => $this->account->getParam('id')]] : null;
+            $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
             $all = false;
             $order = null;
             $this->hook_prequery('get', $field, $value, $conditions, $all, $order);
@@ -313,7 +313,7 @@ class ModelController
         $response = [];
 
         try {
-            $conditions = $this->requireAccount ? [[ 'field' => 'account_id', 'value' => $this->account->getParam('id')]] : null;
+            $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
             $objs = new \Kyte\Model($this->model);
             $objs->retrieve($field, $value, false, $conditions);
             

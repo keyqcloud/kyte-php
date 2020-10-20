@@ -3,14 +3,6 @@
 $Session = [
 	'name' => 'Session',
 	'struct' => [
-		'id'			=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'pk'		=> true,
-			'size'		=> 11,
-			'date'		=> false,
-		],
-
 		'uid'		=> [
 			'type'		=> 'i',
 			'required'	=> true,

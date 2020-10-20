@@ -3,14 +3,6 @@
 $Permission = [
 	'name' => 'Permission',
 	'struct' => [
-		'id'		=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'pk'		=> true,
-			'size'		=> 11,
-			'date'		=> false,
-		],
-
 		'role'	=> [
 			'type'		=> 'i',
 			'required'	=> true,
@@ -35,7 +27,7 @@ $Permission = [
 
 		// framework attributes
 
-		'account'	=> [
+		'kyte_account'	=> [
 			'type'		=> 'i',
 			'required'	=> true,
 			'size'		=> 11,

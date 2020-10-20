@@ -3,14 +3,6 @@
 $Account = [
 	'name' => 'Account',
 	'struct' => [
-		'id'		=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'pk'		=> true,
-			'size'		=> 11,
-			'date'		=> false,
-		],
-
 		'name'		=> [
 			'type'		=> 's',
 			'required'	=> true,

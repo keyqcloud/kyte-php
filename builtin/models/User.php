@@ -3,14 +3,6 @@
 $User = [
 	'name' => 'User',
 	'struct' => [
-		'id'		=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'pk'		=> true,
-			'size'		=> 11,
-			'date'		=> false,
-		],
-
 		'name'		=> [
 			'type'		=> 's',
 			'required'	=> true,
@@ -43,7 +35,7 @@ $User = [
 
 		// framework attributes
 
-		'account'	=> [
+		'kyte_account'	=> [
 			'type'		=> 'i',
 			'required'	=> true,
 			'size'		=> 11,

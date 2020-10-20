@@ -30,54 +30,60 @@
     // load base controller
     require __DIR__ . '/builtin/controllers/ModelController.php';
 
+    function addPrimaryKey(&$modeldef) {
+        $modeldef['struct']['id'] = [
+            'type'		=> 'i',
+            'required'	=> true,
+            'pk'		=> true,
+            'size'		=> 11,
+            'date'		=> false,
+        ];
+    }
+
     function addKyteAttributes(&$modeldef) {
-        $modeldef['struct'][] = [
+        $modeldef['struct']['kyte_account'] = [
+            'type'		=> 'i',
+            'required'	=> true,
+            'size'		=> 11,
+            'unsigned'	=> true,
+            'date'		=> false,
+        ];
 
-            // framework attributes
+        // audit attributes
 
-            'account_id'	=> [
-                'type'		=> 'i',
-                'required'	=> true,
-                'size'		=> 11,
-                'unsigned'	=> true,
-                'date'		=> false,
-            ],
-    
-            // audit attributes
-    
-            'date_created'		=> [
-                'type'		=> 'i',
-                'required'	=> false,
-                'date'		=> true,
-            ],
-    
-            'date_modified'		=> [
-                'type'		=> 'i',
-                'required'	=> false,
-                'date'		=> true,
-            ],
-    
-            'date_deleted'		=> [
-                'type'		=> 'i',
-                'required'	=> false,
-                'date'		=> true,
-            ],
-    
-            'deleted'	=> [
-                'type'		=> 'i',
-                'required'	=> false,
-                'size'		=> 1,
-                'unsigned'	=> true,
-                'default'	=> 0,
-                'date'		=> false,
-            ]
+        $modeldef['struct']['date_created'] = [
+            'type'		=> 'i',
+            'required'	=> false,
+            'date'		=> true,
+        ];
+
+        $modeldef['struct']['date_modified'] = [
+            'type'		=> 'i',
+            'required'	=> false,
+            'date'		=> true,
+        ];
+
+        $modeldef['struct']['date_deleted'] = [
+            'type'		=> 'i',
+            'required'	=> false,
+            'date'		=> true,
+        ];
+
+        $modeldef['struct']['deleted'] = [
+            'type'		=> 'i',
+            'required'	=> false,
+            'size'		=> 1,
+            'unsigned'	=> true,
+            'default'	=> 0,
+            'date'		=> false,
         ];
     }
     
     /* Load user-defined files first in case there are overrides */
     if ( file_exists( __DIR__ . "/app/" ) && is_dir( __DIR__ . "/app/" ) ) {
-        if ( file_exists( __DIR__ . "/app/models/" ) && is_dir( __DIR__ . "/app/models/" ) ) {
-            // load user defined models and controllers (allow override of builtin)
+
+        // load user defined models and controllers (allow override of builtin)
+        if ( file_exists( __DIR__ . "/app/models/" ) && is_dir( __DIR__ . "/app/models/" ) ) {    
             foreach (glob(__DIR__ . "/app/models/*.php") as $filename) {
                 require_once($filename);
                 $model_name = substr($filename, 0, strrpos($filename, "."));
@@ -86,12 +92,14 @@
                     error_log("Loading user defined model $model_name");
                     error_log("Checking if user defined model has been defined...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
                 }
+                addPrimaryKey($$model_name);
                 addKyteAttributes($$model_name);
                 define($model_name, $$model_name);
             }
         }
+
+        // load user-defined controllers
         if ( file_exists( __DIR__ . "/app/controllers/" ) && is_dir( __DIR__ . "/app/controllers/" ) ) {
-            // include any controllers
             foreach (glob(__DIR__ . "/app/controllers/*.php") as $filename) {
                 $controller_name = substr($filename, 0, strrpos($filename, "."));
                 $controller_name = str_replace(__DIR__ . '/app/controllers/','',$controller_name);
@@ -103,7 +111,7 @@
         }      
     } 
 
-	// include models being used by app
+	// include built-in models being used by app
     foreach (glob(__DIR__ . "/builtin/models/*.php") as $filename) {
         $model_name = substr($filename, 0, strrpos($filename, "."));
         $model_name = str_replace(__DIR__ . '/builtin/models/','',$model_name);
@@ -116,11 +124,12 @@
             if (VERBOSE_LOG) {
                 error_log("Checking if model has been defined...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
             }
+            addPrimaryKey($$model_name);
             define($model_name, $$model_name);
         }
     }
     
-    // include any controllers
+    // include any built-in controllers
 	foreach (glob(__DIR__ . "/builtin/controllers/*.php") as $filename) {
         $controller_name = substr($filename, 0, strrpos($filename, "."));
         $controller_name = str_replace(__DIR__ . '/builtin/controllers/','',$controller_name);
