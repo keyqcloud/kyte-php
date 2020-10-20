@@ -81,6 +81,9 @@
             'date'		=> false,
         ];
     }
+
+    // list of models
+    $models = [];
     
     /* Load user-defined files first in case there are overrides */
     if ( file_exists( __DIR__ . "/app/" ) && is_dir( __DIR__ . "/app/" ) ) {
@@ -91,6 +94,9 @@
                 require_once($filename);
                 $model_name = substr($filename, 0, strrpos($filename, "."));
                 $model_name = str_replace(__DIR__ . '/app/models/','',$model_name);
+                if (!in_array($model_name, $models)) {
+                    $models[] = $model_name;
+                }
                 if (VERBOSE_LOG) {
                     error_log("Loading user defined model $model_name");
                     error_log("Checking if user defined model has been defined...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
@@ -118,6 +124,9 @@
     foreach (glob(__DIR__ . "/builtin/models/*.php") as $filename) {
         $model_name = substr($filename, 0, strrpos($filename, "."));
         $model_name = str_replace(__DIR__ . '/builtin/models/','',$model_name);
+        if (!in_array($model_name, $models)) {
+            $models[] = $model_name;
+        }
         if (isset($$model_name)) {
             if (VERBOSE_LOG) {
                 error_log("Skipping model $model_name as already defined...");
@@ -147,6 +156,9 @@
             }
         }
     }
+
+    // define list of models
+    define('KYTE_MODELS', $models);
 
     require_once __DIR__.'/config.php';
 
