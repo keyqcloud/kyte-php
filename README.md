@@ -65,7 +65,7 @@ The following are allowed model attributes used when declaring a field - some ar
 * `fk: {array with FK attributes}` - if a field is a foreign key, then used to define table and field that associates with it (see below)
 
 For FK attributes, the following are required:
-* `table: {true/false}` - fk table name
+* `model: {true/false}` - fk table name
 * `field: {true/false}` - fk table field that links to current model
 * `cascade: {true/false}` - flag for whether fk table should be deleted too
 
