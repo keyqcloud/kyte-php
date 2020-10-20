@@ -163,6 +163,10 @@ class ModelController
 
             // next, get external tables that have fk to this
             if ($this->getExternalTables && isset($obj->model['externalTables'])) {
+                // temporarily set FK table to false so we don't cause an endless loop
+                $fkFlag = $this->getFKTables;
+                $this->getFKTables = false;
+
                 // define array
                 $response['ExternalTables'] = [];
 
@@ -186,7 +190,11 @@ class ModelController
                         }
                     }
                 }
+
+                // return FK table flag to original value
+                $this->getFKTables = $fkFlag;
             }
+
         } catch (Exception $e) {
             throw $e;
         }
