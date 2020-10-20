@@ -37,7 +37,7 @@ if ($request == 'OPTIONS') {
 /*******************************************/
 
 // initialize api
-require_once __DIR__.'/initializer.php';
+require_once __DIR__.'/bootstrap.php';
 
 // compatibility for older config files
 if (!defined('ALLOW_ENC_HANDOFF')) {

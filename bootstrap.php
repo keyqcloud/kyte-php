@@ -146,5 +146,13 @@
     }
 
     require_once __DIR__.'/config.php';
+
+    // initialize base framework
+    \Kyte\Mail::setSendGridAPIKey(KYTE_SENDGRID_API);
+    \Kyte\DBI::setDbUser(KYTE_DB_USERNAME);
+	\Kyte\DBI::setDbPassword(KYTE_DB_PASSWORD);
+	\Kyte\DBI::setDbHost(KYTE_DB_HOST);
+	\Kyte\DBI::setDbName(KYTE_DB_DATABASE);
+    \Kyte\DBI::setCharset(KYTE_DB_CHARSET);
     
 ?>
