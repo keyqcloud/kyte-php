@@ -7,11 +7,18 @@ class ModelController
     protected $account;
     protected $session;
     protected $response;
-    protected $failOnNull;
-    protected $exceptionMessages;
-    protected $requireAuth;
     public $dateformat;
     public $model;
+
+    // controller behaviour flags
+    protected $getFKTable;
+    protected $requireAuth;
+    protected $requireRoles;
+    protected $requireAccount;
+    protected $failOnNull;
+
+    // array with error messages
+    protected $exceptionMessages;
 
     public function __construct($model, $dateformat, &$account, &$session, &$user, &$response)
     {
@@ -21,13 +28,21 @@ class ModelController
             $this->user = &$user;
             $this->account = &$account;
             $this->session = &$session;
+
             // response
             $this->response = &$response;
-            // controller behaviour
+
+            // date time format
             $this->dateformat = $dateformat;
+            
+            // controller behaviour flags
             $this->getFKTable = true;
-            $this->failOnNull = false;
             $this->requireAuth = true;
+            $this->requireRoles = true;
+            $this->requireAccount = true;
+            $this->failOnNull = false;
+
+            // default error messages
             $this->exceptionMessages = [
                 'new' => [
                     'failOnNull' => 'Unable to create new object',
@@ -64,16 +79,24 @@ class ModelController
         $this->hook_auth();
     }
 
-    protected function verifyRoles($roles = null) {
-        if ($roles && is_array($roles)) {
-            foreach ($roles as $roleName) {
-                $role = new \Kyte\ModelObject(Role);
-                if ($role->retrieve('name', $roleName, [[ 'field' => 'account_id', 'value' => $this->account->getParam('id')]])) {
-                    return true;
-                }
+    protected function checkPermissions($requestType) {
+        if ($this->requireAuth && $this->requireRoles) {
+
+            // check if user assigned role exists
+            $role = new \Kyte\ModelObject(Role)
+            $cond = $this->requireAccount ? [ 'field' => 'account_id', 'value' => $this->account->getParam('id')] : null;
+            if (!$role->retrieve('id', $this->user->getparam('role'), [$cond])) {
+                return false;
             }
-            return false;
-        } else return true;
+
+            // check if assigned role has permission for request type
+            $permission = new \Kyte\ModelObject(Permission);
+            if (!$permission->retrieve('role', $role->getParam('id'), [ ['field' => 'model', 'value' => $this->model['name']], ['field' => 'action', 'value' => $requestType], $cond ])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     protected function getObject($obj) {
@@ -156,6 +179,10 @@ class ModelController
     // new - create new entry in db
     public function new($data)
     {
+        if (!$this->checkPermissions('new')) {
+            throw new \Exception('Permission Denied');
+        }
+
         $response = [];
 
         // convert all dates to unix time
@@ -195,16 +222,18 @@ class ModelController
     // update - update entry in db
     public function update($field, $value, $data)
     {
+        if (!$this->checkPermissions('update')) {
+            throw new \Exception('Permission Denied');
+        }
+
         if ($field === null || $value === null) throw new \Exception("Field ($field) and Value ($value) params not set");
 
         $response = [];
 
         try {
-            $conditions = [];
+            $conditions = $this->requireAccount ? [[ 'field' => 'account_id', 'value' => $this->account->getParam('id')]] : null;
             $all = false;
             $this->hook_prequery('update', $field, $value, $conditions, $all, $order);
-            // add account id to query
-            $conditions[] = ['field' => 'account_id', 'value' => $this->account->getParam('id')];
             // init object
             $obj = new \Kyte\ModelObject($this->model);
             if ($obj->retrieve($field, $value, $conditions, null, $all)) {
@@ -238,15 +267,17 @@ class ModelController
     // get - retrieve objects from db
     public function get($field, $value)
     {
+        if (!$this->checkPermissions('get')) {
+            throw new \Exception('Permission Denied');
+        }
+
         $response = [];
 
         try {
-            $conditions = [];
+            $conditions = $this->requireAccount ? [[ 'field' => 'account_id', 'value' => $this->account->getParam('id')]] : null;
             $all = false;
             $order = null;
             $this->hook_prequery('get', $field, $value, $conditions, $all, $order);
-            // add account id to query
-            $conditions[] = ['field' => 'account_id', 'value' => $this->account->getParam('id')];
             // init model
             $objs = new \Kyte\Model($this->model);
             $objs->retrieve($field, $value, false, $conditions, $all, $order);
@@ -273,13 +304,18 @@ class ModelController
     // delete - delete objects from db
     public function delete($field, $value)
     {
+        if (!$this->checkPermissions('delete')) {
+            throw new \Exception('Permission Denied');
+        }
+
         if ($field === null || $value === null) throw new \Exception("Field ($field) and Value ($value) params not set");
 
         $response = [];
 
         try {
+            $conditions = $this->requireAccount ? [[ 'field' => 'account_id', 'value' => $this->account->getParam('id')]] : null;
             $objs = new \Kyte\Model($this->model);
-            $objs->retrieve($field, $value, false, [['field' => 'account_id', 'value' => $this->account->getParam('id')]]);
+            $objs->retrieve($field, $value, false, $conditions);
             
             if ($this->failOnNull && count($objs->objects) < 1) {
                 throw new \Exception($this->exceptionMessages['delete']['failOnNull']);
