@@ -5,7 +5,7 @@ $Account = [
 	'struct' => [
 		'name'		=> [
 			'type'		=> 's',
-			'required'	=> true,
+			'required'	=> false,
 			'size'		=> 255,
 			'date'		=> false,
 		],
@@ -13,7 +13,7 @@ $Account = [
 		'number'		=> [
 			'type'		=> 's',
 			'required'	=> true,
-			'size'		=> 255,
+			'size'		=> 32,
 			'date'		=> false,
 		],
 
