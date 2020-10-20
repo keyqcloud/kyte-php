@@ -39,13 +39,6 @@ Models are defined in the `/models` directory of the framework.  Models are defi
 $ModelName = [
 	'name' => 'ModelName',          // must correspond with the table name in the database
 	'struct' => [
-		'id'			=> [        // required field and must correspond with the column name of table
-			'type'		=> 'i',
-			'pk'		=> true,
-			'required'	=> true,
-			'date'		=> false,
-		],
-
 		'field1'		=> [...attributes...],
 
 		'field2'	=> [...attributes...],
@@ -54,27 +47,27 @@ $ModelName = [
 	],
 ];
 ```
-All models must have the `id` field.
+
 
 ### Model Attributes
 The following are allowed model attributes used when declaring a field - some are required.
-`type: {s/i/d/t}`
-`required: {true/false}`
-`pk: {true/false}`
-`size: {int}`
-`date: {true/false}`
-`protected: {true/false}`
-`dateformat: {ex: YYYY/MM/DD H:i:s}`
-`unsigned: {true/false}`
-`default: {default value}`
-`precision: {int}`
-`scale: {int}`
-`fk: {array with FK attributes}`
+`type: {s/i/d/t}` - defines field type (currently supports s for varchar, i for int, d for decimal, and t for text)
+`required: {true/false}` - flag for if field is required, i.e. cannot be null
+`size: {int}` - defines size of field for varchar and int
+`precision: {int}` - defines precision for decimal
+`scale: {int}` - defines scale for decimal
+`date: {true/false}` - flag for if field is date time
+`protected: {true/false}` - flag for if field should not be returned in response data, i.e. passwords and hashes
+`dateformat: {ex: YYYY/MM/DD H:i:s}` - optional date format which can be used to override framework configuration
+`unsigned: {true/false}` - flag for unsigned int
+`default: {default value}` - defines optional default value
+
+`fk: {array with FK attributes}` - if a field is a foreign key, then used to define table and field that associates with it (see below)
 
 For FK attributes, the following are required:
-`table: {true/false}`
-`field: {true/false}`
-`cascade: {true/false}`
+`table: {true/false}` - fk table name
+`field: {true/false}` - fk table field that links to current model
+`cascade: {true/false}` - flag for whether fk table should be deleted too
 
 ### Controllers
 Coming soon
