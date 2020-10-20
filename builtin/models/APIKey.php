@@ -39,6 +39,16 @@ $APIKey = [
 			'date'		=> true,
 		],
 
+		// framework attributes
+
+		'account'	=> [
+			'type'		=> 'i',
+			'required'	=> true,
+			'size'		=> 11,
+			'unsigned'	=> true,
+			'date'		=> false,
+		],
+
 		// audit attributes
 
 		'date_created'		=> [

@@ -20,7 +20,7 @@ $Role = [
 
 		// framework attributes
 
-		'account_id'	=> [
+		'account'	=> [
 			'type'		=> 'i',
 			'required'	=> true,
 			'size'		=> 11,

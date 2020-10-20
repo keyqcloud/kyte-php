@@ -1,7 +1,7 @@
 <?php
 
-$User = [
-	'name' => 'User',
+$Permission = [
+	'name' => 'Permission',
 	'struct' => [
 		'id'		=> [
 			'type'		=> 'i',
@@ -11,33 +11,25 @@ $User = [
 			'date'		=> false,
 		],
 
-		'name'		=> [
-			'type'		=> 's',
-			'required'	=> true,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'email'		=> [
-			'type'		=> 's',
-			'required'	=> true,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'password'	=> [
-			'type'		=> 's',
-			'required'	=> true,
-			'size'		=> 255,
-			'date'		=> false,
-			'protected'	=> true,
-		],
-
 		'role'	=> [
 			'type'		=> 'i',
 			'required'	=> true,
 			'size'		=> 11,
 			'unsigned'	=> true,
+			'date'		=> false,
+		],
+
+		'model'		=> [
+			'type'		=> 's',
+			'required'	=> true,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'action'		=> [
+			'type'		=> 's',
+			'required'	=> true,
+			'size'		=> 255,
 			'date'		=> false,
 		],
 
