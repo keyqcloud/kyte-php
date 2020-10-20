@@ -2,17 +2,20 @@
     /* LOG OUTPUT */
     define('VERBOSE_LOG', false);
 
-    /* LOCALIZATION SUPPORT */
-    // default to English
-    $lang = 'en';
-    // determine browser local
-    if (array_key_exists('HTTP_ACCEPT_LANGUAGE', $_SERVER)) {
-        $lang = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
+    // only execute if called from web
+    if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
+        /* LOCALIZATION SUPPORT */
+        // default to English
+        $lang = 'en';
+        // determine browser local
+        if (array_key_exists('HTTP_ACCEPT_LANGUAGE', $_SERVER)) {
+            $lang = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
+        }
+        
+        // supported languages - add additional language support here
+        $acceptLang = ['ja', 'en']; 
+        define('APP_LANG', in_array($lang, $acceptLang) ? $lang : 'en');
     }
-	
-	// supported languages - add additional language support here
-	$acceptLang = ['ja', 'en']; 
-	define('APP_LANG', in_array($lang, $acceptLang) ? $lang : 'en');
 
     /* load classes from composer */
     require __DIR__ . '/vendor/autoload.php';
