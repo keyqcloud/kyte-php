@@ -2,7 +2,7 @@
     "name": "keyqcloud/kyte-api-php",
     "description": "Kyte API PHP",
     "require": {
-        "keyqcloud/kyte": "dev-3.0"
+        "keyqcloud/kyte": "3.0.x-dev"
     },
     "repositories": [
         {
