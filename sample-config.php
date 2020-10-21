@@ -34,7 +34,7 @@
     define('PASSWORD_FIELD', 'password');
 
     /* SENDGRID INTEGRATION */
-    define('KYTE_SENDGRID_API', true);
+    define('KYTE_SENDGRID_API', '');
 
     /* DB INTEGRATION */
     define('KYTE_DB_USERNAME', '');
