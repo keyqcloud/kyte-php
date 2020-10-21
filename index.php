@@ -211,7 +211,7 @@ try {
         // initialize controller for model or view ("abstract" controller)
         $controllerClass = class_exists($elements[2].'Controller') ? $elements[2].'Controller' : 'ModelController';
         // create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
-        $controller = new $controllerClass(isset(${$elements[2]}) ? ${$elements[2]} : null, APP_DATE_FORMAT, $account, $session, $user, &$response);
+        $controller = new $controllerClass(isset(${$elements[2]}) ? ${$elements[2]} : null, APP_DATE_FORMAT, $account, $session, $user, $response);
         if (!$controller) throw new Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 
         switch ($request) {
