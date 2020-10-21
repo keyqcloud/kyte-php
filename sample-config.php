@@ -41,7 +41,7 @@
     define('KYTE_DB_PASSWORD', '');
     define('KYTE_DB_HOST', '');
     define('KYTE_DB_DATABASE', '');
-    define('KYTE_DB_CHARSET', 'utf8mb4')
+    define('KYTE_DB_CHARSET', 'utf8mb4');
 
 	/* APP TIMEZONE */
 	date_default_timezone_set("Asia/Tokyo");
