@@ -2,7 +2,7 @@
 
 class SessionController extends ModelController
 {
-    public function hook_init() {}
+    public function hook_init()
     {
         // make a public controller
         $this->requireAuth = false;

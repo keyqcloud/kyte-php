@@ -84,10 +84,10 @@ class ModelController
     protected function checkPermissions($requestType, $modelName = null) {
         if ($this->requireAuth && $this->requireRoles) {
             // if model name is set then use it, otherwise use clas model
-            $modelName = $modelName ? $modelName : $this->model['name']
+            $modelName = $modelName ? $modelName : $this->model['name'];
 
             // check if user assigned role exists
-            $role = new \Kyte\ModelObject(Role)
+            $role = new \Kyte\ModelObject(Role);
             $cond = $this->requireAccount ? [ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')] : null;
             if (!$role->retrieve('id', $this->user->getparam('role'), [$cond])) {
                 return false;
