@@ -46,16 +46,14 @@ $SecurityTransactionHistory = [
 		],
 
 		'data'	=> [
-			'type'		=> 's',
-			'text'		=> true,
+			'type'		=> 't',
 			'required'	=> false,
 			'date'		=> false,
 			'protected'	=> true,
 		],
 
 		'return'	=> [
-			'type'		=> 's',
-			'text'		=> true,
+			'type'		=> 't',
 			'required'	=> false,
 			'date'		=> false,
 			'protected'	=> true,
