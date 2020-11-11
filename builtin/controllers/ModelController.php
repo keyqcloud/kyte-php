@@ -90,7 +90,7 @@ class ModelController
             $role = new \Kyte\ModelObject(Role);
             $cond = $this->requireAccount ? [ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')] : null;
             if (!$role->retrieve('id', $this->user->getParam('role'), [$cond])) {
-                error_log('unable to find role');
+                error_log('unable to find role for '.$this->user->getParam('role').' and '.$this->account->getParam('id'));
                 return false;
             }
 
