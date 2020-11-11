@@ -90,12 +90,14 @@ class ModelController
             $role = new \Kyte\ModelObject(Role);
             $cond = $this->requireAccount ? [ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')] : null;
             if (!$role->retrieve('id', $this->user->getparam('role'), [$cond])) {
+                error_log('unable to find role');
                 return false;
             }
 
             // check if assigned role has permission for request type
             $permission = new \Kyte\ModelObject(Permission);
             if (!$permission->retrieve('role', $role->getParam('id'), [ ['field' => 'model', 'value' => $modelName], ['field' => 'action', 'value' => $requestType], $cond ])) {
+                error_log('unable to find permission');
                 return false;
             }
         }
