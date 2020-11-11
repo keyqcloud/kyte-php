@@ -185,7 +185,7 @@ try {
             $response['token'] = $session_ret['txToken'];
             $response['uid'] = $session_ret['uid'];
             
-            if (!$user->retrieve('id', $session_ret['uid'], [[ 'field' => 'account_id', 'value' => $account->getParam('id')]])) {
+            if (!$user->retrieve('id', $session_ret['uid'], [[ 'field' => 'kyte_account', 'value' => $account->getParam('id')]])) {
                 throw new SessionException("Invalid user session.");
             }
         }
