@@ -81,8 +81,8 @@ $response = [];
 $response['engine_version'] = \Kyte\Version::get();
 $response['framework_version'] = Version::get();
 $response['session'] = '0';
-$response['token'] = "0";	// default to public token
-$response['uid'] = "0";
+$response['token'] = 0;	// default to public token
+$response['uid'] = 0;
 $response['error'] = '';
 $response['model'] = '';
 $response['transaction'] = $request;
@@ -174,7 +174,7 @@ try {
 
         // #4
         // if undefined is passed from front end then set to zero
-        $iden[1] = $iden[1] == 'undefined' ? "0" : $iden[1];
+        $iden[1] = $iden[1] == 'undefined' ? 0 : $iden[1];
         // get session token from identity signature
         $response['session'] = $iden[1];
         // retrieve transaction and user token corresponding to session token
