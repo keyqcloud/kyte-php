@@ -83,6 +83,7 @@ $response['framework_version'] = Version::get();
 $response['session'] = '0';
 $response['token'] = 0;	// default to public token
 $response['uid'] = 0;
+$response['sessionPermission'] = 0;
 $response['error'] = '';
 $response['model'] = '';
 $response['transaction'] = $request;
@@ -188,6 +189,7 @@ try {
             if (!$user->retrieve('id', $session_ret['uid'], [[ 'field' => 'kyte_account', 'value' => $account->getParam('id')]])) {
                 throw new SessionException("Invalid user session.");
             }
+            $response['sessionPermission'] = $user->getParam('role');
         }
         // update log with tx token
         $log->save(['txToken' => $response['token']]);
