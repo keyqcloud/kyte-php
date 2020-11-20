@@ -17,6 +17,8 @@ class ModelController
     protected $requireRoles;
     protected $requireAccount;
     protected $failOnNull;
+    protected $allowableActions;
+    protected $checkExisting;
 
     // array with error messages
     protected $exceptionMessages;
@@ -24,6 +26,9 @@ class ModelController
     public function __construct($model, $dateformat, &$account, &$session, &$user, &$response)
     {
         try {
+            // default to allow all actions
+            $this->allowableActions = ['new', 'update', 'get', 'delete'];
+
             $this->model = $model;
             // session related variables
             $this->user = &$user;
@@ -42,6 +47,7 @@ class ModelController
             $this->requireAuth = true;
             $this->requireRoles = true;
             $this->requireAccount = true;
+            $this->checkExisting = null;
             $this->failOnNull = false;
 
             // default error messages
@@ -207,6 +213,10 @@ class ModelController
     // new - create new entry in db
     public function new($data)
     {
+        if (!in_array('new', $this->allowableActions)) {
+            return;
+        }
+
         if (!$this->checkPermissions('new')) {
             throw new \Exception('Permission Denied');
         }
@@ -225,6 +235,15 @@ class ModelController
         try {
             // init new object
             $obj = new \Kyte\ModelObject($this->model);
+
+            // check existing and fail if present
+            if ($this->checkExisting) {
+                $obj = new \Kyte\ModelObject($this->model);
+                if ($obj->retrieve($this->checkExisting, $data[$this->checkExisting])) {
+                    throw new \Exception($this->model['name'].' already exists');
+                }
+            }
+            
             // hook for any custom behaviours before creating object
             $this->hook_preprocess('new', $data);
             // add account information
@@ -250,6 +269,10 @@ class ModelController
     // update - update entry in db
     public function update($field, $value, $data)
     {
+        if (!in_array('update', $this->allowableActions)) {
+            return;
+        }
+
         if (!$this->checkPermissions('update')) {
             throw new \Exception('Permission Denied');
         }
@@ -295,6 +318,10 @@ class ModelController
     // get - retrieve objects from db
     public function get($field, $value)
     {
+        if (!in_array('get', $this->allowableActions)) {
+            return;
+        }
+
         if (!$this->checkPermissions('get')) {
             throw new \Exception('Permission Denied');
         }
@@ -332,6 +359,10 @@ class ModelController
     // delete - delete objects from db
     public function delete($field, $value)
     {
+        if (!in_array('delete', $this->allowableActions)) {
+            return;
+        }
+
         if (!$this->checkPermissions('delete')) {
             throw new \Exception('Permission Denied');
         }
