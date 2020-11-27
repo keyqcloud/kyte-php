@@ -382,6 +382,18 @@ class ModelController
 
             foreach ($objs->objects as $obj) {
                 $this->hook_response_data('delete', $obj, null);
+                // find external tables and delete associated entries
+                foreach ($this->model['externalTables'] as $extTbl) {
+                    $dep = new \Kyte\Model(${$extTbl['model']});
+                    $dep->retrieve($extTbl['field'], $obj->getParam('id'), false, $conditions);
+
+                    // delete each associated entry in the table
+                    foreach ($dep->objects as $item) {
+                        $item->delete();
+                    }
+                }
+
+                // finally, delete object
                 $obj->delete();
             }
 
