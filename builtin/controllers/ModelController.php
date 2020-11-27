@@ -381,7 +381,7 @@ class ModelController
             }
 
             foreach ($objs->objects as $obj) {
-                $this->hook_response_data('delete', $obj, null);
+                $this->hook_response_data('delete', $obj);
                 // find external tables and delete associated entries
                 foreach ($this->model['externalTables'] as $extTbl) {
                     $dep = new \Kyte\Model(${$extTbl['model']});
@@ -409,7 +409,7 @@ class ModelController
     public function hook_auth() {}
     public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
     public function hook_preprocess($method, &$r, &$o = null) {}
-    public function hook_response_data($method, $o, &$r) {}
+    public function hook_response_data($method, $o, &$r = null) {}
     public function hook_process_get_response(&$r) {}
 }
 
