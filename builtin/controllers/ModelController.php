@@ -372,8 +372,6 @@ class ModelController
         $response = [];
 
         try {
-            $this->hook_preprocess('delete', $data);
-
             $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
             $objs = new \Kyte\Model($this->model);
             $objs->retrieve($field, $value, false, $conditions);
@@ -383,6 +381,7 @@ class ModelController
             }
 
             foreach ($objs->objects as $obj) {
+                $this->hook_response_data('delete', $obj, null);
                 $obj->delete();
             }
 
