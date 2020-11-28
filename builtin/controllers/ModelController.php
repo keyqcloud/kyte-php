@@ -11,6 +11,7 @@ class ModelController
     public $model;
 
     // controller behaviour flags
+    protected $cascadeDelete;
     protected $getFKTables;
     protected $getExternalTables;
     protected $requireAuth;
@@ -42,6 +43,7 @@ class ModelController
             $this->dateformat = $dateformat;
             
             // controller behaviour flags
+            $this->cascadeDelete = true;
             $this->getFKTables = true;
             $this->getExternalTables = true;
             $this->requireAuth = true;
@@ -393,14 +395,18 @@ class ModelController
 
             foreach ($objs->objects as $obj) {
                 $this->hook_response_data('delete', $obj);
-                // find external tables and delete associated entries
-                foreach ($this->model['externalTables'] as $extTbl) {
-                    $dep = new \Kyte\Model(constant($extTbl['model']));
-                    $dep->retrieve($extTbl['field'], $obj->getParam('id'), false, $conditions);
 
-                    // delete each associated entry in the table
-                    foreach ($dep->objects as $item) {
-                        $item->delete();
+                // if cascade delete is set delete associated data
+                if ($this->cascadeDelete) {
+                    // find external tables and delete associated entries
+                    foreach ($this->model['externalTables'] as $extTbl) {
+                        $dep = new \Kyte\Model(constant($extTbl['model']));
+                        $dep->retrieve($extTbl['field'], $obj->getParam('id'), false, $conditions);
+
+                        // delete each associated entry in the table
+                        foreach ($dep->objects as $item) {
+                            $item->delete();
+                        }
                     }
                 }
 
