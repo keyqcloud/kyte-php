@@ -238,7 +238,6 @@ class ModelController
 
             // check existing and fail if present
             if ($this->checkExisting) {
-                $obj = new \Kyte\ModelObject($this->model);
                 if ($obj->retrieve($this->checkExisting, $data[$this->checkExisting])) {
                     throw new \Exception($this->model['name'].' already exists');
                 }
@@ -287,6 +286,7 @@ class ModelController
             $this->hook_prequery('update', $field, $value, $conditions, $all, $order);
             // init object
             $obj = new \Kyte\ModelObject($this->model);
+
             if ($obj->retrieve($field, $value, $conditions, null, $all)) {
 
                 // convert all date time strings to unix time
@@ -297,6 +297,17 @@ class ModelController
                         }
                     }
                 }
+
+                // check existing and fail if present
+                if ($this->checkExisting) {
+                    $existing = new \Kyte\ModelObject($this->model);
+                    if ($existing->retrieve($this->checkExisting, $data[$this->checkExisting])) {
+                        if ($existing->getParam('id') != $obj->getParam('id')) {
+                            throw new \Exception('There is already a '.strtolower($this->model['name']).' with that '.$this->checkExisting.'.');
+                        }
+                    }
+                }
+
                 $this->hook_preprocess('update', $data, $obj);
                 $obj->save($data);
                 $ret = [];
