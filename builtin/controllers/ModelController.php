@@ -193,7 +193,7 @@ class ModelController
                             $et_objs->retrieve($et['field'], $response['id'], false, $conditions, true);
                             foreach ($et_objs->objects as $et_obj) {
                                 // return list of data
-                                $response['ExternalTables'][] = $this->getObject($et_objs);
+                                $response['ExternalTables'][] = $this->getObject($et_obj);
                             }
                         }
                     }
