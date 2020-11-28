@@ -69,8 +69,31 @@ For FK attributes, the following are required:
 * `field: {true/false}` - fk table field that links to current model
 * `cascade: {true/false}` - flag for whether fk table should be deleted too
 
-### Controllers
-Coming soon
+### Controller Attributes and Flags
+Available controller attributes and flags to modify behaviour. Some a auto populated by API engine.
+`user`
+`account`
+`session`
+`response`
+`dateformat`
+`model`
+`getFKTables`
+`getExternalTables`
+`requireAuth`
+`requireRoles`
+`requireAccount`
+`failOnNull`
+`allowableActions`
+`checkExisting`
+
+### Controllers Hooks
+Available controller hooks to modify an existing or abstract controllers behaviour
+`public function hook_init() {}`
+`public function hook_auth() {}`
+`public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}`
+`public function hook_preprocess($method, &$r, &$o = null) {}`
+`public function hook_response_data($method, $o, &$r = null) {}`
+`public function hook_process_get_response(&$r) {}`
 
 ### "Abstract" Controllers or View Controllers
 For data that may have unique requirements and complex relations, an abstract controller can be created to manipulate the data and update one or more models.  "Abstract" or View controllers do not need to have a model and can act as standalone controllers that directly process and return data, such as the built-in MailController.  View Controllers are similar to virtual tables or views in traditional relational databases, such as Oracle or MySQL.  View Controllers are created just like any other controller and extends the `ModelController` class and must override all class methods.  View Controllers are called using the same URL syntax where the model is replaced by the View Controller's "view" name.  For example, for the `MailController`, the model name is `Mail`, even though no model named `Mail` exists.  The API router will recongize that the requested resource is a View Controller and correctly route the call.
