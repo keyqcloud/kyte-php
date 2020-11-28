@@ -369,6 +369,22 @@ class ModelController
         $this->response['data'] = $response;
     }
 
+    protected function deleteCascade($obj) {
+        if ($this->deleteCascade) {
+            // find external tables and delete associated entries
+            foreach ($obj->model['externalTables'] as $extTbl) {
+                $dep = new \Kyte\Model(constant($extTbl['model']));
+                $dep->retrieve($extTbl['field'], $obj->getParam('id'), false, $conditions);
+
+                // delete each associated entry in the table
+                foreach ($dep->objects as $item) {
+                    $this->deleteCascade($item);
+                    $item->delete();
+                }
+            }
+        }
+    }
+
     // delete - delete objects from db
     public function delete($field, $value)
     {
@@ -405,6 +421,7 @@ class ModelController
 
                         // delete each associated entry in the table
                         foreach ($dep->objects as $item) {
+                            $this->deleteCascade($item);
                             $item->delete();
                         }
                     }
