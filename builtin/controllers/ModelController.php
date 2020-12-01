@@ -370,7 +370,7 @@ class ModelController
     }
 
     protected function deleteCascade($obj) {
-        if ($this->deleteCascade) {
+        if ($this->cascadeDelete) {
             // find external tables and delete associated entries
             foreach ($obj->model['externalTables'] as $extTbl) {
                 $dep = new \Kyte\Model(constant($extTbl['model']));
