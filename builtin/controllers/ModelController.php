@@ -253,7 +253,7 @@ class ModelController
             if ($obj->create($data)) {
                 $ret = [];
                 $ret = $this->getObject($obj);
-                $this->hook_response_data('new', $obj, $ret);
+                $this->hook_response_data('new', $obj, $ret, $data);
                 $response = $ret;
             } else {
                 if ($this->failOnNull) {
@@ -314,7 +314,7 @@ class ModelController
                 $obj->save($data);
                 $ret = [];
                 $ret = $this->getObject($obj);
-                $this->hook_response_data('update', $obj, $ret);
+                $this->hook_response_data('update', $obj, $ret, $data);
                 $response = $ret;
             } else {
                 if ($this->failOnNull) {
@@ -443,7 +443,7 @@ class ModelController
     public function hook_auth() {}
     public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
     public function hook_preprocess($method, &$r, &$o = null) {}
-    public function hook_response_data($method, $o, &$r = null) {}
+    public function hook_response_data($method, $o, &$r = null, &$d = null) {}
     public function hook_process_get_response(&$r) {}
 }
 
