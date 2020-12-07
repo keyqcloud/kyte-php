@@ -194,8 +194,11 @@ class ModelController
                             // retrieve deleted items as well
                             $et_objs->retrieve($et['field'], $response['id'], false, $conditions, true);
                             foreach ($et_objs->objects as $et_obj) {
+                                if (!array_key_exists($et['model'], $response['ExternalTables'])) {
+                                    $response['ExternalTables'][$et['model']] = [];
+                                }
                                 // return list of data
-                                $response['ExternalTables'][] = $this->getObject($et_obj);
+                                $response['ExternalTables'][$et['model']][] = $this->getObject($et_obj);
                             }
                         }
                     }
