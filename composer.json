@@ -2,7 +2,7 @@
     "name": "keyqcloud/kyte-api-php",
     "description": "Kyte API PHP",
     "require": {
-        "keyqcloud/kyte": "3.0.x-dev",
+        "keyqcloud/Kyte": "3.0.x-dev",
         "aws/aws-sdk-php": "^3.101",
         "sendgrid/sendgrid": "^7.3",
         "stripe/stripe-php": "^7.2"
