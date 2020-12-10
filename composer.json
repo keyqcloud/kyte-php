@@ -10,7 +10,7 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "https://github.com/keyqcloud/Kyte/"
+            "url": "https://github.com/keyqcloud/kyte/"
         }
     ],
     "authors": [
