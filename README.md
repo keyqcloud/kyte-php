@@ -9,6 +9,9 @@ Web application development shouldn't have to be a chore.  Kyte was created with
 ## Getting Started
 Coming soon
 
+### .htaccess
+`FallbackResource /index.php`
+
 ### Configuration
 Coming soon
 
