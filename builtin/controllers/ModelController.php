@@ -192,7 +192,7 @@ class ModelController
                             $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
 
                             // retrieve deleted items as well
-                            $et_objs->retrieve($et['field'], $response['id'], false, $conditions, true);
+                            $et_objs->retrieve($et['field'], $response['id'], false, $conditions);
                             foreach ($et_objs->objects as $et_obj) {
                                 if (!array_key_exists($et['model'], $response['ExternalTables'])) {
                                     $response['ExternalTables'][$et['model']] = [];
