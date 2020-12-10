@@ -1,7 +1,6 @@
 <?php
 
-class API
-{
+class KyteAPI {
     public static function init() {
         /*******************************************/
         /************* CORS VALIDATION *************/
@@ -101,7 +100,7 @@ class API
 
         // URL format
         // https://uri-to-api-endpoint/ {signature} / {identity string} / {model} [ / {field} / {value} ]
-        
+
         try {
             // read in data and parse into array
             parse_str(file_get_contents("php://input"), $data);
