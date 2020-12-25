@@ -2,12 +2,15 @@
     "name": "keyqcloud/kyte-api-php",
     "description": "Kyte API PHP",
     "require": {
-        "keyqcloud/kyte": "dev-master"
+        "keyqcloud/kyte": "3.0.x-dev",
+        "aws/aws-sdk-php": "^3.101",
+        "sendgrid/sendgrid": "^7.3",
+        "stripe/stripe-php": "^7.2"
     },
     "repositories": [
         {
             "type": "vcs",
-            "url": "https://github.com/keyqcloud/Kyte/"
+            "url": "https://github.com/keyqcloud/kyte/"
         }
     ],
     "authors": [

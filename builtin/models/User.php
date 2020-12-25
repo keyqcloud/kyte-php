@@ -1,62 +1,46 @@
 <?php
 
-$SecurityTransactionHistory = [
-	'name' => 'SecurityTransactionHistory',
+$User = [
+	'name' => 'User',
 	'struct' => [
-		'txToken'		=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'url_path'		=> [
-			'type'		=> 's',
-			'required'	=> true,
-			'size'		=> 1024,
-			'date'		=> false,
-		],
-
-		'origin'	=> [
+		'name'		=> [
 			'type'		=> 's',
 			'required'	=> true,
 			'size'		=> 255,
 			'date'		=> false,
 		],
 
-		'ip_address'	=> [
+		'email'		=> [
 			'type'		=> 's',
 			'required'	=> true,
 			'size'		=> 255,
 			'date'		=> false,
 		],
 
-		'user_agent'	=> [
+		'password'	=> [
 			'type'		=> 's',
 			'required'	=> true,
 			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'method'	=> [
-			'type'		=> 's',
-			'required'	=> true,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'data'	=> [
-			'type'		=> 't',
-			'required'	=> false,
 			'date'		=> false,
 			'protected'	=> true,
 		],
 
-		'return'	=> [
-			'type'		=> 't',
-			'required'	=> false,
+		'role'	=> [
+			'type'		=> 'i',
+			'required'	=> true,
+			'size'		=> 11,
+			'unsigned'	=> true,
 			'date'		=> false,
-			'protected'	=> true,
+		],
+
+		// framework attributes
+
+		'kyte_account'	=> [
+			'type'		=> 'i',
+			'required'	=> true,
+			'size'		=> 11,
+			'unsigned'	=> true,
+			'date'		=> false,
 		],
 
 		// audit attributes
@@ -65,14 +49,12 @@ $SecurityTransactionHistory = [
 			'type'		=> 'i',
 			'required'	=> false,
 			'date'		=> true,
-			'dateformat'	=> 'Y/m/d H:i:s',
 		],
 
 		'date_modified'		=> [
 			'type'		=> 'i',
 			'required'	=> false,
 			'date'		=> true,
-			'dateformat'	=> 'Y/m/d H:i:s',
 		],
 
 		'date_deleted'		=> [

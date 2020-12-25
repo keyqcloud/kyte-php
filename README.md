@@ -9,6 +9,9 @@ Web application development shouldn't have to be a chore.  Kyte was created with
 ## Getting Started
 Coming soon
 
+### .htaccess
+`FallbackResource /index.php`
+
 ### Configuration
 Coming soon
 
@@ -39,42 +42,61 @@ Models are defined in the `/models` directory of the framework.  Models are defi
 $ModelName = [
 	'name' => 'ModelName',          // must correspond with the table name in the database
 	'struct' => [
-		'id'			=> [        // required field and must correspond with the column name of table
-			'type'		=> 'i',     // availble types are i, s, d.
-			'required'	=> false,
-			'date'		=> false,
-		],
+		'field1'		=> [...attributes...],
 
-		'data1'		=> [            // must correspond with the column name of table
-			'type'		=> 's',
-			'required'	=> true,
-			'date'		=> false,
-		],
+		'field2'	=> [...attributes...],
 
-		'data2'	=> [                // must correspond with the column name of table
-			'type'		=> 's',
-			'required'	=> true,
-			'date'		=> false,
-		],
-
-		'data3'	=> [                // must correspond with the column name of table
-			'type'		=> 's',
-			'required'	=> true,
-			'date'		=> false,
-		],
-
-		'deleted'	=> [            // required field and must correspond with the column name of table
-			'type'		=> 'i',
-			'required'	=> false,
-			'date'		=> false,
-		],
+		'field3'	=> [...attributes...],
 	],
 ];
 ```
-All models must have the fields `id` and `deleted` to work with the Kyte-PHP framework.
 
-### Controllers
-Coming soon
+
+### Model Attributes
+The following are allowed model attributes used when declaring a field - some are required.
+
+* `type: {s/i/d/t}` - defines field type (currently supports s for varchar, i for int, d for decimal, and t for text)
+* `required: {true/false}` - flag for if field is required, i.e. cannot be null
+* `size: {int}` - defines size of field for varchar and int
+* `precision: {int}` - defines precision for decimal
+* `scale: {int}` - defines scale for decimal
+* `date: {true/false}` - flag for if field is date time
+* `protected: {true/false}` - flag for if field should not be returned in response data, i.e. passwords and hashes
+* `dateformat: {ex: YYYY/MM/DD H:i:s}` - optional date format which can be used to override framework configuration
+* `unsigned: {true/false}` - flag for unsigned int
+* `default: {default value}` - defines optional default value
+* `fk: {array with FK attributes}` - if a field is a foreign key, then used to define table and field that associates with it (see below)
+
+For FK attributes, the following are required:
+* `model: {true/false}` - fk table name
+* `field: {true/false}` - fk table field that links to current model
+* `cascade: {true/false}` - flag for whether fk table should be deleted too
+
+### Controller Attributes and Flags
+Available controller attributes and flags to modify behaviour. Some a auto populated by API engine.
+`user`
+`account`
+`session`
+`response`
+`dateformat`
+`model`
+`getFKTables`
+`getExternalTables`
+`requireAuth`
+`requireRoles`
+`requireAccount`
+`failOnNull`
+`allowableActions`
+`checkExisting`
+
+### Controllers Hooks
+Available controller hooks to modify an existing or abstract controllers behaviour
+`public function hook_init() {}`
+`public function hook_auth() {}`
+`public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}`
+`public function hook_preprocess($method, &$r, &$o = null) {}`
+`public function hook_response_data($method, $o, &$r = null) {}`
+`public function hook_process_get_response(&$r) {}`
 
 ### "Abstract" Controllers or View Controllers
 For data that may have unique requirements and complex relations, an abstract controller can be created to manipulate the data and update one or more models.  "Abstract" or View controllers do not need to have a model and can act as standalone controllers that directly process and return data, such as the built-in MailController.  View Controllers are similar to virtual tables or views in traditional relational databases, such as Oracle or MySQL.  View Controllers are created just like any other controller and extends the `ModelController` class and must override all class methods.  View Controllers are called using the same URL syntax where the model is replaced by the View Controller's "view" name.  For example, for the `MailController`, the model name is `Mail`, even though no model named `Mail` exists.  The API router will recongize that the requested resource is a View Controller and correctly route the call.

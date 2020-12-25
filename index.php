@@ -37,7 +37,7 @@ if ($request == 'OPTIONS') {
 /*******************************************/
 
 // initialize api
-require_once __DIR__.'/initializer.php';
+require_once __DIR__.'/bootstrap.php';
 
 // compatibility for older config files
 if (!defined('ALLOW_ENC_HANDOFF')) {
@@ -78,22 +78,26 @@ if (!defined('PASSWORD_FIELD')) {
 // 	data: {}
 // }
 $response = [];
-$response['version'] = \Kyte\ApplicationVersion::get();
-$response['token'] = '';
-$response['session'] = '';
+$response['engine_version'] = \Kyte\Version::get();
+$response['framework_version'] = Version::get();
+$response['session'] = '0';
+$response['token'] = 0;	// default to public token
+$response['uid'] = 0;
+$response['sessionPermission'] = 0;
 $response['error'] = '';
 $response['model'] = '';
 $response['transaction'] = $request;
 $now = new DateTime();
 $now->setTimezone(new DateTimeZone('UTC'));    // Another way
 $response['txTimestamp'] = $now->format('U');
+
 $contentType = '';
 if (array_key_exists('CONTENT_TYPE', $_SERVER)) {
     $contentType = $_SERVER['CONTENT_TYPE'];
 }
+
 // URL format
 // https://uri-to-api-endpoint/ {signature} / {identity string} / {model} [ / {field} / {value} ]
- 
 
 try {
     // read in data and parse into array
@@ -140,75 +144,83 @@ try {
 
         // get the identity string and verify
         $idenstr = base64_decode(urldecode($elements[1]));
+
         // identity string format:
-        // public_key:session_token:UTC date format
+        // public_key%session_token%UTC date format%account #
         $iden = explode('%', $idenstr);
 
-        if (count($iden) != 3) {
-            throw new \Kyte\SessionException("[ERROR] Invalid identity string: $request.");
+        if (count($iden) != 4) {
+            throw new SessionException("[ERROR] Invalid identity string: $request.");
         }
 
-        // session token
-        $response['session'] = $iden[1];
+        // #1
+        // get UTC date from identity signature
+        $date = new DateTime($iden[2], new DateTimeZone('UTC'));
+        // check expiration
+        if (time() > $date->format('U') + (60*30)) {
+            throw new SessionException("API request has expired.");
+        }
 
+        // #2
+        // initialize API with public key from idneity signature
         $api = new \Kyte\API(APIKey);
-        // init new api with key
         $api->init($iden[0]);
 
-        // check if signature is valid - signature and signature datetime
-        $date = new DateTime($iden[2], new DateTimeZone('UTC'));
-
-        $response['token'] = "0";	// default to public token
-
-        // if undefined is passed from front end then set to zero
-        $iden[1] = $iden[1] == 'undefined' ? "0" : $iden[1];
-
-        // retrieve transaction token corresponding to session token
-        $sessionObj = new \Kyte\ModelObject(Session);
-        if ($sessionObj->retrieve('sessionToken', $iden[1])) {
-            $response['token'] = $sessionObj->getParam('txToken');
+        // #3
+        // get account number from identity signature
+        $account = new \Kyte\ModelObject(Account);
+        if (!$account->retrieve('number', $iden[3])) {
+            throw new Exception("[ERROR] Unable to find account for {$iden[3]}.");
         }
 
+        // #4
+        // if undefined is passed from front end then set to zero
+        $iden[1] = $iden[1] == 'undefined' ? 0 : $iden[1];
+        // get session token from identity signature
+        $response['session'] = $iden[1];
+        // retrieve transaction and user token corresponding to session token
+        $session = new SessionManager(Session, User, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
+        $user = new \Kyte\ModelObject(User);
+        if ($iden[1]) {
+            $session_ret = $session->validate($iden[1]);
+            $response['token'] = $session_ret['txToken'];
+            $response['uid'] = $session_ret['uid'];
+            
+            if (!$user->retrieve('id', $session_ret['uid'], [[ 'field' => 'kyte_account', 'value' => $account->getParam('id')]])) {
+                throw new SessionException("Invalid user session.");
+            }
+            $response['sessionPermission'] = $user->getParam('role');
+        }
         // update log with tx token
         $log->save(['txToken' => $response['token']]);
 
-		// calculate hash based on provided information
+        /* ********************************** */
+        /* **** VERIFY SIGNATURE - START **** */
+        // calculate hash based on provided information
         $hash1 = hash_hmac('SHA256', $response['token'], $api->key->getParam('secret_key'), true);
         $hash1_debug = hash_hmac('SHA256', $response['token'], $api->key->getParam('secret_key'));
         $hash2 = hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1, true);
         $hash2_debug = hash_hmac('SHA256', $api->key->getParam('identifier'), $hash1);
         $calculated_signature = hash_hmac('SHA256', $date->format('U'), $hash2);
-
-        error_log("Time: ".$date->format('U')." ".$iden[2]."\n");
-        error_log("hash1: $hash1_debug\thash2:$hash2_debug\tFinal:$calculated_signature\n");
-        error_log("Client: ".$elements[0]."\n");
-
+        // error_log("Time: ".$date->format('U')." ".$iden[2]."\n");
+        // error_log("hash1: $hash1_debug\thash2:$hash2_debug\tFinal:$calculated_signature\n");
+        // error_log("Client: ".$elements[0]."\n");
         if ($calculated_signature != $elements[0])
-            throw new \Kyte\SessionException("Calculated signature does not match provided signature.");
-				
-        if (time() > $date->format('U') + (60*30)) {
-            throw new \Kyte\SessionException("Calculated signature has expired and does not match provided signature.");
-        }
-
-        // update token string
-        if ($response['token']) {
-            // if all looks good, then generate new txToken
-            $session = new \Kyte\SessionManager(Session, Account, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
-            $session_ret = $session->validate($response['token'], $iden[1], ALLOW_SAME_TXTOKEN);
-            $response['token'] = $session_ret['txToken'];
-        }
+            throw new SessionException("Calculated signature does not match provided signature.");
+        /* **** VERIFY SIGNATURE - END **** */
+        /* ********************************** */
 
         // initialize controller for model or view ("abstract" controller)
         $controllerClass = class_exists($elements[2].'Controller') ? $elements[2].'Controller' : 'ModelController';
         // create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
-        $controller = new $controllerClass(isset(${$elements[2]}) ? ${$elements[2]} : null, APP_DATE_FORMAT, $response['token'], $iden[1]);
+        $controller = new $controllerClass(isset(${$elements[2]}) ? ${$elements[2]} : null, APP_DATE_FORMAT, $account, $session, $user, $response);
         if (!$controller) throw new Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 
         switch ($request) {
             case 'POST':
                 // post data = data
                 // new  :   {data}
-                $response['data'] = $controller->new($data);
+                $controller->new($data);
                 break;
 
             case 'PUT':
@@ -216,21 +228,21 @@ try {
                 // element[4] = value
                 // post data = data
                 // update   :   {field}, {value}, {data}
-                $response['data'] = $controller->update((isset($elements[3]) ? $elements[3] : null), (isset($elements[4]) ? urldecode($elements[4]) : null), $data);
+                $controller->update((isset($elements[3]) ? $elements[3] : null), (isset($elements[4]) ? urldecode($elements[4]) : null), $data);
                 break;
 
             case 'GET':
                 // element[3] = field
                 // element[4] = value
                 // get  :   {field}, {value}
-                $response['data'] = $controller->get((isset($elements[3]) ? $elements[3] : null), (isset($elements[4]) ? urldecode($elements[4]) : null));
+                $controller->get((isset($elements[3]) ? $elements[3] : null), (isset($elements[4]) ? urldecode($elements[4]) : null));
                 break;
 
             case 'DELETE':
                 // element[3] = field
                 // element[4] = value
                 // delete   :   {field}, {value}
-                $response['data'] = $controller->delete((isset($elements[3]) ? $elements[3] : null), (isset($elements[4]) ? urldecode($elements[4]) : null));
+                $controller->delete((isset($elements[3]) ? $elements[3] : null), (isset($elements[4]) ? urldecode($elements[4]) : null));
                 break;
             
             default:
@@ -274,15 +286,15 @@ try {
     $response['error'] = $e->getMessage();
     // log return response
     $log->save(['return' => print_r($response, true)]);
-	echo json_encode($response);
-	exit(0);
+    echo json_encode($response);
+    exit(0);
 } catch (Exception $e) {
     http_response_code(400);
     $response['error'] = $e->getMessage();
     // log return response
     $log->save(['return' => print_r($response, true)]);
-	echo json_encode($response);
-	exit(0);
+    echo json_encode($response);
+    exit(0);
 }
 
 // log return response

@@ -29,19 +29,19 @@
     /* KYTE FRAMEWORK SPECIFIC SETTINGS */
     define('ALLOW_ENC_HANDOFF', true);
     define('ALLOW_MULTILOGON', false);
-    define('ALLOW_SAME_TXTOKEN', false);
     define('SESSION_TIMEOUT', 3600);
     define('USERNAME_FIELD', 'email');
     define('PASSWORD_FIELD', 'password');
 
-	/* SENDGRID INTEGRATION */
-	\Kyte\Mail::setSendGridAPIKey('');
+    /* SENDGRID INTEGRATION */
+    define('KYTE_SENDGRID_API', '');
 
-	/* DB INTEGRATION */
-	\Kyte\DBI::setDbUser('');
-	\Kyte\DBI::setDbPassword('');
-	\Kyte\DBI::setDbHost('');
-	\Kyte\DBI::setDbName('');
+    /* DB INTEGRATION */
+    define('KYTE_DB_USERNAME', '');
+    define('KYTE_DB_PASSWORD', '');
+    define('KYTE_DB_HOST', '');
+    define('KYTE_DB_DATABASE', '');
+    define('KYTE_DB_CHARSET', 'utf8mb4');
 
 	/* APP TIMEZONE */
 	date_default_timezone_set("Asia/Tokyo");

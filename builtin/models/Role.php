@@ -1,19 +1,22 @@
 <?php
 
-$Account = [
-	'name' => 'Account',
+$Role = [
+	'name' => 'Role',
 	'struct' => [
 		'name'		=> [
 			'type'		=> 's',
-			'required'	=> false,
+			'required'	=> true,
 			'size'		=> 255,
 			'date'		=> false,
 		],
 
-		'number'		=> [
-			'type'		=> 's',
+		// framework attributes
+
+		'kyte_account'	=> [
+			'type'		=> 'i',
 			'required'	=> true,
-			'size'		=> 32,
+			'size'		=> 11,
+			'unsigned'	=> true,
 			'date'		=> false,
 		],
 

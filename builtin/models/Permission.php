@@ -1,62 +1,38 @@
 <?php
 
-$SecurityTransactionHistory = [
-	'name' => 'SecurityTransactionHistory',
+$Permission = [
+	'name' => 'Permission',
 	'struct' => [
-		'txToken'		=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'url_path'		=> [
-			'type'		=> 's',
+		'role'	=> [
+			'type'		=> 'i',
 			'required'	=> true,
-			'size'		=> 1024,
+			'size'		=> 11,
+			'unsigned'	=> true,
 			'date'		=> false,
 		],
 
-		'origin'	=> [
+		'model'		=> [
 			'type'		=> 's',
 			'required'	=> true,
 			'size'		=> 255,
 			'date'		=> false,
 		],
 
-		'ip_address'	=> [
+		'action'		=> [
 			'type'		=> 's',
 			'required'	=> true,
 			'size'		=> 255,
 			'date'		=> false,
 		],
 
-		'user_agent'	=> [
-			'type'		=> 's',
+		// framework attributes
+
+		'kyte_account'	=> [
+			'type'		=> 'i',
 			'required'	=> true,
-			'size'		=> 255,
+			'size'		=> 11,
+			'unsigned'	=> true,
 			'date'		=> false,
-		],
-
-		'method'	=> [
-			'type'		=> 's',
-			'required'	=> true,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'data'	=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-			'protected'	=> true,
-		],
-
-		'return'	=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-			'protected'	=> true,
 		],
 
 		// audit attributes
@@ -65,14 +41,12 @@ $SecurityTransactionHistory = [
 			'type'		=> 'i',
 			'required'	=> false,
 			'date'		=> true,
-			'dateformat'	=> 'Y/m/d H:i:s',
 		],
 
 		'date_modified'		=> [
 			'type'		=> 'i',
 			'required'	=> false,
 			'date'		=> true,
-			'dateformat'	=> 'Y/m/d H:i:s',
 		],
 
 		'date_deleted'		=> [

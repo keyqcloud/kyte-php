@@ -3,14 +3,6 @@
 $APIKey = [
 	'name' => 'APIKey',
 	'struct' => [
-		'id'			=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'pk'		=> true,
-			'size'		=> 11,
-			'date'		=> false,
-		],
-
 		'identifier'		=> [
 			'type'		=> 's',
 			'required'	=> true,
@@ -37,6 +29,16 @@ $APIKey = [
 			'type'		=> 'i',
 			'required'	=> true,
 			'date'		=> true,
+		],
+
+		// framework attributes
+
+		'kyte_account'	=> [
+			'type'		=> 'i',
+			'required'	=> true,
+			'size'		=> 11,
+			'unsigned'	=> true,
+			'date'		=> false,
 		],
 
 		// audit attributes

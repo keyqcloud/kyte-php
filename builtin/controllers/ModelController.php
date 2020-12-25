@@ -3,28 +3,56 @@
 class ModelController
 {
 
-    protected $txToken;
-    protected $sessionToken;
-    protected $getFKTable;
-    protected $session;
     protected $user;
-    protected $failOnNull;
-    protected $exceptionMessages;
-    protected $requireAuth;
+    protected $account;
+    protected $session;
+    protected $response;
     public $dateformat;
     public $model;
 
-    public function __construct($model, $dateformat, $txToken, $sessionToken)
+    // controller behaviour flags
+    protected $cascadeDelete;
+    protected $getFKTables;
+    protected $getExternalTables;
+    protected $requireAuth;
+    protected $requireRoles;
+    protected $requireAccount;
+    protected $failOnNull;
+    protected $allowableActions;
+    protected $checkExisting;
+
+    // array with error messages
+    protected $exceptionMessages;
+
+    public function __construct($model, $dateformat, &$account, &$session, &$user, &$response)
     {
         try {
-            $this->txToken = $txToken;
-            $this->sessionToken = $sessionToken;
-            $this->dateformat = $dateformat;
+            // default to allow all actions
+            $this->allowableActions = ['new', 'update', 'get', 'delete'];
+
             $this->model = $model;
-            $this->session = new \Kyte\SessionManager(Session, Account, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
-            $this->getFKTable = true;
-            $this->failOnNull = false;
+            // session related variables
+            $this->user = &$user;
+            $this->account = &$account;
+            $this->session = &$session;
+
+            // response
+            $this->response = &$response;
+
+            // date time format
+            $this->dateformat = $dateformat;
+            
+            // controller behaviour flags
+            $this->cascadeDelete = true;
+            $this->getFKTables = true;
+            $this->getExternalTables = true;
             $this->requireAuth = true;
+            $this->requireRoles = true;
+            $this->requireAccount = true;
+            $this->checkExisting = null;
+            $this->failOnNull = false;
+
+            // default error messages
             $this->exceptionMessages = [
                 'new' => [
                     'failOnNull' => 'Unable to create new object',
@@ -39,7 +67,6 @@ class ModelController
                     'failOnNull' => 'Unable to delete object(s)',
                 ],
             ];
-            $this->user = [];
             $this->init();
         } catch (Exception $e) {
             throw $e;
@@ -54,11 +81,36 @@ class ModelController
         }
     }
 
-    // * for subclasses that are public, override with empty function
     protected function authenticate()
     {
-        $this->user = $this->session->validate($this->txToken, $this->sessionToken, ALLOW_SAME_TXTOKEN);
+        if (!$this->user && !$this->session) {
+            throw new SessionException("Unauthorized API request.");
+        }
         $this->hook_auth();
+    }
+
+    protected function checkPermissions($requestType, $modelName = null) {
+        if ($this->requireAuth && $this->requireRoles) {
+            // if model name is set then use it, otherwise use clas model
+            $modelName = $modelName ? $modelName : $this->model['name'];
+
+            // check if user assigned role exists
+            $role = new \Kyte\ModelObject(Role);
+            $cond = $this->requireAccount ? [ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')] : null;
+            if (!$role->retrieve('id', $this->user->getParam('role'), [$cond])) {
+                error_log('unable to find role for '.$this->user->getParam('role').' and '.$this->account->getParam('id'));
+                return false;
+            }
+
+            // check if assigned role has permission for request type
+            $permission = new \Kyte\ModelObject(Permission);
+            if (!$permission->retrieve('role', $role->getParam('id'), [ ['field' => 'model', 'value' => $modelName], ['field' => 'action', 'value' => $requestType], $cond ])) {
+                error_log('unable to find permission');
+                return false;
+            }
+        }
+
+        return true;
     }
 
     protected function getObject($obj) {
@@ -66,6 +118,8 @@ class ModelController
 
         try {
             $response = $obj->getAllParams();
+
+            // iterate through each param and apply filter
             foreach($response as $key => $value) {
                 if (isset($obj->model['struct'][$key])) {
                     // if protected attribute then return empty string
@@ -74,6 +128,7 @@ class ModelController
                             $response[$key] = '';
                         }
                     }
+
                     // if date format is specified
                     if (isset($obj->model['struct'][$key]['date'])) {
                         if ($obj->model['struct'][$key]['date']) {
@@ -89,48 +144,70 @@ class ModelController
                         }
                     }
 
-                    if ($this->getFKTable) {
-                        if (isset($obj->model['struct'][$key]['fk'])) {
-                            if ($obj->model['struct'][$key]['fk'] && $response[$key]) {
-                                $fk = explode('_', $key);
-                                if (count($fk) == 2) {
-                                    $fk_objs = new \Kyte\Model(constant($fk[0]));
+                    // if get FK is set then check for FK
+                    if ($this->getFKTables) {
+                        if (isset($obj->model['struct'][$key]['fk']) && !empty($response[$key])) {
+
+                            $fk = $obj->model['struct'][$key]['fk'];
+
+                            if (isset($fk['model'], $fk['field'])) {
+                                
+                                // check if permissions allow for this behaviour
+                                if ($this->checkPermissions('get', $fk['model'])) {
+
+                                    $fk_obj = new \Kyte\ModelObject(constant($fk['model']));
+                                    // check if account is required
+                                    $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
+
                                     // retrieve deleted items as well
-                                    // retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null)
-                                    $fk_objs->retrieve($fk[1], $response[$key], false, null, true);
-                                    foreach ($fk_objs->objects as $fk_obj) {
+                                    if ($fk_obj->retrieve($fk['field'], $response[$key], $conditions, null, true)) {
                                         // return list of data
-                                        $response[$fk[0]][] = $this->getObject($fk_obj);
+                                        $response[$key] = $this->getObject($fk_obj);
                                     }
                                 }
                             }
                         }
                     }
-                    // if ($this->getFKTable) {
-                    //     // if foreign key, retrieve data from fk table
-                    //     if (isset($obj->model['struct'][$key]['fk'], $obj->model['struct'][$key]['fkCol'])) {
-                    //         if ($obj->model['struct'][$key]['fk'] && $obj->model['struct'][$key]['fkCol'] && $response[$key]) {
-                    //             // get table name
-                    //             $fk = $obj->model['struct'][$key]['fk'];
-                    //             // get column name
-                    //             $field = $obj->model['struct'][$key]['fkCol'];
-
-                    //             error_log("FK Identified for $key for table $fk on field $field");
-                            
-                    //             $fk_objs = new \Kyte\Model(constant($fk));
-                    //             // retrieve deleted items as well
-                    //             // retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null)
-                    //             $fk_objs->retrieve($field, $response[$key], false, null, true);
-                    //             $response[$key] = [];
-                    //             foreach ($fk_objs->objects as $fk_obj) {
-                    //                 // return list of data
-                    //                 $response[$key][] = $this->getObject($fk_obj);
-                    //             }            
-                    //         }
-                    //     }
-                    // }
                 }
             }
+
+            // next, get external tables that have fk to this
+            if ($this->getExternalTables && isset($obj->model['externalTables'])) {
+                // temporarily set FK table to false so we don't cause an endless loop
+                $fkFlag = $this->getFKTables;
+                $this->getFKTables = false;
+
+                // define array
+                $response['ExternalTables'] = [];
+
+                foreach ($obj->model['externalTables'] as $et) {
+
+                    if (isset($et['model'], $et['field'])) {
+
+                        // check if permissions allow for this behaviour
+                        if ($this->checkPermissions('get', $et['model'])) {
+
+                            $et_objs = new \Kyte\Model(constant($et['model']));
+                            // check if account is required
+                            $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
+
+                            // retrieve deleted items as well
+                            $et_objs->retrieve($et['field'], $response['id'], false, $conditions);
+                            foreach ($et_objs->objects as $et_obj) {
+                                if (!array_key_exists($et['model'], $response['ExternalTables'])) {
+                                    $response['ExternalTables'][$et['model']] = [];
+                                }
+                                // return list of data
+                                $response['ExternalTables'][$et['model']][] = $this->getObject($et_obj);
+                            }
+                        }
+                    }
+                }
+
+                // return FK table flag to original value
+                $this->getFKTables = $fkFlag;
+            }
+
         } catch (Exception $e) {
             throw $e;
         }
@@ -141,8 +218,17 @@ class ModelController
     // new - create new entry in db
     public function new($data)
     {
+        if (!in_array('new', $this->allowableActions)) {
+            return;
+        }
+
+        if (!$this->checkPermissions('new')) {
+            throw new \Exception('Permission Denied');
+        }
+
         $response = [];
 
+        // convert all dates to unix time
         foreach($data as $key => $value) {
             if (isset($this->model['struct'][$key])) {
                 if ($this->model['struct'][$key]['date']) {
@@ -152,12 +238,25 @@ class ModelController
         }
 
         try {
+            // init new object
             $obj = new \Kyte\ModelObject($this->model);
+
+            // check existing and fail if present
+            if ($this->checkExisting) {
+                if ($obj->retrieve($this->checkExisting, $data[$this->checkExisting])) {
+                    throw new \Exception($this->model['name'].' already exists');
+                }
+            }
+            
+            // hook for any custom behaviours before creating object
             $this->hook_preprocess('new', $data);
+            // add account information
+            $data['kyte_account'] = $this->account->getParam('id');
+            // create object & get return
             if ($obj->create($data)) {
                 $ret = [];
                 $ret = $this->getObject($obj);
-                $this->hook_response_data('new', $obj, $ret);
+                $this->hook_response_data('new', $obj, $ret, $data);
                 $response = $ret;
             } else {
                 if ($this->failOnNull) {
@@ -168,24 +267,34 @@ class ModelController
             throw $e;
         }
 
-        return $response;
+        $this->response['data'] = $response;
     }
 
     // update - update entry in db
     public function update($field, $value, $data)
     {
+        if (!in_array('update', $this->allowableActions)) {
+            return;
+        }
+
+        if (!$this->checkPermissions('update')) {
+            throw new \Exception('Permission Denied');
+        }
+
         if ($field === null || $value === null) throw new \Exception("Field ($field) and Value ($value) params not set");
 
         $response = [];
 
         try {
-            $conditions = null;
+            $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
             $all = false;
-            $order = null;
             $this->hook_prequery('update', $field, $value, $conditions, $all, $order);
+            // init object
             $obj = new \Kyte\ModelObject($this->model);
-            if ($obj->retrieve($field, $value, false, $conditions, $all, $order)) {
 
+            if ($obj->retrieve($field, $value, $conditions, null, $all)) {
+
+                // convert all date time strings to unix time
                 foreach($data as $key => $value) {
                     if (isset($this->model['struct'][$key])) {
                         if ($this->model['struct'][$key]['date']) {
@@ -193,11 +302,22 @@ class ModelController
                         }
                     }
                 }
+
+                // check existing and fail if present
+                if ($this->checkExisting) {
+                    $existing = new \Kyte\ModelObject($this->model);
+                    if ($existing->retrieve($this->checkExisting, $data[$this->checkExisting])) {
+                        if ($existing->getParam('id') != $obj->getParam('id')) {
+                            throw new \Exception('There is already a '.strtolower($this->model['name']).' with that '.$this->checkExisting.'.');
+                        }
+                    }
+                }
+
                 $this->hook_preprocess('update', $data, $obj);
                 $obj->save($data);
                 $ret = [];
                 $ret = $this->getObject($obj);
-                $this->hook_response_data('update', $obj, $ret);
+                $this->hook_response_data('update', $obj, $ret, $data);
                 $response = $ret;
             } else {
                 if ($this->failOnNull) {
@@ -208,21 +328,29 @@ class ModelController
             throw $e;
         }
 
-        return $response;
+        $this->response['data'] = $response;
     }
 
     // get - retrieve objects from db
     public function get($field, $value)
     {
+        if (!in_array('get', $this->allowableActions)) {
+            return;
+        }
+
+        if (!$this->checkPermissions('get')) {
+            throw new \Exception('Permission Denied');
+        }
+
         $response = [];
 
         try {
-            $conditions = null;
+            $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
             $all = false;
             $order = null;
             $this->hook_prequery('get', $field, $value, $conditions, $all, $order);
+            // init model
             $objs = new \Kyte\Model($this->model);
-            
             $objs->retrieve($field, $value, false, $conditions, $all, $order);
 
             if ($this->failOnNull && count($objs->objects) < 1) {
@@ -241,25 +369,68 @@ class ModelController
             throw $e;
         }
 
-        return $response;
+        $this->response['data'] = $response;
+    }
+
+    protected function deleteCascade($obj) {
+        if ($this->cascadeDelete && isset($obj->model['externalTables'])) {
+            // find external tables and delete associated entries
+            foreach ($obj->model['externalTables'] as $extTbl) {
+                $dep = new \Kyte\Model(constant($extTbl['model']));
+                $dep->retrieve($extTbl['field'], $obj->getParam('id'), false, $conditions);
+
+                // delete each associated entry in the table
+                foreach ($dep->objects as $item) {
+                    $this->deleteCascade($item);
+                    $item->delete();
+                }
+            }
+        }
     }
 
     // delete - delete objects from db
     public function delete($field, $value)
     {
+        if (!in_array('delete', $this->allowableActions)) {
+            return;
+        }
+
+        if (!$this->checkPermissions('delete')) {
+            throw new \Exception('Permission Denied');
+        }
+
         if ($field === null || $value === null) throw new \Exception("Field ($field) and Value ($value) params not set");
 
         $response = [];
 
         try {
+            $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
             $objs = new \Kyte\Model($this->model);
-            $objs->retrieve($field, $value);
+            $objs->retrieve($field, $value, false, $conditions);
             
             if ($this->failOnNull && count($objs->objects) < 1) {
                 throw new \Exception($this->exceptionMessages['delete']['failOnNull']);
             }
 
             foreach ($objs->objects as $obj) {
+                $this->hook_response_data('delete', $obj);
+
+                // if cascade delete is set delete associated data
+                if ($this->cascadeDelete) {
+                    // find external tables and delete associated entries
+                    foreach ($this->model['externalTables'] as $extTbl) {
+                        $dep = new \Kyte\Model(constant($extTbl['model']));
+                        $dep->retrieve($extTbl['field'], $obj->getParam('id'), false, $conditions);
+
+                        // delete each associated entry in the table
+                        foreach ($dep->objects as $item) {
+                            $this->deleteCascade($item);
+                            $item->delete();
+                        }
+                    }
+                }
+
+                // finally, delete object
                 $obj->delete();
             }
 
@@ -267,7 +438,7 @@ class ModelController
             throw $e;
         }
 
-        return $response;
+        $this->response['data'] = $response;
     }
 
     // hook function - user defined
@@ -275,7 +446,7 @@ class ModelController
     public function hook_auth() {}
     public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
     public function hook_preprocess($method, &$r, &$o = null) {}
-    public function hook_response_data($method, $o, &$r) {}
+    public function hook_response_data($method, $o, &$r = null, &$d = null) {}
     public function hook_process_get_response(&$r) {}
 }
 
