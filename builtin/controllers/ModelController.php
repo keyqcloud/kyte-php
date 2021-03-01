@@ -197,7 +197,7 @@ class ModelController
                 $obj->save($data);
                 $ret = [];
                 $ret = $this->getObject($obj);
-                $this->hook_response_data('update', $obj, $ret);
+                $this->hook_response_data('update', $obj, $ret, $data);
                 $response = $ret;
             } else {
                 if ($this->failOnNull) {
