@@ -248,10 +248,10 @@ class ModelController
                 }
             }
             
+            // add account information
+            $data['kyte_account'] = $this->requireAccount ? $this->account->getParam('id') : null;
             // hook for any custom behaviours before creating object
             $this->hook_preprocess('new', $data);
-            // add account information
-            $data['kyte_account'] = $this->account->getParam('id');
             // create object & get return
             if ($obj->create($data)) {
                 $ret = [];
