@@ -140,6 +140,8 @@
             define($model_name, $$model_name);
         }
     }
+
+    define('KYTE_MODELS', $models);
     
     // include any built-in controllers
 	foreach (glob(__DIR__ . "/builtin/controllers/*.php") as $filename) {
