@@ -20,7 +20,12 @@ class SessionController extends ModelController
 				if (!isset($data[$param]))
 					throw new Exception("Incomplete data passed");
 			}
-            $response = $this->session->create($data['email'], $data['password']);
+	    $response = $this->session->create($data['email'], $data['password']);
+	    foreach($response as $key => $value) {
+		    if ($key == 'date_modified' || $key == 'exp_date' || $key == 'create_date') {
+                        $response[$key] = is_numeric($response[$key]) ? intval($response[$key]) : $response[$key];
+                    }
+	    }
             $obj = new \Kyte\ModelObject(Account);
             if ($obj->retrieve('id', $response['uid'])) {
                 $response['Account'] = $this->getObject($obj);
@@ -43,7 +48,12 @@ class SessionController extends ModelController
     {
         try {
             $response = $this->session->validate($this->txToken, $this->sessionToken, ALLOW_SAME_TXTOKEN);
-            $obj = new \Kyte\ModelObject(Account);
+	    foreach($response as $key => $value) {
+		if ($key == 'date_modified' || $key == 'exp_date' || $key == 'create_date') {
+                    $response[$key] = is_numeric($response[$key]) ? intval($response[$key]) : $response[$key];
+                }
+	    }
+	    $obj = new \Kyte\ModelObject(Account);
             if ($obj->retrieve('id', $response['uid'])) {
                 $response['Account'] = $this->getObject($obj);
             }
