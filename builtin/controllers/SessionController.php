@@ -14,21 +14,42 @@ class SessionController extends ModelController
         $response = [];
 
         try {
+            // check for required params
             foreach (['email', 'password'] as $param) {
 				if (!isset($data[$param]))
 					throw new Exception("Incomplete data passed");
 			}
+
+            // create session for user and obtain user information
             $response = $this->session->create($data['email'], $data['password']);
             $obj = new \Kyte\ModelObject(User);
-            if ($obj->retrieve('id', $response['uid'])) {
-                $response['User'] = $this->getObject($obj);
+            if (!$obj->retrieve('id', $response['uid'])) {
+                throw new Exception("Unable to find user information");    
             }
+            $response['User'] = $this->getObject($obj);
+
+            // get user account
+            $account = new \Kyte\ModelObject(Account);
+            if (!$account->retrieve('id', $user->getParam('kyte_account'))) {
+                throw new Exception("Unable to find account associated with user");
+            }
+
+            // get api associated with account
+            $account_api = new \Kyte\ModelObject(APIKey);
+            if (!$account_api->retrieve('kyte_account', $account->getParam('id'))) {
+                throw new Exception("[ERROR] Unable to find API information for account");
+            }
+
+            // return account information in response - this is required for API handoff between master account and subaccounts
+            $this->$response['kyte_pub'] = $account_api->getParam('public_key');
+            $this->$response['kyte_num'] = $account->getParam('number');
+            $this->$response['kyte_iden'] = $account_api->getParam('identifier');
+
+            $this->response['token'] = $response['txToken'];
+            $this->response['data'] = $response;
         } catch (Exception $e) {
             throw $e;
         }
-
-        $this->response['token'] = $response['txToken'];
-        $this->response['data'] = $response;
     }
 
     // update
