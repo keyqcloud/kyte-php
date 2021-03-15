@@ -30,7 +30,7 @@ class SessionController extends ModelController
 
             // get user account
             $account = new \Kyte\ModelObject(Account);
-            if (!$account->retrieve('id', $user->getParam('kyte_account'))) {
+            if (!$account->retrieve('id', $obj->getParam('kyte_account'))) {
                 throw new Exception("Unable to find account associated with user");
             }
 
