@@ -33,7 +33,7 @@ class SecurityTransactionHistoryController extends ModelController
     // hook function - user defined
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         $tx_session = new \Kyte\ModelObject(Session);
-        $tx_user = new \Kyte\ModelObject(Account);
+        $tx_user = new \Kyte\ModelObject(User);
         // retrieve all
         if ($tx_session->retrieve('txToken', $o->getParam('txToken'), null, null, true)) {
             $r['TX_SESSION'] = $ret = $this->getObject($tx_session);
