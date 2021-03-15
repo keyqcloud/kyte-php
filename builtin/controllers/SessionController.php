@@ -41,9 +41,12 @@ class SessionController extends ModelController
             }
 
             // return account information in response - this is required for API handoff between master account and subaccounts
-            $this->$response['kyte_pub'] = $account_api->getParam('public_key');
-            $this->$response['kyte_num'] = $account->getParam('number');
-            $this->$response['kyte_iden'] = $account_api->getParam('identifier');
+            // $this->$response['kyte_pub'] = $account_api->getParam('public_key');
+            // $this->$response['kyte_num'] = $account->getParam('number');
+            // $this->$response['kyte_iden'] = $account_api->getParam('identifier');
+            $this->$response['kyte_pub'] = 'TEST';
+            $this->$response['kyte_num'] = 'TEST';
+            $this->$response['kyte_iden'] = 'TEST';
 
             $this->response['token'] = $response['txToken'];
             $this->response['data'] = $response;
