@@ -186,11 +186,31 @@ try {
             $response['token'] = $session_ret['txToken'];
             $response['uid'] = $session_ret['uid'];
             
-            if (!$user->retrieve('id', $session_ret['uid'], [[ 'field' => 'kyte_account', 'value' => $account->getParam('id')]])) {
+            if (!$user->retrieve('id', $session_ret['uid'])) {
                 throw new SessionException("Invalid user session.");
             }
             $response['sessionPermission'] = $user->getParam('role');
+
+            // check is user has different account
+            // get user account
+            if ($user->getParam('kyte_account') != $account->getParam('id')) {
+                if (!$account->retrieve('id', $user->getParam('kyte_account'))) {
+                    throw new Exception("Unable to find account associated with user");
+                }
+            }
         }
+
+        // get api associated with account
+        $account_api = new \Kyte\ModelObject(APIKey);
+        if (!$account_api->retrieve('kyte_account', $account->getParam('id'))) {
+            throw new Exception("[ERROR] Unable to find API information for account");
+        }
+
+        // return account information in response - this is required for API handoff between master account and subaccounts
+        $response['kyte_pub'] = $account_api->getParam('public_key');
+        $response['kyte_num'] = $account->getParam('number');
+        $response['kyte_iden'] = $account_api->getParam('identifier');
+
         // update log with tx token
         $log->save(['txToken' => $response['token']]);
 

@@ -248,10 +248,10 @@ class ModelController
                 }
             }
             
-            // hook for any custom behaviours before creating object
-            $this->hook_preprocess('new', $data);
             // add account information
             $data['kyte_account'] = $this->account->getParam('id');
+            // hook for any custom behaviours before creating object
+            $this->hook_preprocess('new', $data);
             // create object & get return
             if ($obj->create($data)) {
                 $ret = [];
