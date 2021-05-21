@@ -1,5 +1,7 @@
 <?php
 
+namespace Kyte;
+
 class MailController extends ModelController
 {
     // new - send new email

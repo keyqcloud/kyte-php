@@ -1,5 +1,7 @@
 <?php
 
+namespace Kyte;
+
 class SessionController extends ModelController
 {
     public function hook_init()

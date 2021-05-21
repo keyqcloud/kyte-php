@@ -1,8 +1,9 @@
 <?php
+namespace Kyte;
 
 class Version
 {
-    const MAJOR = 2;
+    const MAJOR = 3;
     const MINOR = 0;
     const PATCH = 0;
 

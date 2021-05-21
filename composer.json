@@ -1,22 +1,25 @@
 {
-    "name": "keyqcloud/kyte-api-php",
-    "description": "Kyte API PHP",
+    "name": "keyqcloud/kyte-php",
+    "description": "Light-weight framework for developing versatile PHP applications.",
     "require": {
-        "keyqcloud/kyte": "3.0.x-dev",
+        "php": ">=7.2",
+        "ext-curl": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
         "aws/aws-sdk-php": "^3.101",
         "sendgrid/sendgrid": "^7.3",
         "stripe/stripe-php": "^7.2"
     },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/keyqcloud/kyte/"
-        }
-    ],
     "authors": [
         {
             "name": "Kenneth Hough",
-            "email": "kenneth@egtech.us"
+            "email": "kenneth@keyqcloud.com"
         }
-    ]
+    ],
+    "autoload": {
+        "psr-4":
+            {
+                "Kyte\\": "lib/"
+            }
+    }
 }

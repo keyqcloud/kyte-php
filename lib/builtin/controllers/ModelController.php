@@ -1,5 +1,7 @@
 <?php
 
+namespace Kyte;
+
 class ModelController
 {
 
@@ -84,7 +86,7 @@ class ModelController
     protected function authenticate()
     {
         if (!$this->user && !$this->session) {
-            throw new SessionException("Unauthorized API request.");
+            throw new \Kyte\SessionException("Unauthorized API request.");
         }
         $this->hook_auth();
     }
