@@ -1,6 +1,6 @@
 <?php
 
-namespace Kyte\Core;
+namespace Kyte\SendGrid;
 
 class Mail {
 	private static $sendgridAPIKey;
