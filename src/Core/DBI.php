@@ -1,6 +1,6 @@
 <?php
 
-namespace Kyte;
+namespace Kyte\Core;
 
 class DBI {
 	private static $dbConn;
