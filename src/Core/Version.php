@@ -1,5 +1,5 @@
 <?php
-namespace Kyte;
+namespace Kyte\Core;
 
 class Version
 {
