@@ -15,6 +15,10 @@ class Api
 
 	// override parent constriuctor
 	public function __construct() {
+		// initialize api
+		$this->bootstrap();
+
+		// instantiate an API key object
 		$this->key = new \Kyte\Core\ModelObject(APIKey);
 	}
 
@@ -126,22 +130,6 @@ class Api
 			define('APP_LANG', in_array($lang, $acceptLang) ? $lang : 'en');
 		}
 	
-		/* load classes from composer */
-		require __DIR__ . '/vendor/autoload.php';
-		
-		// include library
-		foreach (glob(__DIR__ . "/lib/*.php") as $filename) {
-			require_once($filename) ;
-		}
-	
-		// include any utility scripts
-		foreach (glob(__DIR__ . "/util/*.php") as $filename) {
-			require_once($filename) ;
-		}
-	
-		// load base controller
-		require __DIR__ . '/builtin/controllers/ModelController.php';
-	
 		// list of models
 		$models = [];
 		
@@ -149,11 +137,11 @@ class Api
 		if ( file_exists( __DIR__ . "/app/" ) && is_dir( __DIR__ . "/app/" ) ) {
 	
 			// load user defined models and controllers (allow override of builtin)
-			if ( file_exists( __DIR__ . "/app/models/" ) && is_dir( __DIR__ . "/app/models/" ) ) {    
-				foreach (glob(__DIR__ . "/app/models/*.php") as $filename) {
+			if ( file_exists( APP_DIR . "/models/" ) && is_dir( APP_DIR . "/models/" ) ) {    
+				foreach (glob(APP_DIR . "/models/*.php") as $filename) {
 					require_once($filename);
 					$model_name = substr($filename, 0, strrpos($filename, "."));
-					$model_name = str_replace(__DIR__ . '/app/models/','',$model_name);
+					$model_name = str_replace(APP_DIR . '/models/','',$model_name);
 					if (!in_array($model_name, $models)) {
 						$models[] = $model_name;
 					}
@@ -168,10 +156,10 @@ class Api
 			}
 	
 			// load user-defined controllers
-			if ( file_exists( __DIR__ . "/app/controllers/" ) && is_dir( __DIR__ . "/app/controllers/" ) ) {
-				foreach (glob(__DIR__ . "/app/controllers/*.php") as $filename) {
+			if ( file_exists( APP_DIR . "/controllers/" ) && is_dir( APP_DIR . "/controllers/" ) ) {
+				foreach (glob(APP_DIR . "/controllers/*.php") as $filename) {
 					$controller_name = substr($filename, 0, strrpos($filename, "."));
-					$controller_name = str_replace(__DIR__ . '/app/controllers/','',$controller_name);
+					$controller_name = str_replace(APP_DIR . '/controllers/','',$controller_name);
 					require_once($filename);
 					if (VERBOSE_LOG) {
 						error_log("Checking if user defined controller has been defined...".(class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
@@ -181,9 +169,9 @@ class Api
 		} 
 	
 		// include built-in models being used by app
-		foreach (glob(__DIR__ . "/builtin/models/*.php") as $filename) {
+		foreach (glob(__DIR__ . "/src/Mvc/models/*.php") as $filename) {
 			$model_name = substr($filename, 0, strrpos($filename, "."));
-			$model_name = str_replace(__DIR__ . '/builtin/models/','',$model_name);
+			$model_name = str_replace(__DIR__ . '/src/Mvc/models/','',$model_name);
 			if (!in_array($model_name, $models)) {
 				$models[] = $model_name;
 			}
@@ -200,27 +188,9 @@ class Api
 				define($model_name, $$model_name);
 			}
 		}
-		
-		// include any built-in controllers
-		foreach (glob(__DIR__ . "/builtin/controllers/*.php") as $filename) {
-			$controller_name = substr($filename, 0, strrpos($filename, "."));
-			$controller_name = str_replace(__DIR__ . '/builtin/controllers/','',$controller_name);
-			if (class_exists($controller_name)) {
-				if (VERBOSE_LOG) {
-					error_log("Skipping controller $filename as already defined...");
-				}
-			} else {
-				require_once($filename);
-				if (VERBOSE_LOG) {
-					error_log("Checking if controller has been defined...".(class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
-				}
-			}
-		}
 	
 		// define list of models
 		define('KYTE_MODELS', $models);
-	
-		require_once __DIR__.'/config.php';
 	
 		// initialize base framework
 		\Kyte\SendGrid\Mail::setSendGridAPIKey(KYTE_SENDGRID_API);
@@ -235,9 +205,6 @@ class Api
 	protected function route() {
 		// CORS Validation
 		$request = $this->cors();
-
-		// initialize api
-		$this->bootstrap();
 
 		// compatibility for older config files
 		if (!defined('ALLOW_ENC_HANDOFF')) {
@@ -414,7 +381,7 @@ class Api
 				/* ********************************** */
 
 				// initialize controller for model or view ("abstract" controller)
-				$controllerClass = class_exists($elements[2].'Controller') ? $elements[2].'Controller' : 'ModelController';
+				$controllerClass = class_exists($elements[2].'Controller') ? $elements[2].'Controller' : '\Kyte\Mvc\ModelController';
 				// create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
 				$controller = new $controllerClass(isset(${$elements[2]}) ? ${$elements[2]} : null, APP_DATE_FORMAT, $account, $session, $user, $response);
 				if (!$controller) throw new Exception("[ERROR] Unable to create controller for model: $controllerClass.");
