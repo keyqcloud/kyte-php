@@ -134,7 +134,7 @@ class Api
 		$models = [];
 		
 		/* Load user-defined files first in case there are overrides */
-		if ( file_exists( APP_DIR . "/app/" ) && is_dir( __DIR__ . "/app/" ) ) {
+		if ( file_exists( APP_DIR . "/app/" ) && is_dir( APP_DIR . "/app/" ) ) {
 	
 			// load user defined models and controllers (allow override of builtin)
 			if ( file_exists( APP_DIR . "/app/models/" ) && is_dir( APP_DIR . "/app/models/" ) ) {    
@@ -169,9 +169,9 @@ class Api
 		} 
 	
 		// include built-in models being used by app
-		foreach (glob(__DIR__ . "/src/Mvc/Model/*.php") as $filename) {
+		foreach (glob(__DIR__ . "/../Mvc/Model/*.php") as $filename) {
 			$model_name = substr($filename, 0, strrpos($filename, "."));
-			$model_name = str_replace(__DIR__ . '/src/Mvc/Model/','',$model_name);
+			$model_name = str_replace(__DIR__ . '/../Mvc/Model/','',$model_name);
 			if (!in_array($model_name, $models)) {
 				$models[] = $model_name;
 			}
