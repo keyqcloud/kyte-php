@@ -23,7 +23,7 @@ class Api
 	}
 
 	// if origin is left null then origin validation is skipped
-	public function init($public_key)
+	protected function init($public_key)
 	{
 		if (isset($public_key)) {
 			if (!$this->key->retrieve('public_key', $public_key)) throw new \Exception("API key not found.");
@@ -62,7 +62,7 @@ class Api
 		return $request;
 	}
 
-	private function addPrimaryKey(&$modeldef) {
+	protected function addPrimaryKey(&$modeldef) {
 		$modeldef['struct']['id'] = [
 			'type'		=> 'i',
 			'required'	=> true,
@@ -72,7 +72,7 @@ class Api
 		];
 	}
 
-	private function addKyteAttributes(&$modeldef) {
+	protected function addKyteAttributes(&$modeldef) {
 		$modeldef['struct']['kyte_account'] = [
 			'type'		=> 'i',
 			'required'	=> true,
@@ -112,6 +112,31 @@ class Api
 	}
 
 	protected function bootstrap() {
+		// compatibility for older config files
+		if (!defined('ALLOW_ENC_HANDOFF')) {
+			define('ALLOW_ENC_HANDOFF', true);
+			error_log('ALLOW_ENC_HANDOFF contant not defined...using defaults');
+		}
+		if (!defined('ALLOW_MULTILOGON')) {
+			define('ALLOW_MULTILOGON', false);
+			error_log('ALLOW_MULTILOGON contant not defined...using defaults');
+		}
+		if (!defined('ALLOW_SAME_TXTOKEN')) {
+			define('ALLOW_SAME_TXTOKEN', false);
+			error_log('ALLOW_SAME_TXTOKEN contant not defined...using defaults');
+		}
+		if (!defined('SESSION_TIMEOUT')) {
+			define('SESSION_TIMEOUT', 3600);
+			error_log('SESSION_TIMEOUT contant not defined...using defaults');
+		}
+		if (!defined('USERNAME_FIELD')) {
+			define('USERNAME_FIELD', 'email');
+			error_log('USERNAME_FIELD contant not defined...using defaults');
+		}
+		if (!defined('PASSWORD_FIELD')) {
+			define('PASSWORD_FIELD', 'password');
+			error_log('PASSWORD_FIELD contant not defined...using defaults');
+		}
 		/* LOG OUTPUT */
 		define('VERBOSE_LOG', false);
 
@@ -202,35 +227,9 @@ class Api
 	}
 
 	// meat of API
-	protected function route() {
+	public function route() {
 		// CORS Validation
 		$request = $this->cors();
-
-		// compatibility for older config files
-		if (!defined('ALLOW_ENC_HANDOFF')) {
-			define('ALLOW_ENC_HANDOFF', true);
-			error_log('ALLOW_ENC_HANDOFF contant not defined...using defaults');
-		}
-		if (!defined('ALLOW_MULTILOGON')) {
-			define('ALLOW_MULTILOGON', false);
-			error_log('ALLOW_MULTILOGON contant not defined...using defaults');
-		}
-		if (!defined('ALLOW_SAME_TXTOKEN')) {
-			define('ALLOW_SAME_TXTOKEN', false);
-			error_log('ALLOW_SAME_TXTOKEN contant not defined...using defaults');
-		}
-		if (!defined('SESSION_TIMEOUT')) {
-			define('SESSION_TIMEOUT', 3600);
-			error_log('SESSION_TIMEOUT contant not defined...using defaults');
-		}
-		if (!defined('USERNAME_FIELD')) {
-			define('USERNAME_FIELD', 'email');
-			error_log('USERNAME_FIELD contant not defined...using defaults');
-		}
-		if (!defined('PASSWORD_FIELD')) {
-			define('PASSWORD_FIELD', 'password');
-			error_log('PASSWORD_FIELD contant not defined...using defaults');
-		}
 
 		// initialie empty array for response data
 		//
