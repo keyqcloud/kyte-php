@@ -134,14 +134,14 @@ class Api
 		$models = [];
 		
 		/* Load user-defined files first in case there are overrides */
-		if ( file_exists( __DIR__ . "/app/" ) && is_dir( __DIR__ . "/app/" ) ) {
+		if ( file_exists( APP_DIR . "/app/" ) && is_dir( __DIR__ . "/app/" ) ) {
 	
 			// load user defined models and controllers (allow override of builtin)
-			if ( file_exists( APP_DIR . "/models/" ) && is_dir( APP_DIR . "/models/" ) ) {    
-				foreach (glob(APP_DIR . "/models/*.php") as $filename) {
+			if ( file_exists( APP_DIR . "/app/models/" ) && is_dir( APP_DIR . "/app/models/" ) ) {    
+				foreach (glob(APP_DIR . "/app/models/*.php") as $filename) {
 					require_once($filename);
 					$model_name = substr($filename, 0, strrpos($filename, "."));
-					$model_name = str_replace(APP_DIR . '/models/','',$model_name);
+					$model_name = str_replace(APP_DIR . '/app/models/','',$model_name);
 					if (!in_array($model_name, $models)) {
 						$models[] = $model_name;
 					}
@@ -156,10 +156,10 @@ class Api
 			}
 	
 			// load user-defined controllers
-			if ( file_exists( APP_DIR . "/controllers/" ) && is_dir( APP_DIR . "/controllers/" ) ) {
-				foreach (glob(APP_DIR . "/controllers/*.php") as $filename) {
+			if ( file_exists( APP_DIR . "/app/controllers/" ) && is_dir( APP_DIR . "/app/controllers/" ) ) {
+				foreach (glob(APP_DIR . "/app/controllers/*.php") as $filename) {
 					$controller_name = substr($filename, 0, strrpos($filename, "."));
-					$controller_name = str_replace(APP_DIR . '/controllers/','',$controller_name);
+					$controller_name = str_replace(APP_DIR . '/app/controllers/','',$controller_name);
 					require_once($filename);
 					if (VERBOSE_LOG) {
 						error_log("Checking if user defined controller has been defined...".(class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
@@ -169,9 +169,9 @@ class Api
 		} 
 	
 		// include built-in models being used by app
-		foreach (glob(__DIR__ . "/src/Mvc/models/*.php") as $filename) {
+		foreach (glob(__DIR__ . "/src/Mvc/Model/*.php") as $filename) {
 			$model_name = substr($filename, 0, strrpos($filename, "."));
-			$model_name = str_replace(__DIR__ . '/src/Mvc/models/','',$model_name);
+			$model_name = str_replace(__DIR__ . '/src/Mvc/Model/','',$model_name);
 			if (!in_array($model_name, $models)) {
 				$models[] = $model_name;
 			}
