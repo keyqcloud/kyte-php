@@ -15,7 +15,7 @@ class Api
 
 	// override parent constriuctor
 	public function __construct() {
-		$this->key = new \Kyte\ModelObject(APIKey);
+		$this->key = new \Kyte\Core\ModelObject(APIKey);
 	}
 
 	// if origin is left null then origin validation is skipped
