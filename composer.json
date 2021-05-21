@@ -20,6 +20,7 @@
         "psr-4":
             {
                 "Kyte\\": "src/"
-            }
+            },
+            "files": ["src/functions.php"]
     }
 }
