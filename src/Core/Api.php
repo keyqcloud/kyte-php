@@ -278,7 +278,7 @@ class Api
 		// 	data: {}
 		// }
 		$response = [];
-		$response['engine_version'] = \Kyte\Version::get();
+		$response['engine_version'] = \Kyte\Core\Version::get();
 		$response['session'] = '0';
 		$response['token'] = 0;	// default to public token
 		$response['uid'] = 0;
@@ -334,7 +334,7 @@ class Api
 				$iden = explode('%', $idenstr);
 
 				if (count($iden) != 4) {
-					throw new \Kyte\SessionException("[ERROR] Invalid identity string: $request.");
+					throw new \Kyte\Core\SessionException("[ERROR] Invalid identity string: $request.");
 				}
 
 				// #1
@@ -342,7 +342,7 @@ class Api
 				$date = new DateTime($iden[2], new DateTimeZone('UTC'));
 				// check expiration
 				if (time() > $date->format('U') + (60*30)) {
-					throw new \Kyte\SessionException("API request has expired.");
+					throw new \Kyte\Core\SessionException("API request has expired.");
 				}
 
 				// #2
@@ -351,7 +351,7 @@ class Api
 
 				// #2
 				// get account number from identity signature
-				$account = new \Kyte\ModelObject(Account);
+				$account = new \Kyte\Core\ModelObject(Account);
 				if (!$account->retrieve('number', $iden[3])) {
 					throw new Exception("[ERROR] Unable to find account for {$iden[3]}.");
 				}
@@ -362,15 +362,15 @@ class Api
 				// get session token from identity signature
 				$response['session'] = $iden[1];
 				// retrieve transaction and user token corresponding to session token
-				$session = new \Kyte\SessionManager(Session, User, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
-				$user = new \Kyte\ModelObject(User);
+				$session = new \Kyte\Core\SessionManager(Session, User, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
+				$user = new \Kyte\Core\ModelObject(User);
 				if ($iden[1]) {
 					$session_ret = $session->validate($iden[1]);
 					$response['token'] = $session_ret['txToken'];
 					$response['uid'] = $session_ret['uid'];
 					
 					if (!$user->retrieve('id', $session_ret['uid'])) {
-						throw new \Kyte\SessionException("Invalid user session.");
+						throw new \Kyte\Core\SessionException("Invalid user session.");
 					}
 					$response['sessionPermission'] = $user->getParam('role');
 
@@ -384,7 +384,7 @@ class Api
 				}
 
 				// get api associated with account
-				$account_api = new \Kyte\ModelObject(APIKey);
+				$account_api = new \Kyte\Core\ModelObject(APIKey);
 				if (!$account_api->retrieve('kyte_account', $account->getParam('id'))) {
 					throw new Exception("[ERROR] Unable to find API information for account");
 				}
@@ -409,7 +409,7 @@ class Api
 				// error_log("hash1: $hash1_debug\thash2:$hash2_debug\tFinal:$calculated_signature\n");
 				// error_log("Client: ".$elements[0]."\n");
 				if ($calculated_signature != $elements[0])
-					throw new \Kyte\SessionException("Calculated signature does not match provided signature.");
+					throw new \Kyte\Core\SessionException("Calculated signature does not match provided signature.");
 				/* **** VERIFY SIGNATURE - END **** */
 				/* ********************************** */
 
@@ -467,7 +467,7 @@ class Api
 					/* POST REQUEST */
 					if ($request == 'POST') {
 						// get api key using the public_key and identifier being passed
-						$obj = new \Kyte\ModelObject(APIKey);
+						$obj = new \Kyte\Core\ModelObject(APIKey);
 						if (!$obj->retrieve('public_key', $data['key'], [[ 'field' => 'identifier', 'value' => $data['identifier'] ]])) {
 							throw new Exception("Invalid API access key");
 						}
@@ -484,7 +484,7 @@ class Api
 					}
 				}
 			}
-		} catch (\Kyte\SessionException $e) {
+		} catch (\Kyte\Core\SessionException $e) {
 			http_response_code(403);
 			$response['error'] = $e->getMessage();
 			// log return response
