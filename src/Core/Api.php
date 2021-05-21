@@ -252,8 +252,8 @@ class Api
 		$response['error'] = '';
 		$response['model'] = '';
 		$response['transaction'] = $request;
-		$now = new DateTime();
-		$now->setTimezone(new DateTimeZone('UTC'));    // Another way
+		$now = new \DateTime();
+		$now->setTimezone(new \DateTimeZone('UTC'));    // Another way
 		$response['txTimestamp'] = $now->format('U');
 
 		$contentType = '';
@@ -305,7 +305,7 @@ class Api
 
 				// #1
 				// get UTC date from identity signature
-				$date = new DateTime($iden[2], new DateTimeZone('UTC'));
+				$date = new \DateTime($iden[2], new \DateTimeZone('UTC'));
 				// check expiration
 				if (time() > $date->format('U') + (60*30)) {
 					throw new \Kyte\Core\SessionException("API request has expired.");
@@ -319,7 +319,7 @@ class Api
 				// get account number from identity signature
 				$account = new \Kyte\Core\ModelObject(Account);
 				if (!$account->retrieve('number', $iden[3])) {
-					throw new Exception("[ERROR] Unable to find account for {$iden[3]}.");
+					throw new \Exception("[ERROR] Unable to find account for {$iden[3]}.");
 				}
 
 				// #3
@@ -344,7 +344,7 @@ class Api
 					// get user account
 					if ($user->getParam('kyte_account') != $account->getParam('id')) {
 						if (!$account->retrieve('id', $user->getParam('kyte_account'))) {
-							throw new Exception("Unable to find account associated with user");
+							throw new \Exception("Unable to find account associated with user");
 						}
 					}
 				}
@@ -352,7 +352,7 @@ class Api
 				// get api associated with account
 				$account_api = new \Kyte\Core\ModelObject(APIKey);
 				if (!$account_api->retrieve('kyte_account', $account->getParam('id'))) {
-					throw new Exception("[ERROR] Unable to find API information for account");
+					throw new \Exception("[ERROR] Unable to find API information for account");
 				}
 
 				// return account information in response - this is required for API handoff between master account and subaccounts
@@ -383,7 +383,7 @@ class Api
 				$controllerClass = class_exists($elements[2].'Controller') ? $elements[2].'Controller' : '\Kyte\Mvc\ModelController';
 				// create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
 				$controller = new $controllerClass(isset(${$elements[2]}) ? ${$elements[2]} : null, APP_DATE_FORMAT, $account, $session, $user, $response);
-				if (!$controller) throw new Exception("[ERROR] Unable to create controller for model: $controllerClass.");
+				if (!$controller) throw new \Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 
 				switch ($request) {
 					case 'POST':
@@ -415,7 +415,7 @@ class Api
 						break;
 					
 					default:
-						throw new Exception("[ERROR] Unknown HTTP request type: $request.");
+						throw new \Exception("[ERROR] Unknown HTTP request type: $request.");
 						break;
 				}
 
@@ -435,11 +435,11 @@ class Api
 						// get api key using the public_key and identifier being passed
 						$obj = new \Kyte\Core\ModelObject(APIKey);
 						if (!$obj->retrieve('public_key', $data['key'], [[ 'field' => 'identifier', 'value' => $data['identifier'] ]])) {
-							throw new Exception("Invalid API access key");
+							throw new \Exception("Invalid API access key");
 						}
 				
 						// get date and convert to php datetime in UTC timezone
-						$date = new DateTime($data['time'], new DateTimeZone('UTC'));
+						$date = new \DateTime($data['time'], new \DateTimeZone('UTC'));
 
 						// if undefined is passed from front end then set to zero
 						$data['token'] = $data['token'] == 'undefined' ? 0 : $data['token'];
@@ -457,7 +457,7 @@ class Api
 			$log->save(['return' => print_r($response, true)]);
 			echo json_encode($response);
 			exit(0);
-		} catch (Exception $e) {
+		} catch (\Exception $e) {
 			http_response_code(400);
 			$response['error'] = $e->getMessage();
 			// log return response
