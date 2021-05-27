@@ -29,6 +29,7 @@
     /* KYTE FRAMEWORK SPECIFIC SETTINGS */
     define('ALLOW_ENC_HANDOFF', true);
     define('ALLOW_MULTILOGON', false);
+    define('ALLOW_SAME_TXTOKEN', false);
     define('SESSION_TIMEOUT', 3600);
     define('USERNAME_FIELD', 'email');
     define('PASSWORD_FIELD', 'password');
