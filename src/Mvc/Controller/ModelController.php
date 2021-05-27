@@ -1,6 +1,6 @@
 <?php
 
-namespace Kyte;
+namespace Kyte\Mvc\Controller;
 
 class ModelController
 {
