@@ -301,7 +301,7 @@ class Api
 				$iden = explode('%', $idenstr);
 
 				if (count($iden) != 4) {
-					throw new \Kyte\Core\SessionException("[ERROR] Invalid identity string: $request.");
+					throw new \Kyte\Exception\SessionException("[ERROR] Invalid identity string: $request.");
 				}
 
 				// #1
@@ -309,7 +309,7 @@ class Api
 				$date = new \DateTime($iden[2], new \DateTimeZone('UTC'));
 				// check expiration
 				if (time() > $date->format('U') + (60*30)) {
-					throw new \Kyte\Core\SessionException("API request has expired.");
+					throw new \Kyte\Exception\SessionException("API request has expired.");
 				}
 
 				// #2
@@ -329,7 +329,7 @@ class Api
 				// get session token from identity signature
 				$response['session'] = $iden[1];
 				// retrieve transaction and user token corresponding to session token
-				$session = new \Kyte\Core\SessionManager(Session, User, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
+				$session = new \Kyte\Session\SessionManager(Session, User, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
 				$user = new \Kyte\Core\ModelObject(User);
 				if ($iden[1]) {
 					$session_ret = $session->validate($iden[1]);
@@ -337,7 +337,7 @@ class Api
 					$response['uid'] = $session_ret['uid'];
 					
 					if (!$user->retrieve('id', $session_ret['uid'])) {
-						throw new \Kyte\Core\SessionException("Invalid user session.");
+						throw new \Kyte\Exception\SessionException("Invalid user session.");
 					}
 					$response['sessionPermission'] = $user->getParam('role');
 
@@ -373,7 +373,7 @@ class Api
 				// error_log("hash1: $hash1_debug\thash2:$hash2_debug\tFinal:$calculated_signature\n");
 				// error_log("Client: ".$elements[0]."\n");
 				if ($calculated_signature != $elements[0])
-					throw new \Kyte\Core\SessionException("Calculated signature does not match provided signature.");
+					throw new \Kyte\Exception\SessionException("Calculated signature does not match provided signature.");
 				/* **** VERIFY SIGNATURE - END **** */
 				/* ********************************** */
 
@@ -448,7 +448,7 @@ class Api
 					}
 				}
 			}
-		} catch (\Kyte\Core\SessionException $e) {
+		} catch (\Kyte\Exception\SessionException $e) {
 			http_response_code(403);
 			$response['error'] = $e->getMessage();
 			echo json_encode($response);

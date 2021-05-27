@@ -70,7 +70,7 @@ class ModelController
                 ],
             ];
             $this->init();
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             throw $e;
         }
     }
@@ -86,7 +86,7 @@ class ModelController
     protected function authenticate()
     {
         if (!$this->user && !$this->session) {
-            throw new \Kyte\SessionException("Unauthorized API request.");
+            throw new \Kyte\Exception\SessionException("Unauthorized API request.");
         }
         $this->hook_auth();
     }
@@ -97,7 +97,7 @@ class ModelController
             $modelName = $modelName ? $modelName : $this->model['name'];
 
             // check if user assigned role exists
-            $role = new \Kyte\ModelObject(Role);
+            $role = new \Kyte\Core\ModelObject(Role);
             $cond = $this->requireAccount ? [ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')] : null;
             if (!$role->retrieve('id', $this->user->getParam('role'), [$cond])) {
                 error_log('unable to find role for '.$this->user->getParam('role').' and '.$this->account->getParam('id'));
@@ -105,7 +105,7 @@ class ModelController
             }
 
             // check if assigned role has permission for request type
-            $permission = new \Kyte\ModelObject(Permission);
+            $permission = new \Kyte\Core\ModelObject(Permission);
             if (!$permission->retrieve('role', $role->getParam('id'), [ ['field' => 'model', 'value' => $modelName], ['field' => 'action', 'value' => $requestType], $cond ])) {
                 error_log('unable to find permission');
                 return false;
@@ -157,7 +157,7 @@ class ModelController
                                 // check if permissions allow for this behaviour
                                 if ($this->checkPermissions('get', $fk['model'])) {
 
-                                    $fk_obj = new \Kyte\ModelObject(constant($fk['model']));
+                                    $fk_obj = new \Kyte\Core\ModelObject(constant($fk['model']));
                                     // check if account is required
                                     $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
 
@@ -189,7 +189,7 @@ class ModelController
                         // check if permissions allow for this behaviour
                         if ($this->checkPermissions('get', $et['model'])) {
 
-                            $et_objs = new \Kyte\Model(constant($et['model']));
+                            $et_objs = new \Kyte\Core\Model(constant($et['model']));
                             // check if account is required
                             $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
 
@@ -210,7 +210,7 @@ class ModelController
                 $this->getFKTables = $fkFlag;
             }
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             throw $e;
         }
 
@@ -241,7 +241,7 @@ class ModelController
 
         try {
             // init new object
-            $obj = new \Kyte\ModelObject($this->model);
+            $obj = new \Kyte\Core\ModelObject($this->model);
 
             // check existing and fail if present
             if ($this->checkExisting) {
@@ -265,7 +265,7 @@ class ModelController
                     throw new \Exception($this->exceptionMessages['new']['failOnNull']);
                 }
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             throw $e;
         }
 
@@ -292,7 +292,7 @@ class ModelController
             $all = false;
             $this->hook_prequery('update', $field, $value, $conditions, $all, $order);
             // init object
-            $obj = new \Kyte\ModelObject($this->model);
+            $obj = new \Kyte\Core\ModelObject($this->model);
 
             if ($obj->retrieve($field, $value, $conditions, null, $all)) {
 
@@ -307,7 +307,7 @@ class ModelController
 
                 // check existing and fail if present
                 if ($this->checkExisting) {
-                    $existing = new \Kyte\ModelObject($this->model);
+                    $existing = new \Kyte\Core\ModelObject($this->model);
                     if ($existing->retrieve($this->checkExisting, $data[$this->checkExisting])) {
                         if ($existing->getParam('id') != $obj->getParam('id')) {
                             throw new \Exception('There is already a '.strtolower($this->model['name']).' with that '.$this->checkExisting.'.');
@@ -326,7 +326,7 @@ class ModelController
                     throw new \Exception($this->exceptionMessages['update']['failOnNull']);
                 }
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             throw $e;
         }
 
@@ -352,7 +352,7 @@ class ModelController
             $order = null;
             $this->hook_prequery('get', $field, $value, $conditions, $all, $order);
             // init model
-            $objs = new \Kyte\Model($this->model);
+            $objs = new \Kyte\Core\Model($this->model);
             $objs->retrieve($field, $value, false, $conditions, $all, $order);
 
             if ($this->failOnNull && count($objs->objects) < 1) {
@@ -367,7 +367,7 @@ class ModelController
                 $response[] = $ret;
             }
             $this->hook_process_get_response($response);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             throw $e;
         }
 
@@ -378,7 +378,7 @@ class ModelController
         if ($this->cascadeDelete && isset($obj->model['externalTables'])) {
             // find external tables and delete associated entries
             foreach ($obj->model['externalTables'] as $extTbl) {
-                $dep = new \Kyte\Model(constant($extTbl['model']));
+                $dep = new \Kyte\Core\Model(constant($extTbl['model']));
                 $dep->retrieve($extTbl['field'], $obj->getParam('id'), false, $conditions);
 
                 // delete each associated entry in the table
@@ -407,7 +407,7 @@ class ModelController
 
         try {
             $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
-            $objs = new \Kyte\Model($this->model);
+            $objs = new \Kyte\Core\Model($this->model);
             $objs->retrieve($field, $value, false, $conditions);
             
             if ($this->failOnNull && count($objs->objects) < 1) {
@@ -421,7 +421,7 @@ class ModelController
                 if ($this->cascadeDelete) {
                     // find external tables and delete associated entries
                     foreach ($this->model['externalTables'] as $extTbl) {
-                        $dep = new \Kyte\Model(constant($extTbl['model']));
+                        $dep = new \Kyte\Core\Model(constant($extTbl['model']));
                         $dep->retrieve($extTbl['field'], $obj->getParam('id'), false, $conditions);
 
                         // delete each associated entry in the table
@@ -436,7 +436,7 @@ class ModelController
                 $obj->delete();
             }
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             throw $e;
         }
 

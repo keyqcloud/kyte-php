@@ -1,6 +1,6 @@
 <?php
 
-namespace Kyte\Core;
+namespace Kyte\Session;
 
 class SessionManager
 {
@@ -10,8 +10,8 @@ class SessionManager
 	private $password_field;
 
 	public function __construct($session_model, $account_model, $username_field = 'email', $password_field = 'password', $multilogon = false, $timeout = 3600) {
-		$this->session = new \Kyte\ModelObject($session_model);
-		$this->user = new \Kyte\ModelObject($account_model);
+		$this->session = new \Kyte\Core\ModelObject($session_model);
+		$this->user = new \Kyte\Core\ModelObject($account_model);
 		$this->username_field = $username_field;
 		$this->password_field = $password_field;
 		$this->timeout = $timeout;
@@ -33,11 +33,11 @@ class SessionManager
 
 			// verify user
 			if (!$this->user->retrieve($this->username_field, $username, $conditions)) {
-				throw new \Kyte\SessionException("Invalid username or password.");
+				throw new \Kyte\Exception\SessionException("Invalid username or password.");
 			}
 
 			if (!password_verify($password, $this->user->getParam($this->password_field))) {
-				throw new \Kyte\SessionException("Invalid username or password.");
+				throw new \Kyte\Exception\SessionException("Invalid username or password.");
 			}
 
 			// delete existing session
@@ -55,12 +55,12 @@ class SessionManager
 				'txToken' => $this->generateTxToken($time, $exp_time, $this->user->getParam($this->username_field)),
 			]);
 			if (!$res) {
-				throw new \Kyte\SessionException("Unable to create session.");
+				throw new \Kyte\Exception\SessionException("Unable to create session.");
 			}
 
 			// return params for new session after successful creation
 			return $this->session->getAllParams();
-		} else throw new \Kyte\SessionException("Session name was not specified.");
+		} else throw new \Kyte\Exception\SessionException("Session name was not specified.");
 		
 	}
 
@@ -71,17 +71,17 @@ class SessionManager
 
 		// check if session token exists and retrieve session object
 		if (!$this->session->retrieve('sessionToken', $sessionToken)) {
-			throw new \Kyte\SessionException("No valid session.");
+			throw new \Kyte\Exception\SessionException("No valid session.");
 		}
 		
 		// check if use is still active
 		if (!$this->user->retrieve('id', $this->session->getParam('uid'))) {
-			throw new \Kyte\SessionException("Invalid session.");
+			throw new \Kyte\Exception\SessionException("Invalid session.");
 		}
 
 		// check for expriation
 		if ($time > $this->session->getParam('exp_date')) {
-			throw new \Kyte\SessionException("Session expired.");
+			throw new \Kyte\Exception\SessionException("Session expired.");
 		}
 		
 		// create new expiration
@@ -98,7 +98,7 @@ class SessionManager
 
 	public function destroy() {
 		if (!$this->session) {
-			throw new \Kyte\SessionException("No valid session.");
+			throw new \Kyte\Exception\SessionException("No valid session.");
 		}
 		$this->session->delete();
 		return true;

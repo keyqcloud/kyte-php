@@ -2,7 +2,7 @@
 
 namespace Kyte\Mvc\Controller;
 
-class SessionController extends ModelController
+class SessionController extends Kyte\Mvc\Controller\ModelController
 {
     public function hook_init()
     {
@@ -19,27 +19,27 @@ class SessionController extends ModelController
             // check for required params
             foreach (['email', 'password'] as $param) {
 				if (!isset($data[$param]))
-					throw new Exception("Incomplete data passed");
+					throw new \Exception("Incomplete data passed");
 			}
 
             // create session for user and obtain user information
             $response = $this->session->create($data['email'], $data['password']);
-            $obj = new \Kyte\ModelObject(User);
+            $obj = new \Kyte\Core\ModelObject(User);
             if (!$obj->retrieve('id', $response['uid'])) {
-                throw new Exception("Unable to find user information");    
+                throw new \Exception("Unable to find user information");    
             }
             $response['User'] = $this->getObject($obj);
 
             // get user account
-            $account = new \Kyte\ModelObject(Account);
+            $account = new \Kyte\Core\ModelObject(Account);
             if (!$account->retrieve('id', $obj->getParam('kyte_account'))) {
-                throw new Exception("Unable to find account associated with user");
+                throw new \Exception("Unable to find account associated with user");
             }
 
             // get api associated with account
-            $account_api = new \Kyte\ModelObject(APIKey);
+            $account_api = new \Kyte\Core\ModelObject(APIKey);
             if (!$account_api->retrieve('kyte_account', $account->getParam('id'))) {
-                throw new Exception("[ERROR] Unable to find API information for account");
+                throw new \Exception("[ERROR] Unable to find API information for account");
             }
 
             // return account information in response - this is required for API handoff between master account and subaccounts
@@ -49,7 +49,7 @@ class SessionController extends ModelController
 
             $this->response['token'] = $response['txToken'];
             $this->response['data'] = $response;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             throw $e;
         }
     }
@@ -71,7 +71,7 @@ class SessionController extends ModelController
     {
         try {
             $this->session->destroy();
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             throw $e;
         }
 

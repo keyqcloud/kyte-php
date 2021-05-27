@@ -97,7 +97,7 @@ class ModelObject
 
 		try {
 			$types = $this->bindTypes($params);
-			$id = DBI::insert($this->model['name'], $params, $types);
+			$id = \Kyte\Core\DBI::insert($this->model['name'], $params, $types);
 			$this->populate($id);
 
 			return true;
@@ -149,7 +149,7 @@ class ModelObject
 			}
 
 			// execute DB query
-			$data = DBI::select($this->model['name'], null, $sql);
+			$data = \Kyte\Core\DBI::select($this->model['name'], null, $sql);
 
 			if (count($data) > 0) {
 				return $this->populate($data[0]);
@@ -195,7 +195,7 @@ class ModelObject
 						}
 					}
 				}
-				$data = DBI::sum($model['name'], $sumField, null, $sql);
+				$data = \Kyte\Core\DBI::sum($model['name'], $sumField, null, $sql);
 			}
 
 			return $data[0];
@@ -223,7 +223,7 @@ class ModelObject
 
 		try {
 			$types = $this->bindTypes($params);
-			DBI::update($this->model['name'], $id, $params, $types);
+			\Kyte\Core\DBI::update($this->model['name'], $id, $params, $types);
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
@@ -255,7 +255,7 @@ class ModelObject
 					$o = $this->getParam('id');
 				}
 
-				$data = DBI::select($this->model['name'], $o);
+				$data = \Kyte\Core\DBI::select($this->model['name'], $o);
 
 				if (count($data[0]) == 0) { return false; }
 
@@ -282,7 +282,7 @@ class ModelObject
 	{
 		try {
 			if (isset($field, $value)) {
-				$data = DBI::select($this->model['name'], null, "WHERE `$field` = '$value'");
+				$data = \Kyte\Core\DBI::select($this->model['name'], null, "WHERE `$field` = '$value'");
 				if (!isset($data[0]['id'])) {
 					$id = $data[0]['id'];
 				} else {
@@ -300,7 +300,7 @@ class ModelObject
 			}
 
 			// set deleted flag and audit attribute - date deleted
-			DBI::update($this->model['name'], $id, ['date_deleted' => time(), 'deleted' => 1], 'ii');
+			\Kyte\Core\DBI::update($this->model['name'], $id, ['date_deleted' => time(), 'deleted' => 1], 'ii');
 
 			return true;
 		} catch (\Exception $e) {
@@ -314,7 +314,7 @@ class ModelObject
 	{
 		try {
 			if (isset($field, $value)) {
-				$data = DBI::select($this->model['name'], null, "WHERE `$field` = '$value'");
+				$data = \Kyte\Core\DBI::select($this->model['name'], null, "WHERE `$field` = '$value'");
 				if (!isset($data[0]['id'])) {
 					$id = $data[0]['id'];
 				} else {
@@ -331,7 +331,7 @@ class ModelObject
 				return false;
 			}
 
-			DBI::delete($this->model['name'], $id);
+			\Kyte\Core\DBI::delete($this->model['name'], $id);
 			$this->clearParams();
 
 			return true;

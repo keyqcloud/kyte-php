@@ -1,6 +1,6 @@
 <?php
 
-namespace Kyte\Core;
+namespace Kyte\Exception;
 
 class SessionException extends \Exception
 {}
