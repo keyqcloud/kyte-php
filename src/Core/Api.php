@@ -173,8 +173,7 @@ class Api
 						$models[] = $model_name;
 					}
 					if (VERBOSE_LOG) {
-						error_log("Loading user defined model $model_name");
-						error_log("Checking if user defined model has been defined...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
+						error_log("Loading user defined model $model_name...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
 					}
 					$this->addPrimaryKey($$model_name);
 					$this->addKyteAttributes($$model_name);
@@ -209,7 +208,7 @@ class Api
 			} else {
 				require_once($filename);
 				if (VERBOSE_LOG) {
-					error_log("Checking if model has been defined...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
+					error_log("Loading built-in model $model_name...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
 				}
 				$this->addPrimaryKey($$model_name);
 				define($model_name, $$model_name);
@@ -381,7 +380,7 @@ class Api
 				// initialize controller for model or view ("abstract" controller)
 				$controllerClass = class_exists($elements[2].'Controller') ? $elements[2].'Controller' : '\Kyte\Mvc\ModelController';
 				// create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
-				$controller = new $controllerClass(isset(${$elements[2]}) ? ${$elements[2]} : null, APP_DATE_FORMAT, $account, $session, $user, $response);
+				$controller = new $controllerClass(isset(constant($elements[2])) ? constant($elements[2]) : null, APP_DATE_FORMAT, $account, $session, $user, $response);
 				if (!$controller) throw new \Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 
 				switch ($request) {
