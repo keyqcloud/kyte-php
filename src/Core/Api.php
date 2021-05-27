@@ -30,38 +30,6 @@ class Api
 		} else throw new \Exception("API key is required.");
 	}
 
-	protected function cors() {
-		// get origin of requester
-		if (array_key_exists('HTTP_ORIGIN', $_SERVER)) {
-			$origin = $_SERVER['HTTP_ORIGIN'];
-		} else if (array_key_exists('HTTP_REFERER', $_SERVER)) {
-			$origin = $_SERVER['HTTP_REFERER'];
-		} else {
-			$origin = $_SERVER['REMOTE_ADDR'];
-		}
-
-		header("Access-Control-Allow-Origin: $origin");
-		header('Access-Control-Allow-Credentials: true');
-		header("Content-Type: application/json; charset=utf-8");
-
-		// get request type
-		$request = $_SERVER['REQUEST_METHOD'];
-
-		// Access-Control headers are received during OPTIONS requests
-		if ($request == 'OPTIONS') {
-
-			if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']))
-				header("Access-Control-Allow-Methods: GET, PUT, POST, DELETE, HEAD, OPTION");         
-
-			if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']))
-				header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
-
-			exit(0);
-		}
-
-		return $request;
-	}
-
 	protected function addPrimaryKey(&$modeldef) {
 		$modeldef['struct']['id'] = [
 			'type'		=> 'i',
@@ -227,6 +195,38 @@ class Api
 		\Kyte\Core\DBI::setCharset(KYTE_DB_CHARSET);
 	}
 
+	protected function cors() {
+		// get origin of requester
+		if (array_key_exists('HTTP_ORIGIN', $_SERVER)) {
+			$origin = $_SERVER['HTTP_ORIGIN'];
+		} else if (array_key_exists('HTTP_REFERER', $_SERVER)) {
+			$origin = $_SERVER['HTTP_REFERER'];
+		} else {
+			$origin = $_SERVER['REMOTE_ADDR'];
+		}
+
+		header("Access-Control-Allow-Origin: $origin");
+		header('Access-Control-Allow-Credentials: true');
+		header("Content-Type: application/json; charset=utf-8");
+
+		// get request type
+		$request = $_SERVER['REQUEST_METHOD'];
+
+		// Access-Control headers are received during OPTIONS requests
+		if ($request == 'OPTIONS') {
+
+			if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']))
+				header("Access-Control-Allow-Methods: GET, PUT, POST, DELETE, HEAD, OPTION");         
+
+			if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']))
+				header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
+
+			exit(0);
+		}
+
+		return $request;
+	}
+
 	// meat of API
 	public function route() {
 		// CORS Validation
@@ -380,7 +380,7 @@ class Api
 				// initialize controller for model or view ("abstract" controller)
 				$controllerClass = class_exists($elements[2].'Controller') ? $elements[2].'Controller' : '\Kyte\Mvc\Controller\ModelController';
 				// create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
-				$controller = new $controllerClass(defined(constant($elements[2])) ? constant($elements[2]) : null, APP_DATE_FORMAT, $account, $session, $user, $response);
+				$controller = new $controllerClass(defined($elements[2]) ? constant($elements[2]) : null, APP_DATE_FORMAT, $account, $session, $user, $response);
 				if (!$controller) throw new \Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 
 				switch ($request) {
