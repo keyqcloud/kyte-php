@@ -360,9 +360,6 @@ class Api
 				$response['kyte_num'] = $account->getParam('number');
 				$response['kyte_iden'] = $account_api->getParam('identifier');
 
-				// update log with tx token
-				$log->save(['txToken' => $response['token']]);
-
 				/* ********************************** */
 				/* **** VERIFY SIGNATURE - START **** */
 				// calculate hash based on provided information
@@ -453,21 +450,14 @@ class Api
 		} catch (\Kyte\Core\SessionException $e) {
 			http_response_code(403);
 			$response['error'] = $e->getMessage();
-			// log return response
-			$log->save(['return' => print_r($response, true)]);
 			echo json_encode($response);
 			exit(0);
 		} catch (\Exception $e) {
 			http_response_code(400);
 			$response['error'] = $e->getMessage();
-			// log return response
-			$log->save(['return' => print_r($response, true)]);
 			echo json_encode($response);
 			exit(0);
 		}
-
-		// log return response
-		$log->save(['return' => print_r($response, true)]);
 
 		// return response data
 		echo json_encode($response);
