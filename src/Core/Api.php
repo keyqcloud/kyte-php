@@ -111,7 +111,7 @@ class Api
 		];
 	}
 
-	public function bootstrap() {
+	protected function bootstrap() {
 		// compatibility for older config files
 		if (!defined('ALLOW_ENC_HANDOFF')) {
 			define('ALLOW_ENC_HANDOFF', true);
