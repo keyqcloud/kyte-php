@@ -33,6 +33,7 @@
     define('SESSION_TIMEOUT', 3600);
     define('USERNAME_FIELD', 'email');
     define('PASSWORD_FIELD', 'password');
+    define('VERBOSE_LOG', false);
 
     /* SENDGRID INTEGRATION */
     define('KYTE_SENDGRID_API', '');

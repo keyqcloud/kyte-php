@@ -137,8 +137,10 @@ class Api
 			define('PASSWORD_FIELD', 'password');
 			error_log('PASSWORD_FIELD contant not defined...using defaults');
 		}
-		/* LOG OUTPUT */
-		define('VERBOSE_LOG', false);
+		if (!defined('VERBOSE_LOG')) {
+			define('VERBOSE_LOG', false);
+			error_log('VERBOSE_LOG contant not defined...using defaults');
+		}
 
 		// only execute if called from web
 		if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
