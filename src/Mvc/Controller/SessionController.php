@@ -1,6 +1,6 @@
 <?php
 
-// namespace Kyte\Mvc\Controller;
+namespace Kyte\Mvc\Controller;
 
 class SessionController extends Kyte\Mvc\Controller\ModelController
 {

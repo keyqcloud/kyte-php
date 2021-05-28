@@ -2,6 +2,8 @@
 
 namespace Kyte\Core;
 
+use Kyte\Mvc\Controller;
+
 /*
  * Class Session
  *
