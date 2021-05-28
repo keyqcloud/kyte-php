@@ -69,9 +69,9 @@ class ModelController
                     'failOnNull' => 'Unable to delete object(s)',
                 ],
             ];
-            error_log('calling init');
+            
             $this->init();
-            error_log('called init');
+
         } catch (\Exception $e) {
             throw $e;
         }
@@ -79,7 +79,9 @@ class ModelController
 
     protected function init()
     {
+        error_log('calling init');
         $this->hook_init();
+        error_log('called init');
         if ($this->requireAuth) {
             $this->authenticate();
         }
