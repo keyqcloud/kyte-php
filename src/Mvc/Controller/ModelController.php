@@ -4,7 +4,6 @@ namespace Kyte\Mvc\Controller;
 
 class ModelController
 {
-
     protected $user;
     protected $account;
     protected $session;

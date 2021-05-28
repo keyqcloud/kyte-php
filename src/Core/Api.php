@@ -2,8 +2,6 @@
 
 namespace Kyte\Core;
 
-use Kyte\Mvc\Controller;
-
 /*
  * Class Session
  *
@@ -380,7 +378,11 @@ class Api
 				/* ********************************** */
 
 				// initialize controller for model or view ("abstract" controller)
-				$controllerClass = class_exists($elements[2].'Controller') ? $elements[2].'Controller' : '\Kyte\Mvc\Controller\ModelController';
+				if (class_exists('\\Kyte\Mvc\\Controller\\'.$elements[2].'Controller')) {
+					$controllerClass = '\\Kyte\Mvc\\Controller\\'.$elements[2];
+				} else {
+					$controllerClass = class_exists($elements[2].'Controller') ? $elements[2].'Controller' : '\\Kyte\\Mvc\\Controller\\ModelController';
+				}
 				// create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
 				$controller = new $controllerClass(defined($elements[2]) ? constant($elements[2]) : null, APP_DATE_FORMAT, $account, $session, $user, $response);
 				if (!$controller) throw new \Exception("[ERROR] Unable to create controller for model: $controllerClass.");
