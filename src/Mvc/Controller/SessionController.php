@@ -8,7 +8,6 @@ class SessionController extends ModelController
     {
         // make a public controller
         $this->requireAuth = false;
-        error_log('Hook called');
     }
 
     // new - creates new session
