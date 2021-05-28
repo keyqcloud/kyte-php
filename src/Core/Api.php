@@ -379,7 +379,7 @@ class Api
 
 				// initialize controller for model or view ("abstract" controller)
 				if (class_exists('\\Kyte\Mvc\\Controller\\'.$elements[2].'Controller')) {
-					$controllerClass = '\\Kyte\Mvc\\Controller\\'.$elements[2];
+					$controllerClass = '\\Kyte\Mvc\\Controller\\'.$elements[2].'Controller';
 				} else {
 					$controllerClass = class_exists($elements[2].'Controller') ? $elements[2].'Controller' : '\\Kyte\\Mvc\\Controller\\ModelController';
 				}
