@@ -8,6 +8,7 @@ class SessionController extends Kyte\Mvc\Controller\ModelController
     {
         // make a public controller
         $this->requireAuth = false;
+        error_log('Hook called');
     }
 
     // new - creates new session
