@@ -10,8 +10,8 @@ class SessionManager
 	private $password_field;
 
 	public function __construct($session_model, $account_model, $username_field = 'email', $password_field = 'password', $multilogon = false, $timeout = 3600) {
-		$this->session = new \Kyte\Core\ModelObject(constant($session_model));
-		$this->user = new \Kyte\Core\ModelObject(constant($account_model));
+		$this->session = new \Kyte\Core\ModelObject($session_model);
+		$this->user = new \Kyte\Core\ModelObject($account_model);
 		$this->username_field = $username_field;
 		$this->password_field = $password_field;
 		$this->timeout = $timeout;
