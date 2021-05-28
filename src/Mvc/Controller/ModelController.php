@@ -92,6 +92,8 @@ class ModelController
     }
 
     protected function checkPermissions($requestType, $modelName = null) {
+        error_log($this->requireAuth ? '****TRUE' : '****FALSE');
+        error_log($this->requireRoles ? '****TRUE' : '****FALSE');
         if ($this->requireAuth && $this->requireRoles) {
             // if model name is set then use it, otherwise use clas model
             $modelName = $modelName ? $modelName : $this->model['name'];
