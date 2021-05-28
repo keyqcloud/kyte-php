@@ -2,7 +2,7 @@
 
 namespace Kyte\Mvc\Controller;
 
-class SessionController extends Kyte\Mvc\Controller\ModelController
+class SessionController extends ModelController
 {
     public function hook_init()
     {
