@@ -381,7 +381,7 @@ class Api
 				if (class_exists('\\Kyte\Mvc\\Controller\\'.$elements[2].'Controller')) {
 					$controllerClass = '\\Kyte\Mvc\\Controller\\'.$elements[2];
 				} else {
-					$controllerClass = class_exists($elements[2].'Controller') ? $elements[2].'Controller' : '\\Kyte\\Mvc\\Controller\\ModelController';
+					$controllerClass = class_exists($elements[2].'Controller') ? $elements[2].'Controller' : '\Kyte\Mvc\Controller\ModelController';
 				}
 				// create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
 				$controller = new $controllerClass(defined($elements[2]) ? constant($elements[2]) : null, APP_DATE_FORMAT, $account, $session, $user, $response);
