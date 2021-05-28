@@ -69,7 +69,9 @@ class ModelController
                     'failOnNull' => 'Unable to delete object(s)',
                 ],
             ];
+            error_log('calling init');
             $this->init();
+            error_log('called init');
         } catch (\Exception $e) {
             throw $e;
         }
