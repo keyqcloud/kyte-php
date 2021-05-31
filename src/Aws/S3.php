@@ -7,7 +7,7 @@ use Aws\S3\S3Client;
 private $credentials;
 private $bucket;
 private $acl;
-private $S3Client;
+private $client;
 
 class S3
 {
@@ -16,7 +16,7 @@ class S3
         $this->bucket = $bucket;
         $this->acl = $acl;
 
-        $this->S3Client = new S3Client([
+        $this->client = new S3Client([
             'credentials'	=> $this->credentials->getCredentials(),
             'region'		=> $this->credentials->getRegion(),
             'version'		=> '2006-03-01'
@@ -28,7 +28,7 @@ class S3
         if ($context) {
             $context = stream_context_create($context);
         }
-        $this->S3Client->registerStreamWrapper();
+        $this->client->registerStreamWrapper();
         mkdir('s3://'.$bucket, $context);
 
         $this->bucket = $bucket;
@@ -41,7 +41,7 @@ class S3
             throw new \Exception('bucket must be defined');
         }
 
-        $this->S3Client->registerStreamWrapper();
+        $this->client->registerStreamWrapper();
 
         return rmdir('s3://'.$bucket);
 
@@ -70,7 +70,7 @@ class S3
 
     // use S3 stream wrapper to write/append to bucket path
     private function streamWrite($key, $data, $flag) {
-        $this->S3Client->registerStreamWrapper();
+        $this->client->registerStreamWrapper();
 
         $stream = fopen('s3://'.$this->bucket.'/'.$key, $flag);
         fwrite($stream, $data);
@@ -79,7 +79,7 @@ class S3
 
     // https://docs.aws.amazon.com/sdk-for-php/v3/developer-guide/s3-stream-wrapper.html
     // public function read() {
-    //     $this->S3Client->registerStreamWrapper();
+    //     $this->client->registerStreamWrapper();
     // }
 
     // use S3 stream wrapper to return list of files in directory
@@ -105,7 +105,7 @@ class S3
             $context = stream_context_create($context);
         }
 
-        $this->S3Client->registerStreamWrapper();
+        $this->client->registerStreamWrapper();
 
         unlink('s3://'.$this->bucket'/'.$key, $context);
     }
@@ -117,7 +117,7 @@ class S3
             throw new \Exception('bucket must be defined');
         }
 
-        $this->S3Client->registerStreamWrapper();
+        $this->client->registerStreamWrapper();
 
         return filesize('s3://'.$this->bucket'/'.$key);
     }
@@ -129,7 +129,7 @@ class S3
             throw new \Exception('bucket must be defined');
         }
 
-        $this->S3Client->registerStreamWrapper();
+        $this->client->registerStreamWrapper();
 
         return is_file('s3://'.$this->bucket'/'.$key);
     }
@@ -141,7 +141,7 @@ class S3
             throw new \Exception('bucket must be defined');
         }
 
-        $this->S3Client->registerStreamWrapper();
+        $this->client->registerStreamWrapper();
         
         return file_exists('s3://'.$this->bucket'/'.$key);
     }
@@ -153,7 +153,7 @@ class S3
             throw new \Exception('bucket must be defined');
         }
 
-        $this->S3Client->registerStreamWrapper();
+        $this->client->registerStreamWrapper();
         
         return rename('s3://'.$this->bucket'/'.$oldkey, 's3://'.$this->bucket'/'.$newkey);
     }
@@ -165,12 +165,12 @@ class S3
             throw new \Exception('bucket must be defined');
         }
 
-        $cmd = $this->S3Client->getCommand('getObject', [
+        $cmd = $this->client->getCommand('getObject', [
             'Bucket'	=> $this->bucket,
             'Key'		=> $key
         ]);
 
-        $aws_req = $this->S3Client->createPresignedRequest($cmd, $expiration);
+        $aws_req = $this->client->createPresignedRequest($cmd, $expiration);
 
         return (string)$aws_req->getUri();
     }
@@ -182,7 +182,7 @@ class S3
             throw new \Exception('bucket must be defined');
         }
 
-        $cmd = $this->S3Client->putObject([
+        $cmd = $this->client->putObject([
             'Bucket'	=> $this->bucket,
             'Key'		=> $key,
             'Body'		=> fopen($filepath, 'rb'),
@@ -199,7 +199,7 @@ class S3
             throw new \Exception('bucket must be defined');
         }
 
-        $cmd = $this->S3Client->deleteObject([
+        $cmd = $this->client->deleteObject([
             'Bucket' => $this->bucket,
             'Key'    => $key
         ]);

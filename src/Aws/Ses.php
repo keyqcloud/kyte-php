@@ -5,7 +5,7 @@ use Aws\Exception\AwsException;
 use Aws\Ses\SesClient;
 
 private $credentials;
-private $SesClient;
+private $client;
 private $sender;
 
 class Ses
@@ -14,7 +14,7 @@ class Ses
         $this->credentials = $credentials;
         $this->sender = $sender;
 
-        $this->SesClient = new SesClient([
+        $this->client = new SesClient([
             'credentials' => $this->credentials->getCredentials(),
             'version' => '2010-12-01',
             'region'	=> $this->credentials->getRegion()
@@ -22,7 +22,7 @@ class Ses
     }
 
     public function send($recipients, $subject, $html_body, $char_set = 'UTF-8') {
-        $result = $this->SesClient->sendEmail([
+        $result = $this->client->sendEmail([
             'Destination' => [
                 'ToAddresses' => $recipients,
             ],

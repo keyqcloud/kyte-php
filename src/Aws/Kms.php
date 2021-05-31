@@ -5,7 +5,7 @@ use Aws\Exception\AwsException;
 use Aws\Kms\KmsClient;
 
 private $credentials;
-private $KmsClient;
+private $client;
 private $kmsKeyId;
 
 class Kms
@@ -13,7 +13,7 @@ class Kms
     public function __construct($credentials, $kmsKeyId) {
         $this->credentials = $credentials;
         $this->kmsKeyId = $kmsKeyId;
-        $this->KmsClient = new Aws\Kms\KmsClient([
+        $this->client = new Aws\Kms\KmsClient([
             'credentials'	=> $this->credentials->getCredentials(),
             'version'	=> '2014-11-01',
             'region'	=> $this->credentials->getRegion()
@@ -24,7 +24,7 @@ class Kms
         if (is_array($data)) {
             $data = json_encode($data);
         }
-        $aws_res = $this->KmsClient->encrypt([
+        $aws_res = $this->client->encrypt([
             'KeyId' => $this->kmsKeyId,
             'Plaintext' => $data,
         ]);
@@ -37,7 +37,7 @@ class Kms
     }
 
     public function decrypt($cipher) {
-        $aws_res = $this->KmsClient->decrypt([
+        $aws_res = $this->v->decrypt([
             'CiphertextBlob' => $cipher,
         ]);
 
