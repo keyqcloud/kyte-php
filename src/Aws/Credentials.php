@@ -3,12 +3,16 @@ namespace Kyte\Aws;
 
 private $credentials;
 private $region;
+private $accessKey;
+private $privateKey;
 
 class Credentials
 {
-    public function __construct($region) {
+    public function __construct($region, $accessKey = null, $secretKey = null) {
+        $this->accessKey = $accessKey ? $accessKey : AWS_ACCESS_KEY_ID;
+        $this->secretKey = $secretKey ? $secretKey : AWS_SECRET_KEY;
         $this->region = $region;
-        $this->credentials = new \Aws\Credentials\Credentials(AWS_ACCESS_KEY_ID, AWS_SECRET_KEY);
+        $this->credentials = new \Aws\Credentials\Credentials($this->accessKey, $this->secretKey);
     }
 
     public function getCredentials() {
