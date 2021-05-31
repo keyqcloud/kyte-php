@@ -4,7 +4,7 @@ namespace Kyte\Aws;
 private $credentials;
 private $region;
 private $accessKey;
-private $privateKey;
+private $secretKey;
 
 class Credentials
 {
@@ -21,6 +21,14 @@ class Credentials
 
     public function getRegion() {
         return $this->region;
+    }
+
+    public function getAccessKey() {
+        return $this->accessKey;
+    }
+
+    public function getSecretKey() {
+        return $this->secretKey;
     }
 }
 ?>
