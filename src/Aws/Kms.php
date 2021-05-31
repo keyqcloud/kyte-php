@@ -1,6 +1,9 @@
 <?php
 namespace Kyte\Aws;
 
+use Aws\Exception\AwsException;
+use Aws\Kms\KmsClient;
+
 private $credentials;
 private $KmsClient;
 private $kmsKeyId;
@@ -11,7 +14,7 @@ class Kms
         $this->credentials = $credentials;
         $this->kmsKeyId = $kmsKeyId;
         $this->KmsClient = new Aws\Kms\KmsClient([
-            'credential'	=> $this->credentials->getCredentials(),
+            'credentials'	=> $this->credentials->getCredentials(),
             'version'	=> '2014-11-01',
             'region'	=> $this->credentials->getRegion()
         ]);
