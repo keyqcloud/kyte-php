@@ -4,71 +4,68 @@ namespace Kyte\Aws;
 use Aws\Exception\AwsException;
 use Aws\CloudFront\CloudFrontClient;
 
-private $credentials;
-private $client;
-
-private $distributionConfig;
-
-// distribution configuration properties
-// https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-overview-required-fields.html
-// ** DistributionConfig
-// **** Required fields
-public $CallerReference;                        // '<string>'
-public $Aliases;                                // ['<string>', ...]
-public $DefaultRootObject;                      // '<string>'
-public $Origins;
-public $OriginGroups;
-// public $CacheBehaviors;
-public $CustomErrorResponses;                   // [ 'ErrorCachingMinTTL' => <integer>, 'ErrorCode' => <integer>, 'ResponseCode' => '<string>', 'ResponsePagePath' => '<string>', ]
-public $Comment;                                // '<string>'
-public $LoggingBucket;                          // '<string>'
-public $LoggingEnabled;                         // boolean
-public $LoggingIncludeCookie;                   // boolean
-public $LoggingPrefix;                          // '<string>'
-public $PriceClass;                             // 'PriceClass_100|PriceClass_200|PriceClass_All'
-public $Enabled;                                // boolean
-public $ViewerCertificateACMCertificateArn;     // '<string>'
-public $ViewerCertificate;                      // '<string>'
-public $ViewerCertificateSource;                // 'cloudfront|iam|acm'
-public $ViewerCertificateCloudFrontDefaultCertificate;  // boolean
-public $ViewerCertificateIAMCertificateId;      // '<string>'
-public $ViewerCertificateMinimumProtocolVersion;        // 'SSLv3|TLSv1|TLSv1_2016|TLSv1.1_2016|TLSv1.2_2018|TLSv1.2_2019'
-public $ViewerCertificateSSLSupportMethod;      // 'sni-only|vip|static-ip's
-public $GeoRestriction;                         // ['<string>', ...]
-public $GeoRestrictionRestrictionType;          // 'blacklist|whitelist|none'
-public $WebACLId;                               // '<string>'
-public $HttpVersion;                            // 'http1.1|http2'
-public $IsIPV6Enabled;                          // boolean
-// ** DefaultCacheBehavior
-public $PathPattern;                            // '<string>'
-public $TargetOriginId;                         // string
-public $ForwardedValuesCookies;                 // 'none|whitelist|all'
-public $ForwardedValuesCookiesWhitelistedNames; // ['<string>', ...]
-public $ForwardedValuesHeaders;                 // ['<string>', ...]
-public $ForwardedValuesQueryString;             // boolean
-public $ForwardedValuesQueryStringCacheKeys;    // ['<string>', ...]
-public $TrustedSignersEnabled;                  // boolean
-public $TrustedSigners;                         // ['<string>', ...]
-public $MinTTL;                                 // integer
-public $AllowedMethods;                         // ['<string>', ...]
-public $AllowedCachedMethods;                   // ['<string>', ...]
-public $SmoothStreaming;                        // boolean
-public $DefaultTTL;                             // integer
-public $MaxTTL;                                 // integer
-public $Compress;                               // boolean
-public $FunctionAssociations;                   // [ 'EventType' => 'viewer-request|viewer-response|origin-request|origin-response', 'FunctionARN' => '<string>', ]
-public $LambdaFunctionAssociations;             // [ 'EventType' => 'viewer-request|viewer-response|origin-request|origin-response', 'IncludeBody' => true || false, 'LambdaFunctionARN' => '<string>', ]
-public $FieldLevelEncryptionId;                 // string
-public $CachePolicyId;                          // string
-public $OriginRequestPolicyId;                  // '<string>'
-public $RealtimeLogConfigArn;                   // '<string>'
-public $TrustedKeyGroupsEnabled;                // boolean
-public $TrustedKeyGroups;                       // ['<string>', ...]
-public $ViewerProtocolPolicy;                   // 'allow-all|https-only|redirect-to-https'
-
-class CloudFront
+class CloudFront extends Client
 {
-    public function __construct($credentials, $kmsKeyId) {
+    private $distributionConfig;
+
+    // distribution configuration properties
+    // https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-overview-required-fields.html
+    // ** DistributionConfig
+    // **** Required fields
+    public $CallerReference;                        // '<string>'
+    public $Aliases;                                // ['<string>', ...]
+    public $DefaultRootObject;                      // '<string>'
+    public $Origins;
+    public $OriginGroups;
+    // public $CacheBehaviors;
+    public $CustomErrorResponses;                   // [ 'ErrorCachingMinTTL' => <integer>, 'ErrorCode' => <integer>, 'ResponseCode' => '<string>', 'ResponsePagePath' => '<string>', ]
+    public $Comment;                                // '<string>'
+    public $LoggingBucket;                          // '<string>'
+    public $LoggingEnabled;                         // boolean
+    public $LoggingIncludeCookie;                   // boolean
+    public $LoggingPrefix;                          // '<string>'
+    public $PriceClass;                             // 'PriceClass_100|PriceClass_200|PriceClass_All'
+    public $Enabled;                                // boolean
+    public $ViewerCertificateACMCertificateArn;     // '<string>'
+    public $ViewerCertificate;                      // '<string>'
+    public $ViewerCertificateSource;                // 'cloudfront|iam|acm'
+    public $ViewerCertificateCloudFrontDefaultCertificate;  // boolean
+    public $ViewerCertificateIAMCertificateId;      // '<string>'
+    public $ViewerCertificateMinimumProtocolVersion;        // 'SSLv3|TLSv1|TLSv1_2016|TLSv1.1_2016|TLSv1.2_2018|TLSv1.2_2019'
+    public $ViewerCertificateSSLSupportMethod;      // 'sni-only|vip|static-ip's
+    public $GeoRestriction;                         // ['<string>', ...]
+    public $GeoRestrictionRestrictionType;          // 'blacklist|whitelist|none'
+    public $WebACLId;                               // '<string>'
+    public $HttpVersion;                            // 'http1.1|http2'
+    public $IsIPV6Enabled;                          // boolean
+    // ** DefaultCacheBehavior
+    public $PathPattern;                            // '<string>'
+    public $TargetOriginId;                         // string
+    public $ForwardedValuesCookies;                 // 'none|whitelist|all'
+    public $ForwardedValuesCookiesWhitelistedNames; // ['<string>', ...]
+    public $ForwardedValuesHeaders;                 // ['<string>', ...]
+    public $ForwardedValuesQueryString;             // boolean
+    public $ForwardedValuesQueryStringCacheKeys;    // ['<string>', ...]
+    public $TrustedSignersEnabled;                  // boolean
+    public $TrustedSigners;                         // ['<string>', ...]
+    public $MinTTL;                                 // integer
+    public $AllowedMethods;                         // ['<string>', ...]
+    public $AllowedCachedMethods;                   // ['<string>', ...]
+    public $SmoothStreaming;                        // boolean
+    public $DefaultTTL;                             // integer
+    public $MaxTTL;                                 // integer
+    public $Compress;                               // boolean
+    public $FunctionAssociations;                   // [ 'EventType' => 'viewer-request|viewer-response|origin-request|origin-response', 'FunctionARN' => '<string>', ]
+    public $LambdaFunctionAssociations;             // [ 'EventType' => 'viewer-request|viewer-response|origin-request|origin-response', 'IncludeBody' => true || false, 'LambdaFunctionARN' => '<string>', ]
+    public $FieldLevelEncryptionId;                 // string
+    public $CachePolicyId;                          // string
+    public $OriginRequestPolicyId;                  // '<string>'
+    public $RealtimeLogConfigArn;                   // '<string>'
+    public $TrustedKeyGroupsEnabled;                // boolean
+    public $TrustedKeyGroups;                       // ['<string>', ...]
+    public $ViewerProtocolPolicy;                   // 'allow-all|https-only|redirect-to-https'
+
+    public function __construct($credentials) {
         $this->credentials = $credentials;
         $this->client = new Aws\CloudFront\CloudFrontClient([
             'credentials'	=> $this->credentials->getCredentials(),
@@ -86,6 +83,8 @@ class CloudFront
             $result = $this->client->createDistribution([
                 $this->distributionConfig
             ]);
+
+            $this->Id = $result['Distribution']['Id'];
     
             return $result;
         } catch (AwsException $e) {
@@ -93,8 +92,10 @@ class CloudFront
         }
     }
 
-    public function get($distributionId) {
+    public function get($distributionId = null) {
         try {
+            $distributionId = $this->Id ? $this->Id : $distributionId;
+
             $result = $this->client->getDistribution([
                 'Id' => $distributionId
             ]);
@@ -114,8 +115,10 @@ class CloudFront
         }
     }
 
-    public function disable($distributionId) {
+    public function disable($distributionId = null) {
         try {
+            $distributionId = $this->Id ? $this->Id : $distributionId;
+
             $this->distributionConfig['DistributionConfig']['Enabled'] = false;
 
             $result = $cloudFrontClient->updateDistribution([
@@ -129,8 +132,10 @@ class CloudFront
         }
     }
 
-    public function enable($distributionId) {
+    public function enable($distributionId = null) {
         try {
+            $distributionId = $this->Id ? $this->Id : $distributionId;
+
             $this->distributionConfig['DistributionConfig']['Enabled'] = true;
 
             $result = $cloudFrontClient->updateDistribution([
@@ -144,11 +149,15 @@ class CloudFront
         }
     }
 
-    public function delete($distributionId) {
+    public function delete($distributionId = null) {
         try {
+            $distributionId = $this->Id ? $this->Id : $distributionId;
+
             $result = $this->client->deleteDistribution([
                 'Id' => $distributionId
             ]);
+
+            $this->Id = null;
 
             return $result;
         } catch (AwsException $e) {
@@ -156,7 +165,7 @@ class CloudFront
         }
     }
 
-    public function getConfiguration($distributionId) {
+    public function getConfiguration($distributionId = null) {
         $result = $this->get($distributionId);
 
         if (isset($result['Distribution']['DistributionConfig']))

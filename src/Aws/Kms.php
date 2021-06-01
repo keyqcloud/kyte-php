@@ -4,12 +4,10 @@ namespace Kyte\Aws;
 use Aws\Exception\AwsException;
 use Aws\Kms\KmsClient;
 
-private $credentials;
-private $client;
-private $kmsKeyId;
-
-class Kms
+class Kms extends Client
 {
+    private $kmsKeyId;
+    
     public function __construct($credentials, $kmsKeyId) {
         $this->credentials = $credentials;
         $this->kmsKeyId = $kmsKeyId;

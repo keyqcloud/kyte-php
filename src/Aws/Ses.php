@@ -4,12 +4,10 @@ namespace Kyte\Aws;
 use Aws\Exception\AwsException;
 use Aws\Ses\SesClient;
 
-private $credentials;
-private $client;
-private $sender;
-
-class Ses
+class Ses extends Client
 {
+    private $sender;
+
     public function __construct($credentials, $sender) {
         $this->credentials = $credentials;
         $this->sender = $sender;

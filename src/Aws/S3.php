@@ -4,13 +4,11 @@ namespace Kyte\Aws;
 use Aws\Exception\AwsException;
 use Aws\S3\S3Client;
 
-private $credentials;
-private $bucket;
-private $acl;
-private $client;
-
-class S3
+class S3 extends Client
 {
+    private $bucket;
+    private $acl;
+
     public function __construct($credentials, $bucket = null, $acl = 'private') {
         $this->credentials = $credentials;
         $this->bucket = $bucket;

@@ -4,10 +4,7 @@ namespace Kyte\Aws;
 use Aws\Exception\AwsException;
 use Aws\Acm\AcmClient;
 
-private $credentials;
-private $client;
-
-class Acm
+class Acm extends Client
 {
     public function __construct($credentials) {
         $this->credentials = $credentials;
@@ -63,7 +60,7 @@ class Acm
 
     public function list($arn, $params = []) {
         $result = $this->client->listCertificates($params);
-        
+
         return $result;
     }
 }
