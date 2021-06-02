@@ -21,27 +21,59 @@ class S3 extends Client
         ]);
     }
 
-    // use S3 stream wrapper to create bucket
-    public function createBucket($bucket, $context) {
-        if ($context) {
-            $context = stream_context_create($context);
-        }
-        $this->client->registerStreamWrapper();
-        mkdir('s3://'.$bucket, $context);
+    // create bucket
+    public function createBucket($bucket = null, $acl = null) {
+        $bucket = $this->bucket ? $this->bucket : $bucket;
+        $acl = $this->acl ? $this->acl : $acl;
+
+        $this->client->createBucket([
+            'ACL' => $acl, // 'private|public-read|public-read-write|authenticated-read'
+            'Bucket' => $bucket, // REQUIRED
+            'CreateBucketConfiguration' => [
+                'LocationConstraint' => $this->credentials->getRegion() //'ap-northeast-1|ap-southeast-2|ap-southeast-1|cn-north-1|eu-central-1|eu-west-1|us-east-1|us-west-1|us-west-2|sa-east-1'
+            ]
+        ]);
+
+        // if ($context) {
+        //     $context = stream_context_create($context);
+        // }
+        // $this->client->registerStreamWrapper();
+        // mkdir('s3://'.$bucket, $context);
 
         $this->bucket = $bucket;
     }
 
-    // use S3 stream wrapper delete bucket
-    public function deleteBucket($bucket) {
-        // check if bucket exists
-        if (!$this->bucket) {
-            throw new \Exception('bucket must be defined');
-        }
+    public function deleteWebsite($bucket = null) {
+        $bucket = $this->bucket ? $this->bucket : $bucket;
+        
+        $result = $this->client->deleteBucketWebsite([
+            'Bucket' => $this->bucket, // REQUIRED
+        ]);
+    }
 
-        $this->client->registerStreamWrapper();
+    public function deletePolicy($bucket = null) {
+        $bucket = $this->bucket ? $this->bucket : $bucket;
+        
+        $result = $this->client->deleteBucketPolicy([
+            'Bucket' => $this->bucket, // REQUIRED
+        ]);
+    }
 
-        return rmdir('s3://'.$bucket);
+    public function deleteCors($bucket = null) {
+        $bucket = $this->bucket ? $this->bucket : $bucket;
+
+        $result = $this->client->deleteBucketCors([
+            'Bucket' => $this->bucket, // REQUIRED
+        ]);
+    }
+
+    // delete bucket
+    public function deleteBucket($bucket = null) {
+        $bucket = $this->bucket ? $this->bucket : $bucket;
+
+        $result = $this->client->deleteBucket([
+            'Bucket' => $this->bucket, // REQUIRED
+        ]);
 
         $this->bucket = null;
     }
