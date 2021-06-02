@@ -339,12 +339,12 @@ class Api
 					if (!$user->retrieve('id', $session_ret['uid'])) {
 						throw new \Kyte\Exception\SessionException("Invalid user session.");
 					}
-					$response['sessionPermission'] = $user->getParam('role');
+					$response['sessionPermission'] = $user->role;
 
 					// check is user has different account
 					// get user account
-					if ($user->getParam('kyte_account') != $account->getParam('id')) {
-						if (!$account->retrieve('id', $user->getParam('kyte_account'))) {
+					if ($user->kyte_account != $account->id) {
+						if (!$account->retrieve('id', $user->kyte_account)) {
 							throw new \Exception("Unable to find account associated with user");
 						}
 					}
@@ -352,22 +352,22 @@ class Api
 
 				// get api associated with account
 				$account_api = new \Kyte\Core\ModelObject(APIKey);
-				if (!$account_api->retrieve('kyte_account', $account->getParam('id'))) {
+				if (!$account_api->retrieve('kyte_account', $account->id)) {
 					throw new \Exception("[ERROR] Unable to find API information for account");
 				}
 
 				// return account information in response - this is required for API handoff between master account and subaccounts
-				$response['kyte_pub'] = $account_api->getParam('public_key');
-				$response['kyte_num'] = $account->getParam('number');
-				$response['kyte_iden'] = $account_api->getParam('identifier');
+				$response['kyte_pub'] = $account_api->public_key;
+				$response['kyte_num'] = $account->number;
+				$response['kyte_iden'] = $account_api->identifier;
 
 				/* ********************************** */
 				/* **** VERIFY SIGNATURE - START **** */
 				// calculate hash based on provided information
-				$hash1 = hash_hmac('SHA256', $response['token'], $this->key->getParam('secret_key'), true);
-				$hash1_debug = hash_hmac('SHA256', $response['token'], $this->key->getParam('secret_key'));
-				$hash2 = hash_hmac('SHA256', $this->key->getParam('identifier'), $hash1, true);
-				$hash2_debug = hash_hmac('SHA256', $this->key->getParam('identifier'), $hash1);
+				$hash1 = hash_hmac('SHA256', $response['token'], $this->key->secret_key, true);
+				$hash1_debug = hash_hmac('SHA256', $response['token'], $this->key->secret_key);
+				$hash2 = hash_hmac('SHA256', $this->key->identifier, $hash1, true);
+				$hash2_debug = hash_hmac('SHA256', $this->key->identifier, $hash1);
 				$calculated_signature = hash_hmac('SHA256', $date->format('U'), $hash2);
 				// error_log("Time: ".$date->format('U')." ".$iden[2]."\n");
 				// error_log("hash1: $hash1_debug\thash2:$hash2_debug\tFinal:$calculated_signature\n");
@@ -446,7 +446,7 @@ class Api
 						// if undefined is passed from front end then set to zero
 						$data['token'] = $data['token'] == 'undefined' ? 0 : $data['token'];
 				
-						$hash1 = hash_hmac('SHA256', $data['token'], $obj->getParam('secret_key'), true);
+						$hash1 = hash_hmac('SHA256', $data['token'], $obj->secret_key, true);
 						$hash2 = hash_hmac('SHA256', $data['identifier'], $hash1, true);
 						$response['signature'] = hash_hmac('SHA256', $date->format('U'), $hash2);
 					}

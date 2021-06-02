@@ -100,15 +100,15 @@ class ModelController
 
             // check if user assigned role exists
             $role = new \Kyte\Core\ModelObject(Role);
-            $cond = $this->requireAccount ? [ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')] : null;
-            if (!$role->retrieve('id', $this->user->getParam('role'), [$cond])) {
-                error_log('['.$this->model['name'].'] => ['.$requestType.'] unable to find role for '.$this->user->getParam('role').' and '.$this->account->getParam('id'));
+            $cond = $this->requireAccount ? [ 'field' => 'kyte_account', 'value' => $this->account->id)] : null;
+            if (!$role->retrieve('id', $this->user->role), [$cond])) {
+                error_log('['.$this->model['name'].'] => ['.$requestType.'] unable to find role for '.$this->user->role).' and '.$this->account->id));
                 return false;
             }
 
             // check if assigned role has permission for request type
             $permission = new \Kyte\Core\ModelObject(Permission);
-            if (!$permission->retrieve('role', $role->getParam('id'), [ ['field' => 'model', 'value' => $modelName], ['field' => 'action', 'value' => $requestType], $cond ])) {
+            if (!$permission->retrieve('role', $role->id), [ ['field' => 'model', 'value' => $modelName], ['field' => 'action', 'value' => $requestType], $cond ])) {
                 error_log('unable to find permission');
                 return false;
             }
@@ -161,7 +161,7 @@ class ModelController
 
                                     $fk_obj = new \Kyte\Core\ModelObject(constant($fk['model']));
                                     // check if account is required
-                                    $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
+                                    $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->id)]] : null;
 
                                     // retrieve deleted items as well
                                     if ($fk_obj->retrieve($fk['field'], $response[$key], $conditions, null, true)) {
@@ -193,7 +193,7 @@ class ModelController
 
                             $et_objs = new \Kyte\Core\Model(constant($et['model']));
                             // check if account is required
-                            $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
+                            $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->id)]] : null;
 
                             // retrieve deleted items as well
                             $et_objs->retrieve($et['field'], $response['id'], false, $conditions);
@@ -253,7 +253,7 @@ class ModelController
             }
             
             // add account information
-            $data['kyte_account'] = $this->account->getParam('id');
+            $data['kyte_account'] = $this->account->id);
             // hook for any custom behaviours before creating object
             $this->hook_preprocess('new', $data);
             // create object & get return
@@ -290,7 +290,7 @@ class ModelController
         $response = [];
 
         try {
-            $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
+            $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->id)]] : null;
             $all = false;
             $this->hook_prequery('update', $field, $value, $conditions, $all, $order);
             // init object
@@ -311,7 +311,7 @@ class ModelController
                 if ($this->checkExisting) {
                     $existing = new \Kyte\Core\ModelObject($this->model);
                     if ($existing->retrieve($this->checkExisting, $data[$this->checkExisting])) {
-                        if ($existing->getParam('id') != $obj->getParam('id')) {
+                        if ($existing->id) != $obj->id)) {
                             throw new \Exception('There is already a '.strtolower($this->model['name']).' with that '.$this->checkExisting.'.');
                         }
                     }
@@ -349,7 +349,7 @@ class ModelController
         $response = [];
 
         try {
-            $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
+            $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->id)]] : null;
             $all = false;
             $order = null;
             $this->hook_prequery('get', $field, $value, $conditions, $all, $order);
@@ -381,7 +381,7 @@ class ModelController
             // find external tables and delete associated entries
             foreach ($obj->model['externalTables'] as $extTbl) {
                 $dep = new \Kyte\Core\Model(constant($extTbl['model']));
-                $dep->retrieve($extTbl['field'], $obj->getParam('id'), false, $conditions);
+                $dep->retrieve($extTbl['field'], $obj->id), false, $conditions);
 
                 // delete each associated entry in the table
                 foreach ($dep->objects as $item) {
@@ -408,7 +408,7 @@ class ModelController
         $response = [];
 
         try {
-            $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->getParam('id')]] : null;
+            $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->id)]] : null;
             $objs = new \Kyte\Core\Model($this->model);
             $objs->retrieve($field, $value, false, $conditions);
             
@@ -424,7 +424,7 @@ class ModelController
                     // find external tables and delete associated entries
                     foreach ($this->model['externalTables'] as $extTbl) {
                         $dep = new \Kyte\Core\Model(constant($extTbl['model']));
-                        $dep->retrieve($extTbl['field'], $obj->getParam('id'), false, $conditions);
+                        $dep->retrieve($extTbl['field'], $obj->id), false, $conditions);
 
                         // delete each associated entry in the table
                         foreach ($dep->objects as $item) {
