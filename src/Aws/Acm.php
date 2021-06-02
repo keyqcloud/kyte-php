@@ -31,10 +31,14 @@ class Acm extends Client
             throw new \Exception('Unable to create new certificate');
         }
 
-        return [ 'arn' => $result['CertificateArn'], 'IdempotencyToken' => $idemToken ];
+        $this->Arn = $result['CertificateArn'];
+
+        return [ 'CertificateArn' => $result['CertificateArn'], 'IdempotencyToken' => $idemToken ];
     }
 
-    public function describe($arn) {
+    public function describe($arn = null) {
+        $arn = $this->Arn ? $this->Arn : $arn;
+
         $result = $this->client->describeCertificate([
             'CertificateArn' => $arn, // REQUIRED
         ]);
@@ -53,12 +57,16 @@ class Acm extends Client
     }
 
     public function delete($arn) {
+        $arn = $this->Arn ? $this->Arn : $arn;
+
         $result = $client->deleteCertificate([
             'CertificateArn' => $arn, // REQUIRED
         ]);
+
+        $this->$Arn = null;
     }
 
-    public function list($arn, $params = []) {
+    public function list($params = []) {
         $result = $this->client->listCertificates($params);
 
         return $result;

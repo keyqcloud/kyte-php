@@ -85,6 +85,7 @@ class CloudFront extends Client
             ]);
 
             $this->Id = $result['Distribution']['Id'];
+            $this->Arn = $result['Distribution']['ARN'];
     
             return $result;
         } catch (AwsException $e) {
@@ -149,6 +150,50 @@ class CloudFront extends Client
         }
     }
 
+    public function setAliases($distributionId, $aliases, $acmArn) {
+        try {
+            if (count($aliases) < 1) {
+                throw new \Exception("At least one aliase (CNAME) must be defined");
+            }
+            $distributionId = $this->Id ? $this->Id : $distributionId;
+
+            $this->distributionConfig['DistributionConfig']['Aliases']['Items'] = $aliases;
+            $this->distributionConfig['DistributionConfig']['Aliases']['Quantity'] = count($aliases);
+            $this->distributionConfig['DistributionConfig']['ACMCertificateArn'] = $acmArn;
+            $this->distributionConfig['DistributionConfig']['CloudFrontDefaultCertificate'] = false;
+
+            $result = $cloudFrontClient->updateDistribution([
+                $this->distributionConfig,
+                'Id' => $distributionId
+            ]);
+            
+            return $result;
+        } catch (AwsException $e) {
+            return 'Error: ' . $e->getAwsErrorMessage();
+        }
+    }
+
+    // removes Acm certificate and associated Aliases
+    public function removeAliases($distributionId = null) {
+        try {
+            $distributionId = $this->Id ? $this->Id : $distributionId;
+
+            $this->distributionConfig['DistributionConfig']['ACMCertificateArn'] = '';
+            $this->distributionConfig['DistributionConfig']['CloudFrontDefaultCertificate'] = true;
+            $this->distributionConfig['DistributionConfig']['Aliases']['Items'] = [];
+            $this->distributionConfig['DistributionConfig']['Aliases']['Quantity'] = 0;
+
+            $result = $cloudFrontClient->updateDistribution([
+                $this->distributionConfig,
+                'Id' => $distributionId
+            ]);
+            
+            return $result;
+        } catch (AwsException $e) {
+            return 'Error: ' . $e->getAwsErrorMessage();
+        }
+    }
+
     public function delete($distributionId = null) {
         try {
             $distributionId = $this->Id ? $this->Id : $distributionId;
@@ -158,6 +203,7 @@ class CloudFront extends Client
             ]);
 
             $this->Id = null;
+            $this->Arn = null;
 
             return $result;
         } catch (AwsException $e) {
