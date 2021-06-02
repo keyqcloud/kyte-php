@@ -6,11 +6,9 @@ use Aws\Kms\KmsClient;
 
 class Kms extends Client
 {
-    private $kmsKeyId;
-    
     public function __construct($credentials, $kmsKeyId) {
         $this->credentials = $credentials;
-        $this->kmsKeyId = $kmsKeyId;
+        $this->Id = $kmsKeyId;
         $this->client = new Aws\Kms\KmsClient([
             'credentials'	=> $this->credentials->getCredentials(),
             'version'	=> '2014-11-01',
@@ -23,7 +21,7 @@ class Kms extends Client
             $data = json_encode($data);
         }
         $aws_res = $this->client->encrypt([
-            'KeyId' => $this->kmsKeyId,
+            'KeyId' => $this->Id,
             'Plaintext' => $data,
         ]);
         
@@ -35,7 +33,7 @@ class Kms extends Client
     }
 
     public function decrypt($cipher) {
-        $aws_res = $this->v->decrypt([
+        $aws_res = $this->client->decrypt([
             'CiphertextBlob' => $cipher,
         ]);
 
