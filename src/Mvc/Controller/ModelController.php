@@ -219,29 +219,63 @@ class ModelController
         return $response;
     }
 
-    // new - create new entry in db
-    public function new($data)
-    {
-        if (!in_array('new', $this->allowableActions)) {
-            return;
-        }
+    //
+    //      1. covert times to unix time
+    //      2. check for foregin ands external table data
+    protected function sift(&$data) {
 
-        if (!$this->checkPermissions('new')) {
-            throw new \Exception('Permission Denied');
-        }
+        $linkedModels = []
 
-        $response = [];
-
-        // convert all dates to unix time
         foreach($data as $key => $value) {
+
+            // first check existing model
             if (isset($this->model['struct'][$key])) {
                 if ($this->model['struct'][$key]['date']) {
+                    // convert all dates to unix time
                     $data[$key] = strtotime($value);
+                }
+            } else {
+                // see if data is in dot-notation i.e. <model>.<attribute>
+                $p = explode('.', $key);
+                // if count of 2, then dot-notation, process data
+                if (count($p) == 2) {
+                    $linkedModel = constant($p[0]);
+                    if (isset($linkedModel['struct'][$p[1]])) {
+                        if ($linkedModel['struct'][$p[1]]['date']) {
+                            // convert all dates to unix time
+                            $linkedModels[$p[0]] = [ $p[1] => strtotime($value) ];
+                        } else {
+                            // store data values
+                            $linkedModels[$p[0]] = [ $p[1] => $value ];
+                        }
+                    }
                 }
             }
         }
 
+        return $linkedModels;
+    }
+
+    // new - create new entry in db
+    public function new($data)
+    {
+        $response = [];
+
         try {
+            if (!in_array('new', $this->allowableActions)) {
+                return;
+            }
+    
+            if (!$this->checkPermissions('new')) {
+                throw new \Exception('Permission Denied');
+            }
+    
+            // go through data parameters and...
+            //      1. covert times to unix time
+            //      2. check for foregin key table data
+            //      3. check for external table data
+            $linkedModels = $this->sift($data);
+
             // init new object
             $obj = new \Kyte\Core\ModelObject($this->model);
 
@@ -277,19 +311,19 @@ class ModelController
     // update - update entry in db
     public function update($field, $value, $data)
     {
-        if (!in_array('update', $this->allowableActions)) {
-            return;
-        }
-
-        if (!$this->checkPermissions('update')) {
-            throw new \Exception('Permission Denied');
-        }
-
-        if ($field === null || $value === null) throw new \Exception("Field ($field) and Value ($value) params not set");
-
         $response = [];
-
+        
         try {
+            if (!in_array('update', $this->allowableActions)) {
+                return;
+            }
+    
+            if (!$this->checkPermissions('update')) {
+                throw new \Exception('Permission Denied');
+            }
+    
+            if ($field === null || $value === null) throw new \Exception("Field ($field) and Value ($value) params not set");
+
             $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->id)]] : null;
             $all = false;
             $this->hook_prequery('update', $field, $value, $conditions, $all, $order);
@@ -298,14 +332,11 @@ class ModelController
 
             if ($obj->retrieve($field, $value, $conditions, null, $all)) {
 
-                // convert all date time strings to unix time
-                foreach($data as $key => $value) {
-                    if (isset($this->model['struct'][$key])) {
-                        if ($this->model['struct'][$key]['date']) {
-                            $data[$key] = strtotime($value);
-                        }
-                    }
-                }
+                // go through data parameters and...
+                //      1. covert times to unix time
+                //      2. check for foregin key table data
+                //      3. check for external table data
+                $linkedModels = $this->sift($data);
 
                 // check existing and fail if present
                 if ($this->checkExisting) {
@@ -338,17 +369,17 @@ class ModelController
     // get - retrieve objects from db
     public function get($field, $value)
     {
-        if (!in_array('get', $this->allowableActions)) {
-            return;
-        }
-
-        if (!$this->checkPermissions('get')) {
-            throw new \Exception('Permission Denied');
-        }
-
         $response = [];
 
         try {
+            if (!in_array('get', $this->allowableActions)) {
+                return;
+            }
+    
+            if (!$this->checkPermissions('get')) {
+                throw new \Exception('Permission Denied');
+            }
+            s
             $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->id)]] : null;
             $all = false;
             $order = null;
@@ -395,19 +426,19 @@ class ModelController
     // delete - delete objects from db
     public function delete($field, $value)
     {
-        if (!in_array('delete', $this->allowableActions)) {
-            return;
-        }
-
-        if (!$this->checkPermissions('delete')) {
-            throw new \Exception('Permission Denied');
-        }
-
-        if ($field === null || $value === null) throw new \Exception("Field ($field) and Value ($value) params not set");
-
         $response = [];
 
         try {
+            if (!in_array('delete', $this->allowableActions)) {
+                return;
+            }
+    
+            if (!$this->checkPermissions('delete')) {
+                throw new \Exception('Permission Denied');
+            }
+    
+            if ($field === null || $value === null) throw new \Exception("Field ($field) and Value ($value) params not set");
+
             $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->id)]] : null;
             $objs = new \Kyte\Core\Model($this->model);
             $objs->retrieve($field, $value, false, $conditions);
