@@ -32,20 +32,20 @@ class SessionController extends ModelController
 
             // get user account
             $account = new \Kyte\Core\ModelObject(Account);
-            if (!$account->retrieve('id', $obj->kyte_account))) {
+            if (!$account->retrieve('id', $obj->kyte_account)) {
                 throw new \Exception("Unable to find account associated with user");
             }
 
             // get api associated with account
             $account_api = new \Kyte\Core\ModelObject(APIKey);
-            if (!$account_api->retrieve('kyte_account', $account->id))) {
+            if (!$account_api->retrieve('kyte_account', $account->id)) {
                 throw new \Exception("[ERROR] Unable to find API information for account");
             }
 
             // return account information in response - this is required for API handoff between master account and subaccounts
-            $this->response['kyte_pub'] = $account_api->public_key);
-            $this->response['kyte_num'] = $account->number);
-            $this->response['kyte_iden'] = $account_api->identifier);
+            $this->response['kyte_pub'] = $account_api->public_key;
+            $this->response['kyte_num'] = $account->number;
+            $this->response['kyte_iden'] = $account_api->identifier;
 
             $this->response['token'] = $response['txToken'];
             $this->response['data'] = $response;

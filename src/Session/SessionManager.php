@@ -36,12 +36,12 @@ class SessionManager
 				throw new \Kyte\Exception\SessionException("Invalid username or password.");
 			}
 
-			if (!password_verify($password, $this->user->$this->password_field))) {
+			if (!password_verify($password, $this->user->$this->password_field)) {
 				throw new \Kyte\Exception\SessionException("Invalid username or password.");
 			}
 
 			// delete existing session
-			if (!$this->multilogon && $this->session->retrieve('uid', $this->user->'id'))) {
+			if (!$this->multilogon && $this->session->retrieve('uid', $this->user->id)) {
 				$this->session->delete();
 			}
 
@@ -49,10 +49,10 @@ class SessionManager
 			$exp_time = $time+$this->timeout;
 			// create new session
 			$res = $this->session->create([
-				'uid' => $this->user->'id'),
+				'uid' => $this->user->id,
 				'exp_date' => $exp_time,
-				'sessionToken' => $this->generateSessionToken($this->user->$this->username_field)),
-				'txToken' => $this->generateTxToken($time, $exp_time, $this->user->$this->username_field)),
+				'sessionToken' => $this->generateSessionToken($this->user->$this->username_field),
+				'txToken' => $this->generateTxToken($time, $exp_time, $this->user->$this->username_field),
 			]);
 			if (!$res) {
 				throw new \Kyte\Exception\SessionException("Unable to create session.");
@@ -75,12 +75,12 @@ class SessionManager
 		}
 		
 		// check if use is still active
-		if (!$this->user->retrieve('id', $this->session->'uid'))) {
+		if (!$this->user->retrieve('id', $this->session->uid)) {
 			throw new \Kyte\Exception\SessionException("Invalid session.");
 		}
 
 		// check for expriation
-		if ($time > $this->session->'exp_date')) {
+		if ($time > $this->session->exp_date) {
 			throw new \Kyte\Exception\SessionException("Session expired.");
 		}
 		

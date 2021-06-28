@@ -44,7 +44,7 @@ class Ses extends Client
             throw new \Exception("Unable to send message");
         }
 
-        return = $result['MessageId'];
+        return $result['MessageId'];
     }
 }
 ?>

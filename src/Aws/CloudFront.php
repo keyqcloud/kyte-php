@@ -381,7 +381,7 @@ class CloudFront extends Client
                     'TrustedSigners' => [
                         'Enabled' => $this->TrustedSignersEnabled, // REQUIRED
                         'Items' => $this->TrustedSigners,
-                        'Quantity' => count(this->TrustedSigners), // REQUIRED
+                        'Quantity' => count($this->TrustedSigners), // REQUIRED
                     ],
                     'ViewerProtocolPolicy' => $this->ViewerProtocolPolicy, // REQUIRED
                 ],

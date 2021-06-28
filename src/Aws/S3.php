@@ -137,7 +137,7 @@ class S3 extends Client
 
         $this->client->registerStreamWrapper();
 
-        unlink('s3://'.$this->bucket'/'.$key, $context);
+        unlink('s3://'.$this->bucket.'/'.$key, $context);
     }
 
     // use S3 stream wrapper to get file size
@@ -149,7 +149,7 @@ class S3 extends Client
 
         $this->client->registerStreamWrapper();
 
-        return filesize('s3://'.$this->bucket'/'.$key);
+        return filesize('s3://'.$this->bucket.'/'.$key);
     }
 
     // use S3 stream wrapper to check if key points to file
@@ -161,7 +161,7 @@ class S3 extends Client
 
         $this->client->registerStreamWrapper();
 
-        return is_file('s3://'.$this->bucket'/'.$key);
+        return is_file('s3://'.$this->bucket.'/'.$key);
     }
 
     // use S3 stream wrapper to check if file exists
@@ -173,7 +173,7 @@ class S3 extends Client
 
         $this->client->registerStreamWrapper();
         
-        return file_exists('s3://'.$this->bucket'/'.$key);
+        return file_exists('s3://'.$this->bucket.'/'.$key);
     }
 
     // use S3 stream wrapper to rename object
@@ -185,7 +185,7 @@ class S3 extends Client
 
         $this->client->registerStreamWrapper();
         
-        return rename('s3://'.$this->bucket'/'.$oldkey, 's3://'.$this->bucket'/'.$newkey);
+        return rename('s3://'.$this->bucket.'/'.$oldkey, 's3://'.$this->bucket.'/'.$newkey);
     }
 
     // retrieve object using S3Client getObject() method

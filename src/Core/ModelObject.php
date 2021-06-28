@@ -33,7 +33,7 @@ class ModelObject
 	//			'column name' => [ 'type' => 'i/s/d', 'requred' => true/false ],
 	//		]
 	//	]
-	public $model;s
+	public $model;
 
 	public function __construct($model) {
 		$this->model = $model;
@@ -210,7 +210,7 @@ class ModelObject
 	 */
 	public function save($params)
 	{
-		$id = $this->id);
+		$id = $this->id;
 		if (!isset($id)) {
 			throw new \Exception("No retrieved data to update.  Please try retrieving information with retrieve() first.");
 			return false;
@@ -236,7 +236,7 @@ class ModelObject
 	public function populate($o = null)
 	{
 		try {
-			if ($this->id) === false && !isset($o)) {
+			if ($this->id === false && !isset($o)) {
 				throw new \Exception("No object id was found to retrieve data.");
 				return false;
 			}
@@ -250,7 +250,7 @@ class ModelObject
 			} else {
 				// if $id is null from parameter, set it to the object's id value
 				if (!isset($o)) {
-					$o = $this->id);
+					$o = $this->id;
 				}
 
 				$data = \Kyte\Core\DBI::select($this->model['name'], $o);
@@ -288,7 +288,7 @@ class ModelObject
 					return false;
 				}
 			} else if (!isset($field, $value, $id)) {
-				$id = $this->id);
+				$id = $this->id;
 			}
 				
 			// last check to make sure id is set
@@ -320,7 +320,7 @@ class ModelObject
 					return false;
 				}
 			} else if (!isset($field, $value, $id)) {
-				$id = $this->id);
+				$id = $this->id;
 			}
 				
 			// last check to make sure id is set
@@ -343,7 +343,7 @@ class ModelObject
 		$this->{$key} = $value;
 	}
 
-	public function $key) {
+	public function getParam($key) {
 		if (isset($this->{$key})) {
 			return $this->{$key};
 		} else {

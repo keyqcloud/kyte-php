@@ -295,12 +295,12 @@ class Api
 				$this->appId = base64_decode(urldecode($elements[2]));
 				$this->model = $elements[3];
 				$this->field = isset($elements[4]) ? $elements[4] : null;
-				$this->value = isset($elements[5]) ? urldecode($elements[5]) : null
+				$this->value = isset($elements[5]) ? urldecode($elements[5]) : null;
 			} else {
 				// no app id
 				$this->model = $elements[2];
 				$this->field = isset($elements[3]) ? $elements[3] : null;
-				$this->value = isset($elements[4]) ? urldecode($elements[4]) : null
+				$this->value = isset($elements[4]) ? urldecode($elements[4]) : null;
 			}
 
 			// get api associated with account
@@ -423,7 +423,7 @@ class Api
 		$this->response['session'] = '0';
 		$this->response['token'] = 0;	// default to public token
 		$this->response['uid'] = 0;
-		$this->response['sessionPermission'] = 0;s
+		$this->response['sessionPermission'] = 0;
 		$now = new \DateTime();
 		$now->setTimezone(new \DateTimeZone('UTC'));    // Another way
 		$this->response['txTimestamp'] = $now->format('U');
@@ -435,15 +435,23 @@ class Api
 			// if minimum count of elements exist, then process api request based on request type
 			if ($this->isRequest()) {
 
-				// initialize controller for model or view ("abstract" controller)
-				if (class_exists('\\Kyte\Mvc\\Controller\\'.$this->model.'Controller')) {
-					$controllerClass = '\\Kyte\Mvc\\Controller\\'.$this->model.'Controller';
+				if ($this->appId) {
+					// retrieve model definition
+					//
+					// switch DBI to client database
+					//
+					$controller = new \Kyte\Client\ModelController();
 				} else {
-					$controllerClass = class_exists($this->model.'Controller') ? $this->model.'Controller' : '\\Kyte\\Mvc\\Controller\\ModelController';
+					// initialize controller for model or view ("abstract" controller)
+					if (class_exists('\\Kyte\Mvc\\Controller\\'.$this->model.'Controller')) {
+						$controllerClass = '\\Kyte\Mvc\\Controller\\'.$this->model.'Controller';
+					} else {
+						$controllerClass = class_exists($this->model.'Controller') ? $this->model.'Controller' : '\\Kyte\\Mvc\\Controller\\ModelController';
+					}
+					// create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
+					$controller = new $controllerClass(defined($this->model) ? constant($this->model) : null, APP_DATE_FORMAT, $this->account, $this->session, $this->user, $this->response);
+					if (!$controller) throw new \Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 				}
-				// create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
-				$controller = new $controllerClass(defined($this->model) ? constant($this->model) : null, APP_DATE_FORMAT, $this->account, $this->session, $this->user, $this->response);
-				if (!$controller) throw new \Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 
 				switch ($request) {
 					case 'POST':
