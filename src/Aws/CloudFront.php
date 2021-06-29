@@ -122,7 +122,7 @@ class CloudFront extends Client
 
             $this->distributionConfig['DistributionConfig']['Enabled'] = false;
 
-            $result = $cloudFrontClient->updateDistribution([
+            $result = $this->client->updateDistribution([
                 $this->distributionConfig,
                 'Id' => $distributionId
             ]);
@@ -139,7 +139,7 @@ class CloudFront extends Client
 
             $this->distributionConfig['DistributionConfig']['Enabled'] = true;
 
-            $result = $cloudFrontClient->updateDistribution([
+            $result = $this->client->updateDistribution([
                 $this->distributionConfig,
                 'Id' => $distributionId
             ]);
@@ -150,7 +150,24 @@ class CloudFront extends Client
         }
     }
 
-    public function setAliases($distributionId, $aliases, $acmArn) {
+    /** consider using Async methods */
+    // https://stackoverflow.com/questions/49127996/unable-to-cloudfront-create-invalidation-aws-php-sdk-3-x
+    public function createInvalidation($distributionId = null, $paths = ['/*']) {
+        $distributionId = $this->Id ? $this->Id : $distributionId;
+
+        $result = $this->client->createInvalidation([
+            'DistributionId'    => $distributionId,
+            'InvalidationBatch' => [
+                'CallerReference'   => time().$distributionId,
+                'Paths'             => [
+                    'Items'     => $paths,
+                    'Quantity'  => count($paths),
+                ],
+            ],
+        ]);
+    }
+
+    public function setAliases($distributionId = null, $aliases, $acmArn) {
         try {
             if (count($aliases) < 1) {
                 throw new \Exception("At least one aliase (CNAME) must be defined");
@@ -162,7 +179,7 @@ class CloudFront extends Client
             $this->distributionConfig['DistributionConfig']['ACMCertificateArn'] = $acmArn;
             $this->distributionConfig['DistributionConfig']['CloudFrontDefaultCertificate'] = false;
 
-            $result = $cloudFrontClient->updateDistribution([
+            $result = $this->client->updateDistribution([
                 $this->distributionConfig,
                 'Id' => $distributionId
             ]);
@@ -183,7 +200,7 @@ class CloudFront extends Client
             $this->distributionConfig['DistributionConfig']['Aliases']['Items'] = [];
             $this->distributionConfig['DistributionConfig']['Aliases']['Quantity'] = 0;
 
-            $result = $cloudFrontClient->updateDistribution([
+            $result = $this->client->updateDistribution([
                 $this->distributionConfig,
                 'Id' => $distributionId
             ]);
