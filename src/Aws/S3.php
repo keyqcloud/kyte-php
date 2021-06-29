@@ -43,11 +43,27 @@ class S3 extends Client
         $this->bucket = $bucket;
     }
 
+    public function createWebsite($bucket = null, $indexDoc = 'index.html', $errorDoc = 'error.html') {
+        $bucket = $this->bucket ? $this->bucket : $bucket;
+
+        $result = $client->putBucketWebsite([
+            'Bucket' => $bucket, // REQUIRED
+            'WebsiteConfiguration' => [ // REQUIRED
+                'ErrorDocument' => [
+                    'Key' => $errorDoc, // REQUIRED
+                ],
+                'IndexDocument' => [
+                    'Suffix' => $indexDoc, // REQUIRED
+                ],
+            ],
+        ]);
+    }
+
     public function deleteWebsite($bucket = null) {
         $bucket = $this->bucket ? $this->bucket : $bucket;
         
         $result = $this->client->deleteBucketWebsite([
-            'Bucket' => $this->bucket, // REQUIRED
+            'Bucket' => $bucket, // REQUIRED
         ]);
     }
 
@@ -55,7 +71,7 @@ class S3 extends Client
         $bucket = $this->bucket ? $this->bucket : $bucket;
         
         $result = $this->client->deleteBucketPolicy([
-            'Bucket' => $this->bucket, // REQUIRED
+            'Bucket' => $bucket, // REQUIRED
         ]);
     }
 
@@ -63,7 +79,7 @@ class S3 extends Client
         $bucket = $this->bucket ? $this->bucket : $bucket;
 
         $result = $this->client->deleteBucketCors([
-            'Bucket' => $this->bucket, // REQUIRED
+            'Bucket' => $bucket, // REQUIRED
         ]);
     }
 
@@ -72,7 +88,7 @@ class S3 extends Client
         $bucket = $this->bucket ? $this->bucket : $bucket;
 
         $result = $this->client->deleteBucket([
-            'Bucket' => $this->bucket, // REQUIRED
+            'Bucket' => $bucket, // REQUIRED
         ]);
 
         $this->bucket = null;
