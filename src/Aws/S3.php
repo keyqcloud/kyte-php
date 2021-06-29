@@ -9,7 +9,7 @@ class S3 extends Client
     private $bucket;
     private $acl;
 
-    public function __construct($credentials, $bucket = null, $acl = 'private') {
+    public function __construct($credentials, $bucket, $acl = 'private') {
         $this->credentials = $credentials;
         $this->bucket = $bucket;
         $this->acl = $acl;
@@ -22,13 +22,10 @@ class S3 extends Client
     }
 
     // create bucket
-    public function createBucket($bucket = null, $acl = null) {
-        $bucket = $this->bucket ? $this->bucket : $bucket;
-        $acl = $this->acl ? $this->acl : $acl;
-
+    public function createBucket() {
         $this->client->createBucket([
-            'ACL' => $acl, // 'private|public-read|public-read-write|authenticated-read'
-            'Bucket' => $bucket, // REQUIRED
+            'ACL' => $this->acl, // 'private|public-read|public-read-write|authenticated-read'
+            'Bucket' => $this->bucket, // REQUIRED
             'CreateBucketConfiguration' => [
                 'LocationConstraint' => $this->credentials->getRegion() //'ap-northeast-1|ap-southeast-2|ap-southeast-1|cn-north-1|eu-central-1|eu-west-1|us-east-1|us-west-1|us-west-2|sa-east-1'
             ]
@@ -39,15 +36,11 @@ class S3 extends Client
         // }
         // $this->client->registerStreamWrapper();
         // mkdir('s3://'.$bucket, $context);
-
-        $this->bucket = $bucket;
     }
 
-    public function createWebsite($bucket = null, $indexDoc = 'index.html', $errorDoc = 'error.html') {
-        $bucket = $this->bucket ? $this->bucket : $bucket;
-
-        $result = $client->putBucketWebsite([
-            'Bucket' => $bucket, // REQUIRED
+    public function createWebsite($indexDoc = 'index.html', $errorDoc = 'error.html') {
+        $result = $this->client->putBucketWebsite([
+            'Bucket' => $this->bucket, // REQUIRED
             'WebsiteConfiguration' => [ // REQUIRED
                 'ErrorDocument' => [
                     'Key' => $errorDoc, // REQUIRED
@@ -59,36 +52,70 @@ class S3 extends Client
         ]);
     }
 
-    public function deleteWebsite($bucket = null) {
-        $bucket = $this->bucket ? $this->bucket : $bucket;
-        
+    public function deleteWebsite() {
         $result = $this->client->deleteBucketWebsite([
-            'Bucket' => $bucket, // REQUIRED
+            'Bucket' => $this->bucket, // REQUIRED
         ]);
     }
 
-    public function deletePolicy($bucket = null) {
-        $bucket = $this->bucket ? $this->bucket : $bucket;
-        
+    public function enablePublicAccess() {
+        $this->enablePolicy('{"Version": "2012-10-17", "Statement": [{ "Sid": "PublicReadForGetBucketObject","Effect": "Allow","Principal": "*", "Action": "s3:GetObject", "Resource": "arn:aws:s3:::'.$this->bucket.'/*" } ]}');
+    }
+
+    public function enablePolicy($policy) {
+        $result = $this->client->putBucketPolicy([
+            'Bucket' => $this->bucket,
+            'Policy' => $policy,
+        ]);
+    }
+
+    public function deletePolicy() {
         $result = $this->client->deleteBucketPolicy([
-            'Bucket' => $bucket, // REQUIRED
+            'Bucket' => $this->bucket, // REQUIRED
         ]);
     }
 
-    public function deleteCors($bucket = null) {
-        $bucket = $this->bucket ? $this->bucket : $bucket;
+    public function enableCors($rules) {
+        // example rules:
+        // https://docs.aws.amazon.com/aws-sdk-php/v3/api/api-s3-2006-03-01.html#putbucketcors
+        $result = $this->client->putBucketCors([
+            'Bucket' => $this->bucket,
+            'CORSConfiguration' => [
+                'CORSRules' => $rules,
+            ],
+        ]);
+    }
 
+    public function deleteCors() {
         $result = $this->client->deleteBucketCors([
-            'Bucket' => $bucket, // REQUIRED
+            'Bucket' => $this->bucket, // REQUIRED
+        ]);
+    }
+
+    public function enableVersioning() {
+        $result = $this->client->putBucketVersioning([
+            'Bucket' => $this->bucket,
+            'VersioningConfiguration' => [
+                // 'MFADelete' => 'Disabled',
+                'Status' => 'Enabled',
+            ],
+        ]);
+    }
+
+    public function suspendVersioning() {
+        $result = $this->client->putBucketVersioning([
+            'Bucket' => $this->bucket,
+            'VersioningConfiguration' => [
+                // 'MFADelete' => 'Disabled',
+                'Status' => 'Suspended',
+            ],
         ]);
     }
 
     // delete bucket
-    public function deleteBucket($bucket = null) {
-        $bucket = $this->bucket ? $this->bucket : $bucket;
-
+    public function deleteBucket() {
         $result = $this->client->deleteBucket([
-            'Bucket' => $bucket, // REQUIRED
+            'Bucket' => $this->bucket, // REQUIRED
         ]);
 
         $this->bucket = null;
