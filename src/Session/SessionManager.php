@@ -36,7 +36,7 @@ class SessionManager
 				throw new \Kyte\Exception\SessionException("Invalid username or password.");
 			}
 
-			if (!password_verify($password, $this->user->$this->password_field)) {
+			if (!password_verify($password, $this->user->{$this->password_field})) {
 				throw new \Kyte\Exception\SessionException("Invalid username or password.");
 			}
 
