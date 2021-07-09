@@ -236,7 +236,7 @@ class ModelObject
 	public function populate($o = null)
 	{
 		try {
-			if ($this->id === false && !isset($o)) {
+			if (!isset($o)) {
 				throw new \Exception("No object id was found to retrieve data.");
 				return false;
 			}
@@ -249,8 +249,9 @@ class ModelObject
 				}
 			} else {
 				// if $id is null from parameter, set it to the object's id value
-				if (!isset($o)) {
-					$o = $this->id;
+				if (!is_int($o)) {
+					throw new \Exception("A non-integer was passed for ID.");
+					return false;
 				}
 
 				$data = \Kyte\Core\DBI::select($this->model['name'], $o);
