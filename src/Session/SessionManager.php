@@ -51,8 +51,8 @@ class SessionManager
 			$res = $this->session->create([
 				'uid' => $this->user->id,
 				'exp_date' => $exp_time,
-				'sessionToken' => $this->generateSessionToken($this->user->$this->username_field),
-				'txToken' => $this->generateTxToken($time, $exp_time, $this->user->$this->username_field),
+				'sessionToken' => $this->generateSessionToken($this->user->{$this->username_field}),
+				'txToken' => $this->generateTxToken($time, $exp_time, $this->user->{$this->username_field}),
 			]);
 			if (!$res) {
 				throw new \Kyte\Exception\SessionException("Unable to create session.");
