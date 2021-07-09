@@ -357,7 +357,7 @@ class Api
 			$this->response['token'] = $session_ret['txToken'];
 			$this->response['uid'] = $session_ret['uid'];
 			
-			if (!$user->retrieve('id', $session_ret['uid'])) {
+			if (!$this->user->retrieve('id', $session_ret['uid'])) {
 				throw new \Kyte\Exception\SessionException("Invalid user session.");
 			}
 			$this->response['sessionPermission'] = $this->user->role;
@@ -365,7 +365,7 @@ class Api
 			// check is user has different account
 			// get user account
 			if ($this->user->kyte_account != $this->account->id) {
-				if (!$this->account->retrieve('id', $user->kyte_account)) {
+				if (!$this->account->retrieve('id', $this->user->kyte_account)) {
 					throw new \Exception("Unable to find account associated with user");
 				}
 			}
