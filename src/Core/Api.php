@@ -326,14 +326,14 @@ class Api
 	private function parseIdentityString($string) {
 		$identity = explode('%', base64_decode(urldecode($string)));
 		if (count($identity) != 4) {
-			throw new \Kyte\Exception\SessionException("[ERROR] Invalid identity string: $request.");
+			throw new \Kyte\Exception\SessionException("[ERROR] Invalid identity string: $this->request.");
 		}
 		
 		// get UTC date from identity signature
 		$this->utcDate = new \DateTime($identity[2], new \DateTimeZone('UTC'));
 		
 		// check expiration
-		if (time() > $utcDate->format('U') + (60*30)) {
+		if (time() > $this->utcDate->format('U') + (60*30)) {
 			throw new \Kyte\Exception\SessionException("API request has expired.");
 		}
 		
@@ -384,7 +384,7 @@ class Api
 	}
 
 	private function generateSignature() {
-		if ($request == 'POST' && ALLOW_ENC_HANDOFF && isset($this->data['key'], $this->data['identifier'], $this->data['time'])) {
+		if ($this->request == 'POST' && ALLOW_ENC_HANDOFF && isset($this->data['key'], $this->data['identifier'], $this->data['time'])) {
 			// get api key using the public_key and identifier being passed
 			$obj = new \Kyte\Core\ModelObject(APIKey);
 			if (!$obj->retrieve('public_key', $this->data['key'], [[ 'field' => 'identifier', 'value' => $this->data['identifier'] ]])) {
@@ -453,7 +453,7 @@ class Api
 					if (!$controller) throw new \Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 				}
 
-				switch ($request) {
+				switch ($this->request) {
 					case 'POST':
 						// post data = data
 						// new  :   {data}
