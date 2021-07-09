@@ -377,7 +377,7 @@ class Api
 		$hash1_debug = hash_hmac('SHA256', $this->response['token'], $this->key->secret_key);
 		$hash2 = hash_hmac('SHA256', $this->key->identifier, $hash1, true);
 		$hash2_debug = hash_hmac('SHA256', $this->key->identifier, $hash1);
-		$calculated_signature = hash_hmac('SHA256', $date->format('U'), $hash2);
+		$calculated_signature = hash_hmac('SHA256', $this->utcDate->format('U'), $hash2);
 
 		if ($calculated_signature != $this->signature)
 			throw new \Kyte\Exception\SessionException("Calculated signature does not match provided signature.");
