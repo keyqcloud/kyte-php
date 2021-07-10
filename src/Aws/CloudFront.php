@@ -69,7 +69,7 @@ class CloudFront extends Client
         $this->credentials = $credentials;
         $this->client = new CloudFrontClient([
             'credentials'	=> $this->credentials->getCredentials(),
-            'version'	=> '2014-11-01',
+            'version'	=> '2020-05-31',
             'region'	=> $this->credentials->getRegion()
         ]);
 
