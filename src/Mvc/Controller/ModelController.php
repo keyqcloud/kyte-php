@@ -415,7 +415,7 @@ class ModelController
                 //      1. covert times to unix time
                 //      2. check for foregin key table data
                 //      3. check for external table data
-                $this->sift($data);
+                $linkedModels = $this->sift($data);
 
                 // create any FK entries
                 $this->createFkEntries($linkedModels, $data);
