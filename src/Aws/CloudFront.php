@@ -67,7 +67,7 @@ class CloudFront extends Client
 
     public function __construct($credentials) {
         $this->credentials = $credentials;
-        $this->client = new Aws\CloudFront\CloudFrontClient([
+        $this->client = new CloudFrontClient([
             'credentials'	=> $this->credentials->getCredentials(),
             'version'	=> '2014-11-01',
             'region'	=> $this->credentials->getRegion()
