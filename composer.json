@@ -19,7 +19,8 @@
     "autoload": {
         "psr-4":
             {
-                "Kyte\\": "lib/"
-            }
+                "Kyte\\": "src/"
+            },
+            "files": ["src/functions.php"]
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace Kyte;
+namespace Kyte\Core;
 
 /*
  * Class ModelObject
@@ -34,8 +34,6 @@ class ModelObject
 	//		]
 	//	]
 	public $model;
-
-	protected $values = [];
 
 	public function __construct($model) {
 		$this->model = $model;
@@ -97,7 +95,7 @@ class ModelObject
 
 		try {
 			$types = $this->bindTypes($params);
-			$id = DBI::insert($this->model['name'], $params, $types);
+			$id = \Kyte\Core\DBI::insert($this->model['name'], $params, $types);
 			$this->populate($id);
 
 			return true;
@@ -149,7 +147,7 @@ class ModelObject
 			}
 
 			// execute DB query
-			$data = DBI::select($this->model['name'], null, $sql);
+			$data = \Kyte\Core\DBI::select($this->model['name'], null, $sql);
 
 			if (count($data) > 0) {
 				return $this->populate($data[0]);
@@ -195,7 +193,7 @@ class ModelObject
 						}
 					}
 				}
-				$data = DBI::sum($model['name'], $sumField, null, $sql);
+				$data = \Kyte\Core\DBI::sum($model['name'], $sumField, null, $sql);
 			}
 
 			return $data[0];
@@ -212,7 +210,7 @@ class ModelObject
 	 */
 	public function save($params)
 	{
-		$id = $this->getParam('id');
+		$id = $this->id;
 		if (!isset($id)) {
 			throw new \Exception("No retrieved data to update.  Please try retrieving information with retrieve() first.");
 			return false;
@@ -223,7 +221,7 @@ class ModelObject
 
 		try {
 			$types = $this->bindTypes($params);
-			DBI::update($this->model['name'], $id, $params, $types);
+			\Kyte\Core\DBI::update($this->model['name'], $id, $params, $types);
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
@@ -238,7 +236,7 @@ class ModelObject
 	public function populate($o = null)
 	{
 		try {
-			if ($this->getParam('id') === false && !isset($o)) {
+			if (!isset($o)) {
 				throw new \Exception("No object id was found to retrieve data.");
 				return false;
 			}
@@ -251,11 +249,12 @@ class ModelObject
 				}
 			} else {
 				// if $id is null from parameter, set it to the object's id value
-				if (!isset($o)) {
-					$o = $this->getParam('id');
+				if (!is_int($o)) {
+					throw new \Exception("A non-integer was passed for ID.");
+					return false;
 				}
 
-				$data = DBI::select($this->model['name'], $o);
+				$data = \Kyte\Core\DBI::select($this->model['name'], $o);
 
 				if (count($data[0]) == 0) { return false; }
 
@@ -282,7 +281,7 @@ class ModelObject
 	{
 		try {
 			if (isset($field, $value)) {
-				$data = DBI::select($this->model['name'], null, "WHERE `$field` = '$value'");
+				$data = \Kyte\Core\DBI::select($this->model['name'], null, "WHERE `$field` = '$value'");
 				if (!isset($data[0]['id'])) {
 					$id = $data[0]['id'];
 				} else {
@@ -290,7 +289,7 @@ class ModelObject
 					return false;
 				}
 			} else if (!isset($field, $value, $id)) {
-				$id = $this->getParam('id');
+				$id = $this->id;
 			}
 				
 			// last check to make sure id is set
@@ -300,7 +299,7 @@ class ModelObject
 			}
 
 			// set deleted flag and audit attribute - date deleted
-			DBI::update($this->model['name'], $id, ['date_deleted' => time(), 'deleted' => 1], 'ii');
+			\Kyte\Core\DBI::update($this->model['name'], $id, ['date_deleted' => time(), 'deleted' => 1], 'ii');
 
 			return true;
 		} catch (\Exception $e) {
@@ -314,7 +313,7 @@ class ModelObject
 	{
 		try {
 			if (isset($field, $value)) {
-				$data = DBI::select($this->model['name'], null, "WHERE `$field` = '$value'");
+				$data = \Kyte\Core\DBI::select($this->model['name'], null, "WHERE `$field` = '$value'");
 				if (!isset($data[0]['id'])) {
 					$id = $data[0]['id'];
 				} else {
@@ -322,7 +321,7 @@ class ModelObject
 					return false;
 				}
 			} else if (!isset($field, $value, $id)) {
-				$id = $this->getParam('id');
+				$id = $this->id;
 			}
 				
 			// last check to make sure id is set
@@ -331,7 +330,7 @@ class ModelObject
 				return false;
 			}
 
-			DBI::delete($this->model['name'], $id);
+			\Kyte\Core\DBI::delete($this->model['name'], $id);
 			$this->clearParams();
 
 			return true;
@@ -342,12 +341,12 @@ class ModelObject
 	}
 
 	protected function setParam($key, $value) {
-		$this->values[$key] = $value;
+		$this->{$key} = $value;
 	}
 
 	public function getParam($key) {
-		if (array_key_exists($key, $this->values)) {
-			return $this->values[$key];
+		if (isset($this->{$key})) {
+			return $this->{$key};
 		} else {
 			return false;
 		}
@@ -356,15 +355,18 @@ class ModelObject
 	public function getParams($keys) {
 		$retvals = [];
 		foreach ($keys as $key) {
-			$retvals[$key] = (array_key_exists($key, $this->values) ? $this->values[$key] : null);
+			$retvals[$key] = (isset($this->{$key}) ? $this->{$key} : null);
 		}
 		return $retvals;
 	}
 
 	public function getAllParams($dateformat = null) {
+		$vars = get_object_vars($this);
+
 		if ($dateformat) {
 			$retvals = [];
-			foreach ($this->values as $key => $value) {
+
+			foreach ($vars as $key => $value) {
 				if (array_key_exists($key, $this->model['struct'])) {
 					if ($this->model['struct'][$key]['date']) {
 						$retvals[$key] = ($value > 0 ? date($dateformat, $value) : '');
@@ -375,20 +377,25 @@ class ModelObject
 					$retvals[$key] = $value;
 				}
 			}
+
 			return $retvals;
 		} else {
-			return $this->values;
+			return $vars;
 		}
 	}
 
 	protected function clearParams() {
-		foreach ($this->values as $key => $value) {
-			unset($this->values[$key]);
+		$vars = get_object_vars($this);
+
+		foreach ($vars as $key => $value) {
+			unset($this->{$key});
 		}
 	}
 
 	public function paramKeys() {
-		return array_keys($this->values);
+		$vars = get_object_vars($this);
+
+		return array_keys($vars);
 	}
 
 }
