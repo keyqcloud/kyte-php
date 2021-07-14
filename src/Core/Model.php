@@ -11,12 +11,12 @@ namespace Kyte\Core;
 
 class Model
 {
-	public $model;
+	public $kyte_model;
 
 	public $objects = [];
 
 	public function __construct($model) {
-		$this->model = $model;
+		$this->kyte_model = $model;
 	}
 
 	public function retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null)
@@ -74,10 +74,10 @@ class Model
 				$sql .= " ORDER BY `date_created` DESC";
 			}
 
-			$data = \Kyte\Core\DBI::select($this->model['name'], null, $sql);
+			$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql);
 
 			foreach ($data as $item) {
-				$obj = new \Kyte\Core\ModelObject($this->model);
+				$obj = new \Kyte\Core\ModelObject($this->kyte_model);
 				$obj->retrieve('id', $item['id'], null, null, $all);
 				$dataObjects[] = $obj;
 			}
@@ -119,7 +119,7 @@ class Model
 				}
 			}
 
-			$data = \Kyte\Core\DBI::group($this->model['name'], $field, $sql);
+			$data = \Kyte\Core\DBI::group($this->kyte_model['name'], $field, $sql);
 			
 			return $data;
 
@@ -171,13 +171,13 @@ class Model
 					$sql .= ") AND `deleted` = '0'";
 				}
 				
-				$data = \Kyte\Core\DBI::select($this->model['name'], null, $sql);
+				$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql);
 			} else {
-				$data = $all ? \Kyte\Core\DBI::select($this->model['name'], null, null) : \Kyte\Core\DBI::select($this->model['name'], null, "WHERE `deleted` = '0'");
+				$data = $all ? \Kyte\Core\DBI::select($this->kyte_model['name'], null, null) : \Kyte\Core\DBI::select($this->kyte_model['name'], null, "WHERE `deleted` = '0'");
 			}
 
 			foreach ($data as $item) {
-				$obj = new \Kyte\Core\ModelObject($this->model);
+				$obj = new \Kyte\Core\ModelObject($this->kyte_model);
 				$obj->retrieve('id', $item['id'], null, null, $all);
 				$dataObjects[] = $obj;
 			}
@@ -208,10 +208,10 @@ class Model
 				$sql .= " AND `deleted` = '0'";
 			}
 
-			$data = \Kyte\Core\DBI::select($this->model['name'], null, $sql);
+			$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql);
 
 			foreach ($data as $item) {
-				$obj = new \Kyte\Core\ModelObject($this->model);
+				$obj = new \Kyte\Core\ModelObject($this->kyte_model);
 				$obj->retrieve('id', $item['id'], null, null, $all);
 				$dataObjects[] = $obj;
 			}

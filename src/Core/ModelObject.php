@@ -33,10 +33,10 @@ class ModelObject
 	//			'column name' => [ 'type' => 'i/s/d', 'requred' => true/false ],
 	//		]
 	//	]
-	public $model;
+	public $kyte_model;
 
 	public function __construct($model) {
-		$this->model = $model;
+		$this->kyte_model = $model;
 	}
 
 	/*
@@ -48,11 +48,11 @@ class ModelObject
 	protected function bindTypes(&$params) {
 		$types = '';
 		foreach ($params as $key => $value) {
-			if (array_key_exists($key, $this->model['struct'])) {
+			if (array_key_exists($key, $this->kyte_model['struct'])) {
 				$this->setParam($key, $value);
 				// check if type is t, in which case return 's'
 				// otherwise return type as is
-				$types .= $this->model['struct'][$key]['type'] == 't' ? 's' : $this->model['struct'][$key]['type'];
+				$types .= $this->kyte_model['struct'][$key]['type'] == 't' ? 's' : $this->kyte_model['struct'][$key]['type'];
 			} else {
 				unset($params[$key]);
 			}
@@ -72,7 +72,7 @@ class ModelObject
 			throw new \Exception("Unable to create new entry without valid parameters.");
 			return false;
 		} else {
-			foreach ($this->model['struct'] as $key => $value) {
+			foreach ($this->kyte_model['struct'] as $key => $value) {
 				if ($value['required'] && !isset($value['pk']) && !isset($params[$key])) {
 					throw new \Exception("Column $key cannot be null.");
 					return false;
@@ -95,7 +95,7 @@ class ModelObject
 
 		try {
 			$types = $this->bindTypes($params);
-			$id = \Kyte\Core\DBI::insert($this->model['name'], $params, $types);
+			$id = \Kyte\Core\DBI::insert($this->kyte_model['name'], $params, $types);
 			$this->populate($id);
 
 			return true;
@@ -147,7 +147,7 @@ class ModelObject
 			}
 
 			// execute DB query
-			$data = \Kyte\Core\DBI::select($this->model['name'], null, $sql);
+			$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql);
 
 			if (count($data) > 0) {
 				return $this->populate($data[0]);
@@ -221,7 +221,7 @@ class ModelObject
 
 		try {
 			$types = $this->bindTypes($params);
-			\Kyte\Core\DBI::update($this->model['name'], $id, $params, $types);
+			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, $params, $types);
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
@@ -254,7 +254,7 @@ class ModelObject
 					return false;
 				}
 
-				$data = \Kyte\Core\DBI::select($this->model['name'], $o);
+				$data = \Kyte\Core\DBI::select($this->kyte_model['name'], $o);
 
 				if (count($data[0]) == 0) { return false; }
 
@@ -281,7 +281,7 @@ class ModelObject
 	{
 		try {
 			if (isset($field, $value)) {
-				$data = \Kyte\Core\DBI::select($this->model['name'], null, "WHERE `$field` = '$value'");
+				$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, "WHERE `$field` = '$value'");
 				if (!isset($data[0]['id'])) {
 					$id = $data[0]['id'];
 				} else {
@@ -299,7 +299,7 @@ class ModelObject
 			}
 
 			// set deleted flag and audit attribute - date deleted
-			\Kyte\Core\DBI::update($this->model['name'], $id, ['date_deleted' => time(), 'deleted' => 1], 'ii');
+			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, ['date_deleted' => time(), 'deleted' => 1], 'ii');
 
 			return true;
 		} catch (\Exception $e) {
@@ -313,7 +313,7 @@ class ModelObject
 	{
 		try {
 			if (isset($field, $value)) {
-				$data = \Kyte\Core\DBI::select($this->model['name'], null, "WHERE `$field` = '$value'");
+				$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, "WHERE `$field` = '$value'");
 				if (!isset($data[0]['id'])) {
 					$id = $data[0]['id'];
 				} else {
@@ -330,7 +330,7 @@ class ModelObject
 				return false;
 			}
 
-			\Kyte\Core\DBI::delete($this->model['name'], $id);
+			\Kyte\Core\DBI::delete($this->kyte_model['name'], $id);
 			$this->clearParams();
 
 			return true;
@@ -367,8 +367,8 @@ class ModelObject
 			$retvals = [];
 
 			foreach ($vars as $key => $value) {
-				if (array_key_exists($key, $this->model['struct'])) {
-					if ($this->model['struct'][$key]['date']) {
+				if (array_key_exists($key, $this->kyte_model['struct'])) {
+					if ($this->kyte_model['struct'][$key]['date']) {
 						$retvals[$key] = ($value > 0 ? date($dateformat, $value) : '');
 					} else {
 						$retvals[$key] = $value;
