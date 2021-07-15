@@ -10,6 +10,13 @@ $Application = [
 			'date'		=> false,
 		],
 
+		'identifier'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
 		'category'		=> [
 			'type'		=> 's',
 			'required'	=> true,
@@ -46,14 +53,15 @@ $Application = [
 
 		'db_name'		=> [
 			'type'		=> 's',
-			'required'	=> true,
+			'required'	=> false,
 			'size'		=> 255,
 			'date'		=> false,
+			'protected'	=> true,
 		],
 
 		'db_encoding'	=> [
 			'type'		=> 's',
-			'required'	=> true,
+			'required'	=> false,
 			'size'		=> 255,
 			'date'		=> false,
 		],
