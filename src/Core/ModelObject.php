@@ -299,7 +299,7 @@ class ModelObject
 			}
 
 			// set deleted flag and audit attribute - date deleted
-			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, ['date_deleted' => time(), 'deleted' => 1, 'deleted_by' => $user], 'ii');
+			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, ['date_deleted' => time(), 'deleted' => 1, 'deleted_by' => $user], 'iii');
 
 			return true;
 		} catch (\Exception $e) {
