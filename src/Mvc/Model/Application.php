@@ -45,6 +45,13 @@ $Application = [
 			'date'		=> false,
 		],
 
+		'AcmArn'		 => [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
 		'active'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
