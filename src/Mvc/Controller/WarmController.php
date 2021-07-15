@@ -2,6 +2,9 @@
 
 namespace Kyte\Mvc\Controller;
 
+// The WarmController unpauses serverless databases that have the 'pause' feature enabled.
+// Can be called from front end by making a get request to Warm
+
 class WarmController extends ModelController
 {
     public function hook_init() {
