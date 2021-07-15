@@ -92,12 +92,14 @@ class ApplicationController extends ModelController
                 $credentials = new \Kyte\Aws\Credentials('us-east-1');
 
                 // disable distribution
-                
+                $cf = new \Kyte\Aws\CloudFront($credentials, $o->cfDistribution);
+                // $cf->disable();
 
                 // delete database from cluster
                 \Kyte\Core\DBI::query("DROP DATABASE `{$o->db_name}`;");
 
                 // delete distribution
+                // $cf->delete();
 
                 // delete acm certificate
                 $acm = new \Kyte\Aws\Acm($credentials, $o->AcmArn);
@@ -105,7 +107,7 @@ class ApplicationController extends ModelController
 
                 // delete s3 bucket
                 $s3 = new \Kyte\Aws\S3($credentials, $o->s3bucket, 'public');
-                // $s3->emptyBucket();
+                // $s3->emptyBucket(); <- create method
                 // $s3->deleteBucket();
 
                 break;
