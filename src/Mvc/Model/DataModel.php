@@ -10,10 +10,21 @@ $DataModel = [
 			'date'		=> false,
 		],
 
-		'acl'		=> [
-			'type'		=> 's',
-			'required'	=> true,
-			'size'		=> 255,
+		'acl'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 11,
+			'unsigned'	=> true,
+			'default'	=> 1,		// 0 - public, 1 - private
+			'date'		=> false,
+		],
+
+		'permission'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 11,
+			'unsigned'	=> true,
+			'default'	=> 1,		// 0 - don't check permissions, 1 - check permissions
 			'date'		=> false,
 		],
 
