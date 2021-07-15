@@ -31,6 +31,20 @@ $Application = [
 			'date'		=> false,
 		],
 
+		's3bucket'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'cfDistribution' => [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
 		'active'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
@@ -102,13 +116,31 @@ $Application = [
 
 		// audit attributes
 
+		'created_by'		=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'date'		=> true,
+		],
+
 		'date_created'		=> [
 			'type'		=> 'i',
 			'required'	=> false,
 			'date'		=> true,
 		],
 
-		'date_modified'		=> [
+		'modified_by'		=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'date'		=> true,
+		],
+
+		'deleted_by'		=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'date'		=> true,
+		],
+
+		'created_by'		=> [
 			'type'		=> 'i',
 			'required'	=> false,
 			'date'		=> true,
