@@ -65,8 +65,9 @@ class CloudFront extends Client
     public $TrustedKeyGroups;                       // ['<string>', ...]
     public $ViewerProtocolPolicy;                   // 'allow-all|https-only|redirect-to-https'
 
-    public function __construct($credentials) {
+    public function __construct($credentials, $distributionId = null) {
         $this->credentials = $credentials;
+        $this->Id = $distributionId;
         $this->client = new CloudFrontClient([
             'credentials'	=> $this->credentials->getCredentials(),
             'version'	=> '2020-05-31',
