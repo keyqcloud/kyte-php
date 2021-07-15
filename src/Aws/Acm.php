@@ -6,7 +6,8 @@ use Aws\Acm\AcmClient;
 
 class Acm extends Client
 {
-    public function __construct($credentials) {
+    public function __construct($credentials, $arn = null) {
+        $this->Arn = $arn;
         $this->credentials = $credentials;
         $this->client = new AcmClient([
             'credentials'	=> $this->credentials->getCredentials(),
