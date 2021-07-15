@@ -277,7 +277,7 @@ class ModelObject
 	 * @param string $value
 	 * @param integer $id
 	 */
-	public function delete($field = null, $value = null)
+	public function delete($field = null, $value = null, $user = null)
 	{
 		try {
 			if (isset($field, $value)) {
@@ -299,7 +299,7 @@ class ModelObject
 			}
 
 			// set deleted flag and audit attribute - date deleted
-			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, ['date_deleted' => time(), 'deleted' => 1], 'ii');
+			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, ['date_deleted' => time(), 'deleted' => 1, 'deleted_by' => $user], 'ii');
 
 			return true;
 		} catch (\Exception $e) {

@@ -367,6 +367,11 @@ class ModelController
             
             // add account information
             $data['kyte_account'] = $this->account->id;
+            // add user info
+            if (isset($this->user->id)) {
+                $data['created_by'] = $this->user->id;
+            }
+
             // hook for any custom behaviours before creating object
             $this->hook_preprocess('new', $data);
             // create object & get return
@@ -430,6 +435,11 @@ class ModelController
                     }
                 }
 
+                // add user info
+                if (isset($this->user->id)) {
+                    $data['modified_by'] = $this->user->id;
+                }
+
                 $this->hook_preprocess('update', $data, $obj);
                 $obj->save($data);
                 $ret = [];
@@ -491,6 +501,9 @@ class ModelController
 
     protected function deleteCascade($obj) {
         if ($this->cascadeDelete && isset($obj->model['externalTables'])) {
+            // get uid if set
+            $userId = isset($this->user->id) ? $this->user->id : null;
+            
             // find external tables and delete associated entries
             foreach ($obj->model['externalTables'] as $extTbl) {
                 $dep = new \Kyte\Core\Model(constant($extTbl['model']));
@@ -499,7 +512,7 @@ class ModelController
                 // delete each associated entry in the table
                 foreach ($dep->objects as $item) {
                     $this->deleteCascade($item);
-                    $item->delete();
+                    $item->delete(null, null, $userId);
                 }
             }
         }
@@ -520,6 +533,9 @@ class ModelController
             }
     
             if ($field === null || $value === null) throw new \Exception("Field ($field) and Value ($value) params not set");
+
+            // get uid if set
+            $userId = isset($this->user->id) ? $this->user->id : null;
 
             $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->id]] : null;
             $objs = new \Kyte\Core\Model($this->model);
@@ -542,13 +558,13 @@ class ModelController
                         // delete each associated entry in the table
                         foreach ($dep->objects as $item) {
                             $this->deleteCascade($item);
-                            $item->delete();
+                            $item->delete(null, null, $userId);
                         }
                     }
                 }
 
                 // finally, delete object
-                $obj->delete();
+                $obj->delete(null, null, $userId);
             }
 
         } catch (\Exception $e) {
