@@ -42,6 +42,12 @@ class ApplicationController extends ModelController
                 \Kyte\Core\DBI::query("GRANT ALL PRIVILEGES ON `{$r['db_name']}`.* TO '{$r['db_username']}'@'localhost';");
                 \Kyte\Core\DBI::query("FLUSH PRIVILEGES;");
 
+                // create s3 bucket
+
+                // create acm certificate request
+
+                // create distribution
+
                 break;
             
             default:
@@ -52,8 +58,18 @@ class ApplicationController extends ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'delete':
+                // disable distribution
+                
+                
                 // delete database from cluster
                 \Kyte\Core\DBI::query("DROP DATABASE `{$o->db_name}`;");
+
+                // delete distribution
+
+                // delete acm certificate
+
+                // delete s3 bucket
+
                 break;
             
             default:
