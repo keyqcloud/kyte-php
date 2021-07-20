@@ -1,5 +1,5 @@
 # Kyte-PHP
-![GitHub Logo](https://www.keyq.cloud/img/kytelogo_dark.png)
+[![Build Status](https://travis-ci.com/keyqcloud/kyte-php.svg?branch=master)](https://travis-ci.com/keyqcloud/kyte-php)
 
 (c) 2020 [KeyQ, Inc.](https://www.keyq.cloud)
 
