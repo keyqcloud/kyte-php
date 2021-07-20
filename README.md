@@ -1,5 +1,6 @@
 # Kyte-PHP
 [![Build Status](https://travis-ci.com/keyqcloud/kyte-php.svg?branch=master)](https://travis-ci.com/keyqcloud/kyte-php)
+[![Total Downloads](https://img.shields.io/packagist/dt/keyqcloud/kyte-php.svg?style=flat)](https://packagist.org/packages/keyqcloud/kyte-php)
 
 (c) 2020 [KeyQ, Inc.](https://www.keyq.cloud)
 
