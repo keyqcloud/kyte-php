@@ -10,7 +10,7 @@
     define('APP_DATE_FORMAT', 'Y/m/d');
     
     /* BASE PATH for API - for example if in www.example.com/api/ then specify 'api/' */
-    define('API_BASE', '');
+    define('APP_DIR', '');
 
 	/* AWS INTEGRATION */
 	define('AWS_ACCESS_KEY_ID', '');
