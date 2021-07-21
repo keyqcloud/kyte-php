@@ -85,7 +85,7 @@ class DBI {
 	/*
 	 * Create database
 	 */
-	public static function create($name, $username, &$password)
+	public static function create($name, $username, &$password, $use = false)
 	{
 		if (!$name) {
 			throw new \Exception("Database name must be specified");
@@ -129,6 +129,15 @@ class DBI {
 		if($result === false) {
   			throw new \Exception("Error with mysql query '$query'.");
   			return false;
+		}
+
+		// if use is true, then switch db
+		if ($use) {
+			$result = self::$dbConn->query("USE `{$name}`;");
+			if($result === false) {
+				throw new \Exception("Error with mysql query '$query'.");
+				return false;
+			}
 		}
 
 		return true;
