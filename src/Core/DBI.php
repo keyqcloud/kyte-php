@@ -83,6 +83,28 @@ class DBI {
 	}
 
 	/*
+	 * Create database
+	 */
+	public static function create($name)
+	{
+		if (!$name) {
+			throw new \Exception("Database name must be specified");
+		}
+
+		if (!self::$dbConn) {
+			self::connect();
+		}
+
+		$result = self::$dbConn->query("CREATE DATABASE IF NOT EXISTS `{$name}`;");
+		if($result === false) {
+  			throw new \Exception("Error with mysql query '$query'.");
+  			return false;
+		}
+
+		return true;
+	}
+
+	/*
 	 * Make an insert into table in database
 	 *
 	 * @param string $table

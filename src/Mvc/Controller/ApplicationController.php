@@ -33,7 +33,7 @@ class ApplicationController extends ModelController
                 // $r['db_host'] = '';
 
                 // create database
-                \Kyte\Core\DBI::query("CREATE DATABASE `{$r['db_name']}`;");
+                \Kyte\Core\DBI::create($r['db_name']);
 
                 // add user to database
                 \Kyte\Core\DBI::query("CREATE USER '{$r['db_username']}'@'localhost' IDENTIFIED BY '{$str}';");
