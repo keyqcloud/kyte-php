@@ -85,7 +85,7 @@ class DBI {
 	/*
 	 * Create database
 	 */
-	public static function create($name, $username, &$password, $use = false)
+	public static function createDatabase($name, $username, &$password, $use = false)
 	{
 		if (!$name) {
 			throw new \Exception("Database name must be specified");
@@ -141,6 +141,13 @@ class DBI {
 		}
 
 		return true;
+	}
+
+	/*
+	 * Create table
+	 */
+	public static function createTable() {
+
 	}
 
 	/*

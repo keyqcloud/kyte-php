@@ -25,7 +25,7 @@ class ApplicationController extends ModelController
                 // $r['db_host'] = '';
 
                 // create database
-                \Kyte\Core\DBI::create($r['db_name'], $r['db_username'], $r['db_password']);
+                \Kyte\Core\DBI::createDatabase($r['db_name'], $r['db_username'], $r['db_password']);
 
                 // get AWS credentials
                 $credentials = new \Kyte\Aws\Credentials('us-east-1');
