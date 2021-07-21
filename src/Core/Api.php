@@ -249,6 +249,11 @@ class Api
 		// CORS Validation
 		$this->request = $this->cors();
 
+		if (isset($_SERVER['HTTP_X_KYTE_SIGNATURE'], $_SERVER['HTTP_X_KYTE_IDENTITY'])) {
+			$this->signature = $_SERVER['HTTP_X_KYTE_SIGNATURE'];
+			$this->parseIdentityString($_SERVER['HTTP_X_KYTE_IDENTITY']);
+		} else return false;
+
 		if (array_key_exists('CONTENT_TYPE', $_SERVER)) {
 			$this->contentType = $_SERVER['CONTENT_TYPE'];
 		}
@@ -263,16 +268,14 @@ class Api
 		}
 
 		// * URL format - root endpoint
-		// https://uri-to-api-endpoint/ {signature} / {identity string} / {model} [ / {field} / {value} ]
+		// https://uri-to-api-endpoint / {model} [ / {field} / {value} ]
 		//
-		// * V3 client space format
-		// https://uri-to-api-endpoint/ {signature} / {identity string} / {app id} / {model} [ / {field} / {value} ]
 		/* parse URI        ** remember to add the following in .htaccess 'FallbackResource /index.php'
 		* URL formats:
-		* POST     /{signature}/{identity string}/{model}
-		* PUT      /{signature}/{identity string}/{model}/{field}/{value} + data
-		* GET      /{signature}/{identity string}/{model}/{field}/{value}
-		* DELETE   /{signature}/{identity string}/{model}/{field}/{value}
+		* POST     /{model}
+		* PUT      /{model}/{field}/{value} + data
+		* GET      /{model}/{field}/{value}
+		* DELETE   /{model}/{field}/{value}
 		*/
 
 		// Trim leading slash(es)
@@ -282,26 +285,13 @@ class Api
 
 		$this->prepareResponse();
 
-		if (count($elements) >= 3) {
-
-			// get signature 
-			$this->signature = $elements[0];
-
-			// get identity string and parse
-			$this->parseIdentityString($elements[1]);
-			
+		if (count($elements) >= 1) {
 			// check if app id exists
-			if(strpos($elements[2], 'app_') !== false){
-				$this->appId = base64_decode(urldecode($elements[2]));
-				$this->model = $elements[3];
-				$this->field = isset($elements[4]) ? $elements[4] : null;
-				$this->value = isset($elements[5]) ? urldecode($elements[5]) : null;
-			} else {
-				// no app id
-				$this->model = $elements[2];
-				$this->field = isset($elements[3]) ? $elements[3] : null;
-				$this->value = isset($elements[4]) ? urldecode($elements[4]) : null;
-			}
+			$this->appId = base64_decode(urldecode($elements[2]));
+			
+			$this->model = $elements[0];
+			$this->field = isset($elements[1]) ? $elements[1] : null;
+			$this->value = isset($elements[2]) ? urldecode($elements[2]) : null;
 
 			// get api associated with account
 			$sub_account_api = new \Kyte\Core\ModelObject(APIKey);
@@ -337,7 +327,7 @@ class Api
 			throw new \Kyte\Exception\SessionException("API request has expired.");
 		}
 		
-		// initialize API with public key from idneity signature
+		// initialize API with public key from identity signature
 		$this->init($identity[0]);
 
 		// get account number from identity signature
