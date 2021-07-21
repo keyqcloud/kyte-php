@@ -9,7 +9,8 @@ class DBI {
 	public static $dbPassword;
 	public static $dbName;
 	public static $dbHost;
-	public static $charset;
+	public static $charset = 'utf8mb4';
+	public static $engine = 'InnoDB';
 
 	/*
 	 * Sets the database username to be used to connect to DB
@@ -59,6 +60,16 @@ class DBI {
 	public static function setCharset($charset)
 	{
 		self::$charset = $charset;
+	}
+
+	/*
+	 * Sets the database engine
+	 *
+	 * @param string $engine
+	 */
+	public static function setEngine($engine)
+	{
+		self::$engine = $engine;
 	}
 
 	/*
@@ -146,8 +157,8 @@ class DBI {
 	/*
 	 * Create table
 	 */
-	public static function createTable() {
-
+	public static function createTable($modelDef) {
+		
 	}
 
 	/*
