@@ -20,27 +20,12 @@ class ApplicationController extends ModelController
                 // TODO: create new user and add privs to isolate db
                 // create new username
                 $r['db_username'] = $r['db_name'];
-                // create new password
-                $str = '';
-                $charset = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ#!@';
-                $max = mb_strlen($charset, '8bit') - 1;
-                for ($i = 0; $i < 24; ++$i) {
-                    $str .= $charset[random_int(0, $max)];
-                }
-                $r['db_password'] = $str;
 
                 // TODO: create db in different cluster
                 // $r['db_host'] = '';
 
                 // create database
-                \Kyte\Core\DBI::create($r['db_name']);
-
-                // add user to database
-                \Kyte\Core\DBI::query("CREATE USER '{$r['db_username']}'@'localhost' IDENTIFIED BY '{$str}';");
-
-                // set privs
-                \Kyte\Core\DBI::query("GRANT ALL PRIVILEGES ON `{$r['db_name']}`.* TO '{$r['db_username']}'@'localhost';");
-                \Kyte\Core\DBI::query("FLUSH PRIVILEGES;");
+                \Kyte\Core\DBI::create($r['db_name'], $r['db_username'], $r['db_password']);
 
                 // get AWS credentials
                 $credentials = new \Kyte\Aws\Credentials('us-east-1');

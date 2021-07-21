@@ -85,7 +85,7 @@ class DBI {
 	/*
 	 * Create database
 	 */
-	public static function create($name)
+	public static function create($name, $username, &$password)
 	{
 		if (!$name) {
 			throw new \Exception("Database name must be specified");
@@ -95,7 +95,37 @@ class DBI {
 			self::connect();
 		}
 
+		// create password
+		$password = '';
+		$charset = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ#!@';
+		$max = mb_strlen($charset, '8bit') - 1;
+		for ($i = 0; $i < 24; ++$i) {
+			$password .= $charset[random_int(0, $max)];
+		}
+
+		// create database
 		$result = self::$dbConn->query("CREATE DATABASE IF NOT EXISTS `{$name}`;");
+		if($result === false) {
+  			throw new \Exception("Error with mysql query '$query'.");
+  			return false;
+		}
+
+		// create user
+		$result = self::$dbConn->query("CREATE USER '{$username}'@'localhost' IDENTIFIED BY '{$password}';");
+		if($result === false) {
+  			throw new \Exception("Error with mysql query '$query'.");
+  			return false;
+		}
+
+		// set privs
+		$result = self::$dbConn->query("GRANT ALL PRIVILEGES ON `{$name}`.* TO '{$username}'@'localhost';");
+		if($result === false) {
+  			throw new \Exception("Error with mysql query '$query'.");
+  			return false;
+		}
+
+		// flush privileges
+		$result = self::$dbConn->query("FLUSH PRIVILEGES;");
 		if($result === false) {
   			throw new \Exception("Error with mysql query '$query'.");
   			return false;

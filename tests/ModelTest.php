@@ -5,8 +5,8 @@ use PHPUnit\Framework\TestCase;
 
 class ModelTest extends TestCase
 {
-    public function createTables() {
-        $this->assertTrue(\Kyte\Core\DBI::create("TestModel"));
+    public function testCreateTable() {
+        $this->assertTrue(\Kyte\Core\DBI::create("TestModel", "TestUser", $password));
     }
 }
 
