@@ -8,6 +8,12 @@ php:
   - 8.0
   - hhvm
 
+services:
+  - mysql
+
+before_install:
+  - mysql -e 'CREATE DATABASE IF NOT EXISTS `kytedev`;'
+
 # Commands to be run before your environment runs.
 before_script:
   - composer self-update
