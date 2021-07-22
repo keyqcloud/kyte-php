@@ -205,7 +205,6 @@ class Api
 		define('KYTE_MODELS', $models);
 	
 		// initialize base framework
-		\Kyte\SendGrid\Mail::setSendGridAPIKey(KYTE_SENDGRID_API);
 		\Kyte\Core\DBI::setDbUser(KYTE_DB_USERNAME);
 		\Kyte\Core\DBI::setDbPassword(KYTE_DB_PASSWORD);
 		\Kyte\Core\DBI::setDbHost(KYTE_DB_HOST);
