@@ -3,8 +3,8 @@ language: php
 
 # Versions of PHP you want your project run with.
 php:
-  - 7.3
-  - 7.4
+  # - 7.3
+  # - 7.4
   - 8.0
 
 services:
