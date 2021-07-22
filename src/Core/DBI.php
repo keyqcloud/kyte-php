@@ -165,8 +165,13 @@ class DBI {
 		$engine = self::$engine;
 		$pk_name = '';	// store col struct for primary key
 
+		$result = self::$dbConn->query("DROP TABLE IF EXISTS `$tbl_name`;");
+		if($result === false) {
+			throw new \Exception("Unable to drop tables.");
+			return false;
+		}
+
 		$tbl_sql = <<<EOT
-DROP TABLE IF EXISTS `$tbl_name`;
 CREATE TABLE `$tbl_name` (
 EOT;
 
