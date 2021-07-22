@@ -26,6 +26,10 @@ class AwsS3Test extends TestCase
         $this->assertTrue($this->s3->createBucket());
     }
 
+    // add file
+
+    // remove file
+
     public function testDeleteBucket() {
         // delete private bucket
         $this->assertTrue($this->s3->deleteBucket());
