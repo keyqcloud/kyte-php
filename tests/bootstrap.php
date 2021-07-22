@@ -9,4 +9,8 @@ require __DIR__ . '/../vendor/autoload.php';
 \Kyte\Core\DBI::setDbName(KYTE_DB_DATABASE);
 \Kyte\Core\DBI::setCharset(KYTE_DB_CHARSET);
 
+// get AWS Keys from env
+define('AWS_ACCESS_KEY_ID', getenv('AWS_ACCESS_KEY_ID'));
+define('AWS_SECRET_KEY', getenv('AWS_SECRET_KEY'));
+
 ?>
