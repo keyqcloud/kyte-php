@@ -129,9 +129,12 @@ class ModelTest extends TestCase
         $this->assertTrue($model->retrieve('name', 'Test'));
     }
 
-<<<<<<< HEAD
     public function testModelObjectRetrieveWithCondition() {
-=======
+        $model = new \Kyte\Core\ModelObject(TestTable);
+
+        $this->assertTrue($model->retrieve('name', 'Test', ['field' => 'category', 'value' => 'test']));
+    }
+
     public function testDBSelectAll() {
         $data = \Kyte\Core\DBI::select('TestTable');
         $this->assertTrue(count($data) > 0 ? true : false);
@@ -140,13 +143,6 @@ class ModelTest extends TestCase
     public function testDBCustomQuery() {
         $data = \Kyte\Core\DBI::query('SELECT * FROM `TestTable`;');
         $this->assertTrue(count($data) > 0 ? true : false);
-    }
-
-    public function testModelObjectRetrieve() {
->>>>>>> e419ae72186ec9807d9ba7327bb477a839e59814
-        $model = new \Kyte\Core\ModelObject(TestTable);
-
-        $this->assertTrue($model->retrieve('name', 'Test', ['field' => 'category', 'value' => 'test']));
     }
 
     public function testModelObjectUpdate() {
