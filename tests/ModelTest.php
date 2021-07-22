@@ -86,12 +86,22 @@ class ModelTest extends TestCase
                 ],
             ],
         ];
+
+        define('TestTable', $TestTable);
         
-        $this->assertTrue(\Kyte\Core\DBI::createTable($TestTable));
+        $this->assertTrue(\Kyte\Core\DBI::createTable(TestTable));
 
         return true;
     }
 
+    public function testModelObject() {
+        $model = new \Kyte\Core\ModelObject(TestTable);
+
+        $this->assertTrue($model->create([
+            'name' => 'Test',
+            'kyte_account' => 1,
+        ]));
+    }
 
 }
 
