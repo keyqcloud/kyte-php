@@ -2,11 +2,11 @@
 <phpunit bootstrap="./tests/bootstrap.php" colors="true">
 
     <php>
-        <server name="KYTE_DB_USERNAME" value="travis" />
-        <server name="KYTE_DB_PASSWORD" value="" />
-        <server name="KYTE_DB_HOST" value="localhost" />
-        <server name="KYTE_DB_DATABASE" value="kytedev" />
-        <server name="KYTE_DB_CHARSET" value="utf8" />
+        <define name="KYTE_DB_USERNAME" value="travis" />
+        <define name="KYTE_DB_PASSWORD" value="" />
+        <define name="KYTE_DB_HOST" value="localhost" />
+        <define name="KYTE_DB_DATABASE" value="kytedev" />
+        <define name="KYTE_DB_CHARSET" value="utf8" />
     </php>
 
     <testsuites>
