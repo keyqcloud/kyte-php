@@ -20,15 +20,8 @@ foreach (glob(__DIR__ . "/../Mvc/Model/*.php") as $filename) {
     if (!in_array($model_name, $models)) {
         $models[] = $model_name;
     }
-    if (isset($$model_name)) {
-        if (VERBOSE_LOG) {
-            error_log("Skipping model $model_name as already defined...");
-        }
-    } else {
+    if (!isset($$model_name)) {
         require_once($filename);
-        if (VERBOSE_LOG) {
-            error_log("Loading built-in model $model_name...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
-        }
         $this->addPrimaryKey($$model_name);
         define($model_name, $$model_name);
     }
