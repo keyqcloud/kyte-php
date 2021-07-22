@@ -5,29 +5,16 @@ use PHPUnit\Framework\TestCase;
 
 class AwsS3Test extends TestCase
 {
-    private $credential;
-    private $s3;
-
-    // public function testCreateCredential() {
-    //     $this->credential = new \Kyte\Aws\Credentials('us-east-1');
-
-    //     $this->assertIsObject($this->credential);
-    // }
-
-    public function testCreateS3Client() {
-        $this->credential = new \Kyte\Aws\Credentials('us-east-1');
-
-        $this->assertIsObject($this->credential);
-
-        // create s3 client for private bucket
-        $this->s3 = new \Kyte\Aws\S3($this->credential, 'Kyte_MyTestBucket_'.time());
-
-        $this->assertIsObject($this->s3);
-    }
 
     public function testCreateBucket() {
-        // create private bucket
-        $this->assertTrue($this->s3->createBucket());
+        $credential = new \Kyte\Aws\Credentials('us-east-1');
+        $this->assertIsObject($credential);
+
+        // create s3 client for private bucket
+        $s3 = new \Kyte\Aws\S3($credential, 'Kyte_MyTestBucket_'.time());
+        $this->assertIsObject($s3);
+
+        $this->assertTrue($s3->createBucket());
     }
 
     // add file
@@ -35,8 +22,14 @@ class AwsS3Test extends TestCase
     // remove file
 
     public function testDeleteBucket() {
-        // delete private bucket
-        $this->assertTrue($this->s3->deleteBucket());
+        $credential = new \Kyte\Aws\Credentials('us-east-1');
+        $this->assertIsObject($credential);
+        
+        // create s3 client for private bucket
+        $s3 = new \Kyte\Aws\S3($credential, 'Kyte_MyTestBucket_'.time());
+        $this->assertIsObject($s3);
+
+        $this->assertTrue($s3->deleteBucket());
     }
 }
 
