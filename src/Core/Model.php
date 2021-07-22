@@ -197,8 +197,6 @@ class Model
 			$dataObjects = array();
 			$data = array();
 
-			if (!isset($field, $value)) throw new \Exception("Range is required and was not provided.");
-
 			$sql = "WHERE `$field` > '$start' AND `$field` < '$end'";
 			if ($equalto) {
 				$sql = "WHERE `$field` >= '$start' AND `$field` <= '$end'";
