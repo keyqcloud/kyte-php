@@ -1,0 +1,8 @@
+ignore:
+  - "/Mvc"
+
+coverage:
+  status:
+    project:
+      default:
+        target: 91%
