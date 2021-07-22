@@ -19,7 +19,10 @@ before_script:
   - composer install --prefer-source --no-interaction
 
 # Commands you want to run that will verify your build.
-script: phpunit
+script: phpunit --coverage-clover clover.xml
+
+after_script:
+  - bash <(curl -s https://codecov.io/bash)
 
 # allow_failures: Allow this build to fail under the specified environments.
 # fast_finish: If your build fails do not continue trying to build, just stop.
