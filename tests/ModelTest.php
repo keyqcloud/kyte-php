@@ -5,6 +5,15 @@ use PHPUnit\Framework\TestCase;
 
 class ModelTest extends TestCase
 {
+
+    public function testInitDB() {
+        \Kyte\Core\DBI::setDbUser(KYTE_DB_USERNAME);
+        \Kyte\Core\DBI::setDbPassword(KYTE_DB_PASSWORD);
+        \Kyte\Core\DBI::setDbHost(KYTE_DB_HOST);
+        \Kyte\Core\DBI::setDbName(KYTE_DB_DATABASE);
+        \Kyte\Core\DBI::setCharset(KYTE_DB_CHARSET);
+    }
+
     public function testCreateTable() {
         // create test user table
         // $this->assertTrue(\Kyte\Core\DBI::createTable(User));
@@ -105,6 +114,12 @@ class ModelTest extends TestCase
         $model = new \Kyte\Core\ModelObject(TestTable);
 
         $this->assertTrue($model->create([
+            'name' => 'Test',
+            'category' => 'Test',
+            'kyte_account' => 1,
+        ]));
+
+        $this->assertTrue($model->create([
             'name' => 'Test1',
             'category' => 'Test',
             'kyte_account' => 1,
@@ -124,6 +139,12 @@ class ModelTest extends TestCase
 
         $this->assertTrue($model->create([
             'name' => 'Test4',
+            'category' => 'Test',
+            'kyte_account' => 1,
+        ]));
+
+        $this->assertTrue($model->create([
+            'name' => 'Test5',
             'category' => 'Test',
             'kyte_account' => 1,
         ]));
@@ -152,9 +173,9 @@ class ModelTest extends TestCase
     public function testModelObjectUpdate() {
         $model = new \Kyte\Core\ModelObject(TestTable);
 
-        $this->assertTrue($model->retrieve('name', 'Test4'));
+        $this->assertTrue($model->retrieve('name', 'Test'));
         $this->assertTrue($model->save([
-            'name' => 'Test5',
+            'name' => 'Test0',
             'category' => 'ABC',
             'kyte_account' => 1,
         ]));
@@ -171,6 +192,19 @@ class ModelTest extends TestCase
         $model = new \Kyte\Core\ModelObject(TestTable);
 
         $this->assertTrue($model->delete('name', 'Test2', 0));
+    }
+
+    public function testModelObjectPurgeByRetrieve() {
+        $model = new \Kyte\Core\ModelObject(TestTable);
+
+        $this->assertTrue($model->retrieve('name', 'Test4'));
+        $this->assertTrue($model->purge());
+    }
+
+    public function testModelObjectPurgeByQuery() {
+        $model = new \Kyte\Core\ModelObject(TestTable);
+
+        $this->assertTrue($model->purge('name', 'Test3'));
     }
 
     public function testModeltRetrieve() {
