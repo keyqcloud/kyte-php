@@ -228,7 +228,7 @@ class ModelTest extends TestCase
         $model = new \Kyte\Core\ModelObject(TestTable);
         $this->assertTrue($model->retrieve('name', 'Test'));
 
-        $this->assertArrayHasKey('category', $model->paramKeys());
+        $this->assertContains('category', $model->paramKeys());
     }
 
     /*
@@ -282,7 +282,7 @@ class ModelTest extends TestCase
         $model = new \Kyte\Core\Model(TestTable);
         $this->assertTrue($model->retrieve('category', 'Test', false, null, true, ['field' => 'category', 'direction' => 'asc']));
 
-        $this->assertEquals(3, $model->count());
+        $this->assertEquals(2, $model->count());
     }
 
     public function testModelRetrieveLike() {
@@ -321,12 +321,12 @@ class ModelTest extends TestCase
 
     public function testModelCustomSelect() {
         $model = new \Kyte\Core\Model(TestTable);
-        $this->assertContains('Test', $model->customSelect('* FROM `TestTable`;'));
+        $this->assertArrayHasKey('category', $model->customSelect('* FROM `TestTable`;'));
     }
 
     public function testModelSearch() {
         $model = new \Kyte\Core\Model(TestTable);
-        $this->assertTrue('Test', $model->search(['name'], ['Test']));
+        $this->assertTrue($model->search(['name'], ['Test']));
 
         $this->assertEquals(2, $model->count());
     }
