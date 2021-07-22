@@ -12,5 +12,6 @@ require __DIR__ . '/../vendor/autoload.php';
 // get AWS Keys from env
 define('AWS_ACCESS_KEY_ID', getenv('AWS_ACCESS_KEY_ID'));
 define('AWS_SECRET_KEY', getenv('AWS_SECRET_KEY'));
+define('AWS_PRIVATE_BUCKET_NAME', 'kyte-travisci-test-bucket-'.time());
 
 ?>

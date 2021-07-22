@@ -11,10 +11,12 @@ class AwsS3Test extends TestCase
         $this->assertIsObject($credential);
 
         // create s3 client for private bucket
-        $s3 = new \Kyte\Aws\S3($credential, 'kyte-travisci-test-bucket-'.time());
+        $s3 = new \Kyte\Aws\S3($credential, AWS_PRIVATE_BUCKET_NAME);
         $this->assertIsObject($s3);
 
         $this->assertTrue($s3->createBucket());
+
+        return $s3;
     }
 
     // add file
@@ -26,7 +28,7 @@ class AwsS3Test extends TestCase
         $this->assertIsObject($credential);
         
         // create s3 client for private bucket
-        $s3 = new \Kyte\Aws\S3($credential, 'kyte-travisci-test-bucket-'.time());
+        $s3 = new \Kyte\Aws\S3($credential, AWS_PRIVATE_BUCKET_NAME);
         $this->assertIsObject($s3);
 
         $this->assertTrue($s3->deleteBucket());
