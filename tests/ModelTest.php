@@ -94,13 +94,25 @@ class ModelTest extends TestCase
         return true;
     }
 
-    public function testModelObject() {
+    public function testModelObjectCreate() {
         $model = new \Kyte\Core\ModelObject(TestTable);
 
         $this->assertTrue($model->create([
             'name' => 'Test',
             'kyte_account' => 1,
         ]));
+    }
+
+    public function testModelObjectRetrieve() {
+        $model = new \Kyte\Core\ModelObject(TestTable);
+
+        $this->assertTrue($model->retrieve('name', 'Test'));
+    }
+
+    public function testModeltRetrieve() {
+        $model = new \Kyte\Core\Model(TestTable);
+
+        $this->assertTrue($model->retrieve('name', 'Test'));
     }
 
 }
