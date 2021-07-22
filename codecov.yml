@@ -1,8 +1,7 @@
 ignore:
-  - "Mvc"
+  - "Mvc/*"
   - "Core/Version.php"
-  - "Aws"
-  - "SendGrid"
+  - "SendGrid/*"
 
 coverage:
   status:
