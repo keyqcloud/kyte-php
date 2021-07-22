@@ -299,7 +299,7 @@ class ModelTest extends TestCase
 
         $this->assertTrue($model->retrieve('category', 'Test'));
 
-        $this->assertArrayHasKey('category', $model->returnFirst());
+        $this->assertIsObject($model->returnFirst());
     }
 
     public function testModelRetrieveGroupBy() {
@@ -343,7 +343,7 @@ class ModelTest extends TestCase
 
     public function testModelRetrieveFrom() {
         $model = new \Kyte\Core\Model(TestTable);
-        $this->v($model->from('date_created', 0, time()));
+        $this->assertTrue($model->from('date_created', 0, time()));
 
         $this->assertEquals(2, $model->count());
     }
