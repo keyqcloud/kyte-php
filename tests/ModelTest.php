@@ -6,11 +6,7 @@ use PHPUnit\Framework\TestCase;
 class ModelTest extends TestCase
 {
     public function testInitDB() {
-        \Kyte\Core\DBI::setDbUser(KYTE_DB_USERNAME);
-        \Kyte\Core\DBI::setDbPassword(KYTE_DB_PASSWORD);
-        \Kyte\Core\DBI::setDbHost(KYTE_DB_HOST);
-        \Kyte\Core\DBI::setDbName(KYTE_DB_DATABASE);
-        \Kyte\Core\DBI::setCharset(KYTE_DB_CHARSET);
+        $this->assertTrue(\Kyte\Core\DBI::dbInit());
     }
 
     public function testCreateTable() {
@@ -162,11 +158,11 @@ class ModelTest extends TestCase
     }
 
     public function testDBSelectAll() {
-        \Kyte\Core\DBI::select('TestTable'));
+        $this->assertTrue(\Kyte\Core\DBI::select('TestTable')));
     }
 
     public function testDBCustomQuery() {
-        \Kyte\Core\DBI::query('SELECT * FROM `TestTable`;'));
+        $this->assertTrue(\Kyte\Core\DBI::query('SELECT * FROM `TestTable`;')));
     }
 
     public function testModelObjectRetrieve() {

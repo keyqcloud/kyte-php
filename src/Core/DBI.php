@@ -72,6 +72,17 @@ class DBI {
 		self::$engine = $engine;
 	}
 
+	public static function dbInit($dbUser, $dbPassword, $dbHost, $dbName, $charset, $engine) {
+		self::setDbUser($dbUser);
+		self::setDbPassword($dbPassword);
+		self::setDbHost($dbHost);
+		self::setDbName($dbName);
+		self::setCharset($charset);
+		self::setEngine($engine);
+
+		return self::connect();
+	}
+
 	/*
 	 * Connect to database
 	 *
