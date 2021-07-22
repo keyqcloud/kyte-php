@@ -161,49 +161,6 @@ class ModelObject
 	}
 
 	/*
-	 * Sum a field from DB
-	 *
-	 * @param string $field
-	 * @param string $value
-	 * @param integer $id
-	 */
-	public static function sum($model, $sumField, $field = null, $value = null, $conditions = null, $id = null, $all = false)
-	{
-		$data = false;
-
-		try {
-			if (!isset($sumField)) {
-				throw new \Exception("Sum field name is required");
-			}
-
-			if (isset($field, $value)) {
-				$sql = $all ? "WHERE `$field` = '$value'" : "WHERE `$field` = '$value' AND `deleted` = '0'";
-	
-				// if conditions are set, add them to the sql statement
-				if(isset($conditions)) {
-					// iterate through each condition
-					foreach($conditions as $condition) {
-						// check if an evaluation operator is set
-						if (isset($condition['operator'])) {
-							$sql .= " AND `{$condition['field']}` {$condition['operator']} '{$condition['value']}'";
-						}
-						// default to equal
-						else {
-							$sql .= " AND `{$condition['field']}` = '{$condition['value']}'";
-						}
-					}
-				}
-				$data = \Kyte\Core\DBI::sum($model['name'], $sumField, null, $sql);
-			}
-
-			return $data[0];
-		} catch (\Exception $e) {
-			throw $e;
-			return false;
-		}
-	}
-
-	/*
 	 * Update entry information for item that was retrieved
 	 *
 	 * @param array $params
@@ -281,12 +238,10 @@ class ModelObject
 	{
 		try {
 			if (isset($field, $value)) {
-				$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, "WHERE `$field` = '$value'");
-				if (!isset($data[0]['id'])) {
-					$id = $data[0]['id'];
+				if ($this->retrieve($field, $value)) {
+					$id = $this->id;
 				} else {
-					throw new \Exception("No entry found for provided id.");
-					return false;
+					throw new \Exception("No entry found for provided condition");
 				}
 			} else if (!isset($field, $value, $id)) {
 				$id = $this->id;
@@ -313,12 +268,10 @@ class ModelObject
 	{
 		try {
 			if (isset($field, $value)) {
-				$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, "WHERE `$field` = '$value'");
-				if (!isset($data[0]['id'])) {
-					$id = $data[0]['id'];
+				if ($this->retrieve($field, $value, null, null, true)) {
+					$id = $this->id;
 				} else {
-					throw new \Exception("No entry found for provided id.");
-					return false;
+					throw new \Exception("No entry found for provided condition");
 				}
 			} else if (!isset($field, $value, $id)) {
 				$id = $this->id;
