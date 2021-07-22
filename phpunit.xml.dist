@@ -7,7 +7,6 @@
         <const name="KYTE_DB_HOST" value="localhost" />
         <const name="KYTE_DB_DATABASE" value="kytedev" />
         <const name="KYTE_DB_CHARSET" value="utf8" />
-        <const name="APP_DIR" value="/home/travis/build/keyqcloud/kyte-php" />
     </php>
 
     <testsuites>
