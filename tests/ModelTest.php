@@ -267,6 +267,7 @@ class ModelTest extends TestCase
         $this->assertTrue($model->create([
             'name' => 'Test3',
             'category' => 'Test',
+            'temperature' => 78.3,
             'kyte_account' => 1,
         ]));
 
@@ -298,7 +299,7 @@ class ModelTest extends TestCase
 
         $this->assertTrue($model->retrieve('category', 'Test'));
 
-        $this->assertContains('Test', $model->returnFirst());
+        $this->assertArrayHasKey('category', $model->returnFirst());
     }
 
     public function testModelRetrieveGroupBy() {
@@ -335,28 +336,28 @@ class ModelTest extends TestCase
 
     public function testModelSearchAll() {
         $model = new \Kyte\Core\Model(TestTable);
-        $this->assertContains('Test', $model->search(['name'], ['Test'], true));
+        $this->assertTrue($model->search(['name'], ['Test'], true));
 
         $this->assertEquals(3, $model->count());
     }
 
     public function testModelRetrieveFrom() {
         $model = new \Kyte\Core\Model(TestTable);
-        $this->assertContains('Test', $model->from('date_created', 0, time()));
+        $this->v($model->from('date_created', 0, time()));
 
         $this->assertEquals(2, $model->count());
     }
 
     public function testModelRetrieveFromEquals() {
         $model = new \Kyte\Core\Model(TestTable);
-        $this->assertContains('Test', $model->from('date_created', 0, time(), true));
+        $this->assertTrue($model->from('date_created', 0, time(), true));
 
         $this->assertEquals(2, $model->count());
     }
 
     public function testModelRetrieveFromEqualsAlls() {
         $model = new \Kyte\Core\Model(TestTable);
-        $this->assertContains('Test', $model->from('date_created', 0, time(), true, true));
+        $this->assertTrue($model->from('date_created', 0, time(), true, true));
 
         $this->assertEquals(3, $model->count());
     }
