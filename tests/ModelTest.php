@@ -37,6 +37,14 @@ class ModelTest extends TestCase
                     'date'		=> false,
                 ],
 
+                'temperature' => [
+                    'type'      => 'd',
+                    'required'  => true,
+                    'precision' => 4,
+                    'scale'     => 1,
+                    'date'      => false,
+                ],
+
                 'category'		=> [
                     'type'		=> 's',
                     'required'	=> true,
