@@ -132,7 +132,7 @@ class ModelTest extends TestCase
     public function testModelObjectRetrieveWithCondition() {
         $model = new \Kyte\Core\ModelObject(TestTable);
 
-        $this->assertTrue($model->retrieve('name', 'Test', ['field' => 'category', 'value' => 'test']));
+        $this->assertTrue($model->retrieve('name', 'Test', [['field' => 'category', 'value' => 'test']]));
     }
 
     public function testDBSelectAll() {
@@ -183,11 +183,6 @@ class ModelTest extends TestCase
 
     public function testModelObjectPurgeByQuery() {
         $model = new \Kyte\Core\ModelObject(TestTable);
-        $this->assertTrue($model->create([
-            'name' => 'Test2',
-            'category' => 'Test',
-            'kyte_account' => 1,
-        ]));
 
         $this->assertTrue($model->purge('name', 'Test2'));
     }
@@ -228,7 +223,7 @@ class ModelTest extends TestCase
     public function testModelObjectGetParamKeys() {
         $model = new \Kyte\Core\ModelObject(TestTable);
         $this->assertTrue($model->retrieve('name', 'Test'));
-        
+
         $this->assertArrayHasKey('category', $model->paramKeys());
     }
 
@@ -236,10 +231,126 @@ class ModelTest extends TestCase
      * Model tests
      * 
      * */
-    public function testModeltRetrieve() {
+    public function testModelRetrieve() {
+        // create one more entry
+        $model = new \Kyte\Core\ModelObject(TestTable);
+
+        $this->assertTrue($model->create([
+            'name' => 'Test2',
+            'category' => 'Test',
+            'kyte_account' => 1,
+        ]));
+
         $model = new \Kyte\Core\Model(TestTable);
 
         $this->assertTrue($model->retrieve('category', 'Test'));
+
+        $this->assertEquals(2, $model->count());
+    }
+
+    public function testModelRetrieveWithCondition() {
+        $model = new \Kyte\Core\Model(TestTable);
+
+        $this->assertTrue($model->retrieve('category', 'Test', false, [['field' => 'name', 'value' => 'Test2']]));
+
+        $this->assertEquals(1, $model->count());
+    }
+
+    public function testModelRetrieveAll() {
+        // create and delete
+        $this->assertTrue($model->create([
+            'name' => 'Test3',
+            'category' => 'Test',
+            'kyte_account' => 1,
+        ]));
+
+        $this->assertTrue($model->delete('name', 'Test3', 0));
+
+        $model = new \Kyte\Core\Model(TestTable);
+        $this->assertTrue($model->retrieve('category', 'Test', false, null, true));
+
+        $this->assertEquals(3, $model->count());
+    }
+
+    public function testModelRetrieveOrderBy() {
+        $model = new \Kyte\Core\Model(TestTable);
+        $this->assertTrue($model->retrieve('category', 'Test', false, null, true, ['field' => 'category', 'direction' => 'asc']));
+
+        $this->assertEquals(3, $model->count());
+    }
+
+    public function testModelRetrieveLike() {
+        $model = new \Kyte\Core\Model(TestTable);
+
+        $this->assertTrue($model->retrieve('name', 'Test', true,));
+
+        $this->assertEquals(2, $model->count());
+    }
+
+    public function testModelRetrieveAndReturnFirst() {
+        $model = new \Kyte\Core\Model(TestTable);
+
+        $this->assertTrue($model->retrieve('category', 'Test'));
+
+        $this->assertContains('Test', $model->returnFirst());
+    }
+
+    public function testModelRetrieveGroupBy() {
+        $model = new \Kyte\Core\Model(TestTable);
+
+        $this->assertContains('Test', $model->groupBy('category'));
+    }
+
+    public function testModelRetrieveGroupByWithCondition() {
+        $model = new \Kyte\Core\Model(TestTable);
+
+        $this->assertContains('Test', $model->groupBy('category', [['field' => 'category', 'value' => 'Test']]));
+    }
+
+    public function testModelRetrieveGroupByAll() {
+        $model = new \Kyte\Core\Model(TestTable);
+
+        $this->assertContains('Test', $model->groupBy('category', null, true));
+    }
+
+    public function testModelCustomSelect() {
+        $model = new \Kyte\Core\Model(TestTable);
+        $this->assertContains('Test', $model->customSelect('SELECT * FROM `TestTable`;'));
+    }
+
+    public function testModelSearch() {
+        $model = new \Kyte\Core\Model(TestTable);
+        $this->assertTrue('Test', $model->search([['name']], [['Test']]));
+
+        $this->assertEquals(2, $model->count());
+    }
+
+    public function testModelSearchAll() {
+        $model = new \Kyte\Core\Model(TestTable);
+        $this->assertContains('Test', $model->search([['name']], [['Test']], true));
+
+        $this->assertEquals(3, $model->count());
+    }
+
+    public function testModelRetrieveFrom() {
+        $model = new \Kyte\Core\Model(TestTable);
+        $this->assertContains('Test', $model->from('date_created', 0, time()));
+
+        $this->assertEquals(2, $model->count());
+    }
+
+    public function testModelRetrieveFromEquals() {
+        $model = new \Kyte\Core\Model(TestTable);
+        $this->assertContains('Test', $model->from('date_created', 0, time(), true));
+
+        $this->assertEquals(2, $model->count());
+    }
+
+    public function testModelRetrieveFromEqualsAlls() {
+        $model = new \Kyte\Core\Model(TestTable);
+        $this->assertContains('Test', $model->from('date_created', 0, time(), true, true));
+
+        $this->assertEquals(3, $model->count());
     }
 }
 
