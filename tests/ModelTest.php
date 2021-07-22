@@ -192,6 +192,50 @@ class ModelTest extends TestCase
         $this->assertTrue($model->purge('name', 'Test2'));
     }
 
+    public function testModelObjectGetParam() {
+        $model = new \Kyte\Core\ModelObject(TestTable);
+
+        $this->assertTrue($model->create([
+            'name' => 'Test',
+            'category' => 'Test',
+            'kyte_account' => 1,
+        ]));
+
+        $this->assertEquals('Test', $model->getParam('name'));
+    }
+
+    public function testModelObjectGetParams() {
+        $model = new \Kyte\Core\ModelObject(TestTable);
+        $this->assertTrue($model->retrieve('name', 'Test'));
+
+        $this->assertArrayHasKey('category', $model->getParams(['name','category']));
+    }
+
+    public function testModelObjectGetAllParams() {
+        $model = new \Kyte\Core\ModelObject(TestTable);
+        $this->assertTrue($model->retrieve('name', 'Test'));
+
+        $this->assertArrayHasKey('category', $model->getAllParams());
+    }
+
+    public function testModelObjectGetAllParamsWithDateFormat() {
+        $model = new \Kyte\Core\ModelObject(TestTable);
+        $this->assertTrue($model->retrieve('name', 'Test'));
+
+        $this->assertArrayHasKey('category', $model->getAllParams('Y/m/d'));
+    }
+
+    public function testModelObjectGetParamKeys() {
+        $model = new \Kyte\Core\ModelObject(TestTable);
+        $this->assertTrue($model->retrieve('name', 'Test'));
+        
+        $this->assertArrayHasKey('category', $model->paramKeys());
+    }
+
+    /*
+     * Model tests
+     * 
+     * */
     public function testModeltRetrieve() {
         $model = new \Kyte\Core\Model(TestTable);
 
