@@ -119,6 +119,7 @@ class ModelTest extends TestCase
         $this->assertTrue($model->create([
             'name' => 'Test',
             'category' => 'Test',
+            'temperature' => 78.3,
             'kyte_account' => 1,
         ]));
     }
@@ -141,7 +142,7 @@ class ModelTest extends TestCase
     }
 
     public function testDBCustomQuery() {
-        $data = \Kyte\Core\DBI::query('SELECT * FROM `TestTable`;');
+        $data = \Kyte\Core\DBI::query('* FROM `TestTable`;');
         $this->assertTrue(count($data) > 0 ? true : false);
     }
 
@@ -152,6 +153,7 @@ class ModelTest extends TestCase
         $this->assertTrue($model->save([
             'name' => 'Test1',
             'category' => 'ABC',
+            'temperature' => 78.3,
             'kyte_account' => 1,
         ]));
     }
@@ -168,6 +170,7 @@ class ModelTest extends TestCase
         $this->assertTrue($model->create([
             'name' => 'Test2',
             'category' => 'Test',
+            'temperature' => 78.3,
             'kyte_account' => 1,
         ]));
 
@@ -193,6 +196,7 @@ class ModelTest extends TestCase
         $this->assertTrue($model->create([
             'name' => 'Test',
             'category' => 'Test',
+            'temperature' => 78.3,
             'kyte_account' => 1,
         ]));
 
@@ -238,6 +242,7 @@ class ModelTest extends TestCase
         $this->assertTrue($model->create([
             'name' => 'Test2',
             'category' => 'Test',
+            'temperature' => 78.3,
             'kyte_account' => 1,
         ]));
 
@@ -257,6 +262,7 @@ class ModelTest extends TestCase
     }
 
     public function testModelRetrieveAll() {
+        $model = new \Kyte\Core\ModelObject(TestTable);
         // create and delete
         $this->assertTrue($model->create([
             'name' => 'Test3',
@@ -315,19 +321,19 @@ class ModelTest extends TestCase
 
     public function testModelCustomSelect() {
         $model = new \Kyte\Core\Model(TestTable);
-        $this->assertContains('Test', $model->customSelect('SELECT * FROM `TestTable`;'));
+        $this->assertContains('Test', $model->customSelect('* FROM `TestTable`;'));
     }
 
     public function testModelSearch() {
         $model = new \Kyte\Core\Model(TestTable);
-        $this->assertTrue('Test', $model->search([['name']], [['Test']]));
+        $this->assertTrue('Test', $model->search(['name'], ['Test']));
 
         $this->assertEquals(2, $model->count());
     }
 
     public function testModelSearchAll() {
         $model = new \Kyte\Core\Model(TestTable);
-        $this->assertContains('Test', $model->search([['name']], [['Test']], true));
+        $this->assertContains('Test', $model->search(['name'], ['Test'], true));
 
         $this->assertEquals(3, $model->count());
     }
