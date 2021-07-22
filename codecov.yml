@@ -1,5 +1,6 @@
 ignore:
   - "/Mvc"
+  - "/Core/Version.php"
 
 coverage:
   status:
