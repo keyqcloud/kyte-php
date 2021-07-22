@@ -158,11 +158,11 @@ class ModelTest extends TestCase
     }
 
     public function testDBSelectAll() {
-        $this->assertTrue(\Kyte\Core\DBI::select('TestTable')));
+        $this->assertTrue(\Kyte\Core\DBI::select('TestTable'));
     }
 
     public function testDBCustomQuery() {
-        $this->assertTrue(\Kyte\Core\DBI::query('SELECT * FROM `TestTable`;')));
+        $this->assertTrue(\Kyte\Core\DBI::query('SELECT * FROM `TestTable`;'));
     }
 
     public function testModelObjectRetrieve() {
