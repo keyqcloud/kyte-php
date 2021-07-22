@@ -321,7 +321,9 @@ class ModelTest extends TestCase
 
     public function testModelCustomSelect() {
         $model = new \Kyte\Core\Model(TestTable);
-        $this->assertArrayHasKey('category', $model->customSelect('* FROM `TestTable`;'));
+        $data = $model->customSelect('* FROM `TestTable`;');
+        $this->assertIsArray($data);
+        $this->assertCount(3, $data);
     }
 
     public function testModelSearch() {
