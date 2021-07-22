@@ -23,11 +23,12 @@ class AwsS3Test extends TestCase
 
     public function testCreateBucket() {
         // create private bucket
-        $this->s3->createBucket();
+        $this->assertTrue($this->s3->createBucket());
     }
 
     public function testDeleteBucket() {
-
+        // delete private bucket
+        $this->assertTrue($this->s3->deleteBucket());
     }
 }
 

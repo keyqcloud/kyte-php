@@ -121,11 +121,18 @@ class S3 extends Client
 
     // delete bucket
     public function deleteBucket() {
-        $result = $this->client->deleteBucket([
-            'Bucket' => $this->bucket, // REQUIRED
-        ]);
+        try {
+            $result = $this->client->deleteBucket([
+                'Bucket' => $this->bucket, // REQUIRED
+            ]);
+    
+            $this->bucket = null;
 
-        $this->bucket = null;
+            return true;
+        } catch (\Exception $e) {
+			throw $e;
+			return false;
+		}
     }
 
     // use S3 stream wrapper to write to bucket path
