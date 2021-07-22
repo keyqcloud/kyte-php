@@ -158,7 +158,98 @@ class DBI {
 	 * Create table
 	 */
 	public static function createTable($modelDef) {
-		
+		$tbl_name = $modelDef['name'];
+		$cols = $modelDef['struct'];
+		$charset = self::$charset;
+		$engine = self::$engine;
+		$pk_name = '';	// store col struct for primary key
+
+		$tbl_sql = <<<EOT
+DROP TABLE IF EXISTS `$tbl_name`;
+CREATE TABLE `$tbl_name` (
+EOT;
+
+		// table columns
+		foreach ($cols as $name => $attrs) {
+
+			// check if required attrs are set
+			if (!isset($attrs['date'])) {
+				throw new \Exception("date attribute must be declared for column $name of table $tbl_name.");
+				return false;
+			}
+
+			if (!isset($attrs['required'])) {
+				throw new \Exception("required attribute must be declared for column $name of table $tbl_name.");
+				return false;
+			}
+
+			if (!isset($attrs['type'])) {
+				throw new \Exception("type attribute must be declared for column $name of table $tbl_name.");
+				return false;
+			}
+
+			$field = "`$name`";	// column name
+			
+			// type, size and if signed or not
+			if ($attrs['date']) {
+				$field .= ' bigint unsigned';
+			} else {
+
+				if ($attrs['type'] == 'i') {
+					$field .= ' int';
+					if (array_key_exists('size', $attrs)) {
+						$field .= '('.$attrs['size'].')';
+					}
+					if (array_key_exists('unsigned', $attrs)) {
+						$field .= ' unsigned';
+					}
+				} elseif ($attrs['type'] == 's') {
+					$field .= ' varchar';
+					if (array_key_exists('size', $attrs)) {
+						$field .= '('.$attrs['size'].')';
+					} else {
+						throw new \Exception("varchar requires size to be declared for column $name of table $tbl_name.");
+						return false;
+					}
+				} elseif ($attrs['type'] == 'd' && array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
+					$field .= ' decimal('.$attrs['precision'].','.$attrs['scale'].')';
+				} elseif ($attrs['type'] == 't') {
+					$field .= ' text';
+				} else {
+					throw new \Exception("Unknown type ".$attrs['type']." for column $name of table $tbl_name.");
+					return false;
+				}
+			}
+			if (array_key_exists('default', $attrs)) {
+				// default value?
+				$field .= ' DEFAULT ';
+				$field .= (is_string($attrs['default']) ? "'".$attrs['default']."'" : $attrs['default']);
+			}
+			$field .= ($attrs['required'] ? ' NOT NULL' : '');		// required?
+
+			if (array_key_exists('pk', $attrs)) {
+				// primary key?
+				if ($attrs['pk']) {
+					$field .= ' AUTO_INCREMENT';
+					$pk_name = $name;
+				}
+			}
+
+			$field .= ",\n";
+
+			$tbl_sql .= <<<EOT
+$field
+EOT;
+
+		}
+
+		// primary key
+		$tbl_sql .= <<<EOT
+PRIMARY KEY (`$pk_name`)
+) ENGINE=$engine DEFAULT CHARSET=$charset;
+EOT;
+
+		return true;
 	}
 
 	/*
