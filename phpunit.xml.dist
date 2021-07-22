@@ -2,7 +2,7 @@
 <phpunit bootstrap="./tests/bootstrap.php" colors="true">
 
     <php>
-        <const name="KYTE_DB_USERNAME" value="travis" />
+        <const name="KYTE_DB_USERNAME" value="root" />
         <const name="KYTE_DB_PASSWORD" value="" />
         <const name="KYTE_DB_HOST" value="localhost" />
         <const name="KYTE_DB_DATABASE" value="kytedev" />
