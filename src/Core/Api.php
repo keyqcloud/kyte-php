@@ -143,6 +143,17 @@ class Api
 			define('APP_LANG', in_array($lang, $acceptLang) ? $lang : 'en');
 		}
 	
+		$this->loadModelsAndControllers();
+	
+		// initialize base framework
+		\Kyte\Core\DBI::setDbUser(KYTE_DB_USERNAME);
+		\Kyte\Core\DBI::setDbPassword(KYTE_DB_PASSWORD);
+		\Kyte\Core\DBI::setDbHost(KYTE_DB_HOST);
+		\Kyte\Core\DBI::setDbName(KYTE_DB_DATABASE);
+		\Kyte\Core\DBI::setCharset(KYTE_DB_CHARSET);
+	}
+
+	private function loadModelsAndControllers() {
 		// list of models
 		$models = [];
 		
@@ -203,13 +214,6 @@ class Api
 	
 		// define list of models
 		define('KYTE_MODELS', $models);
-	
-		// initialize base framework
-		\Kyte\Core\DBI::setDbUser(KYTE_DB_USERNAME);
-		\Kyte\Core\DBI::setDbPassword(KYTE_DB_PASSWORD);
-		\Kyte\Core\DBI::setDbHost(KYTE_DB_HOST);
-		\Kyte\Core\DBI::setDbName(KYTE_DB_DATABASE);
-		\Kyte\Core\DBI::setCharset(KYTE_DB_CHARSET);
 	}
 
 	private function cors() {
