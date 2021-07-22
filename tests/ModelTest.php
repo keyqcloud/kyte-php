@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 class ModelTest extends TestCase
 {
     public function testInitDB() {
-        $this->assertTrue(\Kyte\Core\DBI::dbInit(KYTE_DB_USERNAME, KYTE_DB_PASSWORD, KYTE_DB_HOST, KYTE_DB_DATABASE, KYTE_DB_CHARSET, 'InnoDB'));
+        $this->assertIsObject(\Kyte\Core\DBI::dbInit(KYTE_DB_USERNAME, KYTE_DB_PASSWORD, KYTE_DB_HOST, KYTE_DB_DATABASE, KYTE_DB_CHARSET, 'InnoDB'));
     }
 
     public function testCreateTable() {
