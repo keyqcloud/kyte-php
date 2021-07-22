@@ -9,7 +9,7 @@ class AwsS3Test extends TestCase
     private $s3;
 
     public function testCreateCredential() {
-        $this->credential = new \Kyte\Aws\Credential('us-east-1');
+        $this->credential = new \Kyte\Aws\Credentials('us-east-1');
 
         $this->assertIsObject($this->credential);
     }
