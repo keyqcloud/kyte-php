@@ -27,6 +27,13 @@ class ModelTest extends TestCase
                     'size'		=> 255,
                     'date'		=> false,
                 ],
+
+                'category'		=> [
+                    'type'		=> 's',
+                    'required'	=> true,
+                    'size'		=> 255,
+                    'date'		=> false,
+                ],
         
                 // framework attributes
         
@@ -98,7 +105,26 @@ class ModelTest extends TestCase
         $model = new \Kyte\Core\ModelObject(TestTable);
 
         $this->assertTrue($model->create([
-            'name' => 'Test',
+            'name' => 'Test1',
+            'category' => 'Test',
+            'kyte_account' => 1,
+        ]));
+
+        $this->assertTrue($model->create([
+            'name' => 'Test2',
+            'category' => 'Test',
+            'kyte_account' => 1,
+        ]));
+
+        $this->assertTrue($model->create([
+            'name' => 'Test3',
+            'category' => 'Test',
+            'kyte_account' => 1,
+        ]));
+
+        $this->assertTrue($model->create([
+            'name' => 'Test4',
+            'category' => 'Test',
             'kyte_account' => 1,
         ]));
     }
@@ -106,13 +132,32 @@ class ModelTest extends TestCase
     public function testModelObjectRetrieve() {
         $model = new \Kyte\Core\ModelObject(TestTable);
 
-        $this->assertTrue($model->retrieve('name', 'Test'));
+        $this->assertTrue($model->retrieve('name', 'Test1'));
+        $this->assertTrue($model->retrieve('name', 'Test2'));
+        $this->assertTrue($model->retrieve('name', 'Test3'));
+    }
+
+    public function testModelObjectUpdate() {
+        $model = new \Kyte\Core\ModelObject(TestTable);
+
+        $this->assertTrue($model->retrieve('name', 'Test4'));
+        $this->assertTrue($model->save([
+            'name' => 'Test5',
+            'category' => 'ABC',
+            'kyte_account' => 1,
+        ]));
+    }
+
+    public function testModelObjectDelete() {
+        $model = new \Kyte\Core\ModelObject(TestTable);
+
+        $this->assertTrue($model->delete('name', 'Test1', 0));
     }
 
     public function testModeltRetrieve() {
         $model = new \Kyte\Core\Model(TestTable);
 
-        $this->assertTrue($model->retrieve('name', 'Test'));
+        $this->assertTrue($model->retrieve('category', 'Test'));
     }
 
 }
