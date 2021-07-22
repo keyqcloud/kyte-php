@@ -7,6 +7,8 @@
         <const name="KYTE_DB_HOST" value="localhost" />
         <const name="KYTE_DB_DATABASE" value="kytedev" />
         <const name="KYTE_DB_CHARSET" value="utf8" />
+        <env name="XDEBUG_MODE" value="coverage"/>
+        <ini name="xdebug.mode" value="coverage"/>
     </php>
 
     <testsuites>
