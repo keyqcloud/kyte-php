@@ -9,7 +9,4 @@ require __DIR__ . '/../vendor/autoload.php';
 \Kyte\Core\DBI::setDbName(KYTE_DB_DATABASE);
 \Kyte\Core\DBI::setCharset(KYTE_DB_CHARSET);
 
-// define list of models
-define('KYTE_MODELS', $models);
-
 ?>
