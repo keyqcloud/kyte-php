@@ -17,6 +17,7 @@ before_install:
 before_script:
   - composer self-update
   - composer install --prefer-source --no-interaction
+  - XDEBUG_MODE=coverage
 
 # Commands you want to run that will verify your build.
 script: phpunit --coverage-clover clover.xml
