@@ -305,19 +305,19 @@ class ModelTest extends TestCase
     public function testModelRetrieveGroupBy() {
         $model = new \Kyte\Core\Model(TestTable);
 
-        $this->assertContains('Test', $model->groupBy('category'));
+        $this->assertCount(1, $model->groupBy('category'));
     }
 
     public function testModelRetrieveGroupByWithCondition() {
         $model = new \Kyte\Core\Model(TestTable);
 
-        $this->assertContains('Test', $model->groupBy('category', [['field' => 'category', 'value' => 'Test']]));
+        $this->assertCount(1, $model->groupBy('category', [['field' => 'category', 'value' => 'Test']]));
     }
 
     public function testModelRetrieveGroupByAll() {
         $model = new \Kyte\Core\Model(TestTable);
 
-        $this->assertContains('Test', $model->groupBy('category', null, true));
+        $this->assertCount(1, $model->groupBy('category', null, true));
     }
 
     public function testModelCustomSelect() {
