@@ -283,7 +283,7 @@ class ModelTest extends TestCase
         $model = new \Kyte\Core\Model(TestTable);
         $this->assertTrue($model->retrieve('category', 'Test', false, null, true, ['field' => 'category', 'direction' => 'asc']));
 
-        $this->assertEquals(2, $model->count());
+        $this->assertEquals(3, $model->count());
     }
 
     public function testModelRetrieveLike() {
@@ -345,7 +345,7 @@ class ModelTest extends TestCase
         $model = new \Kyte\Core\Model(TestTable);
         $this->assertTrue($model->from('date_created', 0, time()));
 
-        $this->assertEquals(2, $model->count());
+        $this->assertEquals(0, $model->count());
     }
 
     public function testModelRetrieveFromEquals() {
