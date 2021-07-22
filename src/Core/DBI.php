@@ -250,12 +250,11 @@ PRIMARY KEY (`$pk_name`)
 ) ENGINE=$engine DEFAULT CHARSET=$charset;
 EOT;
 
-		if ($use) {
-			$result = self::$dbConn->query($tbl_sql);
-			if($result === false) {
-				throw new \Exception("Error with mysql query '$tbl_sql'.");
-				return false;
-			}
+		
+		$result = self::$dbConn->query($tbl_sql);
+		if($result === false) {
+			throw new \Exception("Error with mysql query '$tbl_sql'.");
+			return false;
 		}
 
 		return true;
