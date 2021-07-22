@@ -13,6 +13,14 @@ class ModelTest extends TestCase
         $TestTable = [
             'name' => 'TestTable',
             'struct' => [
+                'id' => [
+                    'type'		=> 'i',
+                    'required'	=> true,
+                    'pk'		=> true,
+                    'size'		=> 11,
+                    'date'		=> false,
+                ],
+
                 'name'		=> [
                     'type'		=> 's',
                     'required'	=> true,
@@ -84,7 +92,7 @@ class ModelTest extends TestCase
         return true;
     }
 
-    
+
 }
 
 ?>  

@@ -9,24 +9,6 @@ require __DIR__ . '/../vendor/autoload.php';
 \Kyte\Core\DBI::setDbName(KYTE_DB_DATABASE);
 \Kyte\Core\DBI::setCharset(KYTE_DB_CHARSET);
 
-// load models and controllers
-// list of models
-$models = [];
-
-// include built-in models being used by app
-foreach (glob(__DIR__ . "/../Mvc/Model/*.php") as $filename) {
-    $model_name = substr($filename, 0, strrpos($filename, "."));
-    $model_name = str_replace(__DIR__ . '/../Mvc/Model/','',$model_name);
-    if (!in_array($model_name, $models)) {
-        $models[] = $model_name;
-    }
-    if (!isset($$model_name)) {
-        require_once($filename);
-        $this->addPrimaryKey($$model_name);
-        define($model_name, $$model_name);
-    }
-}
-
 // define list of models
 define('KYTE_MODELS', $models);
 
