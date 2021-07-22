@@ -128,29 +128,28 @@ class DBI {
 		// create database
 		$result = self::$dbConn->query("CREATE DATABASE IF NOT EXISTS `{$name}`;");
 		if($result === false) {
-  			throw new \Exception("Unable to create database.");
+  			throw new \Exception("Unable to create database. [Error]:  ".htmlspecialchars(self::$dbConn->error));
   			return false;
 		}
 
 		// create user
 		$result = self::$dbConn->query("CREATE USER '{$username}'@'localhost' IDENTIFIED BY '{$password}';");
 		if($result === false) {
-  			throw new \Exception("Unable to create user.");
+  			throw new \Exception("Unable to create user. [Error]:  ".htmlspecialchars(self::$dbConn->error));
   			return false;
 		}
 
 		// set privs
-		$sql = "GRANT ALL PRIVILEGES ON `{$name}`.* TO '{$username}'@'localhost';";
-		$result = self::$dbConn->query($sql);
+		$result = self::$dbConn->query("GRANT ALL PRIVILEGES ON `{$name}`.* TO '{$username}'@'localhost';");
 		if($result === false) {
-  			throw new \Exception("Unable to grant privileges. $sql");
+  			throw new \Exception("Unable to grant privileges. [Error]:  ".htmlspecialchars(self::$dbConn->error));
   			return false;
 		}
 
 		// flush privileges
 		$result = self::$dbConn->query("FLUSH PRIVILEGES;");
 		if($result === false) {
-  			throw new \Exception("Unable to flush privileges.");
+  			throw new \Exception("Unable to flush privileges. [Error]:  ".htmlspecialchars(self::$dbConn->error));
   			return false;
 		}
 
@@ -158,7 +157,7 @@ class DBI {
 		if ($use) {
 			$result = self::$dbConn->query("USE `{$name}`;");
 			if($result === false) {
-				throw new \Exception("Unable to switch databases.");
+				throw new \Exception("Unable to switch databases. [Error]:  ".htmlspecialchars(self::$dbConn->error));
 				return false;
 			}
 		}
@@ -262,7 +261,7 @@ class DBI {
 		
 		$result = self::$dbConn->query($tbl_sql);
 		if($result === false) {
-			throw new \Exception("Error with mysql query '$tbl_sql'.");
+			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
 			return false;
 		}
 
@@ -460,7 +459,7 @@ class DBI {
 
 		$result = self::$dbConn->query($query);
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'.");
+  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
   			return false;
 		}
 
@@ -501,7 +500,7 @@ class DBI {
 
 		$result = self::$dbConn->query($query);
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'.");
+  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
   			return false;
 		}
 
@@ -535,7 +534,7 @@ class DBI {
 
 		$result = self::$dbConn->query($query);
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'.");
+  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
   			return false;
 		}
 
@@ -579,7 +578,7 @@ class DBI {
 
 		$result = self::$dbConn->query($query);
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'.");
+  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
   			return false;
 		}
 
