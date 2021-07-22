@@ -9,6 +9,7 @@ Thumbs.db
 analytics.php
 settings.php
 # schema.sql
+composer.lock
 /vendor
 /app
 /util/*
