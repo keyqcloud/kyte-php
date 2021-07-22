@@ -241,10 +241,5 @@ class Model
 		}
 		return null;
 	}
-
-	protected function clearModel()
-	{
-		$this->objects = [];
-	}
 }
 ?>
