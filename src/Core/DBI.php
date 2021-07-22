@@ -485,7 +485,7 @@ class DBI {
 			self::connect();
 		}
 
-		$query = "SELECT *, count(`$field`) FROM `$table`";
+		$query = "SELECT `$field`, count(`$field`), * FROM `$table`";
 
 		if($query) {
 			$query .= " $condition";
