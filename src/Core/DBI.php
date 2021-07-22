@@ -129,9 +129,10 @@ class DBI {
 		}
 
 		// set privs
-		$result = self::$dbConn->query("GRANT ALL PRIVILEGES ON `{$name}`.* TO '{$username}'@'localhost';");
+		$sql = "GRANT ALL PRIVILEGES ON `{$name}`.* TO '{$username}'@'localhost';";
+		$result = self::$dbConn->query($sql);
 		if($result === false) {
-  			throw new \Exception("Unable to grant privileges.");
+  			throw new \Exception("Unable to grant privileges. $sql");
   			return false;
 		}
 
