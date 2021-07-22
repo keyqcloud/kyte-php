@@ -127,6 +127,18 @@ class ModelTest extends TestCase
             'category' => 'Test',
             'kyte_account' => 1,
         ]));
+
+        $this->assertTrue($model->create([
+            'name' => 'Test6',
+            'category' => 'Test',
+            'kyte_account' => 1,
+        ]));
+
+        $this->assertTrue($model->create([
+            'name' => 'Test7',
+            'category' => 'Test',
+            'kyte_account' => 1,
+        ]));
     }
 
     public function testModelObjectRetrieve() {
@@ -148,10 +160,17 @@ class ModelTest extends TestCase
         ]));
     }
 
-    public function testModelObjectDelete() {
+    public function testModelObjectDeleteByRetrieve() {
         $model = new \Kyte\Core\ModelObject(TestTable);
 
-        $this->assertTrue($model->delete('name', 'Test1', 0));
+        $this->assertTrue($model->retrieve('name', 'Test1'));
+        $this->assertTrue($model->delete(null, null, 0));
+    }
+
+    public function testModelObjectDeleteByQuery() {
+        $model = new \Kyte\Core\ModelObject(TestTable);
+
+        $this->assertTrue($model->delete('name', 'Test2', 0));
     }
 
     public function testModeltRetrieve() {
