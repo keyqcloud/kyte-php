@@ -80,7 +80,11 @@ class ModelTest extends TestCase
         ];
         
         $this->assertTrue(\Kyte\Core\DBI::createTable($TestTable));
+
+        return true;
     }
+
+    
 }
 
 ?>  
