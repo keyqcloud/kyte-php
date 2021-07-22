@@ -171,9 +171,7 @@ class DBI {
 			return false;
 		}
 
-		$tbl_sql = <<<EOT
-CREATE TABLE `$tbl_name` (
-EOT;
+		$tbl_sql = "CREATE TABLE `$tbl_name` (";
 
 		// table columns
 		foreach ($cols as $name => $attrs) {
@@ -243,17 +241,12 @@ EOT;
 
 			$field .= ",\n";
 
-			$tbl_sql .= <<<EOT
-$field
-EOT;
+			$tbl_sql .= $field;
 
 		}
 
 		// primary key
-		$tbl_sql .= <<<EOT
-PRIMARY KEY (`$pk_name`)
-) ENGINE=$engine DEFAULT CHARSET=$charset;
-EOT;
+		$tbl_sql .= "PRIMARY KEY (`$pk_name`)) ENGINE=$engine DEFAULT CHARSET=$charset;";
 
 		
 		$result = self::$dbConn->query($tbl_sql);
