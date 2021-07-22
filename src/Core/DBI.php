@@ -117,28 +117,28 @@ class DBI {
 		// create database
 		$result = self::$dbConn->query("CREATE DATABASE IF NOT EXISTS `{$name}`;");
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'.");
+  			throw new \Exception("Unable to create database.");
   			return false;
 		}
 
 		// create user
 		$result = self::$dbConn->query("CREATE USER '{$username}'@'localhost' IDENTIFIED BY '{$password}';");
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'.");
+  			throw new \Exception("Unable to create user.");
   			return false;
 		}
 
 		// set privs
 		$result = self::$dbConn->query("GRANT ALL PRIVILEGES ON `{$name}`.* TO '{$username}'@'localhost';");
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'.");
+  			throw new \Exception("Unable to grant privileges.");
   			return false;
 		}
 
 		// flush privileges
 		$result = self::$dbConn->query("FLUSH PRIVILEGES;");
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'.");
+  			throw new \Exception("Unable to flush privileges.");
   			return false;
 		}
 
@@ -146,7 +146,7 @@ class DBI {
 		if ($use) {
 			$result = self::$dbConn->query("USE `{$name}`;");
 			if($result === false) {
-				throw new \Exception("Error with mysql query '$query'.");
+				throw new \Exception("Unable to switch databases.");
 				return false;
 			}
 		}
@@ -248,6 +248,14 @@ EOT;
 PRIMARY KEY (`$pk_name`)
 ) ENGINE=$engine DEFAULT CHARSET=$charset;
 EOT;
+
+		if ($use) {
+			$result = self::$dbConn->query($tbl_sql);
+			if($result === false) {
+				throw new \Exception("Error with mysql query '$tbl_sql'.");
+				return false;
+			}
+		}
 
 		return true;
 	}
