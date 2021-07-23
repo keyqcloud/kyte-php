@@ -9,8 +9,8 @@ class APiTest extends TestCase
         parent::setUp();
         
         // setup account and apikey
-        require_once(__DIR__ . '/../Mvc/Model/APIKey.php');
-        require_once(__DIR__ . '/../Mvc/Model/Account.php');
+        require_once(__DIR__ . '/../src/Mvc/Model/APIKey.php');
+        require_once(__DIR__ . '/../src/Mvc/Model/Account.php');
 
         $mockAPI = $APIKey;
         $mockAccount = $Account;
