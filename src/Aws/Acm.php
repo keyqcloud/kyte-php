@@ -24,7 +24,7 @@ class Acm extends Client
         $result = $this->client->requestCertificate([
             'DomainName' => $domainName, // REQUIRED
             'SubjectAlternativeNames' => $san,
-            'IdempotencyToken' => $idemToken,
+            // 'IdempotencyToken' => $idemToken,
             'ValidationMethod' => 'DNS',
         ]);
 
