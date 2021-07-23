@@ -1,7 +1,7 @@
 ignore:
-  - "Mvc/*"
-  - "Core/Version.php"
-  - "SendGrid/*"
+  - "src/Mvc/*"
+  - "src/Core/Version.php"
+  - "src/SendGrid/*"
 
 coverage:
   status:
