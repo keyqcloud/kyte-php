@@ -302,10 +302,10 @@ class S3 extends Client
         }
 
         // format time
-        $dt = new DateTime();
-        $exp = new DateTime('+2 hours');
-        $dt->setTimezone(new DateTimeZone('UTC'));
-        $exp->setTimezone(new DateTimeZone('UTC'));
+        $dt = new \DateTime();
+        $exp = new \DateTime('+2 hours');
+        $dt->setTimezone(new \DateTimeZone('UTC'));
+        $exp->setTimezone(new \DateTimeZone('UTC'));
         $expiration = $exp->format('Y-m-d\TH:i:s\Z');
         $ymd = $dt->format('Ymd');
         $date = $dt->format('Ymd\THis\Z');
