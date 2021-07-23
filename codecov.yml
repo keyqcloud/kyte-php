@@ -1,5 +1,6 @@
 ignore:
-  - "src/Mvc/*"
+  - "src/Mvc/Controller"
+  - "src/Mvc/Model"
   - "src/Core/Version.php"
   - "src/SendGrid/*"
 
