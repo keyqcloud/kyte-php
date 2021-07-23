@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 
 class APiTest extends TestCase
 {
-    public function setUp() {
+    protected function setUp() {
         // setup account and apikey
         require_once(__DIR__ . '../Mvc/Model/APIKey.php');
         require_once(__DIR__ . '../Mvc/Model/Account.php');
