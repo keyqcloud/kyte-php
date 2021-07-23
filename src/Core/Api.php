@@ -45,10 +45,14 @@ class Api
 	{
 		if (isset($public_key)) {
 			if (!$this->key->retrieve('public_key', $public_key)) throw new \Exception("API key not found.");
-		} else throw new \Exception("API key is required.");
+			return true;
+		} else {
+			throw new \Exception("API key is required.");
+			return false;
+		}
 	}
 
-	private function addPrimaryKey(&$modeldef) {
+	public static function addPrimaryKey(&$modeldef) {
 		$modeldef['struct']['id'] = [
 			'type'		=> 'i',
 			'required'	=> true,
@@ -58,7 +62,7 @@ class Api
 		];
 	}
 
-	private function addKyteAttributes(&$modeldef) {
+	public static function addKyteAttributes(&$modeldef) {
 		$modeldef['struct']['kyte_account'] = [
 			'type'		=> 'i',
 			'required'	=> true,
@@ -156,40 +160,42 @@ class Api
 	private function loadModelsAndControllers() {
 		// list of models
 		$models = [];
+
+		if(defined('APP_DIR')) {
+			/* Load user-defined files first in case there are overrides */
+			if ( file_exists( APP_DIR . "/app/" ) && is_dir( APP_DIR . "/app/" ) ) {
 		
-		/* Load user-defined files first in case there are overrides */
-		if ( file_exists( APP_DIR . "/app/" ) && is_dir( APP_DIR . "/app/" ) ) {
-	
-			// load user defined models and controllers (allow override of builtin)
-			if ( file_exists( APP_DIR . "/app/models/" ) && is_dir( APP_DIR . "/app/models/" ) ) {    
-				foreach (glob(APP_DIR . "/app/models/*.php") as $filename) {
-					require_once($filename);
-					$model_name = substr($filename, 0, strrpos($filename, "."));
-					$model_name = str_replace(APP_DIR . '/app/models/','',$model_name);
-					if (!in_array($model_name, $models)) {
-						$models[] = $model_name;
+				// load user defined models and controllers (allow override of builtin)
+				if ( file_exists( APP_DIR . "/app/models/" ) && is_dir( APP_DIR . "/app/models/" ) ) {    
+					foreach (glob(APP_DIR . "/app/models/*.php") as $filename) {
+						require_once($filename);
+						$model_name = substr($filename, 0, strrpos($filename, "."));
+						$model_name = str_replace(APP_DIR . '/app/models/','',$model_name);
+						if (!in_array($model_name, $models)) {
+							$models[] = $model_name;
+						}
+						if (VERBOSE_LOG) {
+							error_log("Loading user defined model $model_name...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
+						}
+						self::addPrimaryKey($$model_name);
+						self::addKyteAttributes($$model_name);
+						define($model_name, $$model_name);
 					}
-					if (VERBOSE_LOG) {
-						error_log("Loading user defined model $model_name...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
-					}
-					$this->addPrimaryKey($$model_name);
-					$this->addKyteAttributes($$model_name);
-					define($model_name, $$model_name);
 				}
+		
+				// load user-defined controllers
+				if ( file_exists( APP_DIR . "/app/controllers/" ) && is_dir( APP_DIR . "/app/controllers/" ) ) {
+					foreach (glob(APP_DIR . "/app/controllers/*.php") as $filename) {
+						$controller_name = substr($filename, 0, strrpos($filename, "."));
+						$controller_name = str_replace(APP_DIR . '/app/controllers/','',$controller_name);
+						require_once($filename);
+						if (VERBOSE_LOG) {
+							error_log("Checking if user defined controller has been defined...".(class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
+						}
+					}
+				}      
 			}
-	
-			// load user-defined controllers
-			if ( file_exists( APP_DIR . "/app/controllers/" ) && is_dir( APP_DIR . "/app/controllers/" ) ) {
-				foreach (glob(APP_DIR . "/app/controllers/*.php") as $filename) {
-					$controller_name = substr($filename, 0, strrpos($filename, "."));
-					$controller_name = str_replace(APP_DIR . '/app/controllers/','',$controller_name);
-					require_once($filename);
-					if (VERBOSE_LOG) {
-						error_log("Checking if user defined controller has been defined...".(class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
-					}
-				}
-			}      
-		} 
+		}
 	
 		// include built-in models being used by app
 		foreach (glob(__DIR__ . "/../Mvc/Model/*.php") as $filename) {
@@ -207,13 +213,94 @@ class Api
 				if (VERBOSE_LOG) {
 					error_log("Loading built-in model $model_name...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
 				}
-				$this->addPrimaryKey($$model_name);
+				self::addPrimaryKey($$model_name);
 				define($model_name, $$model_name);
 			}
 		}
 	
 		// define list of models
 		define('KYTE_MODELS', $models);
+	}
+
+	// meat of API
+	public function route() {
+		try {			
+			// if minimum count of elements exist, then process api request based on request type
+			if ($this->isRequest()) {
+
+				if ($this->appId) {
+					// retrieve model definition
+					//
+					// switch DBI to client database
+					//
+					$controller = new \Kyte\Client\ModelController();
+				} else {
+					// initialize controller for model or view ("abstract" controller)
+					if (class_exists('\\Kyte\Mvc\\Controller\\'.$this->model.'Controller')) {
+						$controllerClass = '\\Kyte\Mvc\\Controller\\'.$this->model.'Controller';
+					} else {
+						$controllerClass = class_exists($this->model.'Controller') ? $this->model.'Controller' : '\\Kyte\\Mvc\\Controller\\ModelController';
+					}
+					// create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
+					$controller = new $controllerClass(defined($this->model) ? constant($this->model) : null, APP_DATE_FORMAT, $this->account, $this->session, $this->user, $this->response);
+					if (!$controller) throw new \Exception("[ERROR] Unable to create controller for model: $controllerClass.");
+				}
+
+				switch ($this->request) {
+					case 'POST':
+						// post data = data
+						// new  :   {data}
+						$controller->new($this->data);
+						break;
+
+					case 'PUT':
+						// post data = data
+						// update   :   {field}, {value}, {data}
+						$controller->update($this->field, $this->value, $this->data);
+						break;
+
+					case 'GET':
+						// get  :   {field}, {value}
+						$controller->get($this->field, $this->value);
+						break;
+
+					case 'DELETE':
+						// delete   :   {field}, {value}
+						$controller->delete($this->field, $this->value);
+						break;
+					
+					default:
+						throw new \Exception("[ERROR] Unknown HTTP request type: $this->request.");
+						break;
+				}
+
+			} else {
+				// If a post request is made to the api endpoint with no signature, identity string, or model being passed then generate a new signature based on the post data
+				// format of the data being passed should be:
+				// {
+				//     key: ‘public_key’,
+				//     identifier: ‘api_key_identifier’,
+				//     token: ‘transaction_token’,
+				//     time: ‘Thu, 30 Apr 2020 07:11:46 GMT’
+				// }
+					
+				$this->generateSignature();
+			}
+
+		} catch (\Kyte\Exception\SessionException $e) {
+			http_response_code(403);
+			$this->response['error'] = $e->getMessage();
+			echo json_encode($this->response);
+			exit(0);
+		} catch (\Exception $e) {
+			http_response_code(400);
+			$this->response['error'] = $e->getMessage();
+			echo json_encode($this->response);
+			exit(0);
+		}
+
+		// return response data
+		echo json_encode($this->response);
 	}
 
 	private function cors() {
@@ -420,87 +507,6 @@ class Api
 		$now = new \DateTime();
 		$now->setTimezone(new \DateTimeZone('UTC'));    // Another way
 		$this->response['txTimestamp'] = $now->format('U');
-	}
-
-	// meat of API
-	public function route() {
-		try {			
-			// if minimum count of elements exist, then process api request based on request type
-			if ($this->isRequest()) {
-
-				if ($this->appId) {
-					// retrieve model definition
-					//
-					// switch DBI to client database
-					//
-					$controller = new \Kyte\Client\ModelController();
-				} else {
-					// initialize controller for model or view ("abstract" controller)
-					if (class_exists('\\Kyte\Mvc\\Controller\\'.$this->model.'Controller')) {
-						$controllerClass = '\\Kyte\Mvc\\Controller\\'.$this->model.'Controller';
-					} else {
-						$controllerClass = class_exists($this->model.'Controller') ? $this->model.'Controller' : '\\Kyte\\Mvc\\Controller\\ModelController';
-					}
-					// create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
-					$controller = new $controllerClass(defined($this->model) ? constant($this->model) : null, APP_DATE_FORMAT, $this->account, $this->session, $this->user, $this->response);
-					if (!$controller) throw new \Exception("[ERROR] Unable to create controller for model: $controllerClass.");
-				}
-
-				switch ($this->request) {
-					case 'POST':
-						// post data = data
-						// new  :   {data}
-						$controller->new($this->data);
-						break;
-
-					case 'PUT':
-						// post data = data
-						// update   :   {field}, {value}, {data}
-						$controller->update($this->field, $this->value, $this->data);
-						break;
-
-					case 'GET':
-						// get  :   {field}, {value}
-						$controller->get($this->field, $this->value);
-						break;
-
-					case 'DELETE':
-						// delete   :   {field}, {value}
-						$controller->delete($this->field, $this->value);
-						break;
-					
-					default:
-						throw new \Exception("[ERROR] Unknown HTTP request type: $this->request.");
-						break;
-				}
-
-			} else {
-				// If a post request is made to the api endpoint with no signature, identity string, or model being passed then generate a new signature based on the post data
-				// format of the data being passed should be:
-				// {
-				//     key: ‘public_key’,
-				//     identifier: ‘api_key_identifier’,
-				//     token: ‘transaction_token’,
-				//     time: ‘Thu, 30 Apr 2020 07:11:46 GMT’
-				// }
-					
-				$this->generateSignature();
-			}
-
-		} catch (\Kyte\Exception\SessionException $e) {
-			http_response_code(403);
-			$this->response['error'] = $e->getMessage();
-			echo json_encode($this->response);
-			exit(0);
-		} catch (\Exception $e) {
-			http_response_code(400);
-			$this->response['error'] = $e->getMessage();
-			echo json_encode($this->response);
-			exit(0);
-		}
-
-		// return response data
-		echo json_encode($this->response);
 	}
 }
 
