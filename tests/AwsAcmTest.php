@@ -20,9 +20,9 @@ class AwsAcmTest extends TestCase
         return $arn;
     }
 
-    /*
+    /**
      * @depends testRequestCertificate
-     * */
+     */
     public function testDescribeCertificate($arn) {
         $credential = new \Kyte\Aws\Credentials('us-east-1');
         $this->assertIsObject($credential);
@@ -38,9 +38,9 @@ class AwsAcmTest extends TestCase
         return $arn;
     }
 
-    /*
+    /**
      * @depends testDescribeCertificate
-     * */
+     */
     public function testListCertificate($arn) {
         $credential = new \Kyte\Aws\Credentials('us-east-1');
         $this->assertIsObject($credential);
@@ -58,9 +58,9 @@ class AwsAcmTest extends TestCase
         return $arn;
     }
 
-    /*
+    /**
      * @depends testListCertificate
-     * */
+     */
     public function testDeleteCertificate($arn) {
         $credential = new \Kyte\Aws\Credentials('us-east-1');
         $this->assertIsObject($credential);
