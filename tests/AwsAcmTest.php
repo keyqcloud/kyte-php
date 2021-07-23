@@ -13,7 +13,7 @@ class AwsAcmTest extends TestCase
         $acm = new \Kyte\Aws\Acm($credential);
         $this->assertIsObject($acm);
 
-        $result = $acm->request('www.perryhough.com');
+        $result = $acm->request('www.perryhough.com', ['www.perryhough.com']);
         $this->assertIsString($result['CertificateArn']);
 
         return $acm;
