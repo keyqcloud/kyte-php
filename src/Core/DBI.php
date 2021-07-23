@@ -169,6 +169,14 @@ class DBI {
 	 * Create table
 	 */
 	public static function createTable($modelDef) {
+		if (!$modelDef) {
+			throw new \Exception("Table definition cannot be empty.");
+		}
+
+		if (!self::$dbConn) {
+			self::connect();
+		}
+
 		$tbl_name = $modelDef['name'];
 		$cols = $modelDef['struct'];
 		$charset = self::$charset;
