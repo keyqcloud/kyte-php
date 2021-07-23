@@ -41,7 +41,7 @@ class Api
 	}
 
 	// if origin is left null then origin validation is skipped
-	private function init($public_key)
+	public function init($public_key)
 	{
 		if (isset($public_key)) {
 			if (!$this->key->retrieve('public_key', $public_key)) throw new \Exception("API key not found.");
@@ -174,12 +174,14 @@ class Api
 						if (!in_array($model_name, $models)) {
 							$models[] = $model_name;
 						}
-						if (VERBOSE_LOG) {
-							error_log("Loading user defined model $model_name...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
+						if (!defined($model_name)) {
+							if (VERBOSE_LOG) {
+								error_log("Loading user defined model $model_name...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
+							}
+							self::addPrimaryKey($$model_name);
+							self::addKyteAttributes($$model_name);
+							define($model_name, $$model_name);
 						}
-						self::addPrimaryKey($$model_name);
-						self::addKyteAttributes($$model_name);
-						define($model_name, $$model_name);
 					}
 				}
 		
@@ -204,7 +206,7 @@ class Api
 			if (!in_array($model_name, $models)) {
 				$models[] = $model_name;
 			}
-			if (isset($$model_name)) {
+			if (defined($model_name)) {
 				if (VERBOSE_LOG) {
 					error_log("Skipping model $model_name as already defined...");
 				}
