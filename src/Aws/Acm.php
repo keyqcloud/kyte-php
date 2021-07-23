@@ -11,7 +11,7 @@ class Acm extends Client
         $this->credentials = $credentials;
         $this->client = new AcmClient([
             'credentials'	=> $this->credentials->getCredentials(),
-            'version'	=> '2014-11-01',
+            'version'	=> '2015-12-08',
             'region'	=> $this->credentials->getRegion()
         ]);
     }
