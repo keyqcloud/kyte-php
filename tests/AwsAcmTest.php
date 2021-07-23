@@ -11,7 +11,7 @@ class AwsAcmTest extends TestCase
 
         // create s3 client for private bucket
         $acm = new \Kyte\Aws\Acm($credential);
-        $this->assertIsObject($s3);
+        $this->assertIsObject($acm);
 
         $result = $acm->request('www.perryhough.com');
         $this->assertIsString($result['CertificateArn']);
