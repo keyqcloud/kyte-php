@@ -65,6 +65,8 @@ class Acm extends Client
         ]);
 
         $this->$Arn = null;
+
+        return true;
     }
 
     public function list($params = []) {
