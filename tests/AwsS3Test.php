@@ -109,7 +109,7 @@ class AwsS3Test extends TestCase
         $s3 = new \Kyte\Aws\S3($credential, AWS_PRIVATE_BUCKET_NAME);
         $this->assertIsObject($s3);
 
-        $signature = $this->getUploadSignature('Test');
+        $signature = $s3->getUploadSignature('Test');
         $this->assertEquals(hash_hmac('sha1', AWS_ACCESS_KEY_ID, 'us-east-1'), hash_hmac('sha1', $signature['access_key'], 'us-east-1'));
     }
 }
