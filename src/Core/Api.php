@@ -221,7 +221,7 @@ class Api
 		}
 	
 		// define list of models
-		define('KYTE_MODELS', $models);
+		if (!defined('KYTE_MODELS')) define('KYTE_MODELS', $models);
 	}
 
 	// meat of API
