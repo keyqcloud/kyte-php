@@ -9,7 +9,7 @@ class Kms extends Client
     public function __construct($credentials, $kmsKeyId) {
         $this->credentials = $credentials;
         $this->Id = $kmsKeyId;
-        $this->client = new Aws\Kms\KmsClient([
+        $this->client = new KmsClient([
             'credentials'	=> $this->credentials->getCredentials(),
             'version'	=> '2014-11-01',
             'region'	=> $this->credentials->getRegion()
