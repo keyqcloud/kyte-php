@@ -142,7 +142,7 @@ class S3 extends Client
             throw new \Exception('bucket must be defined');
         }
 
-        $this->streamWrite($key, $data, 'w');
+        return $this->streamWrite($key, $data, 'w');
     }
 
     // use S3 stream wrapper to append to bucket path
@@ -152,7 +152,7 @@ class S3 extends Client
             throw new \Exception('bucket must be defined');
         }
 
-        $this->streamWrite($key, $data, 'a');
+        return $this->streamWrite($key, $data, 'a');;
     }
 
     // use S3 stream wrapper to write/append to bucket path
@@ -161,7 +161,7 @@ class S3 extends Client
 
         $stream = fopen('s3://'.$this->bucket.'/'.$key, $flag);
         fwrite($stream, $data);
-        fclose($stream);
+        return fclose($stream);
     }
 
     // https://docs.aws.amazon.com/sdk-for-php/v3/developer-guide/s3-stream-wrapper.html
@@ -194,7 +194,7 @@ class S3 extends Client
 
         $this->client->registerStreamWrapper();
 
-        unlink('s3://'.$this->bucket.'/'.$key, $context);
+        return unlink('s3://'.$this->bucket.'/'.$key, $context);;
     }
 
     // use S3 stream wrapper to get file size
@@ -357,7 +357,7 @@ class S3 extends Client
         );
 
         return [
-            'access_key'	=> AWS_ACCESS_KEY_ID,
+            'access_key'	=> $this->credentials->getAccessKey(),
             'policy'		=> $policy,
             'signature'		=> $signature,
             'date'			=> $date,
