@@ -10,7 +10,7 @@ class AwsKmsTest extends TestCase
         $this->assertIsObject($credential);
 
         // create s3 client for private bucket
-        $kms = new \Kyte\Aws\Kms($credential, AWS_KMS_ID);
+        $kms = new \Kyte\Aws\Kms($credential, AWS_KMS_KEYID);
         $this->assertIsObject($kms);
 
         $cipher = $kms->encrypt('Test');
