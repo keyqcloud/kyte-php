@@ -98,7 +98,7 @@ class AwsWebsiteTest extends TestCase
             'http://'.AWS_TEST_SITE_NAME.'.s3-website-'.$credential->getRegion().'.amazonaws.com',
             AWS_TEST_SITE_NAME
         );
-        $cf->create();
+        $this->assertTrue($cf->create());
 
         // test CF distribution
         $testUrl = $cf->getDomainName();

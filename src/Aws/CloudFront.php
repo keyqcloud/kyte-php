@@ -140,23 +140,12 @@ class CloudFront extends Client
             $this->Id = $result['Distribution']['Id'];
             $this->Arn = $result['Distribution']['ARN'];
     
-            return $result;
+            $this->distributionConfig = $result['Distribution']['DistributionConfig'];
+
+            return true;
         } catch (AwsException $e) {
-            return 'Error: ' . $e['message'];
-        }
-    }
-
-    public function get($distributionId = null) {
-        try {
-            $distributionId = $this->Id ? $this->Id : $distributionId;
-
-            $result = $this->client->getDistribution([
-                'Id' => $distributionId
-            ]);
-
-            return $result;
-        } catch (AwsException $e) {
-            return 'Error: ' . $e['message'];
+            throw new \Exception($e['message']);
+            return false;
         }
     }
 
@@ -165,7 +154,8 @@ class CloudFront extends Client
             $result = $this->client->listDistributions([]);
             return $result;
         } catch (AwsException $e) {
-            exit('Error: ' . $e->getAwsErrorMessage());
+            throw new \Exception($e->getAwsErrorMessage());
+            return false;
         }
     }
 
@@ -180,9 +170,10 @@ class CloudFront extends Client
                 'Id' => $distributionId
             ]);
 
-            return $result;
+            return true;
         } catch (AwsException $e) {
-            return 'Error: ' . $e->getAwsErrorMessage();
+            throw new \Exception($e->getAwsErrorMessage());
+            return false;
         }
     }
 
@@ -197,9 +188,10 @@ class CloudFront extends Client
                 'Id' => $distributionId
             ]);
             
-            return $result;
+            return true;
         } catch (AwsException $e) {
-            return 'Error: ' . $e->getAwsErrorMessage();
+            throw new \Exception($e->getAwsErrorMessage());
+            return false;
         }
     }
 
@@ -245,9 +237,10 @@ class CloudFront extends Client
                 'Id' => $distributionId
             ]);
             
-            return $result;
+            return true;
         } catch (AwsException $e) {
-            return 'Error: ' . $e->getAwsErrorMessage();
+            throw new \Exception($e->getAwsErrorMessage());
+            return false;
         }
     }
 
@@ -266,9 +259,10 @@ class CloudFront extends Client
                 'Id' => $distributionId
             ]);
             
-            return $result;
+            return true;
         } catch (AwsException $e) {
-            return 'Error: ' . $e->getAwsErrorMessage();
+            throw new \Exception($e->getAwsErrorMessage());
+            return false;
         }
     }
 
@@ -293,13 +287,24 @@ class CloudFront extends Client
     }
 
     public function getConfiguration($distributionId = null) {
-        $result = $this->get($distributionId);
+        try {
+            $distributionId = $this->Id ? $this->Id : $distributionId;
 
-        if (isset($result['Distribution']['DistributionConfig']))
-        {
-            $this->distributionConfig = $result['Distribution']['DistributionConfig'];
-        } else {
-            throw new \Exception("Unable to retrieve configuration for distribution $distributionId");
+            $result = $this->client->getDistribution([
+                'Id' => $distributionId
+            ]);
+
+            if (isset($result['Distribution']['DistributionConfig']))
+            {
+                $this->distributionConfig = $result['Distribution']['DistributionConfig'];
+                return true;
+            } else {
+                throw new \Exception("Unable to retrieve configuration for distribution $distributionId");
+                return false;
+            }
+        } catch (AwsException $e) {
+            throw new \Exception($e['message']);
+            return false;
         }
     }
 
