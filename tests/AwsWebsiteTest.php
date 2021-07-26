@@ -95,7 +95,7 @@ class AwsWebsiteTest extends TestCase
         $cf = new \Kyte\Aws\CloudFront($credential);
         $this->assertIsObject($cf);
         $cf->addOrigin(
-            'http://'.AWS_TEST_SITE_NAME.'.s3-website-'.$credential->getRegion().'.amazonaws.com',
+            AWS_TEST_SITE_NAME.'.s3-website-'.$credential->getRegion().'.amazonaws.com',
             AWS_TEST_SITE_NAME
         );
         $this->assertTrue($cf->create());
