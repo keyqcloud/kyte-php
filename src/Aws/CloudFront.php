@@ -328,41 +328,25 @@ class CloudFront extends Client
         $Id,
         $OriginPath = '',
         $OriginShieldEnabled = true,
-        $OriginShieldRegion = 'us-east-1'//,
-        // $S3OriginAccessIdentity         // '<string>'
+        $OriginShieldRegion = 'us-east-1',
+        $s3origin = true
         ) {
         $this->TargetOriginId = $Id;
-        $this->Origins[] = [
-            // 'ConnectionAttempts' => $ConnectionAttempts, 
-            // 'ConnectionTimeout' => $ConnectionTimeout, 
-            // 'CustomHeaders' => [
-            //     'Items' => [
-            //         $CustomHeaders,
-            //     ],
-            //     'Quantity' => count($CustomHeaders), // REQUIRED
-            // ],
-            // 'CustomOriginConfig' => [
-            //     'HTTPPort' => $HTTPPort, // REQUIRED
-            //     'HTTPSPort' => $HTTPSPort, // REQUIRED
-            //     'OriginKeepaliveTimeout' => $OriginKeepaliveTimeout,
-            //     'OriginProtocolPolicy' => $OriginProtocolPolicy, // REQUIRED
-            //     'OriginReadTimeout' => $OriginReadTimeout,
-            //     'OriginSslProtocols' => [
-            //         'Items' => $OriginSslProtocols, // REQUIRED
-            //         'Quantity' => count($OriginSslProtocols), // REQUIRED
-            //     ],
-            // ],
-            'DomainName' => $DomainName, // REQUIRED
-            'Id' => $Id, // REQUIRED
-            'OriginPath' => $OriginPath,
-            'OriginShield' => [
-                'Enabled' => $OriginShieldEnabled, // REQUIRED
-                'OriginShieldRegion' => $OriginShieldRegion,
-            ],
-            // 'S3OriginConfig' => [
-            //     'OriginAccessIdentity' => $S3OriginAccessIdentity, // REQUIRED
-            // ],
+        $origin = [];
+        $origin['DomainName'] = $DomainName;
+        $origin['Id'] = $Id;
+        $origin['OriginPath'] = $OriginPath;
+        $origin['OriginShield'] = [
+            'Enabled' => $OriginShieldEnabled, // REQUIRED
+            'OriginShieldRegion' => $OriginShieldRegion,
         ];
+        if ($s3origin) {
+            $origin['S3OriginConfig'] = [
+                'OriginAccessIdentity' => $S3OriginAccessIdentity,
+            ];
+        }
+
+        $this->Origins[] = $origin;
     }
 
     // public function clearOrigins() {
