@@ -36,6 +36,11 @@ class AwsS3Test extends TestCase
         $content = file_get_contents($url);
         $this->assertEquals('Hello World', $content);
 
+        // test list objects
+        $result = $s3->listObjects();
+        $this->assertIsArray($result);
+        $this->assertEquals('HelloWorld', $result['Contents'][0]['Key']);
+
         // test delete using stream wrapper
         $this->assertTrue($s3->unlink('HelloWorld'));
     
