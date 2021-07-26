@@ -127,23 +127,37 @@ class S3 extends Client
     }
 
     public function enableVersioning() {
-        $result = $this->client->putBucketVersioning([
-            'Bucket' => $this->bucket,
-            'VersioningConfiguration' => [
-                // 'MFADelete' => 'Disabled',
-                'Status' => 'Enabled',
-            ],
-        ]);
+        try {
+            $result = $this->client->putBucketVersioning([
+                'Bucket' => $this->bucket,
+                'VersioningConfiguration' => [
+                    // 'MFADelete' => 'Disabled',
+                    'Status' => 'Enabled',
+                ],
+            ]);
+        } catch(\Exception $e) {
+            throw new \Exception("Unable to enable versioning");
+            return false;
+        }
+
+        return true;
     }
 
     public function suspendVersioning() {
-        $result = $this->client->putBucketVersioning([
-            'Bucket' => $this->bucket,
-            'VersioningConfiguration' => [
-                // 'MFADelete' => 'Disabled',
-                'Status' => 'Suspended',
-            ],
-        ]);
+        try {
+            $result = $this->client->putBucketVersioning([
+                'Bucket' => $this->bucket,
+                'VersioningConfiguration' => [
+                    // 'MFADelete' => 'Disabled',
+                    'Status' => 'Suspended',
+                ],
+            ]);
+        } catch(\Exception $e) {
+            throw new \Exception("Unable to suspend versioning");
+            return false;
+        }
+
+        return true;
     }
 
     // delete bucket
