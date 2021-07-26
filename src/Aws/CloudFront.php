@@ -227,17 +227,18 @@ class CloudFront extends Client
         return true;
     }
 
-    public function setAliases($aliases, $acmArn, $distributionId = null) {
+    public function setAliases($aliases, $acmArn = '', $distributionId = null) {
         try {
-            if (count($aliases) < 1) {
-                throw new \Exception("At least one aliase (CNAME) must be defined");
-            }
             $distributionId = $this->Id ? $this->Id : $distributionId;
+
+            if (count($aliases) > 0 || empty($acmArn)) {
+                throw new \Exception("Aliases require a valid ACM certificate");
+            }
 
             $this->distributionConfig['Aliases']['Items'] = $aliases;
             $this->distributionConfig['Aliases']['Quantity'] = count($aliases);
-            $this->distributionConfig['ACMCertificateArn'] = $acmArn;
-            $this->distributionConfig['CloudFrontDefaultCertificate'] = false;
+            $this->distributionConfig['ViewerCertificate']['ACMCertificateArn'] = $acmArn;
+            $this->distributionConfig['ViewerCertificate']['CloudFrontDefaultCertificate'] = true;
 
             $result = $this->client->updateDistribution([
                 $this->distributionConfig,
@@ -255,8 +256,8 @@ class CloudFront extends Client
         try {
             $distributionId = $this->Id ? $this->Id : $distributionId;
 
-            $this->distributionConfig['ACMCertificateArn'] = '';
-            $this->distributionConfig['CloudFrontDefaultCertificate'] = true;
+            $this->distributionConfig['ViewerCertificate']['ACMCertificateArn'] = '';
+            $this->distributionConfig['ViewerCertificate']['CloudFrontDefaultCertificate'] = true;
             $this->distributionConfig['Aliases']['Items'] = [];
             $this->distributionConfig['Aliases']['Quantity'] = 0;
 
@@ -400,12 +401,6 @@ class CloudFront extends Client
         // initialize array
         $this->distributionConfig = [];
 
-        // Aliases
-        $this->distributionConfig['Aliases'] = count($this->Aliases) == 0 ? [] : [
-            'Items' => $this->Aliases,
-            'Quantity' => count($this->Aliases), // REQUIRED
-        ];
-
         $this->distributionConfig['CallerReference'] = $this->CallerReference;
         $this->distributionConfig['Comment'] = $this->Comment;
         
@@ -413,12 +408,8 @@ class CloudFront extends Client
         $this->distributionConfig['HttpVersion'] = $this->HttpVersion;
         $this->distributionConfig['IsIPV6Enabled'] = $this->IsIPV6Enabled;
 
-        $this->distributionConfig['Origins'] = [
-            'Items' => [
-                $this->Origins
-            ],
-            'Quantity' => count($this->Origins),
-        ];
+        $this->distributionConfig['Origins']['Items'] = $this->Origins;
+        $this->distributionConfig['Origins']['Quantity'] = count($this->Origins);
         
         $this->distributionConfig['PriceClass'] = $this->PriceClass;
 
@@ -431,6 +422,9 @@ class CloudFront extends Client
             'MinimumProtocolVersion' => $this->ViewerCertificateMinimumProtocolVersion,
             'SSLSupportMethod' => $this->ViewerCertificateSSLSupportMethod,
         ];
+
+        $this->distributionConfig['Aliases']['Items'] = [];
+        $this->distributionConfig['Aliases']['Quantity'] = 0;
 
         // initialize DefaultCacheBehavior
         $this->distributionConfig['DefaultCacheBehavior'] = [];
