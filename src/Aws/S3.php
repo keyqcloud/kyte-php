@@ -46,27 +46,47 @@ class S3 extends Client
     }
 
     public function createWebsite($indexDoc = 'index.html', $errorDoc = 'error.html') {
-        $result = $this->client->putBucketWebsite([
-            'Bucket' => $this->bucket, // REQUIRED
-            'WebsiteConfiguration' => [ // REQUIRED
-                'ErrorDocument' => [
-                    'Key' => $errorDoc, // REQUIRED
+        try {
+            $result = $this->client->putBucketWebsite([
+                'Bucket' => $this->bucket, // REQUIRED
+                'WebsiteConfiguration' => [ // REQUIRED
+                    'ErrorDocument' => [
+                        'Key' => $errorDoc, // REQUIRED
+                    ],
+                    'IndexDocument' => [
+                        'Suffix' => $indexDoc, // REQUIRED
+                    ],
                 ],
-                'IndexDocument' => [
-                    'Suffix' => $indexDoc, // REQUIRED
-                ],
-            ],
-        ]);
+            ]);
+        } catch(\Exception $e) {
+            throw new \Exception("Unable to create website");
+            return false;
+        }
+
+        return true;
     }
 
     public function deleteWebsite() {
-        $result = $this->client->deleteBucketWebsite([
-            'Bucket' => $this->bucket, // REQUIRED
-        ]);
+        try {
+            $result = $this->client->deleteBucketWebsite([
+                'Bucket' => $this->bucket, // REQUIRED
+            ]);
+        } catch (\Exception $e) {
+            throw new \Exception("Unable to delete website");
+            return false;
+        }
+        
+        return true;
     }
 
     public function enablePublicAccess() {
-        $this->enablePolicy('{"Version": "2012-10-17", "Statement": [{ "Sid": "PublicReadForGetBucketObject","Effect": "Allow","Principal": "*", "Action": "s3:GetObject", "Resource": "arn:aws:s3:::'.$this->bucket.'/*" } ]}');
+        try {
+            $this->enablePolicy('{"Version": "2012-10-17", "Statement": [{ "Sid": "PublicReadForGetBucketObject","Effect": "Allow","Principal": "*", "Action": "s3:GetObject", "Resource": "arn:aws:s3:::'.$this->bucket.'/*" } ]}');
+        } catch (\Exception $e) {
+            throw new \Exception("Unable to apply public access policy");
+            return false;
+        }
+        return true;
     }
 
     public function enablePolicy($policy) {
@@ -77,9 +97,16 @@ class S3 extends Client
     }
 
     public function deletePolicy() {
-        $result = $this->client->deleteBucketPolicy([
-            'Bucket' => $this->bucket, // REQUIRED
-        ]);
+        try {
+            $result = $this->client->deleteBucketPolicy([
+                'Bucket' => $this->bucket, // REQUIRED
+            ]);
+        } catch(\Exception $e) {
+            throw new \Exception("Unable to delete bucket policy");
+            return false;
+        }
+        
+        return true;
     }
 
     public function enableCors($rules) {
