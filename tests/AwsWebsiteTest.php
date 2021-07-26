@@ -40,7 +40,7 @@ class AwsWebsiteTest extends TestCase
 
         // list object versions
         $result = $s3->listObjectVersions();
-        $this->assertIsArray($result);
+        $this->assertIsObject($result);
         $this->assertEquals('index.html', $result['DeleteMarkers'][0]['Key']);
         $this->assertEquals('index.html', $result['Versions'][0]['Key']);
 
