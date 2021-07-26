@@ -342,7 +342,7 @@ class CloudFront extends Client
         ];
         if ($s3origin) {
             $origin['S3OriginConfig'] = [
-                'OriginAccessIdentity' => $S3OriginAccessIdentity,
+                'OriginAccessIdentity' => '',
             ];
         }
 
