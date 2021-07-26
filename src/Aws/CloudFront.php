@@ -143,8 +143,8 @@ class CloudFront extends Client
             $this->distributionConfig = $result['Distribution']['DistributionConfig'];
 
             return true;
-        } catch (AwsException $e) {
-            throw new \Exception($e['message']);
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
             return false;
         }
     }
@@ -153,8 +153,8 @@ class CloudFront extends Client
         try {
             $result = $this->client->listDistributions([]);
             return $result;
-        } catch (AwsException $e) {
-            throw new \Exception($e->getAwsErrorMessage());
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
             return false;
         }
     }
@@ -171,8 +171,8 @@ class CloudFront extends Client
             ]);
 
             return true;
-        } catch (AwsException $e) {
-            throw new \Exception($e->getAwsErrorMessage());
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
             return false;
         }
     }
@@ -189,8 +189,8 @@ class CloudFront extends Client
             ]);
             
             return true;
-        } catch (AwsException $e) {
-            throw new \Exception($e->getAwsErrorMessage());
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
             return false;
         }
     }
@@ -238,8 +238,8 @@ class CloudFront extends Client
             ]);
             
             return true;
-        } catch (AwsException $e) {
-            throw new \Exception($e->getAwsErrorMessage());
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
             return false;
         }
     }
@@ -260,8 +260,8 @@ class CloudFront extends Client
             ]);
             
             return true;
-        } catch (AwsException $e) {
-            throw new \Exception($e->getAwsErrorMessage());
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
             return false;
         }
     }
@@ -278,8 +278,8 @@ class CloudFront extends Client
             $this->Arn = null;
 
             return $result;
-        } catch (AwsException $e) {
-            throw new \Exception('Error: ' . $e->getAwsErrorMessage());
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
             return false;
         }
 
@@ -302,8 +302,8 @@ class CloudFront extends Client
                 throw new \Exception("Unable to retrieve configuration for distribution $distributionId");
                 return false;
             }
-        } catch (AwsException $e) {
-            throw new \Exception($e['message']);
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
             return false;
         }
     }
