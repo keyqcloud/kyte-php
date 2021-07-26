@@ -37,7 +37,17 @@ class AwsWebsiteTest extends TestCase
 
         // test delete using deleteObject
         $this->assertTrue($s3->deleteObject('index.html'));
-        
+
+        // list object versions
+        $result = $s3->listObjectVersions();
+        $this->assertIsArray($result);
+        $this->assertEquals('index.html', $result['DeleteMarkers'][0]['Key']);
+        $this->assertEquals('index.html', $result['Versions'][0]['Key']);
+
+        // delete each version
+        $this->assertTrue($s3->deleteObject('index.html', $result['Versions'][0]['VersionId']));
+        $this->assertTrue($s3->deleteObject('index.html', $result['DeleteMarkers'][0]['VersionId']));
+
         // suspend versioning
         $this->assertTrue($s3->suspendVersioning());
 
