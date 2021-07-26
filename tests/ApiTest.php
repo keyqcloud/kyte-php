@@ -10,6 +10,10 @@ class APiTest extends TestCase
         // create new api
         $api = new \Kyte\Core\Api();
 
+        // create APIKey and Account tables
+        \Kyte\Core\DBI::createTable(APIKey);
+        \Kyte\Core\DBI::createTable(Account);
+
         // create test api key
         $model = new \Kyte\Core\ModelObject(APIKey);
         $model->create([
