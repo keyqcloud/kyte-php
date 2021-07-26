@@ -225,7 +225,7 @@ class CloudFront extends Client
         return true;
     }
 
-    public function setAliases($distributionId = null, $aliases, $acmArn) {
+    public function setAliases($aliases, $acmArn, $distributionId = null) {
         try {
             if (count($aliases) < 1) {
                 throw new \Exception("At least one aliase (CNAME) must be defined");
