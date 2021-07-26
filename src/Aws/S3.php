@@ -313,16 +313,23 @@ class S3 extends Client
     }
 
     // retrieve object using S3Client getObject() method
-    public function getObject($key, $expiration = '+60 minutes') {
+    public function getObject($key, $versionId = null, $expiration = '+60 minutes') {
         // check if bucket exists
         if (!$this->bucket) {
             throw new \Exception('bucket must be defined');
         }
 
-        $cmd = $this->client->getCommand('getObject', [
-            'Bucket'	=> $this->bucket,
-            'Key'		=> $key
-        ]);
+        $params = [
+            'Bucket' => $this->bucket,
+            'Key'    => $key
+        ];
+
+        if ($versionId) {
+            $params['VersionId'] = $versionId;
+        }
+        
+
+        $cmd = $this->client->getCommand('getObject', $params);
 
         $aws_req = $this->client->createPresignedRequest($cmd, $expiration);
 
@@ -352,17 +359,23 @@ class S3 extends Client
     }
 
     // delete object using S3Client deleteObject() method
-    public function deleteObject($key) {
+    public function deleteObject($key, $versionId = null) {
         try {
             // check if bucket exists
             if (!$this->bucket) {
                 throw new \Exception('bucket must be defined');
             }
 
-            $cmd = $this->client->deleteObject([
+            $params = [
                 'Bucket' => $this->bucket,
                 'Key'    => $key
-            ]);
+            ];
+
+            if ($versionId) {
+                $params['VersionId'] = $versionId;
+            }
+
+            $cmd = $this->client->deleteObject($params);
         } catch(\Exception $e) {
             throw new \Exception("Unable to delete object");
             return false;
