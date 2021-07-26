@@ -18,8 +18,12 @@ class AwsAcmTest extends TestCase
         $arn = $result['CertificateArn'];
         $this->assertIsString($arn);
 
+        // wait 5 secs
+        sleep(5);
+
         // get certificate details
         $certificate = $acm->describe();
+        $this->assertIsObject($certificate);
         $this->assertEquals('www.perryhough.com', $certificate['Certificate']['DomainName']);
 
         // list acm certs
