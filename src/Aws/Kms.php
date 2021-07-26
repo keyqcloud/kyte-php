@@ -6,7 +6,7 @@ use Aws\Kms\KmsClient;
 
 class Kms extends Client
 {
-    public function __construct($credentials, $kmsKeyId) {
+    public function __construct($credentials, $kmsKeyId = null) {
         $this->credentials = $credentials;
         $this->Id = $kmsKeyId;
         $this->client = new KmsClient([
@@ -16,7 +16,43 @@ class Kms extends Client
         ]);
     }
 
+    public function createKey() {
+        try {
+            $result = $this->client->createKey();
+
+            $this->Id = $result['KeyMetadata']['KeyId'];
+        } catch (\Exception $e) {
+            throw new \Exception("Error creating new KMS key");
+            return false;
+        }
+
+        return true;
+    }
+
+    public function scheduleDelete($days= 7) {
+        if (!$this->Id) {
+            throw new \Exception("No KMS Key ID specified");
+            return false;
+        }
+
+        try {
+            $result = $this->client->scheduleKeyDeletion([
+                'KeyId' => $this->Id,
+                'PendingWindowInDays'   => $days,
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            throw new \Exception("Error creating new KMS key");
+            return false;
+        }
+    }
+
     public function encrypt($data) {
+        if (!$this->Id) {
+            throw new \Exception("No KMS Key ID specified");
+            return false;
+        }
         if (is_array($data)) {
             $data = json_encode($data);
         }
