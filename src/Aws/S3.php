@@ -305,34 +305,44 @@ class S3 extends Client
 
     // upload object using S3Client putObject() method
     public function putObject($key, $filepath) {
-        // check if bucket exists
-        if (!$this->bucket) {
-            throw new \Exception('bucket must be defined');
+        try {
+            // check if bucket exists
+            if (!$this->bucket) {
+                throw new \Exception('bucket must be defined');
+            }
+
+            $cmd = $this->client->putObject([
+                'Bucket'	=> $this->bucket,
+                'Key'		=> $key,
+                'Body'		=> fopen($filepath, 'rb'),
+                'ACL'		=> $this->acl
+            ]);
+        } catch(\Exception $e) {
+            throw new \Exception("Unable to upload object");
+            return false;
         }
 
-        $cmd = $this->client->putObject([
-            'Bucket'	=> $this->bucket,
-            'Key'		=> $key,
-            'Body'		=> fopen($filepath, 'rb'),
-            'ACL'		=> $this->acl
-        ]);
-
-        return;
+        return true;
     }
 
     // delete object using S3Client deleteObject() method
     public function deleteObject($key) {
-        // check if bucket exists
-        if (!$this->bucket) {
-            throw new \Exception('bucket must be defined');
+        try {
+            // check if bucket exists
+            if (!$this->bucket) {
+                throw new \Exception('bucket must be defined');
+            }
+
+            $cmd = $this->client->deleteObject([
+                'Bucket' => $this->bucket,
+                'Key'    => $key
+            ]);
+        } catch(\Exception $e) {
+            throw new \Exception("Unable to delete object");
+            return false;
         }
-
-        $cmd = $this->client->deleteObject([
-            'Bucket' => $this->bucket,
-            'Key'    => $key
-        ]);
-
-        return;
+        
+        return true;
     }
 
     // return a signature that can be used with ajax upload directly to S3

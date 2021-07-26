@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 
 class AwsS3Test extends TestCase
 {
-    public function testCreateBucket() {
+    public function testBucketFunctions() {
         $credential = new \Kyte\Aws\Credentials('us-east-1');
         $this->assertIsObject($credential);
 
@@ -13,91 +13,33 @@ class AwsS3Test extends TestCase
         $s3 = new \Kyte\Aws\S3($credential, AWS_PRIVATE_BUCKET_NAME);
         $this->assertIsObject($s3);
 
+        // test create private bucket
         $this->assertTrue($s3->createBucket());
 
-        return $s3;
-    }
-
-    // add file
-    public function testWriteFile() {
-        $credential = new \Kyte\Aws\Credentials('us-east-1');
-        $this->assertIsObject($credential);
-        
-        // create s3 client for private bucket
-        $s3 = new \Kyte\Aws\S3($credential, AWS_PRIVATE_BUCKET_NAME);
-        $this->assertIsObject($s3);
-
+        // test write file
         $this->assertTrue($s3->write('Test', 'Hello'));
-    }
 
-    // check if file exists
-    public function testFileExists() {
-        $credential = new \Kyte\Aws\Credentials('us-east-1');
-        $this->assertIsObject($credential);
-        
-        // create s3 client for private bucket
-        $s3 = new \Kyte\Aws\S3($credential, AWS_PRIVATE_BUCKET_NAME);
-        $this->assertIsObject($s3);
-
+        // test file exists
         $this->assertTrue($s3->fileExists('Test'));
-    }
 
-    // test if it is file
-    public function testIsFile() {
-        $credential = new \Kyte\Aws\Credentials('us-east-1');
-        $this->assertIsObject($credential);
-        
-        // create s3 client for private bucket
-        $s3 = new \Kyte\Aws\S3($credential, AWS_PRIVATE_BUCKET_NAME);
-        $this->assertIsObject($s3);
-
+        // test is file
         $this->assertTrue($s3->isFile('Test'));
-    }
 
-    // append
-    public function testAppendsFile() {
-        $credential = new \Kyte\Aws\Credentials('us-east-1');
-        $this->assertIsObject($credential);
-        
-        // create s3 client for private bucket
-        $s3 = new \Kyte\Aws\S3($credential, AWS_PRIVATE_BUCKET_NAME);
-        $this->assertIsObject($s3);
-
+        // test append
         $this->assertTrue($s3->append('Test', ' World'));
-    }
-
-    // rename file
-    public function testRenameFile() {
-        $credential = new \Kyte\Aws\Credentials('us-east-1');
-        $this->assertIsObject($credential);
-        
-        // create s3 client for private bucket
-        $s3 = new \Kyte\Aws\S3($credential, AWS_PRIVATE_BUCKET_NAME);
-        $this->assertIsObject($s3);
-
+    
+        // test rename
         $this->assertTrue($s3->rename('Test', 'HelloWorld'));
-    }
+    
+        // test get
+        $url = $s3->getObject('HelloWorld');
+        $content = file_get_contents($url);
+        $this->assertEquals('Hello World', $content);
 
-    // remove file
-    public function testDeleteFile() {
-        $credential = new \Kyte\Aws\Credentials('us-east-1');
-        $this->assertIsObject($credential);
-        
-        // create s3 client for private bucket
-        $s3 = new \Kyte\Aws\S3($credential, AWS_PRIVATE_BUCKET_NAME);
-        $this->assertIsObject($s3);
-
+        // test delete using stream wrapper
         $this->assertTrue($s3->unlink('HelloWorld'));
-    }
-
-    public function testDeleteBucket() {
-        $credential = new \Kyte\Aws\Credentials('us-east-1');
-        $this->assertIsObject($credential);
-        
-        // create s3 client for private bucket
-        $s3 = new \Kyte\Aws\S3($credential, AWS_PRIVATE_BUCKET_NAME);
-        $this->assertIsObject($s3);
-
+    
+        // test delete bucket
         $this->assertTrue($s3->deleteBucket());
     }
 
