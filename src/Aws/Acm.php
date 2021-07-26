@@ -64,7 +64,7 @@ class Acm extends Client
             'CertificateArn' => $arn, // REQUIRED
         ]);
 
-        $this->$Arn = null;
+        $this->Arn = null;
 
         return true;
     }
