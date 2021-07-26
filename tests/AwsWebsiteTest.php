@@ -35,6 +35,9 @@ class AwsWebsiteTest extends TestCase
         $content = file_get_contents($testUrl);
         $this->assertEquals($html, $content);
 
+        // test delete using deleteObject
+        $this->assertTrue($s3->deleteObject('index.html'));
+        
         // suspend versioning
         $this->assertTrue($s3->suspendVersioning());
 
