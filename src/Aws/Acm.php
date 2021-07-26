@@ -60,7 +60,7 @@ class Acm extends Client
     public function delete($arn = null) {
         $arn = $this->Arn ? $this->Arn : $arn;
 
-        $result = $client->deleteCertificate([
+        $result = $this->client->deleteCertificate([
             'CertificateArn' => $arn, // REQUIRED
         ]);
 
