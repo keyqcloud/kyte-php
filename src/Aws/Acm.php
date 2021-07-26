@@ -38,21 +38,25 @@ class Acm extends Client
     }
 
     public function describe($arn = null) {
-        $arn = $this->Arn ? $this->Arn : $arn;
+        try {
+            $arn = $this->Arn ? $this->Arn : $arn;
 
-        $result = $this->client->describeCertificate([
-            'CertificateArn' => $arn, // REQUIRED
-        ]);
+            $result = $this->client->describeCertificate([
+                'CertificateArn' => $arn, // REQUIRED
+            ]);
 
-        // CNAME records required
-        // 'DomainValidationOptions' => [
-        //     [
-        //         'DomainName' => '<string>',
-        //         'ResourceRecord' => [
-        //             'Name' => '<string>',
-        //             'Type' => 'CNAME',
-        //             'Value' => '<string>',
-        //     ],
+            // CNAME records required
+            // 'DomainValidationOptions' => [
+            //     [
+            //         'DomainName' => '<string>',
+            //         'ResourceRecord' => [
+            //             'Name' => '<string>',
+            //             'Type' => 'CNAME',
+            //             'Value' => '<string>',
+            //     ],
+        } catch(\Exception $e) {
+            throw new \Exception("Unable to obtain certificate details");
+        }
 
         return $result;
     }
