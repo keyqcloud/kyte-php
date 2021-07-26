@@ -75,12 +75,62 @@ class CloudFront extends Client
         ]);
 
         // set default values
+        $this->CallerReference = 'kyte'.time();
+        $this->Aliases = [];
+        $this->DefaultRootObject = '';
+        $this->Origins = [];
+        $this->OriginGroups = [];
+        // public $CacheBehaviors;
+        $this->CustomErrorResponses;                   // [ 'ErrorCachingMinTTL' => <integer>, 'ErrorCode' => <integer>, 'ResponseCode' => '<string>', 'ResponsePagePath' => '<string>', ]
+        $this->Comment = 'Created by Kyte on '.time();
+        $this->LoggingBucket = '';
+        $this->LoggingEnabled = false;
+        $this->LoggingIncludeCookie = false;
+        $this->LoggingPrefix = '';
+        $this->PriceClass = "PriceClass_All";
+        $this->Enabled = true;
+        $this->ViewerCertificateACMCertificateArn = '';
+        $this->ViewerCertificateCloudFrontDefaultCertificate = true;  // boolean
+        $this->ViewerCertificateIAMCertificateId = '';
+        $this->ViewerCertificateMinimumProtocolVersion = 'TLSv1';        // 'SSLv3|TLSv1|TLSv1_2016|TLSv1.1_2016|TLSv1.2_2018|TLSv1.2_2019'
+        $this->ViewerCertificateSSLSupportMethod = 'sni-only';      // 'sni-only|vip|static-ip's
+        $this->GeoRestriction = [];
+        $this->GeoRestrictionRestrictionType = "none";
+        $this->WebACLId = '';
+        $this->HttpVersion = "http2";
+        $this->IsIPV6Enabled = true;
+        // ** DefaultCacheBehavior
+        $this->PathPattern = '';
+        $this->TargetOriginId = '';
+        // $this->ForwardedValuesCookies;                 // 'none|whitelist|all'
+        // $this->ForwardedValuesCookiesWhitelistedNames; // ['<string>', ...]
+        // $this->ForwardedValuesHeaders;                 // ['<string>', ...]
+        // $this->ForwardedValuesQueryString;             // boolean
+        // $this->ForwardedValuesQueryStringCacheKeys;    // ['<string>', ...]
+        $this->TrustedSignersEnabled;                  // boolean
+        $this->TrustedSigners;                         // ['<string>', ...]
+        // $this->MinTTL = 1;
+        $this->AllowedMethods = ['GET', 'HEAD'];
+        $this->AllowedCachedMethods = ['GET', 'HEAD'];
+        $this->SmoothStreaming = false;
+        // $this->DefaultTTL = 86400;
+        // $this->MaxTTL = 315360000;
+        $this->Compress = true;
+        // $this->FunctionAssociations;                   // [ 'EventType' => 'viewer-request|viewer-response|origin-request|origin-response', 'FunctionARN' => '<string>', ]
+        // $this->LambdaFunctionAssociations;             // [ 'EventType' => 'viewer-request|viewer-response|origin-request|origin-response', 'IncludeBody' => true || false, 'LambdaFunctionARN' => '<string>', ]
+        $this->FieldLevelEncryptionId = '';
+        $this->CachePolicyId;                          // string
+        $this->OriginRequestPolicyId;                  // '<string>'
+        $this->RealtimeLogConfigArn;                   // '<string>'
+        $this->TrustedKeyGroupsEnabled;                // boolean
+        $this->TrustedKeyGroups;                       // ['<string>', ...]
+        $this->ViewerProtocolPolicy = 'redirect-to-https';
     }
 
     public function create() {
         try {
             // generate CF config
-            $this->distributionConfig = $this->generateNewConfiguration();
+            $this->generateNewConfiguration();
             $result = $this->client->createDistribution([
                 $this->distributionConfig
             ]);
@@ -154,18 +204,25 @@ class CloudFront extends Client
     /** consider using Async methods */
     // https://stackoverflow.com/questions/49127996/unable-to-cloudfront-create-invalidation-aws-php-sdk-3-x
     public function createInvalidation($distributionId = null, $paths = ['/*']) {
-        $distributionId = $this->Id ? $this->Id : $distributionId;
+        try {
+            $distributionId = $this->Id ? $this->Id : $distributionId;
 
-        $result = $this->client->createInvalidation([
-            'DistributionId'    => $distributionId,
-            'InvalidationBatch' => [
-                'CallerReference'   => time().$distributionId,
-                'Paths'             => [
-                    'Items'     => $paths,
-                    'Quantity'  => count($paths),
+            $result = $this->client->createInvalidation([
+                'DistributionId'    => $distributionId,
+                'InvalidationBatch' => [
+                    'CallerReference'   => time().$distributionId,
+                    'Paths'             => [
+                        'Items'     => $paths,
+                        'Quantity'  => count($paths),
+                    ],
                 ],
-            ],
-        ]);
+            ]);
+        } catch(\Exception $e) {
+            throw new \Exception("Unable to create new invalidation");
+            return false;
+        }
+
+        return true;
     }
 
     public function setAliases($distributionId = null, $aliases, $acmArn) {
@@ -225,8 +282,11 @@ class CloudFront extends Client
 
             return $result;
         } catch (AwsException $e) {
-            return 'Error: ' . $e->getAwsErrorMessage();
+            throw new \Exception('Error: ' . $e->getAwsErrorMessage());
+            return false;
         }
+
+        return true;
     }
 
     public function getConfiguration($distributionId = null) {
@@ -240,43 +300,50 @@ class CloudFront extends Client
         }
     }
 
+    public function getDomainName() {
+        $this->getConfiguration();
+
+        return $this->distributionConfig['Distribution']['DistributionConfig']['DomainName'];
+    }
+
     public function addOrigin(
-        $ConnectionAttempts,            // integer
-        $ConnectionTimeout,             // integer
-        $CustomHeaders,                 // [ 'HeaderName' => '<string>', 'HeaderValue' => '<string>' ]
-        $HTTPPort,                      // integer
-        $HTTPSPort,                     // integer
-        $OriginKeepaliveTimeout,        // integer
-        $OriginProtocolPolicy,          // 'http-only|match-viewer|https-only'
-        $OriginReadTimeout,             // integer
-        $OriginSslProtocols,            // ['<string>', ...]
-        $DomainName,                    // '<string>'
-        $Id,                            // '<string>'
-        $OriginPath,                    // '<string>'
-        $OriginShieldEnabled,           // boolean
-        $OriginShieldRegion,            // '<string>'
-        $S3OriginAccessIdentity         // '<string>'
+        // $ConnectionAttempts,            // integer
+        // $ConnectionTimeout,             // integer
+        // $CustomHeaders,                 // [ 'HeaderName' => '<string>', 'HeaderValue' => '<string>' ]
+        // $HTTPPort,                      // integer
+        // $HTTPSPort,                     // integer
+        // $OriginKeepaliveTimeout,        // integer
+        // $OriginProtocolPolicy,          // 'http-only|match-viewer|https-only'
+        // $OriginReadTimeout,             // integer
+        // $OriginSslProtocols,            // ['<string>', ...]
+        $DomainName,
+        $Id,
+        $OriginPath = '',
+        $OriginShieldEnabled = true,
+        $OriginShieldRegion = 'us-east-1'//,
+        // $S3OriginAccessIdentity         // '<string>'
         ) {
+        $this->TargetOriginId = $Id;
         $this->Origins[] = [
-            'ConnectionAttempts' => $ConnectionAttempts, 
-            'ConnectionTimeout' => $ConnectionTimeout, 
-            'CustomHeaders' => [
-                'Items' => [
-                    $CustomHeaders,
-                ],
-                'Quantity' => count($CustomHeaders), // REQUIRED
-            ],
-            'CustomOriginConfig' => [
-                'HTTPPort' => $HTTPPort, // REQUIRED
-                'HTTPSPort' => $HTTPSPort, // REQUIRED
-                'OriginKeepaliveTimeout' => $OriginKeepaliveTimeout,
-                'OriginProtocolPolicy' => $OriginProtocolPolicy, // REQUIRED
-                'OriginReadTimeout' => $OriginReadTimeout,
-                'OriginSslProtocols' => [
-                    'Items' => $OriginSslProtocols, // REQUIRED
-                    'Quantity' => count($OriginSslProtocols), // REQUIRED
-                ],
-            ],
+            // 'ConnectionAttempts' => $ConnectionAttempts, 
+            // 'ConnectionTimeout' => $ConnectionTimeout, 
+            // 'CustomHeaders' => [
+            //     'Items' => [
+            //         $CustomHeaders,
+            //     ],
+            //     'Quantity' => count($CustomHeaders), // REQUIRED
+            // ],
+            // 'CustomOriginConfig' => [
+            //     'HTTPPort' => $HTTPPort, // REQUIRED
+            //     'HTTPSPort' => $HTTPSPort, // REQUIRED
+            //     'OriginKeepaliveTimeout' => $OriginKeepaliveTimeout,
+            //     'OriginProtocolPolicy' => $OriginProtocolPolicy, // REQUIRED
+            //     'OriginReadTimeout' => $OriginReadTimeout,
+            //     'OriginSslProtocols' => [
+            //         'Items' => $OriginSslProtocols, // REQUIRED
+            //         'Quantity' => count($OriginSslProtocols), // REQUIRED
+            //     ],
+            // ],
             'DomainName' => $DomainName, // REQUIRED
             'Id' => $Id, // REQUIRED
             'OriginPath' => $OriginPath,
@@ -284,167 +351,182 @@ class CloudFront extends Client
                 'Enabled' => $OriginShieldEnabled, // REQUIRED
                 'OriginShieldRegion' => $OriginShieldRegion,
             ],
-            'S3OriginConfig' => [
-                'OriginAccessIdentity' => $S3OriginAccessIdentity, // REQUIRED
-            ],
+            // 'S3OriginConfig' => [
+            //     'OriginAccessIdentity' => $S3OriginAccessIdentity, // REQUIRED
+            // ],
         ];
     }
 
-    public function clearOrigins() {
-        $this->Origins = [];
-    }
+    // public function clearOrigins() {
+    //     $this->Origins = [];
+    // }
 
-    public function addOriginGroup(
-        $FailoverCriteriaStatusCodes,
-        $Id,                    // '<string>'
-        $Members                // [ 'OriginId' => '<string>' ]
-    ) {
-        $this->OriginGroups[] = [
-            'FailoverCriteria' => [ // REQUIRED
-                'StatusCodes' => [ // REQUIRED
-                    'Items' => $FailoverCriteriaStatusCodes, // REQUIRED
-                    'Quantity' => count($FailoverCriteriaStatusCodes), // REQUIRED
-                ],
-            ],
-            'Id' => $Id, // REQUIRED
-            'Members' => [ // REQUIRED
-                'Items' => [ // REQUIRED
-                    $Members
-                ],
-                'Quantity' => count($Members), // REQUIRED
-            ],
-        ];
-    }
+    // public function addOriginGroup(
+    //     $FailoverCriteriaStatusCodes,
+    //     $Id,                    // '<string>'
+    //     $Members                // [ 'OriginId' => '<string>' ]
+    // ) {
+    //     $this->OriginGroups[] = [
+    //         'FailoverCriteria' => [ // REQUIRED
+    //             'StatusCodes' => [ // REQUIRED
+    //                 'Items' => $FailoverCriteriaStatusCodes, // REQUIRED
+    //                 'Quantity' => count($FailoverCriteriaStatusCodes), // REQUIRED
+    //             ],
+    //         ],
+    //         'Id' => $Id, // REQUIRED
+    //         'Members' => [ // REQUIRED
+    //             'Items' => [ // REQUIRED
+    //                 $Members
+    //             ],
+    //             'Quantity' => count($Members), // REQUIRED
+    //         ],
+    //     ];
+    // }
 
-    public function clearOriginGroups() {
-        $this->OriginGroups = [];
-    }
+    // public function clearOriginGroups() {
+    //     $this->OriginGroups = [];
+    // }
 
     // https://docs.aws.amazon.com/aws-sdk-php/v3/api/api-cloudfront-2020-05-31.html#createdistribution
     //
-    // OriginGroup and CacheBehavior has been omitted
+    // OriginGroup and CacheBehavior have been omitted
     private function generateNewConfiguration() {
         if (count($this->Origins) < 1) {
             throw new \Exception("At least one origin must be specified");
         }
 
-        return [
-            'DistributionConfig' => [ // REQUIRED
-                'Aliases' => [
-                    'Items' => $this->Aliases,
-                    'Quantity' => count($this->Aliases), // REQUIRED
-                ],
-                'CallerReference' => $this->CallerReference, // REQUIRED
-                'Comment' => $this->Comment, // REQUIRED
-                'CustomErrorResponses' => [
-                    'Items' => [
-                        $this->CustomErrorResponses
-                    ],
-                    'Quantity' => count($this->CustomErrorResponses), // REQUIRED
-                ],
-                'DefaultCacheBehavior' => [ // REQUIRED
-                    'AllowedMethods' => [
-                        'CachedMethods' => [
-                            'Items' => $this->AllowedCachedMethods, // REQUIRED
-                            'Quantity' => count($this->AllowedCachedMethods), // REQUIRED
-                        ],
-                        'Items' => $this->AllowedMethods, // REQUIRED
-                        'Quantity' => count($this->AllowedMethods), // REQUIRED
-                    ],
-                    'CachePolicyId' => $this->CachePolicyId,
-                    'Compress' => $this->Compress,
-                    'DefaultTTL' => $this->DefaultTTL,
-                    'FieldLevelEncryptionId' => $this->FieldLevelEncryptionId,
-                    'ForwardedValues' => [
-                        'Cookies' => [ // REQUIRED
-                            'Forward' => $this->ForwardedValuesCookies, // REQUIRED
-                            'WhitelistedNames' => [
-                                'Items' => $this->ForwardedValuesCookiesWhitelistedNames,
-                                'Quantity' => count($this->ForwardedValuesCookiesWhitelistedNames), // REQUIRED
-                            ],
-                        ],
-                        'Headers' => [
-                            'Items' => $this->ForwardedValuesHeaders,
-                            'Quantity' => count($this->ForwardedValuesHeaders), // REQUIRED
-                        ],
-                        'QueryString' => $this->ForwardedValuesQueryString, // REQUIRED
-                        'QueryStringCacheKeys' => [
-                            'Items' => $this->ForwardedValuesQueryStringCacheKeys,
-                            'Quantity' => count($this->ForwardedValuesQueryStringCacheKeys), // REQUIRED
-                        ],
-                    ],
-                    'FunctionAssociations' => [
-                        'Items' => [
-                            $this->FunctionAssociations
-                        ],
-                        'Quantity' => count($this->FunctionAssociations), // REQUIRED
-                    ],
-                    'LambdaFunctionAssociations' => [
-                        'Items' => [
-                            $this->LambdaFunctionAssociations
-                        ],
-                        'Quantity' => count($this->LambdaFunctionAssociations), // REQUIRED
-                    ],
-                    'MaxTTL' => $this->MaxTTL,
-                    'MinTTL' => $this->MinTTL,
-                    'OriginRequestPolicyId' => $this->OriginRequestPolicyId,
-                    'RealtimeLogConfigArn' => $this->RealtimeLogConfigArn,
-                    'SmoothStreaming' => $this->SmoothStreaming,
-                    'TargetOriginId' => $this->TargetOriginId, // REQUIRED
-                    'TrustedKeyGroups' => [
-                        'Enabled' => $this->TrustedKeyGroupsEnabled, // REQUIRED
-                        'Items' => $this->TrustedKeyGroups,
-                        'Quantity' => count($this->TrustedKeyGroups), // REQUIRED
-                    ],
-                    'TrustedSigners' => [
-                        'Enabled' => $this->TrustedSignersEnabled, // REQUIRED
-                        'Items' => $this->TrustedSigners,
-                        'Quantity' => count($this->TrustedSigners), // REQUIRED
-                    ],
-                    'ViewerProtocolPolicy' => $this->ViewerProtocolPolicy, // REQUIRED
-                ],
-                'DefaultRootObject' => $this->DefaultRootObject,
-                'Enabled' => $this->Enabled, // REQUIRED
-                'HttpVersion' => $this->HttpVersion,
-                'IsIPV6Enabled' => $this->IsIPV6Enabled,
-                'Logging' => [
-                    'Bucket' => $this->LoggingBucket, // REQUIRED
-                    'Enabled' => $this->LoggingEnabled, // REQUIRED
-                    'IncludeCookies' => $this->LoggingIncludeCookie, // REQUIRED
-                    'Prefix' => $this->LoggingPrefix, // REQUIRED
-                ],
-                'OriginGroups' => [
-                    'Items' => [
-                        $this->OriginGroups
-                    ],
-                    'Quantity' => count($this->OriginGroups), // REQUIRED
-                ],
-                'Origins' => [ // REQUIRED
-                    'Items' => [ // REQUIRED
-                        $this->Origins
-                    ],
-                    'Quantity' => count($this->Origins), // REQUIRED
-                ],
-                'PriceClass' => $this->PriceClass,
-                'Restrictions' => [
-                    'GeoRestriction' => [ // REQUIRED
-                        'Items' => $this->GeoRestriction,
-                        'Quantity' => count($this->GeoRestriction), // REQUIRED
-                        'RestrictionType' => $this->GeoRestrictionRestrictionType, // REQUIRED
-                    ],
-                ],
-                'ViewerCertificate' => [
-                    'ACMCertificateArn' => $this->ViewerCertificateACMCertificateArn,
-                    'Certificate' => $this->ViewerCertificate,
-                    'CertificateSource' => $this->ViewerCertificateSource,
-                    'CloudFrontDefaultCertificate' => $this->ViewerCertificateCloudFrontDefaultCertificate,
-                    'IAMCertificateId' => $this->ViewerCertificateIAMCertificateId,
-                    'MinimumProtocolVersion' => $this->ViewerCertificateMinimumProtocolVersion,
-                    'SSLSupportMethod' => $this->ViewerCertificateSSLSupportMethod,
-                ],
-                'WebACLId' => $this->WebACLId,
-            ],
+        // initialize array
+        $this->distributionConfig = [];
+        $this->distributionConfig['DistributionConfig'] = [];
+
+        // Aliases
+        $this->distributionConfig['DistributionConfig']['Aliases'] = count($this->Aliases) == 0 ? [] : [
+            'Items' => $this->Aliases,
+            'Quantity' => count($this->Aliases), // REQUIRED
         ];
+
+        $this->distributionConfig['DistributionConfig']['CallerReference'] = $this->CallerReference;
+        $this->distributionConfig['DistributionConfig']['Comment'] = $this->Comment;
+        
+        $this->distributionConfig['DistributionConfig']['Enabled'] = $this->Enabled;
+        $this->distributionConfig['DistributionConfig']['HttpVersion'] = $this->HttpVersion;
+        $this->distributionConfig['DistributionConfig']['IsIPV6Enabled'] = $this->IsIPV6Enabled;
+
+        $this->distributionConfig['DistributionConfig']['Origins'] = [
+            'Items' => [
+                $this->Origins
+            ],
+            'Quantity' => count($this->Origins),
+        ];
+        
+        $this->distributionConfig['DistributionConfig']['PriceClass'] = $this->PriceClass;
+
+        $this->distributionConfig['DistributionConfig']['DefaultRootObject'] = $this->DefaultRootObject;
+
+        $this->distributionConfig['DistributionConfig']['ViewerCertificate'] = [
+            'ACMCertificateArn' => $this->ViewerCertificateACMCertificateArn,
+            'CloudFrontDefaultCertificate' => $this->ViewerCertificateCloudFrontDefaultCertificate,
+            'IAMCertificateId' => $this->ViewerCertificateIAMCertificateId,
+            'MinimumProtocolVersion' => $this->ViewerCertificateMinimumProtocolVersion,
+            'SSLSupportMethod' => $this->ViewerCertificateSSLSupportMethod,
+        ];
+
+        // initialize DefaultCacheBehavior
+        $this->distributionConfig['DistributionConfig']['DefaultCacheBehavior'] = [];
+        $this->distributionConfig['DistributionConfig']['DefaultCacheBehavior']['AllowedMethods'] = [
+            'CachedMethods' => [
+                'Items' => $this->AllowedCachedMethods,
+                'Quantity' => count($this->AllowedCachedMethods),
+            ],
+            'Items' => $this->AllowedMethods,
+            'Quantity' => count($this->AllowedMethods),
+        ];
+        $this->distributionConfig['DistributionConfig']['DefaultCacheBehavior']['Compress'] = $this->Compress;
+        $this->distributionConfig['DistributionConfig']['DefaultCacheBehavior']['TargetOriginId'] = $this->TargetOriginId;
+        $this->distributionConfig['DistributionConfig']['DefaultCacheBehavior']['ViewerProtocolPolicy'] = $this->ViewerProtocolPolicy;
+        
+        // Unused configs below....
+            // 'DistributionConfig' => [ // REQUIRED
+                
+                // 'CustomErrorResponses' => [
+                //     'Items' => [
+                //         $this->CustomErrorResponses
+                //     ],
+                //     'Quantity' => count($this->CustomErrorResponses), // REQUIRED
+                // ],
+
+                // 'DefaultCacheBehavior' => [ // REQUIRED
+                    // 'CachePolicyId' => $this->CachePolicyId,
+                    // 'DefaultTTL' => $this->DefaultTTL,
+                    // 'FieldLevelEncryptionId' => $this->FieldLevelEncryptionId,
+                    // 'ForwardedValues' => [
+                    //     'Cookies' => [ // REQUIRED
+                    //         'Forward' => $this->ForwardedValuesCookies, // REQUIRED
+                    //         'WhitelistedNames' => [
+                    //             'Items' => $this->ForwardedValuesCookiesWhitelistedNames,
+                    //             'Quantity' => count($this->ForwardedValuesCookiesWhitelistedNames), // REQUIRED
+                    //         ],
+                    //     ],
+                    //     'Headers' => [
+                    //         'Items' => $this->ForwardedValuesHeaders,
+                    //         'Quantity' => count($this->ForwardedValuesHeaders), // REQUIRED
+                    //     ],
+                    //     'QueryString' => $this->ForwardedValuesQueryString, // REQUIRED
+                    //     'QueryStringCacheKeys' => [
+                    //         'Items' => $this->ForwardedValuesQueryStringCacheKeys,
+                    //         'Quantity' => count($this->ForwardedValuesQueryStringCacheKeys), // REQUIRED
+                    //     ],
+                    // ],
+                    // 'FunctionAssociations' => [
+                    //     'Items' => [
+                    //         $this->FunctionAssociations
+                    //     ],
+                    //     'Quantity' => count($this->FunctionAssociations), // REQUIRED
+                    // ],
+                    // 'LambdaFunctionAssociations' => [
+                    //     'Items' => [
+                    //         $this->LambdaFunctionAssociations
+                    //     ],
+                    //     'Quantity' => count($this->LambdaFunctionAssociations), // REQUIRED
+                    // ],
+                    // 'MaxTTL' => $this->MaxTTL,
+                    // 'MinTTL' => $this->MinTTL,
+                    // 'OriginRequestPolicyId' => $this->OriginRequestPolicyId,
+                    // 'RealtimeLogConfigArn' => $this->RealtimeLogConfigArn,
+                    // 'SmoothStreaming' => $this->SmoothStreaming,
+                    // 'TrustedKeyGroups' => [
+                    //     'Enabled' => $this->TrustedKeyGroupsEnabled, // REQUIRED
+                    //     'Items' => $this->TrustedKeyGroups,
+                    //     'Quantity' => count($this->TrustedKeyGroups), // REQUIRED
+                    // ],
+                    // 'TrustedSigners' => [
+                    //     'Enabled' => $this->TrustedSignersEnabled, // REQUIRED
+                    //     'Items' => $this->TrustedSigners,
+                    //     'Quantity' => count($this->TrustedSigners), // REQUIRED
+                    // ],
+                // ],                
+                // 'Logging' => [
+                //     'Bucket' => $this->LoggingBucket, // REQUIRED
+                //     'Enabled' => $this->LoggingEnabled, // REQUIRED
+                //     'IncludeCookies' => $this->LoggingIncludeCookie, // REQUIRED
+                //     'Prefix' => $this->LoggingPrefix, // REQUIRED
+                // ],
+                // 'OriginGroups' => [
+                //     'Items' => [
+                //         $this->OriginGroups
+                //     ],
+                //     'Quantity' => count($this->OriginGroups), // REQUIRED
+                // ],
+                // 'Restrictions' => [
+                //     'GeoRestriction' => [ // REQUIRED
+                //         'Items' => $this->GeoRestriction,
+                //         'Quantity' => count($this->GeoRestriction), // REQUIRED
+                //         'RestrictionType' => $this->GeoRestrictionRestrictionType, // REQUIRED
+                //     ],
+                // ],
+        //         'WebACLId' => $this->WebACLId,
+        //     ],
+        // ];
     }
 }
 ?>
