@@ -9,66 +9,25 @@ class AwsAcmTest extends TestCase
         $credential = new \Kyte\Aws\Credentials('us-east-1');
         $this->assertIsObject($credential);
 
-        // create s3 client for private bucket
+        // create acm client
         $acm = new \Kyte\Aws\Acm($credential);
         $this->assertIsObject($acm);
 
+        // test request certificate
         $result = $acm->request('www.perryhough.com', ['www.perryhough.com']);
         $arn = $result['CertificateArn'];
         $this->assertIsString($arn);
 
-        return $arn;
-    }
-
-    /**
-     * @depends testRequestCertificate
-     */
-    public function testDescribeCertificate($arn) {
-        $credential = new \Kyte\Aws\Credentials('us-east-1');
-        $this->assertIsObject($credential);
-
-        // create s3 client for private bucket
-        $acm = new \Kyte\Aws\Acm($credential, $arn);
-        $this->assertIsObject($acm);
-
+        // get certificate details
         $certificate = $acm->describe();
-
         $this->assertEquals('www.perryhough.com', $certificate['Certificate']['DomainName']);
 
-        return $arn;
-    }
-
-    /**
-     * @depends testDescribeCertificate
-     */
-    public function testListCertificate($arn) {
-        $credential = new \Kyte\Aws\Credentials('us-east-1');
-        $this->assertIsObject($credential);
-
-        // create s3 client for private bucket
-        $acm = new \Kyte\Aws\Acm($credential, $arn);
-        $this->assertIsObject($acm);
-
+        // list acm certs
         $certificates = $acm->list();
-
         $this->assertCount(1, $certificates['CertificateSummaryList']);
-
         $this->assertEquals('www.perryhough.com', $certificates['CertificateSummaryList'][0]['DomainName']);
 
-        return $arn;
-    }
-
-    /**
-     * @depends testListCertificate
-     */
-    public function testDeleteCertificate($arn) {
-        $credential = new \Kyte\Aws\Credentials('us-east-1');
-        $this->assertIsObject($credential);
-
-        // create s3 client for private bucket
-        $acm = new \Kyte\Aws\Acm($credential, $arn);
-        $this->assertIsObject($acm);
-
+        // test delete certificate
         $this->assertTrue($acm->delete());
     }
 }
