@@ -197,16 +197,16 @@ class S3 extends Client
     // }
 
     // use S3 stream wrapper to return list of files in directory
-    public function list($key) {
-        // check if bucket exists
-        if (!$this->bucket) {
-            throw new \Exception('bucket must be defined');
-        }
+    // public function list($key) {
+    //     // check if bucket exists
+    //     if (!$this->bucket) {
+    //         throw new \Exception('bucket must be defined');
+    //     }
 
-        $iter = Aws\recursive_dir_iterator('s3://'.$this->bucket.'/'.$key);
+    //     $iter = Aws\recursive_dir_iterator('s3://'.$this->bucket.'/'.$key);
 
-        return $iter;
-    }
+    //     return $iter;
+    // }
 
     // use S3 stream wrapper to delete object
     public function unlink($key, $context = null) {
@@ -270,6 +270,32 @@ class S3 extends Client
         $this->client->registerStreamWrapper();
         
         return rename('s3://'.$this->bucket.'/'.$oldkey, 's3://'.$this->bucket.'/'.$newkey);
+    }
+
+    public function listObjectVersions() {
+        // check if bucket exists
+        if (!$this->bucket) {
+            throw new \Exception('bucket must be defined');
+        }
+
+        $result = $this->client->listObjectVersions([
+            'Bucket' => $this->bucket, // REQUIRED
+        ]);
+
+        return $result;
+    }
+
+    public function listObjects() {
+        // check if bucket exists
+        if (!$this->bucket) {
+            throw new \Exception('bucket must be defined');
+        }
+
+        $result = $this->client->listObjects([
+            'Bucket' => $this->bucket, // REQUIRED
+        ]);
+
+        return $result;
     }
 
     // retrieve object using S3Client getObject() method
