@@ -329,7 +329,7 @@ class CloudFront extends Client
         $OriginShieldEnabled = true,
         $OriginShieldRegion = 'us-east-1',
         $s3origin = false,
-        $OriginProtocolPolicy = http-only          // 'http-only|match-viewer|https-only'
+        $OriginProtocolPolicy = 'http-only'          // 'http-only|match-viewer|https-only'
         ) {
         $this->TargetOriginId = $Id;
         $origin = [];
