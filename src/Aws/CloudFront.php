@@ -435,6 +435,18 @@ class CloudFront extends Client
         $this->distributionConfig['DefaultCacheBehavior']['MinTTL'] = $this->MinTTL;
         $this->distributionConfig['DefaultCacheBehavior']['TargetOriginId'] = $this->TargetOriginId;
         $this->distributionConfig['DefaultCacheBehavior']['ViewerProtocolPolicy'] = $this->ViewerProtocolPolicy;
+        $this->distributionConfig['DefaultCacheBehavior']['ForwardedValues'] = [
+            'Cookies' => ['Forward' => 'none',],
+            // 'Headers' => [
+            //     'Items' => $this->ForwardedValuesHeaders,
+            //     'Quantity' => count($this->ForwardedValuesHeaders), // REQUIRED
+            // ],
+            'QueryString' => false,
+            // 'QueryStringCacheKeys' => [
+            //     'Items' => $this->ForwardedValuesQueryStringCacheKeys,
+            //     'Quantity' => count($this->ForwardedValuesQueryStringCacheKeys), // REQUIRED
+            // ],
+        ];
         
         // Unused configs below....
             // 'DistributionConfig' => [ // REQUIRED
@@ -450,24 +462,7 @@ class CloudFront extends Client
                     // 'CachePolicyId' => $this->CachePolicyId,
                     // 'DefaultTTL' => $this->DefaultTTL,
                     // 'FieldLevelEncryptionId' => $this->FieldLevelEncryptionId,
-                    // 'ForwardedValues' => [
-                    //     'Cookies' => [ // REQUIRED
-                    //         'Forward' => $this->ForwardedValuesCookies, // REQUIRED
-                    //         'WhitelistedNames' => [
-                    //             'Items' => $this->ForwardedValuesCookiesWhitelistedNames,
-                    //             'Quantity' => count($this->ForwardedValuesCookiesWhitelistedNames), // REQUIRED
-                    //         ],
-                    //     ],
-                    //     'Headers' => [
-                    //         'Items' => $this->ForwardedValuesHeaders,
-                    //         'Quantity' => count($this->ForwardedValuesHeaders), // REQUIRED
-                    //     ],
-                    //     'QueryString' => $this->ForwardedValuesQueryString, // REQUIRED
-                    //     'QueryStringCacheKeys' => [
-                    //         'Items' => $this->ForwardedValuesQueryStringCacheKeys,
-                    //         'Quantity' => count($this->ForwardedValuesQueryStringCacheKeys), // REQUIRED
-                    //     ],
-                    // ],
+                    // 
                     // 'FunctionAssociations' => [
                     //     'Items' => [
                     //         $this->FunctionAssociations
