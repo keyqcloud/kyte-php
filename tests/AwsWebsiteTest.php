@@ -100,14 +100,25 @@ class AwsWebsiteTest extends TestCase
         );
         $this->assertTrue($cf->create());
 
+        // sleep to allow some time between API calls
+        sleep(5);
+
         // test CF distribution
         $testUrl = $cf->getDomainName();
+
+        sleep(5);
+
         $this->assertIsString($testUrl);
         $content = file_get_contents($testUrl);
         $this->assertEquals($html, $content);
 
+        // disable cf
+        $this->assertTrue($cf->disable());
+
+        sleep(5);
+
         // delete CF distribution
-        $cf->delete();
+        $this->assertTrue($cf->delete());
 
         // test delete using deleteObject
         $this->assertTrue($s3->deleteObject('index.html'));
