@@ -109,7 +109,7 @@ class CloudFront extends Client
         // $this->ForwardedValuesQueryStringCacheKeys;    // ['<string>', ...]
         $this->TrustedSignersEnabled;                  // boolean
         $this->TrustedSigners;                         // ['<string>', ...]
-        // $this->MinTTL = 1;
+        $this->MinTTL = 1;
         $this->AllowedMethods = ['GET', 'HEAD'];
         $this->AllowedCachedMethods = ['GET', 'HEAD'];
         $this->SmoothStreaming = false;
@@ -432,6 +432,7 @@ class CloudFront extends Client
             'Quantity' => count($this->AllowedMethods),
         ];
         $this->distributionConfig['DefaultCacheBehavior']['Compress'] = $this->Compress;
+        $this->distributionConfig['DefaultCacheBehavior']['MinTTL'] = $this->MinTTL;
         $this->distributionConfig['DefaultCacheBehavior']['TargetOriginId'] = $this->TargetOriginId;
         $this->distributionConfig['DefaultCacheBehavior']['ViewerProtocolPolicy'] = $this->ViewerProtocolPolicy;
         
@@ -480,7 +481,6 @@ class CloudFront extends Client
                     //     'Quantity' => count($this->LambdaFunctionAssociations), // REQUIRED
                     // ],
                     // 'MaxTTL' => $this->MaxTTL,
-                    // 'MinTTL' => $this->MinTTL,
                     // 'OriginRequestPolicyId' => $this->OriginRequestPolicyId,
                     // 'RealtimeLogConfigArn' => $this->RealtimeLogConfigArn,
                     // 'SmoothStreaming' => $this->SmoothStreaming,
