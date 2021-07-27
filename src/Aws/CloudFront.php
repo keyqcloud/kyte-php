@@ -227,10 +227,13 @@ class CloudFront extends Client
                 throw new \Exception("Aliases require a valid ACM certificate");
             }
 
+            $this->distributionConfig['ViewerCertificate'] = [];
+            $this->distributionConfig['ViewerCertificate']['MinimumProtocolVersion'] = $this->ViewerCertificateMinimumProtocolVersion;
+            $this->distributionConfig['ViewerCertificate']['SSLSupportMethod'] = $this->ViewerCertificateSSLSupportMethod;
             $this->distributionConfig['Aliases']['Items'] = $aliases;
             $this->distributionConfig['Aliases']['Quantity'] = count($aliases);
             $this->distributionConfig['ViewerCertificate']['ACMCertificateArn'] = $acmArn;
-            $this->distributionConfig['ViewerCertificate']['CloudFrontDefaultCertificate'] = true;
+            // $this->distributionConfig['ViewerCertificate']['CloudFrontDefaultCertificate'] = false;
 
             $result = $this->client->updateDistribution([
                 $this->distributionConfig,
@@ -249,7 +252,9 @@ class CloudFront extends Client
         try {
             $distributionId = $this->Id ? $this->Id : $distributionId;
 
-            $this->distributionConfig['ViewerCertificate']['ACMCertificateArn'] = '';
+            $this->distributionConfig['ViewerCertificate'] = [];
+            $this->distributionConfig['ViewerCertificate']['MinimumProtocolVersion'] = $this->ViewerCertificateMinimumProtocolVersion;
+            $this->distributionConfig['ViewerCertificate']['SSLSupportMethod'] = $this->ViewerCertificateSSLSupportMethod;
             $this->distributionConfig['ViewerCertificate']['CloudFrontDefaultCertificate'] = true;
             $this->distributionConfig['Aliases']['Items'] = [];
             $this->distributionConfig['Aliases']['Quantity'] = 0;
@@ -411,9 +416,9 @@ class CloudFront extends Client
         $this->distributionConfig['DefaultRootObject'] = $this->DefaultRootObject;
 
         $this->distributionConfig['ViewerCertificate'] = [
-            'ACMCertificateArn' => $this->ViewerCertificateACMCertificateArn,
+            // 'ACMCertificateArn' => $this->ViewerCertificateACMCertificateArn,
             'CloudFrontDefaultCertificate' => $this->ViewerCertificateCloudFrontDefaultCertificate,
-            'IAMCertificateId' => $this->ViewerCertificateIAMCertificateId,
+            // 'IAMCertificateId' => $this->ViewerCertificateIAMCertificateId,
             'MinimumProtocolVersion' => $this->ViewerCertificateMinimumProtocolVersion,
             'SSLSupportMethod' => $this->ViewerCertificateSSLSupportMethod,
         ];
