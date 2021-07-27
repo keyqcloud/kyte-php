@@ -92,7 +92,7 @@ class CloudFront extends Client
         $this->ViewerCertificateACMCertificateArn = '';
         $this->ViewerCertificateCloudFrontDefaultCertificate = true;  // boolean
         $this->ViewerCertificateIAMCertificateId = '';
-        $this->ViewerCertificateMinimumProtocolVersion = 'TLSv1';        // 'SSLv3|TLSv1|TLSv1_2016|TLSv1.1_2016|TLSv1.2_2018|TLSv1.2_2019'
+        $this->ViewerCertificateMinimumProtocolVersion = 'TLSv1.2_2019';        // 'SSLv3|TLSv1|TLSv1_2016|TLSv1.1_2016|TLSv1.2_2018|TLSv1.2_2019'
         $this->ViewerCertificateSSLSupportMethod = 'sni-only';      // 'sni-only|vip|static-ip's
         $this->GeoRestriction = [];
         $this->GeoRestrictionRestrictionType = "none";
@@ -321,7 +321,6 @@ class CloudFront extends Client
         // $HTTPPort,                      // integer
         // $HTTPSPort,                     // integer
         // $OriginKeepaliveTimeout,        // integer
-        // $OriginProtocolPolicy,          // 'http-only|match-viewer|https-only'
         // $OriginReadTimeout,             // integer
         // $OriginSslProtocols,            // ['<string>', ...]
         $DomainName,
@@ -329,7 +328,8 @@ class CloudFront extends Client
         $OriginPath = '',
         $OriginShieldEnabled = true,
         $OriginShieldRegion = 'us-east-1',
-        $s3origin = true
+        $s3origin = false,
+        $OriginProtocolPolicy = http-only          // 'http-only|match-viewer|https-only'
         ) {
         $this->TargetOriginId = $Id;
         $origin = [];
@@ -343,6 +343,12 @@ class CloudFront extends Client
         if ($s3origin) {
             $origin['S3OriginConfig'] = [
                 'OriginAccessIdentity' => '',
+            ];
+        } else {
+            $origin['CustomOriginConfig'] = [
+                'HTTPPort' => 80,
+                'HTTPSPort' => 443,
+                'OriginProtocolPolicy' => 'http-only',
             ];
         }
 
