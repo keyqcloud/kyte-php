@@ -379,7 +379,7 @@ class Api
 
 		if (count($elements) >= 1) {
 			// check if app id exists
-			$this->appId = base64_decode(urldecode($elements[2]));
+			// $this->appId = base64_decode(urldecode($elements[2]));
 			
 			$this->model = $elements[0];
 			$this->field = isset($elements[1]) ? $elements[1] : null;
