@@ -44,24 +44,11 @@ class ApplicationController extends ModelController
 
                 // create distribution
                 $cf = new \Kyte\Aws\CloudFront($credentials);
-                // $cf->addOrigin(
-                    // ConnectionAttempts
-                    // ConnectionTimeout
-                    // CustomHeaders
-                    // HTTPPort
-                    // HTTPSPort
-                    // OriginKeepaliveTimeout
-                    // OriginProtocolPolicy
-                    // OriginReadTimeout
-                    // OriginSslProtocols
-                    // DomainName
-                    // Id
-                    // OriginPath
-                    // OriginShieldEnabled
-                    // OriginShieldRegion
-                    // S3OriginAccessIdentity
-                // );
-                // $cf->create();
+                $cf->addOrigin(
+                    $r['domain'].'.s3-website-'.$credential->getRegion().'.amazonaws.com',
+                    $r['domain']
+                );
+                $cf->create();
 
                 break;
             
@@ -78,13 +65,13 @@ class ApplicationController extends ModelController
 
                 // disable distribution
                 $cf = new \Kyte\Aws\CloudFront($credentials, $o->cfDistribution);
-                // $cf->disable();
+                $cf->disable();
+
+                // delete distribution
+                $cf->delete();
 
                 // delete database from cluster
                 \Kyte\Core\DBI::query("DROP DATABASE `{$o->db_name}`;");
-
-                // delete distribution
-                // $cf->delete();
 
                 // delete acm certificate
                 $acm = new \Kyte\Aws\Acm($credentials, $o->AcmArn);
