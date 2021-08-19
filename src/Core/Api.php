@@ -341,11 +341,6 @@ class Api
 		// CORS Validation
 		$this->request = $this->cors();
 
-		if (isset($_SERVER['HTTP_X_KYTE_SIGNATURE'], $_SERVER['HTTP_X_KYTE_IDENTITY'])) {
-			$this->signature = $_SERVER['HTTP_X_KYTE_SIGNATURE'];
-			$this->parseIdentityString($_SERVER['HTTP_X_KYTE_IDENTITY']);
-		} else return false;
-
 		if (array_key_exists('CONTENT_TYPE', $_SERVER)) {
 			$this->contentType = $_SERVER['CONTENT_TYPE'];
 		}
@@ -359,6 +354,11 @@ class Api
 			$this->data = json_decode(file_get_contents("php://input"), true);
 		}
 
+		if (isset($_SERVER['HTTP_X_KYTE_SIGNATURE'], $_SERVER['HTTP_X_KYTE_IDENTITY'])) {
+			$this->signature = $_SERVER['HTTP_X_KYTE_SIGNATURE'];
+			$this->parseIdentityString($_SERVER['HTTP_X_KYTE_IDENTITY']);
+		} else return false;
+		
 		// * URL format - root endpoint
 		// https://uri-to-api-endpoint / {model} [ / {field} / {value} ]
 		//
