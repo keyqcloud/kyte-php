@@ -406,6 +406,8 @@ class Api
 	}
 
 	private function parseIdentityString($string) {
+		// identity string format
+		// PUBLIC_KEY%SESSION_TOKEN%DATE_TIME_GMT%ACCOUNT_NUMBER
 		$identity = explode('%', base64_decode(urldecode($string)));
 		if (count($identity) != 4) {
 			throw new \Kyte\Exception\SessionException("[ERROR] Invalid identity string: $this->request.");
