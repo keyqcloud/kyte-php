@@ -559,7 +559,7 @@ class ModelController
                 $this->hook_response_data('delete', $obj);
 
                 // if cascade delete is set delete associated data
-                if ($this->cascadeDelete) {
+                if ($this->cascadeDelete && isset($this->model['externalTables'])) {
                     // find external tables and delete associated entries
                     foreach ($this->model['externalTables'] as $extTbl) {
                         $dep = new \Kyte\Core\Model(constant($extTbl['model']));
