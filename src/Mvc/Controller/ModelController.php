@@ -416,16 +416,6 @@ class ModelController
 
             if ($obj->retrieve($field, $value, $conditions, null, $all)) {
 
-                // check for existing if set
-                $existingObj = new \Kyte\Core\ModelObject($this->model);
-                if ($this->checkExisting) {
-                    if ($existingObj->retrieve($this->checkExisting, $data[$this->checkExisting])) {
-                        if ($existingObj->id == $obj->id) {
-                            throw new \Exception($this->model['name'].' already exists');
-                        }
-                    }
-                }
-
                 // go through data parameters and...
                 //      1. covert times to unix time
                 //      2. check for foregin key table data
