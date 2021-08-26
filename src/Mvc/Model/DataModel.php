@@ -51,7 +51,7 @@ $DataModel = [
 		'created_by'		=> [
 			'type'		=> 'i',
 			'required'	=> false,
-			'date'		=> true,
+			'date'		=> false,
 		],
 
 		'date_created'		=> [
@@ -63,19 +63,19 @@ $DataModel = [
 		'modified_by'		=> [
 			'type'		=> 'i',
 			'required'	=> false,
+			'date'		=> false,
+		],
+
+		'date_modified'		=> [
+			'type'		=> 'i',
+			'required'	=> false,
 			'date'		=> true,
 		],
 
 		'deleted_by'		=> [
 			'type'		=> 'i',
 			'required'	=> false,
-			'date'		=> true,
-		],
-
-		'created_by'		=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'date'		=> true,
+			'date'		=> false,
 		],
 
 		'date_deleted'		=> [
