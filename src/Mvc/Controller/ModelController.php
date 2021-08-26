@@ -125,20 +125,20 @@ class ModelController
 
             // iterate through each param and apply filter
             foreach($response as $key => $value) {
-                if (isset($obj->model['struct'][$key])) {
+                if (isset($obj->kyte_model['struct'][$key])) {
                     // if protected attribute then return empty string
-                    if (isset($obj->model['struct'][$key]['protected'])) {
-                        if ($obj->model['struct'][$key]['protected']) {
+                    if (isset($obj->kyte_model['struct'][$key]['protected'])) {
+                        if ($obj->kyte_model['struct'][$key]['protected']) {
                             $response[$key] = '';
                         }
                     }
 
                     // if date format is specified
-                    if (isset($obj->model['struct'][$key]['date'])) {
-                        if ($obj->model['struct'][$key]['date']) {
+                    if (isset($obj->kyte_model['struct'][$key]['date'])) {
+                        if ($obj->kyte_model['struct'][$key]['date']) {
                             if (!empty($response[$key])) {
-                                if (isset($obj->model['struct'][$key]['dateformat'])) {
-                                    $response[$key] = date($obj->model['struct'][$key]['dateformat'], $response[$key]);
+                                if (isset($obj->kyte_model['struct'][$key]['dateformat'])) {
+                                    $response[$key] = date($obj->kyte_model['struct'][$key]['dateformat'], $response[$key]);
                                 } else {
                                     $response[$key] = date($this->dateformat, $response[$key]);
                                 }
@@ -150,9 +150,9 @@ class ModelController
 
                     // if get FK is set then check for FK
                     if ($this->getFKTables) {
-                        if (isset($obj->model['struct'][$key]['fk']) && !empty($response[$key])) {
+                        if (isset($obj->kyte_model['struct'][$key]['fk']) && !empty($response[$key])) {
 
-                            $fk = $obj->model['struct'][$key]['fk'];
+                            $fk = $obj->kyte_model['struct'][$key]['fk'];
 
                             if (isset($fk['model'], $fk['field'])) {
                                 
@@ -176,7 +176,7 @@ class ModelController
             }
 
             // next, get external tables that have fk to this
-            if ($this->getExternalTables && isset($obj->model['externalTables'])) {
+            if ($this->getExternalTables && isset($obj->kyte_model['externalTables'])) {
                 // temporarily set FK table to false so we don't cause an endless loop
                 $fkFlag = $this->getFKTables;
                 $this->getFKTables = false;
@@ -184,7 +184,7 @@ class ModelController
                 // define array
                 $response['ExternalTables'] = [];
 
-                foreach ($obj->model['externalTables'] as $et) {
+                foreach ($obj->kyte_model['externalTables'] as $et) {
 
                     if (isset($et['model'], $et['field'])) {
 
@@ -510,12 +510,12 @@ class ModelController
     }
 
     protected function deleteCascade($obj) {
-        if ($this->cascadeDelete && isset($obj->model['externalTables'])) {
+        if ($this->cascadeDelete && isset($obj->kyte_model['externalTables'])) {
             // get uid if set
             $userId = isset($this->user->id) ? $this->user->id : null;
             
             // find external tables and delete associated entries
-            foreach ($obj->model['externalTables'] as $extTbl) {
+            foreach ($obj->kyte_model['externalTables'] as $extTbl) {
                 $dep = new \Kyte\Core\Model(constant($extTbl['model']));
                 $dep->retrieve($extTbl['field'], $obj->id, false, $conditions);
 
