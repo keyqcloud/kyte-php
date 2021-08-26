@@ -226,7 +226,10 @@ class Api
 
 	// meat of API
 	public function route() {
-		try {			
+		try {
+			// prepare the return response
+			$this->prepareResponse();
+
 			// if minimum count of elements exist, then process api request based on request type
 			if ($this->isRequest()) {
 
@@ -358,6 +361,10 @@ class Api
 			$this->signature = $_SERVER['HTTP_X_KYTE_SIGNATURE'];
 			$this->parseIdentityString($_SERVER['HTTP_X_KYTE_IDENTITY']);
 		} else return false;
+
+		$this->response['CONTENT_TYPE'] = $this->contentType;
+		$this->response['transaction'] = $this->request;
+		$this->response['engine_version'] = \Kyte\Core\Version::get();
 		
 		// * URL format - root endpoint
 		// https://uri-to-api-endpoint / {model} [ / {field} / {value} ]
@@ -375,8 +382,6 @@ class Api
 
 		$elements =  explode('/', $path);
 
-		$this->prepareResponse();
-
 		if (count($elements) >= 1) {
 			// check if app id exists
 			// $this->appId = base64_decode(urldecode($elements[2]));
@@ -384,6 +389,8 @@ class Api
 			$this->model = $elements[0];
 			$this->field = isset($elements[1]) ? $elements[1] : null;
 			$this->value = isset($elements[2]) ? urldecode($elements[2]) : null;
+
+			$this->response['model'] = $this->model;
 
 			// get api associated with account
 			$sub_account_api = new \Kyte\Core\ModelObject(APIKey);
@@ -497,11 +504,6 @@ class Api
 		// 	txTimestamp: ‘Thu, 30 Apr 2020 07:11:46 GMT’,
 		// 	data: {}
 		// }
-		$this->response['CONTENT_TYPE'] = $this->contentType;
-		$this->response['transaction'] = $this->request;
-		$this->response['engine_version'] = \Kyte\Core\Version::get();
-		$this->response['model'] = $this->model;
-		
 		$this->response['session'] = '0';
 		$this->response['token'] = 0;	// default to public token
 		$this->response['uid'] = 0;
