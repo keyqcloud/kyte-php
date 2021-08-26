@@ -11,7 +11,7 @@ class WarmController extends ModelController
         // make public controller
         $this->requireAuth = false;
         // only allow get
-            $this->allowableActions = ['get'];
+        $this->allowableActions = ['get'];
     }
 
     // get - retrieve objects from db
