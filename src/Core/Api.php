@@ -456,9 +456,7 @@ class Api
 
 	private function verifySignature() {
 		$hash1 = hash_hmac('SHA256', $this->response['token'], $this->key->secret_key, true);
-		$hash1_debug = hash_hmac('SHA256', $this->response['token'], $this->key->secret_key);
 		$hash2 = hash_hmac('SHA256', $this->key->identifier, $hash1, true);
-		$hash2_debug = hash_hmac('SHA256', $this->key->identifier, $hash1);
 		$calculated_signature = hash_hmac('SHA256', $this->utcDate->format('U'), $hash2);
 
 		if ($calculated_signature != $this->signature)
