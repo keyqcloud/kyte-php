@@ -248,7 +248,7 @@ class ModelController
                     // else, create new entry
                     if (!$fkExists) {
                         // add account information
-                        $models[$this->model['struct'][$key]['fk']['model']]['kyte_account'] = $this->account->id;
+                        $models[$this->model['struct'][$key]['fk']['model']]['kyte_account'] = isset($data['kyte_account']) ? $data['kyte_account'] : $this->account->id;
 
                         // create object & get return
                         if ($obj->create($models[$this->model['struct'][$key]['fk']['model']])) {
@@ -366,7 +366,7 @@ class ModelController
             }
             
             // add account information
-            $data['kyte_account'] = $this->account->id;
+            $data['kyte_account'] = isset($data['kyte_account']) ? $data['kyte_account'] : $this->account->id;
             // add user info
             if (isset($this->user->id)) {
                 $data['created_by'] = $this->user->id;
