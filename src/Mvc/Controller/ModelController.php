@@ -471,6 +471,10 @@ class ModelController
             if (!$this->checkPermissions('get')) {
                 throw new \Exception('Permission Denied');
             }
+
+            error_log('Field: '.$field.' Value: '.$value);
+            $field = empty($field) ? null : $field;
+            $value = empty($value) ? null : $value;
             
             $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->id]] : null;
             $all = false;
