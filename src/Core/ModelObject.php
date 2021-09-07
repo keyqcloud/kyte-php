@@ -127,21 +127,23 @@ class ModelObject
 
 			// if conditions are set, add them to the sql statement
 			if(isset($conditions)) {
-				// iterate through each condition
-				foreach($conditions as $condition) {
-					// check if an evaluation operator is set
-					if (isset($condition['operator'])) {
-						if ($sql != '') {
-							$sql .= " AND ";
+				if (!empty($conditions)) {
+					// iterate through each condition
+					foreach($conditions as $condition) {
+						// check if an evaluation operator is set
+						if (isset($condition['operator'])) {
+							if ($sql != '') {
+								$sql .= " AND ";
+							}
+							$sql .= "`{$condition['field']}` {$condition['operator']} '{$condition['value']}'";
 						}
-						$sql .= "`{$condition['field']}` {$condition['operator']} '{$condition['value']}'";
-					}
-					// default to equal
-					else {
-						if ($sql != '') {
-							$sql .= " AND ";
+						// default to equal
+						else {
+							if ($sql != '') {
+								$sql .= " AND ";
+							}
+							$sql .= "`{$condition['field']}` = '{$condition['value']}'";
 						}
-						$sql .= "`{$condition['field']}` = '{$condition['value']}'";
 					}
 				}
 			}
