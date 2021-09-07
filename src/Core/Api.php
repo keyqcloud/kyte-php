@@ -402,6 +402,7 @@ class Api
 			$this->response['kyte_pub'] = $sub_account_api->public_key;
 			$this->response['kyte_num'] = $this->account->number;
 			$this->response['kyte_iden'] = $sub_account_api->identifier;
+			$this->response['account_id'] = $this->account->id;
 
 			// VERIFY SIGNATURE
 			$this->verifySignature();
