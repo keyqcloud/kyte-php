@@ -106,9 +106,14 @@ class ModelController
                 return false;
             }
 
+            // add model to condition
+            $cond[] = ['field' => 'model', 'value' => $modelName];
+            // add request type to condition
+            $cond[] = ['field' => 'action', 'value' => $requestType];
+
             // check if assigned role has permission for request type
             $permission = new \Kyte\Core\ModelObject(Permission);
-            if (!$permission->retrieve('role', $role->id, [ ['field' => 'model', 'value' => $modelName], ['field' => 'action', 'value' => $requestType], $cond ])) {
+            if (!$permission->retrieve('role', $role->id, $cond)) {
                 error_log('unable to find permission');
                 return false;
             }
