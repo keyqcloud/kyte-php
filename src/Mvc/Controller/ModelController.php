@@ -100,8 +100,8 @@ class ModelController
 
             // check if user assigned role exists
             $role = new \Kyte\Core\ModelObject(Role);
-            $cond = $this->requireAccount ? [ 'field' => 'kyte_account', 'value' => $this->account->id] : null;
-            if (!$role->retrieve('id', $this->user->role, [$cond])) {
+            $cond = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->id]] : null;
+            if (!$role->retrieve('id', $this->user->role, $cond)) {
                 error_log('['.$this->model['name'].'] => ['.$requestType.'] unable to find role for '.$this->user->role.' and '.$this->account->id);
                 return false;
             }
