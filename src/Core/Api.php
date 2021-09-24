@@ -161,30 +161,63 @@ class Api
 		// list of models
 		$models = [];
 
+		/* BUILTIN DEFINED MODELS */
+		// import builtin models first, but don't define them yet incase there are user overrides and changes
+		foreach (glob(__DIR__ . "/../Mvc/Model/*.php") as $filename) {
+			$model_name = substr($filename, 0, strrpos($filename, "."));
+			$model_name = str_replace(__DIR__ . '/../Mvc/Model/','',$model_name);
+
+			// check if model name is present
+			if (!in_array($model_name, $model_names)) {
+				require_once($filename);
+				if (VERBOSE_LOG) {
+					error_log("Importing builtin model $model_name...");
+				}
+				self::addPrimaryKey($$model_name);
+				$models[$model_name] = $$model_name;
+			} else {
+				if (VERBOSE_LOG) {
+					error_log("Skipping model $model_name as already defined...");
+				}
+			}
+		}
+
 		if(defined('APP_DIR')) {
-			/* Load user-defined files first in case there are overrides */
+			// next load user defined models
+			// if model already exists, apply changes/overrides
 			if ( file_exists( APP_DIR . "/app/" ) && is_dir( APP_DIR . "/app/" ) ) {
 		
+				/* USER DEFINED MODELS */
 				// load user defined models and controllers (allow override of builtin)
 				if ( file_exists( APP_DIR . "/app/models/" ) && is_dir( APP_DIR . "/app/models/" ) ) {    
 					foreach (glob(APP_DIR . "/app/models/*.php") as $filename) {
-						require_once($filename);
 						$model_name = substr($filename, 0, strrpos($filename, "."));
 						$model_name = str_replace(APP_DIR . '/app/models/','',$model_name);
+
 						if (!in_array($model_name, $models)) {
-							$models[] = $model_name;
-						}
-						if (!defined($model_name)) {
+							require_once($filename);
 							if (VERBOSE_LOG) {
-								error_log("Loading user defined model $model_name...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
+								error_log("Importing user defined model $model_name...");
 							}
 							self::addPrimaryKey($$model_name);
 							self::addKyteAttributes($$model_name);
-							define($model_name, $$model_name);
+							$models[$model_name] = $$model_name;
+						} else {
+							require_once($filename);
+							// user overrides are specified
+							if (VERBOSE_LOG) {
+								error_log("Overriding defined model $model_name...");
+							}
+
+							// override or add attributes
+							foreach($$model_name['struct'] as $key => $value) {
+								$models[$model_name]['struct'][$key] = $value;
+							}
 						}
 					}
 				}
 		
+				/* USER DEFINED CONTROLLER */
 				// load user-defined controllers
 				if ( file_exists( APP_DIR . "/app/controllers/" ) && is_dir( APP_DIR . "/app/controllers/" ) ) {
 					foreach (glob(APP_DIR . "/app/controllers/*.php") as $filename) {
@@ -198,26 +231,10 @@ class Api
 				}      
 			}
 		}
-	
-		// include built-in models being used by app
-		foreach (glob(__DIR__ . "/../Mvc/Model/*.php") as $filename) {
-			$model_name = substr($filename, 0, strrpos($filename, "."));
-			$model_name = str_replace(__DIR__ . '/../Mvc/Model/','',$model_name);
-			if (!in_array($model_name, $models)) {
-				$models[] = $model_name;
-			}
-			if (defined($model_name)) {
-				if (VERBOSE_LOG) {
-					error_log("Skipping model $model_name as already defined...");
-				}
-			} else {
-				require_once($filename);
-				if (VERBOSE_LOG) {
-					error_log("Loading built-in model $model_name...".(isset($$model_name) ? 'defined!' : 'UNDEFINED!'));
-				}
-				self::addPrimaryKey($$model_name);
-				define($model_name, $$model_name);
-			}
+
+		// define all models that were imported
+		foreach($models as $model) {
+			define($model['name'], $model);
 		}
 	
 		// define list of models
