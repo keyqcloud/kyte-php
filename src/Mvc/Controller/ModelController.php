@@ -410,14 +410,14 @@ class ModelController
             if (!$this->checkPermissions('update')) {
                 throw new \Exception('Permission Denied');
             }
-    
-            if ($field === null || $value === null) throw new \Exception("Field ($field) and Value ($value) params not set");
 
             $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->id]] : null;
             $all = false;
             $this->hook_prequery('update', $field, $value, $conditions, $all, $order);
             // init object
             $obj = new \Kyte\Core\ModelObject($this->model);
+
+            if ($field === null || $value === null) throw new \Exception("Field ($field) and Value ($value) params not set");
 
             if ($obj->retrieve($field, $value, $conditions, null, $all)) {
 
