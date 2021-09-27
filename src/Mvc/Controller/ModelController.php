@@ -417,7 +417,7 @@ class ModelController
             // init object
             $obj = new \Kyte\Core\ModelObject($this->model);
 
-            if ($field === null || $value === null) throw new \Exception("Field ($field) and Value ($value) params not set");
+            if ($field === null || $value === null) throw new \Exception("Field and Values params not set");
 
             if ($obj->retrieve($field, $value, $conditions, null, $all)) {
 
@@ -431,7 +431,7 @@ class ModelController
                 $this->createFkEntries($linkedModels, $data);
 
                 // check existing and fail if present
-                if ($this->checkExisting) {
+                if ($this->checkExisting && isset($data[$this->checkExisting])) {
                     $existing = new \Kyte\Core\ModelObject($this->model);
                     if ($existing->retrieve($this->checkExisting, $data[$this->checkExisting])) {
                         if ($existing->id != $obj->id) {
