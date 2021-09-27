@@ -167,19 +167,12 @@ class Api
 			$model_name = substr($filename, 0, strrpos($filename, "."));
 			$model_name = str_replace(__DIR__ . '/../Mvc/Model/','',$model_name);
 
-			// check if model name is present
-			if (!in_array($model_name, $model_names)) {
-				require_once($filename);
-				if (VERBOSE_LOG) {
-					error_log("Importing builtin model $model_name...");
-				}
-				self::addPrimaryKey($$model_name);
-				$models[$model_name] = $$model_name;
-			} else {
-				if (VERBOSE_LOG) {
-					error_log("Skipping model $model_name as already defined...");
-				}
+			require_once($filename);
+			if (VERBOSE_LOG) {
+				error_log("Importing builtin model $model_name...");
 			}
+			self::addPrimaryKey($$model_name);
+			$models[$model_name] = $$model_name;
 		}
 
 		if(defined('APP_DIR')) {
