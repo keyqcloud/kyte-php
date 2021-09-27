@@ -187,7 +187,7 @@ class Api
 						$model_name = substr($filename, 0, strrpos($filename, "."));
 						$model_name = str_replace(APP_DIR . '/app/models/','',$model_name);
 
-						if (!in_array($model_name, $models)) {
+						if (!array_key_exists($model_name, $models)) {
 							require_once($filename);
 							if (VERBOSE_LOG) {
 								error_log("Importing user defined model $model_name...");
