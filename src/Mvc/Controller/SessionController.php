@@ -17,13 +17,13 @@ class SessionController extends ModelController
 
         try {
             // check for required params
-            foreach (['email', 'password'] as $param) {
+            foreach ([USERNAME_FIELD, PASSWORD_FIELD] as $param) {
 				if (!isset($data[$param]))
 					throw new \Exception("Incomplete data passed");
 			}
 
             // create session for user and obtain user information
-            $response = $this->session->create($data['email'], $data['password']);
+            $response = $this->session->create($data[USERNAME_FIELD], $data[PASSWORD_FIELD]);
             $obj = new \Kyte\Core\ModelObject(User);
             if (!$obj->retrieve('id', $response['uid'])) {
                 throw new \Exception("Unable to find user information");    
