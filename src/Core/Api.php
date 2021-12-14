@@ -105,31 +105,35 @@ class Api
 		// compatibility for older config files
 		if (!defined('ALLOW_ENC_HANDOFF')) {
 			define('ALLOW_ENC_HANDOFF', true);
-			error_log('ALLOW_ENC_HANDOFF contant not defined...using defaults');
+			error_log('ALLOW_ENC_HANDOFF constant not defined...using defaults');
 		}
 		if (!defined('ALLOW_MULTILOGON')) {
 			define('ALLOW_MULTILOGON', false);
-			error_log('ALLOW_MULTILOGON contant not defined...using defaults');
+			error_log('ALLOW_MULTILOGON constant not defined...using defaults');
 		}
 		if (!defined('ALLOW_SAME_TXTOKEN')) {
 			define('ALLOW_SAME_TXTOKEN', false);
-			error_log('ALLOW_SAME_TXTOKEN contant not defined...using defaults');
+			error_log('ALLOW_SAME_TXTOKEN constant not defined...using defaults');
 		}
 		if (!defined('SESSION_TIMEOUT')) {
 			define('SESSION_TIMEOUT', 3600);
-			error_log('SESSION_TIMEOUT contant not defined...using defaults');
+			error_log('SESSION_TIMEOUT constant not defined...using defaults');
 		}
 		if (!defined('USERNAME_FIELD')) {
 			define('USERNAME_FIELD', 'email');
-			error_log('USERNAME_FIELD contant not defined...using defaults');
+			error_log('USERNAME_FIELD constant not defined...using defaults');
 		}
 		if (!defined('PASSWORD_FIELD')) {
 			define('PASSWORD_FIELD', 'password');
-			error_log('PASSWORD_FIELD contant not defined...using defaults');
+			error_log('PASSWORD_FIELD constant not defined...using defaults');
 		}
 		if (!defined('VERBOSE_LOG')) {
 			define('VERBOSE_LOG', false);
-			error_log('VERBOSE_LOG contant not defined...using defaults');
+			error_log('VERBOSE_LOG constant not defined...using defaults');
+		}
+		if (!defined('IS_PRIVATE')) {
+			define('IS_PRIVATE', true);
+			error_log('IS_PRIVATE constant not defined...using defaults');
 		}
 
 		// only execute if called from web
@@ -414,8 +418,12 @@ class Api
 			$this->response['kyte_iden'] = $sub_account_api->identifier;
 			$this->response['account_id'] = $this->account->id;
 
-			// VERIFY SIGNATURE
-			$this->verifySignature();
+			// default is always public.
+			// this can be bypassed for public APIs but is highly discouraged
+			if (IS_PRIVATE) {
+				// VERIFY SIGNATURE
+				$this->verifySignature();
+			}
 
 			return true;
 		}
