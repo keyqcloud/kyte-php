@@ -371,8 +371,13 @@ class Api
 			$this->data = json_decode(file_get_contents("php://input"), true);
 		}
 
-		if (isset($_SERVER['HTTP_X_KYTE_SIGNATURE'], $_SERVER['HTTP_X_KYTE_IDENTITY'])) {
-			$this->signature = $_SERVER['HTTP_X_KYTE_SIGNATURE'];
+		if (IS_PRIVATE) {
+			if (isset($_SERVER['HTTP_X_KYTE_SIGNATURE'])) {
+				$this->signature = $_SERVER['HTTP_X_KYTE_SIGNATURE'];
+			} else return false;
+		}
+		
+		if (isset($_SERVER['HTTP_X_KYTE_IDENTITY'])) {
 			$this->parseIdentityString($_SERVER['HTTP_X_KYTE_IDENTITY']);
 		} else return false;
 
