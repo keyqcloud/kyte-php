@@ -166,7 +166,7 @@ class ModelController
 
                                     $fk_obj = new \Kyte\Core\ModelObject(constant($fk['model']));
                                     // check if account is required
-                                    $conditions = ( $this->requireAccount || $fk['model'] == 'Account' ) ? [[ 'field' => 'kyte_account', 'value' => $this->account->id]] : null;
+                                    $conditions = ( $this->requireAccount || $fk['model'] != 'Account' ) ? [[ 'field' => 'kyte_account', 'value' => $this->account->id]] : null;
 
                                     // retrieve deleted items as well
                                     if ($fk_obj->retrieve($fk['field'], $response[$key], $conditions, null, true)) {
