@@ -73,16 +73,34 @@ class Api
 
 		// audit attributes
 
+		$modeldef['struct']['created_by'] = [
+			'type'		=> 'i',
+			'required'	=> false,
+			'date'		=> false,
+		];
+
 		$modeldef['struct']['date_created'] = [
 			'type'		=> 'i',
 			'required'	=> false,
 			'date'		=> true,
 		];
 
+		$modeldef['struct']['modified_by'] = [
+			'type'		=> 'i',
+			'required'	=> false,
+			'date'		=> false,
+		];
+
 		$modeldef['struct']['date_modified'] = [
 			'type'		=> 'i',
 			'required'	=> false,
 			'date'		=> true,
+		];
+
+		$modeldef['struct']['deleted_by'] = [
+			'type'		=> 'i',
+			'required'	=> false,
+			'date'		=> false,
 		];
 
 		$modeldef['struct']['date_deleted'] = [
