@@ -86,7 +86,7 @@ class ModelObject
 	 *
 	 * @param array $params
 	 */
-	public function create($params, $user)
+	public function create($params, $user = null)
 	{
 		$this->validateRequiredParams($params);
 
