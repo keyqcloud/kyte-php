@@ -86,13 +86,12 @@ class ModelObject
 	 *
 	 * @param array $params
 	 */
-	public function create($params, $user = null)
+	public function create($params)
 	{
 		$this->validateRequiredParams($params);
 
 		// audit attributes - set date created
 		$params['date_created'] = time();
-		$params['created_by'] = $user;
 
 		try {
 			$types = $this->bindTypes($params);
@@ -168,7 +167,7 @@ class ModelObject
 	 *
 	 * @param array $params
 	 */
-	public function save($params, $user = null)
+	public function save($params)
 	{
 		$id = $this->id;
 		if (!isset($id)) {
@@ -178,7 +177,6 @@ class ModelObject
 
 		// audit attributes - set date modified
 		$params['date_modified'] = time();
-		$params['modified_by'] = $user;
 
 		try {
 			$types = $this->bindTypes($params);
