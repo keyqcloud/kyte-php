@@ -379,8 +379,12 @@ class ModelController
 
             // hook for any custom behaviours before creating object
             $this->hook_preprocess('new', $data);
+
+            // get uid if set
+            $userId = isset($this->user->id) ? $this->user->id : null;
+
             // create object & get return
-            if ($obj->create($data)) {
+            if ($obj->create($data, $userId)) {
                 $ret = [];
                 $ret = $this->getObject($obj);
                 $this->hook_response_data('new', $obj, $ret, $data);
@@ -446,7 +450,11 @@ class ModelController
                 }
 
                 $this->hook_preprocess('update', $data, $obj);
-                $obj->save($data);
+
+                // get uid if set
+                $userId = isset($this->user->id) ? $this->user->id : null;
+
+                $obj->save($data, $userId);
                 $ret = [];
                 $ret = $this->getObject($obj);
                 $this->hook_response_data('update', $obj, $ret, $data);
