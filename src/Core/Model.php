@@ -79,12 +79,11 @@ class Model
 							}
 						}
 					}
+					$sql .= $order_sql;
 				}
 			} else {
 				$sql .= " ORDER BY `date_created` DESC";
 			}
-
-			error_log($sql);
 
 			$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql);
 
