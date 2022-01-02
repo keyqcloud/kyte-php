@@ -372,13 +372,15 @@ class ModelController
             
             // add account information
             $data['kyte_account'] = isset($data['kyte_account']) ? $data['kyte_account'] : $this->account->id;
+
+            // hook for any custom behaviours before creating object
+            $this->hook_preprocess('new', $data);
+
             // add user info
             if (isset($this->user->id)) {
                 $data['created_by'] = $this->user->id;
             }
-
-            // hook for any custom behaviours before creating object
-            $this->hook_preprocess('new', $data);
+            
             // create object & get return
             if ($obj->create($data)) {
                 $ret = [];
@@ -440,12 +442,13 @@ class ModelController
                     }
                 }
 
+                $this->hook_preprocess('update', $data, $obj);
+
                 // add user info
                 if (isset($this->user->id)) {
                     $data['modified_by'] = $this->user->id;
                 }
 
-                $this->hook_preprocess('update', $data, $obj);
                 $obj->save($data);
                 $ret = [];
                 $ret = $this->getObject($obj);
