@@ -74,7 +74,7 @@ class Model
 							if ($direction == 'ASC' || $direction == 'DESC') {
 								$order_sql .= " `{$order[$i]['field']}` {$direction}";
 								if ($i < (count($order) - 1)) {
-									$order_sql .= ',';
+									$order_sql .= ', ';
 								}
 							}
 						}
@@ -83,6 +83,8 @@ class Model
 			} else {
 				$sql .= " ORDER BY `date_created` DESC";
 			}
+
+			error_log($sql);
 
 			$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql);
 
