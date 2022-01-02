@@ -66,10 +66,18 @@ class Model
 			}
 
 			if (isset($order)) {
-				if (isset($order['field'], $order['direction'])) {
-					$order['direction'] = strtoupper($order['direction']);
-					if ($order['direction'] == 'ASC' || $order['direction'] == 'DESC') {
-						$sql .= " ORDER BY `{$order['field']}` {$order['direction']}";
+				if (!empty($order)) {
+					$order_sql = ' ORDER BY ';
+					for($i = 0; $i < count($order); $i++) {
+						if (isset($order[$i]['field'], $order[$i]['direction'])) {
+							$direction = strtoupper($order[$i]['direction']);
+							if ($direction == 'ASC' || $direction == 'DESC') {
+								$order_sql .= " `{$order[$i]['field']}` {$direction}";
+								if ($i < (count($order) - 1)) {
+									$order_sql .= ',';
+								}
+							}
+						}
 					}
 				}
 			} else {
