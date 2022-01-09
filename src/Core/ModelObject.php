@@ -92,7 +92,7 @@ class ModelObject
 
 		// audit attributes - set date created
 		$params['date_created'] = time();
-		$params['created_by'] = $params['created_by'] ? $params['created_by'] : $user;
+		$params['created_by'] = isset($params['created_by']) ? $params['created_by'] : $user;
 
 		try {
 			$types = $this->bindTypes($params);
@@ -178,7 +178,7 @@ class ModelObject
 
 		// audit attributes - set date modified
 		$params['date_modified'] = time();
-		$params['modified_by'] = $params['modified_by'] ? $params['modified_by'] : $user;
+		$params['modified_by'] = isset($params['modified_by']) ? $params['modified_by'] : $user;
 
 		try {
 			$types = $this->bindTypes($params);
