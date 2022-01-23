@@ -9,6 +9,10 @@ $Permission = [
 			'size'		=> 11,
 			'unsigned'	=> true,
 			'date'		=> false,
+			'fk'		=> [
+				'model'	=> 'Role',
+				'field'	=> 'id',
+			],
 		],
 
 		'model'		=> [
