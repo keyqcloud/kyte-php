@@ -45,6 +45,10 @@ $User = [
 			'size'		=> 11,
 			'unsigned'	=> true,
 			'date'		=> false,
+			'fk'		=> [
+				'model'	=> 'Account',
+				'field'	=> 'id',
+			],
 		],
 
 		// audit attributes

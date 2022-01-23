@@ -15,6 +15,7 @@ $Account = [
 			'required'	=> true,
 			'size'		=> 32,
 			'date'		=> false,
+			'protected' => true,
 		],
 
 		// audit attributes
