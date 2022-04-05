@@ -511,7 +511,7 @@ class Api
 		$calculated_signature = hash_hmac('SHA256', $this->utcDate->format('U'), $hash2);
 
 		if ($calculated_signature != $this->signature)
-			throw new \Kyte\Exception\SessionException("Calculated signature does not match provided signature.\nCalculated: $calculated_signature\nProvided: ".$this->signature);
+			throw new \Kyte\Exception\SessionException("Calculated signature does not match provided signature.\nCalculated: $hash1 $hash2 $calculated_signature\nProvided: ".$this->signature);
 	}
 
 	private function generateSignature() {
