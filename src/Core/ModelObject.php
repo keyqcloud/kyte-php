@@ -320,6 +320,8 @@ class ModelObject
 	public function getAllParams($dateformat = null) {
 		$vars = get_object_vars($this);
 
+		if (RETURN_NO_MODEL) unset($vars['kyte_model']);
+
 		if ($dateformat) {
 			$retvals = [];
 
@@ -352,6 +354,8 @@ class ModelObject
 	public function paramKeys() {
 		$vars = get_object_vars($this);
 
+		if (RETURN_NO_MODEL) unset($vars['kyte_model']);
+		
 		return array_keys($vars);
 	}
 

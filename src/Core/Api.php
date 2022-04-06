@@ -153,6 +153,10 @@ class Api
 			define('IS_PRIVATE', true);
 			error_log('IS_PRIVATE constant not defined...using defaults');
 		}
+		if (!defined('RETURN_NO_MODEL')) {
+			define('RETURN_NO_MODEL', true);
+			error_log('RETURN_NO_MODEL constant not defined...using defaults');
+		}
 
 		// only execute if called from web
 		if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
