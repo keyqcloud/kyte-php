@@ -386,7 +386,7 @@ class ModelController
                 $ret = [];
                 $ret = $this->getObject($obj);
                 $this->hook_response_data('new', $obj, $ret, $data);
-                $response = $ret;
+                $response[] = $ret;
             } else {
                 if ($this->failOnNull) {
                     throw new \Exception($this->exceptionMessages['new']['failOnNull']);
@@ -453,7 +453,7 @@ class ModelController
                 $ret = [];
                 $ret = $this->getObject($obj);
                 $this->hook_response_data('update', $obj, $ret, $data);
-                $response = $ret;
+                $response[] = $ret;
             } else {
                 if ($this->failOnNull) {
                     throw new \Exception($this->exceptionMessages['update']['failOnNull']);
