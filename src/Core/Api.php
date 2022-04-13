@@ -77,6 +77,10 @@ class Api
 			'type'		=> 'i',
 			'required'	=> false,
 			'date'		=> false,
+			'fk'		=> [
+				'model'	=> 'User',
+				'field'	=> 'id',
+			],
 		];
 
 		$modeldef['struct']['date_created'] = [
@@ -89,6 +93,10 @@ class Api
 			'type'		=> 'i',
 			'required'	=> false,
 			'date'		=> false,
+			'fk'		=> [
+				'model'	=> 'User',
+				'field'	=> 'id',
+			],
 		];
 
 		$modeldef['struct']['date_modified'] = [
@@ -101,6 +109,10 @@ class Api
 			'type'		=> 'i',
 			'required'	=> false,
 			'date'		=> false,
+			'fk'		=> [
+				'model'	=> 'User',
+				'field'	=> 'id',
+			],
 		];
 
 		$modeldef['struct']['date_deleted'] = [
