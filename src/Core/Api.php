@@ -343,19 +343,19 @@ class Api
 		} catch (\Kyte\Exception\SessionException $e) {
 			http_response_code(403);
 			$this->response['error'] = $e->getMessage();
-			$this->response['response_code'] = 403;
+			$this->response = ['response_code' => 403] + $this->response;
 			echo json_encode($this->response);
 			exit(0);
 		} catch (\Exception $e) {
 			http_response_code(400);
-			$this->response['response_code'] = 400;
+			$this->response = ['response_code' => 400] + $this->response;
 			$this->response['error'] = $e->getMessage();
 			echo json_encode($this->response);
 			exit(0);
 		}
 
 		// return response data
-		$this->response['response_code'] = 200;
+		$this->response = ['response_code' => 200] + $this->response;
 		echo json_encode($this->response);
 	}
 
