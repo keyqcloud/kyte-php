@@ -46,7 +46,7 @@ class ModelController
             // controller behaviour flags
             $this->cascadeDelete = true;
             $this->getFKTables = true;
-            $this->getExternalTables = true;
+            $this->getExternalTables = false;
             $this->requireAuth = true;
             $this->requireRoles = true;
             $this->requireAccount = true;
@@ -78,6 +78,9 @@ class ModelController
 
     protected function init()
     {
+        if (isset($_SERVER['HTTP_X_KYTE_GET_EXTERNALTABLES'])) {
+            $this->getExternalTables = strtolower($_SERVER['HTTP_X_KYTE_GET_EXTERNALTABLES']) == "true" ? true : false;
+        }
         $this->hook_init();
         
         if ($this->requireAuth) {
