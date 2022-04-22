@@ -514,14 +514,14 @@ class Api
 			}
 			$this->response['sessionPermission'] = $this->user->role;
 
+			error_log("ACCOUNTS ".$this->account->id." and ".$this->user->kyte_account);
+
 			// check is user has different account
 			// get user account
 			if ($this->user->kyte_account != $this->account->id) {
 				if (!$this->account->retrieve('id', $this->user->kyte_account)) {
 					throw new \Exception("Unable to find account associated with user");
 				}
-
-				error_log("SWITCHING ACCOUNTS from ".$this->account->id." to ".$this->user->kyte_account);
 			}
 		}
 	}
