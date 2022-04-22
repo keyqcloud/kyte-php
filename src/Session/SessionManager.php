@@ -68,7 +68,7 @@ class SessionManager
 
 			// return params for new session after successful creation
 			return $this->session->getAllParams();
-		} else throw new \Kyte\Exception\SessionException("Session name was not specified.");
+		} else throw new \Kyte\Exception\SessionException("Session credentials was not specified.");
 		
 	}
 
@@ -111,7 +111,7 @@ class SessionManager
 
 	public function destroy() {
 		$this->hasSession = false;
-		
+
 		if (!$this->session) {
 			throw new \Kyte\Exception\SessionException("No valid session.");
 		}
