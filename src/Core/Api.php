@@ -520,6 +520,8 @@ class Api
 				if (!$this->account->retrieve('id', $this->user->kyte_account)) {
 					throw new \Exception("Unable to find account associated with user");
 				}
+
+				error_log("SWITCHING ACCOUNTS from ".$this->account->id." to ".$this->user->kyte_account);
 			}
 		}
 	}
