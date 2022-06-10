@@ -498,13 +498,13 @@ class Api
 		}
 		
 		// if undefined is passed from front end then set to zero
-		$identity[1] = $identity[1] == 'undefined' ? 0 : $identity[1];
+		$identity[1] = $identity[1] == 'undefined' ? "0" : $identity[1];
 		
 		// get session token from identity signature
 		$this->response['session'] = $identity[1];
 
 		// retrieve transaction and user token corresponding to session token
-		if ($identity[1]) {
+		if ($identity[1] != "0") {
 			$session_ret = $this->session->validate($identity[1]);
 			$this->response['token'] = $session_ret['txToken'];
 			$this->response['uid'] = $session_ret['uid'];
