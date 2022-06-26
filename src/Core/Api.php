@@ -556,7 +556,7 @@ class Api
 			$date = new \DateTime($this->data['time'], new \DateTimeZone('UTC'));
 
 			// if undefined is passed from front end then set to zero
-			$this->data['token'] = $this->data['token'] == 'undefined' ? 0 : $this->data['token'];
+			$this->data['token'] = $this->data['token'] == 'undefined' ? '0' : $this->data['token'];
 	
 			$hash1 = hash_hmac('SHA256', $this->data['token'], $obj->secret_key, true);
 			$hash2 = hash_hmac('SHA256', $this->data['identifier'], $hash1, true);
@@ -577,9 +577,9 @@ class Api
 		// 	data: {}
 		// }
 		$this->response['session'] = '0';
-		$this->response['token'] = 0;	// default to public token
-		$this->response['uid'] = 0;
-		$this->response['sessionPermission'] = 0;
+		$this->response['token'] = '0';	// default to public token
+		$this->response['uid'] = '0';
+		$this->response['sessionPermission'] = '0';
 		$now = new \DateTime();
 		$now->setTimezone(new \DateTimeZone('UTC'));    // Another way
 		$this->response['txTimestamp'] = $now->format('U');
