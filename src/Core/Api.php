@@ -26,7 +26,7 @@ class Api
 	private $data;
 	private $page_size;
 	private $page_total;
-	private $page_num;
+	private $page_num = 0;
 	private $total_count;
 
 	private $response = [];
@@ -604,6 +604,11 @@ class Api
 		$now = new \DateTime();
 		$now->setTimezone(new \DateTimeZone('UTC'));    // Another way
 		$this->response['txTimestamp'] = $now->format('U');
+		$this->response['pagination'] = PAGINATION;
+		$this->response['page_size'] = $this->page_size;
+		$this->response['page_total'] = $this->page_total;
+		$this->response['page_num'] = $this->page_num;
+		$this->response['total_count'] = $this->total_count;
 	}
 }
 
