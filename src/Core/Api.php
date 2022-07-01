@@ -169,6 +169,10 @@ class Api
 			define('RETURN_NO_MODEL', true);
 			error_log('RETURN_NO_MODEL constant not defined...using defaults');
 		}
+		if (!defined('SESSION_RETURN_FK')) {
+			define('SESSION_RETURN_FK', true);
+			error_log('SESSION_RETURN_FK constant not defined...using defaults');
+		}
 
 		// only execute if called from web
 		if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
