@@ -42,7 +42,6 @@ class Model
 				}
 			}
 
-			// if conditions are set, add them to the sql statement
 			if(isset($conditions)) {
 				if (!empty($conditions)) {
 					// iterate through each condition
@@ -64,6 +63,8 @@ class Model
 					}
 				}
 			}
+
+			\Kyte\Core\DBI::count($this->kyte_model['name'], $sql);
 
 			if (isset($order)) {
 				if (!empty($order)) {

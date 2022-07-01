@@ -599,6 +599,51 @@ class DBI {
 		
 		return $data;
 	}
+
+	/*
+	 * Return table count
+	 *
+	 * @param string $table
+	 * @param string $condition
+	 */
+	public static function count($table, $condition = null)
+	{
+		if (!self::$dbConn) {
+			self::connect();
+		}
+
+		$query = "SELECT count(`id`) as count FROM `$table`";
+
+		if($query) {
+			$query .= " $condition";
+		}
+
+		// DEBUG
+		if (defined('DEBUG_SQL')) {
+			error_log($query);
+		}
+
+		$result = self::$dbConn->query($query);
+		if($result === false) {
+  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+  			return false;
+		}
+
+		$data = array();
+		while ($row = $result->fetch_assoc()) {
+			$data[] = $row;
+		}
+
+		$result->free();
+
+		error_log(print_r($data, true));
+
+		if (count($data) == 1) {
+			return intval($data[0]['count']);
+		} else {
+			return -1;
+		}
+	}
 }
 
 ?>

@@ -11,6 +11,12 @@ class ModelController
     public $dateformat;
     public $model;
 
+    // page controls
+    protected $page_size;
+    protected $page_total;
+    protected $page_num;
+    protected $total_count;
+
     // controller behaviour flags
     protected $cascadeDelete;
     protected $getFKTables;
@@ -25,7 +31,7 @@ class ModelController
     // array with error messages
     protected $exceptionMessages;
 
-    public function __construct($model, $dateformat, &$account, &$session, &$user, &$response)
+    public function __construct($model, $dateformat, &$account, &$session, &$user, &$response, &$page_size, &$page_total, &$page_num, &$total_count)
     {
         try {
             // default to allow all actions

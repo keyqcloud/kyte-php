@@ -24,6 +24,10 @@ class Api
 	private $field = null;
 	private $value = null;
 	private $data;
+	private $page_size;
+	private $page_total;
+	private $page_num;
+	private $total_count;
 
 	private $response = [];
 	
@@ -173,6 +177,17 @@ class Api
 			define('SESSION_RETURN_FK', true);
 			error_log('SESSION_RETURN_FK constant not defined...using defaults');
 		}
+		if (!defined('PAGINATION')) {
+			define('PAGINATION', true);
+			error_log('PAGINATION constant not defined...using defaults');
+		}
+		if (!defined('PAGE_SIZE')) {
+			define('PAGE_SIZE', 50);
+			error_log('PAGE_SIZE constant not defined...using defaults');
+		}
+
+		// set page size
+		$this->page_size = PAGE_SIZE;
 
 		// only execute if called from web
 		if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
@@ -299,7 +314,7 @@ class Api
 						$controllerClass = class_exists($this->model.'Controller') ? $this->model.'Controller' : '\\Kyte\\Mvc\\Controller\\ModelController';
 					}
 					// create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
-					$controller = new $controllerClass(defined($this->model) ? constant($this->model) : null, APP_DATE_FORMAT, $this->account, $this->session, $this->user, $this->response);
+					$controller = new $controllerClass(defined($this->model) ? constant($this->model) : null, APP_DATE_FORMAT, $this->account, $this->session, $this->user, $this->response, $this->page_size, $this->page_total, $this->page_num, $this->total_count);
 					if (!$controller) throw new \Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 				}
 
@@ -431,9 +446,10 @@ class Api
 		//
 		/* parse URI        ** remember to add the following in .htaccess 'FallbackResource /index.php'
 		* URL formats:
-		* POST     /{model}
+		* POST     /{model} + data
 		* PUT      /{model}/{field}/{value} + data
 		* GET      /{model}/{field}/{value}
+		* GET (with pagination) /{model}/{field}/{value}/{page}
 		* DELETE   /{model}/{field}/{value}
 		*/
 
@@ -449,6 +465,7 @@ class Api
 			$this->model = $elements[0];
 			$this->field = isset($elements[1]) ? $elements[1] : null;
 			$this->value = isset($elements[2]) ? urldecode($elements[2]) : null;
+			$this->page_num = isset($elements[3]) ? intval($elements[3]) : null;
 
 			$this->response['model'] = $this->model;
 
