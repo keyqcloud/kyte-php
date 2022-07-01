@@ -499,9 +499,14 @@ class ModelController
             $all = false;
             $order = null;
             $this->hook_prequery('get', $field, $value, $conditions, $all, $order);
+            
             // init model
             $objs = new \Kyte\Core\Model($this->model, $this->page_size, $this->page_num);
             $objs->retrieve($field, $value, false, $conditions, $all, $order);
+
+            // get total count
+            $this->total_count = $objs->total;
+            $this->page_total = ceil($this->total_count / $this->page_size);
 
             if ($this->failOnNull && count($objs->objects) < 1) {
                 throw new \Exception($this->exceptionMessages['get']['failOnNull']);
