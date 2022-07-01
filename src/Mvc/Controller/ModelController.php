@@ -60,10 +60,10 @@ class ModelController
             $this->failOnNull = false;
 
             // page controls
-            $this->page_size = $page_size;
-            $this->page_total = $page_total;
-            $this->page_num = $page_num ? $page_num : 1;
-            $this->total_count = $total_count;
+            $this->page_size = &$page_size;
+            $this->page_total = &$page_total;
+            $this->page_num = &$page_num;
+            $this->total_count = &$total_count;
 
             // default error messages
             $this->exceptionMessages = [

@@ -26,7 +26,7 @@ class Api
 	private $data;
 	private $page_size;
 	private $page_total;
-	private $page_num = 0;
+	private $page_num = 1;
 	private $total_count;
 
 	private $response = [];
