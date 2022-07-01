@@ -68,7 +68,6 @@ class Model
 
 			if (PAGINATION) {
 				$this->total = \Kyte\Core\DBI::count($this->kyte_model['name'], $sql);
-				error_log("total is {$this->total}");
 			}
 
 			if (isset($order)) {
