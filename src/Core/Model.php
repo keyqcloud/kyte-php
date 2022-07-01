@@ -17,8 +17,13 @@ class Model
 
 	public $total = 0;
 
+	private $page_size;
+	private $page_num;
+
 	public function __construct($model, $page_size = null, $page_num = null) {
 		$this->kyte_model = $model;
+		$this->page_size = $page_size;
+		$this->page_num = $page_num;
 	}
 
 	public function retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null)
