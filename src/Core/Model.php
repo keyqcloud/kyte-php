@@ -98,6 +98,7 @@ class Model
 			if ($this->page_size && $this->page_num) {
 				$offset = $this->page_size * ($this->page_num - 1);
 				$sql .= " LIMIT {$this->page_size} OFFSET $offset";
+				error_log($sql);
 			}
 
 			$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql);
