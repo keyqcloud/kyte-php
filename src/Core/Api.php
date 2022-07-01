@@ -373,6 +373,12 @@ class Api
 			exit(0);
 		}
 
+		// return pagination
+		$this->response['page_size'] = $this->page_size;
+		$this->response['page_total'] = $this->page_total;
+		$this->response['page_num'] = $this->page_num;
+		$this->response['total_count'] = $this->total_count;
+
 		// return response data
 		$this->response = ['response_code' => 200] + $this->response;
 		echo json_encode($this->response);
@@ -605,10 +611,6 @@ class Api
 		$now->setTimezone(new \DateTimeZone('UTC'));    // Another way
 		$this->response['txTimestamp'] = $now->format('U');
 		$this->response['pagination'] = PAGINATION;
-		$this->response['page_size'] = $this->page_size;
-		$this->response['page_total'] = $this->page_total;
-		$this->response['page_num'] = $this->page_num;
-		$this->response['total_count'] = $this->total_count;
 	}
 }
 
