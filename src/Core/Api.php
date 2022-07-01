@@ -471,7 +471,7 @@ class Api
 			$this->model = $elements[0];
 			$this->field = isset($elements[1]) ? $elements[1] : null;
 			$this->value = isset($elements[2]) ? urldecode($elements[2]) : null;
-			$this->page_num = isset($elements[3]) ? intval($elements[3]) : null;
+			$this->page_num = isset($elements[3]) ? intval($elements[3]) : 1;
 
 			$this->response['model'] = $this->model;
 
