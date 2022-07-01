@@ -636,8 +636,6 @@ class DBI {
 
 		$result->free();
 
-		error_log(print_r($data, true));
-
 		if (count($data) == 1) {
 			return intval($data[0]['count']);
 		} else {

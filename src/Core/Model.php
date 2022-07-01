@@ -15,6 +15,8 @@ class Model
 
 	public $objects = [];
 
+	public $total = 0;
+
 	public function __construct($model) {
 		$this->kyte_model = $model;
 	}
@@ -64,7 +66,10 @@ class Model
 				}
 			}
 
-			\Kyte\Core\DBI::count($this->kyte_model['name'], $sql);
+			if (PAGINATION) {
+				$this->total = \Kyte\Core\DBI::count($this->kyte_model['name'], $sql);
+				error_log("total is {$this->total}");
+			}
 
 			if (isset($order)) {
 				if (!empty($order)) {
