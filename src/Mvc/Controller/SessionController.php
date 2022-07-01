@@ -8,7 +8,7 @@ class SessionController extends ModelController
     {
         // make a public controller
         $this->requireAuth = false;
-        $this->getFKTables = false;
+        // $this->getFKTables = false;
     }
 
     // new - creates new session
