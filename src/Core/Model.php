@@ -17,7 +17,7 @@ class Model
 
 	public $total = 0;
 
-	public function __construct($model) {
+	public function __construct($model, $page_size = null, $page_num = null) {
 		$this->kyte_model = $model;
 	}
 
@@ -66,9 +66,8 @@ class Model
 				}
 			}
 
-			if (PAGINATION) {
-				$this->total = \Kyte\Core\DBI::count($this->kyte_model['name'], $sql);
-			}
+			// get total count
+			$this->total = \Kyte\Core\DBI::count($this->kyte_model['name'], $sql);
 
 			if (isset($order)) {
 				if (!empty($order)) {
@@ -88,6 +87,12 @@ class Model
 				}
 			} else {
 				$sql .= " ORDER BY `date_created` DESC";
+			}
+
+			// if paging is set, add limit
+			if ($this->page_size && $this->page_num) {
+				$offset = $this->page_size * ($this->page_num - 1);
+				$sql .= " LIMIT {$this->page_size} OFFSET $offset";
 			}
 
 			$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql);

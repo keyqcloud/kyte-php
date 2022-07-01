@@ -59,6 +59,12 @@ class ModelController
             $this->checkExisting = null;
             $this->failOnNull = false;
 
+            // page controls
+            $this->page_size = $page_size;
+            $this->page_total = $page_total;
+            $this->page_num = $page_num ? $page_num : 1;
+            $this->total_count = $total_count;
+
             // default error messages
             $this->exceptionMessages = [
                 'new' => [
@@ -494,7 +500,7 @@ class ModelController
             $order = null;
             $this->hook_prequery('get', $field, $value, $conditions, $all, $order);
             // init model
-            $objs = new \Kyte\Core\Model($this->model);
+            $objs = new \Kyte\Core\Model($this->model, $this->page_size, $this->page_num);
             $objs->retrieve($field, $value, false, $conditions, $all, $order);
 
             if ($this->failOnNull && count($objs->objects) < 1) {
