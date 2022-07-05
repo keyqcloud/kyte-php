@@ -443,6 +443,9 @@ class Api
 			$this->parseIdentityString($_SERVER['HTTP_X_KYTE_IDENTITY']);
 		} else return false;
 
+		// get page num from header
+		$this->page_num = isset($_SERVER['HTTP_X_KYTE_PAGE_IDX']) ? intval($_SERVER['HTTP_X_KYTE_PAGE_IDX']) : 1;
+
 		$this->response['CONTENT_TYPE'] = $this->contentType;
 		$this->response['transaction'] = $this->request;
 		$this->response['engine_version'] = \Kyte\Core\Version::get();
@@ -471,7 +474,7 @@ class Api
 			$this->model = $elements[0];
 			$this->field = isset($elements[1]) ? $elements[1] : null;
 			$this->value = isset($elements[2]) ? urldecode($elements[2]) : null;
-			$this->page_num = isset($elements[3]) ? intval($elements[3]) : 1;
+			
 
 			$this->response['model'] = $this->model;
 
