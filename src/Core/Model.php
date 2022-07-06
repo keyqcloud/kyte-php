@@ -71,6 +71,26 @@ class Model
 				}
 			}
 
+			if (isset($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS'], $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'])) {
+				$search_fields = explode(",", $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS']);
+				$search_value = $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'];
+				$c = count($search_fields);
+				if ($c > 0 && !empty($search_value)) {
+					$sql .= "AND (";
+
+					$i = 1;
+					foreach($search_fields as $sf) {
+						if ($i < $c) {
+							$sql .= " `$sf` LIKE '%$search_value%' OR";
+						} else {
+							$sql .= " `$sf` LIKE '%$search_value%' ";
+						}
+					}
+
+					$sql .= ")";
+				}
+			}
+
 			// get total count
 			$this->total = \Kyte\Core\DBI::count($this->kyte_model['name'], $sql);
 
