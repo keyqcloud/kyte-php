@@ -610,7 +610,6 @@ class Api
 		$now = new \DateTime();
 		$now->setTimezone(new \DateTimeZone('UTC'));    // Another way
 		$this->response['txTimestamp'] = $now->format('U');
-		$this->response['pagination'] = PAGINATION;
 	}
 }
 
