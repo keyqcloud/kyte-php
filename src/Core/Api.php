@@ -177,17 +177,10 @@ class Api
 			define('SESSION_RETURN_FK', true);
 			error_log('SESSION_RETURN_FK constant not defined...using defaults');
 		}
-		if (!defined('PAGINATION')) {
-			define('PAGINATION', true);
-			error_log('PAGINATION constant not defined...using defaults');
-		}
 		if (!defined('PAGE_SIZE')) {
 			define('PAGE_SIZE', 50);
 			error_log('PAGE_SIZE constant not defined...using defaults');
 		}
-
-		// set page size
-		$this->page_size = PAGE_SIZE;
 
 		// only execute if called from web
 		if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
@@ -443,6 +436,8 @@ class Api
 			$this->parseIdentityString($_SERVER['HTTP_X_KYTE_IDENTITY']);
 		} else return false;
 
+		// set page size
+		$this->page_size = isset($_SERVER['HTTP_X_KYTE_PAGE_SIZE']) ? intval($_SERVER['HTTP_X_KYTE_PAGE_SIZE']) : PAGE_SIZE;
 		// get page num from header
 		$this->page_num = isset($_SERVER['HTTP_X_KYTE_PAGE_IDX']) ? intval($_SERVER['HTTP_X_KYTE_PAGE_IDX']) : 1;
 
@@ -458,7 +453,6 @@ class Api
 		* POST     /{model} + data
 		* PUT      /{model}/{field}/{value} + data
 		* GET      /{model}/{field}/{value}
-		* GET (with pagination) /{model}/{field}/{value}/{page}
 		* DELETE   /{model}/{field}/{value}
 		*/
 
