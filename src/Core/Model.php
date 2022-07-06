@@ -76,12 +76,13 @@ class Model
 				$search_value = $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'];
 				$c = count($search_fields);
 				if ($c > 0 && !empty($search_value)) {
-					$sql .= "AND (";
+					$sql .= " AND (";
 
 					$i = 1;
 					foreach($search_fields as $sf) {
 						if ($i < $c) {
 							$sql .= " `$sf` LIKE '%$search_value%' OR";
+							$i++;
 						} else {
 							$sql .= " `$sf` LIKE '%$search_value%' ";
 						}
