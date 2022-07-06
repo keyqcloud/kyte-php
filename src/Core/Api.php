@@ -441,6 +441,9 @@ class Api
 		// get page num from header
 		$this->page_num = isset($_SERVER['HTTP_X_KYTE_PAGE_IDX']) ? intval($_SERVER['HTTP_X_KYTE_PAGE_IDX']) : 1;
 
+		//datatables specific
+		$this->response['draw'] = isset($_SERVER['HTTP_X_KYTE_DRAW']) ? intval($_SERVER['HTTP_X_KYTE_DRAW']) : 0;
+
 		$this->response['CONTENT_TYPE'] = $this->contentType;
 		$this->response['transaction'] = $this->request;
 		$this->response['engine_version'] = \Kyte\Core\Version::get();
