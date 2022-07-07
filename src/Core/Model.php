@@ -142,7 +142,18 @@ class Model
 						if (isset($order[$i]['field'], $order[$i]['direction'])) {
 							$direction = strtoupper($order[$i]['direction']);
 							if ($direction == 'ASC' || $direction == 'DESC') {
-								$order_sql .= " `$main_tbl`.`{$order[$i]['field']}` {$direction}";
+								$f = explode(".", $order[$i]['field']);
+								if (count($f) == 1) {
+									$order_sql .= " `$main_tbl`.`{$order[$i]['field']}` {$direction}";
+								} else if (count($f) == 2) {
+									// get struct for FK
+									$fk_attr = $this->kyte_model['struct'][$f[0]];
+									// capitalize the first letter for table name
+									$tblName = $fk_attr['fk']['model'];
+									$order_sql .= " `$tblName`.`{$order[$i]['field']}` {$direction}";
+								} else {
+									throw new \Exception("Unsupported field depth {$order[$i]['field']}");
+								}
 								if ($i < (count($order) - 1)) {
 									$order_sql .= ', ';
 								}
