@@ -452,7 +452,7 @@ class DBI {
 			self::connect();
 		}
 
-		$query = "SELECT * FROM `$table`";
+		$query = "SELECT `$table`.* FROM `$table`";
 
 		if(isset($id)) {
 			$query .= " WHERE id = $id";
