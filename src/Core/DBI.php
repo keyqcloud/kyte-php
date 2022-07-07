@@ -457,6 +457,7 @@ class DBI {
 		$join_query = "";
 
 		$empty_cond = false;
+		$first = true;
 
 		if (is_array($join)) {
 			foreach($join as $j) {
