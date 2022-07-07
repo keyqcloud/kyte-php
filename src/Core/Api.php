@@ -28,6 +28,7 @@ class Api
 	private $page_total;
 	private $page_num = 1;
 	private $total_count;
+	private $total_filtered;
 
 	private $response = [];
 	
@@ -307,7 +308,7 @@ class Api
 						$controllerClass = class_exists($this->model.'Controller') ? $this->model.'Controller' : '\\Kyte\\Mvc\\Controller\\ModelController';
 					}
 					// create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
-					$controller = new $controllerClass(defined($this->model) ? constant($this->model) : null, APP_DATE_FORMAT, $this->account, $this->session, $this->user, $this->response, $this->page_size, $this->page_total, $this->page_num, $this->total_count);
+					$controller = new $controllerClass(defined($this->model) ? constant($this->model) : null, APP_DATE_FORMAT, $this->account, $this->session, $this->user, $this->response, $this->page_size, $this->page_total, $this->page_num, $this->total_count, $this->total_filtered);
 					if (!$controller) throw new \Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 				}
 
@@ -371,6 +372,7 @@ class Api
 		$this->response['page_total'] = $this->page_total;
 		$this->response['page_num'] = $this->page_num;
 		$this->response['total_count'] = $this->total_count;
+		$this->response['total_filtered'] = $this->total_filtered;
 
 		// return response data
 		$this->response = ['response_code' => 200] + $this->response;

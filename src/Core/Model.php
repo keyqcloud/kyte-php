@@ -16,6 +16,7 @@ class Model
 	public $objects = [];
 
 	public $total = 0;
+	public $total_filtered = 0;
 
 	private $page_size;
 	private $page_num;
@@ -72,32 +73,35 @@ class Model
 			}
 
 			$join = null;
+			$page_sql = "";
 			if (isset($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS'], $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'])) {
 				$search_fields = explode(",", $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS']);
 				$search_value = $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'];
 				$c = count($search_fields);
 				if ($c > 0 && !empty($search_value)) {
-					$sql .= " AND (";
+					$page_sql .= " AND (";
 
 					$i = 1;
 					foreach($search_fields as $sf) {
 						$f = explode(".", $sf);
 						if (count($f) == 1) {
 							if ($i < $c) {
-								$sql .= " `$sf` LIKE '%$search_value%' OR";
+								$page_sql .= " `$sf` LIKE '%$search_value%' OR";
 								$i++;
 							} else {
-								$sql .= " `$sf` LIKE '%$search_value%' ";
+								$page_sql .= " `$sf` LIKE '%$search_value%' ";
 							}
 						} else if (count($f) == 2) {
+							// get struct for FK
+							$fk_attr = $this->kyte_model['struct'][$f[0]];
 							// capitalize the first letter for table name
-							$tblName = ucfirst($f[0]);
+							$tblName = $fk_attr['fk']['model'];
 
 							if ($i < $c) {
-								$sql .= " `$tblName`.`{$f[1]}` LIKE '%$search_value%' OR";
+								$page_sql .= " `$tblName`.`{$f[1]}` LIKE '%$search_value%' OR";
 								$i++;
 							} else {
-								$sql .= " $tblName`.`{$f[1]}` LIKE '%$search_value%' ";
+								$page_sql .= " $tblName`.`{$f[1]}` LIKE '%$search_value%' ";
 							}
 
 							// prepare join statement
@@ -106,9 +110,6 @@ class Model
 							if (!$join) {
 								$join = [];
 							}
-
-							// get struct for FK
-							$fk_attr = $this->kyte_model['struct'][$f[0]];
 
 							$join[] = [
 								'table' => $tblName,
@@ -120,12 +121,17 @@ class Model
 						}
 					}
 
-					$sql .= ")";
+					$page_sql .= ")";
 				}
 			}
 
 			// get total count
 			$this->total = \Kyte\Core\DBI::count($this->kyte_model['name'], $sql);
+
+			// add page sql
+			$sql .= $page_sql;
+			// count join
+			$this->total_filtered = \Kyte\Core\DBI::count($this->kyte_model['name'], $sql, $join);
 
 			if (isset($order)) {
 				if (!empty($order)) {

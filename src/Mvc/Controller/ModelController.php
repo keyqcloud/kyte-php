@@ -16,6 +16,7 @@ class ModelController
     protected $page_total;
     protected $page_num;
     protected $total_count;
+    protected $total_filtered;
 
     // controller behaviour flags
     protected $cascadeDelete;
@@ -31,7 +32,7 @@ class ModelController
     // array with error messages
     protected $exceptionMessages;
 
-    public function __construct($model, $dateformat, &$account, &$session, &$user, &$response, &$page_size, &$page_total, &$page_num, &$total_count)
+    public function __construct($model, $dateformat, &$account, &$session, &$user, &$response, &$page_size, &$page_total, &$page_num, &$total_count, &$total_filtered)
     {
         try {
             // default to allow all actions
@@ -64,6 +65,7 @@ class ModelController
             $this->page_total = &$page_total;
             $this->page_num = &$page_num;
             $this->total_count = &$total_count;
+            $this->total_filtered = &$total_filtered;
 
             // default error messages
             $this->exceptionMessages = [
@@ -506,7 +508,8 @@ class ModelController
 
             // get total count
             $this->total_count = $objs->total;
-            $this->page_total = ceil($this->total_count / $this->page_size);
+            $this->total_filtered = $objs->total_filtered;
+            $this->page_total = ceil($this->total_filtered / $this->page_size);
 
             if ($this->failOnNull && count($objs->objects) < 1) {
                 throw new \Exception($this->exceptionMessages['get']['failOnNull']);
