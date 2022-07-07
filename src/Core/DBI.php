@@ -465,7 +465,8 @@ class DBI {
 					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
 					$empty_cond = true;
 				} else {
-					$join_query .= " AND `$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
+					$join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
+					$first = false;
 				}
 			}
 		}
@@ -639,6 +640,7 @@ class DBI {
 		$join_query = "";
 
 		$empty_cond = false;
+		$first = true;
 
 		if (is_array($join)) {
 			foreach($join as $j) {
@@ -647,7 +649,8 @@ class DBI {
 					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
 					$empty_cond = true;
 				} else {
-					$join_query .= " AND `$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
+					$join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
+					$first = false;
 				}
 			}
 		}
