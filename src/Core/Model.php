@@ -150,7 +150,7 @@ class Model
 									$fk_attr = $this->kyte_model['struct'][$f[0]];
 									// capitalize the first letter for table name
 									$tblName = $fk_attr['fk']['model'];
-									$order_sql .= " `$tblName`.`{$order[$i]['field']}` {$direction}";
+									$order_sql .= " `$tblName`.`{$f[1]}` {$direction}";
 								} else {
 									throw new \Exception("Unsupported field depth {$order[$i]['field']}");
 								}
