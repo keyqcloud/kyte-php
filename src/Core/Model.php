@@ -151,6 +151,28 @@ class Model
 									// capitalize the first letter for table name
 									$tblName = $fk_attr['fk']['model'];
 									$order_sql .= " `$tblName`.`{$f[1]}` {$direction}";
+
+									// prepare join statement
+
+									// if join is null, initialize with empty array
+									if (!$join) {
+										$join = [];
+									}
+
+									$found = false;
+									foreach($join as $j) {
+										if ($j['table'] == $tblName) {
+											$found = true;
+											break;
+										}
+									}
+									if (!$found) {
+										$join[] = [
+											'table' => $tblName,
+											'main_table_idx' => $f[0],
+											'table_idx' => $fk_attr['fk']['field'],
+										];
+									}
 								} else {
 									throw new \Exception("Unsupported field depth {$order[$i]['field']}");
 								}
