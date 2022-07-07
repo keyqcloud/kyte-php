@@ -90,12 +90,31 @@ class Model
 								$sql .= " `$sf` LIKE '%$search_value%' ";
 							}
 						} else if (count($f) == 2) {
+							// capitalize the first letter for table name
+							$tblName = ucfirst($f[0]);
+
 							if ($i < $c) {
-								$sql .= " `{$f[0]}`.`{$f[1]}` LIKE '%$search_value%' OR";
+								$sql .= " `$tblName`.`{$f[1]}` LIKE '%$search_value%' OR";
 								$i++;
 							} else {
-								$sql .= " {$f[0]}`.`{$f[1]}` LIKE '%$search_value%' ";
+								$sql .= " $tblName`.`{$f[1]}` LIKE '%$search_value%' ";
 							}
+
+							// prepare join statement
+
+							// if join is null, initialize with empty array
+							if (!$join) {
+								$join = [];
+							}
+
+							// get struct for FK
+							$fk_attr = $this->kyte_model['struct'][$f[0]];
+
+							$join[] = [
+								'table' => $tblName,
+								'main_table_idx' => $f[0],
+								'table_idx' => $fk_attr['fk']['field'],
+							];
 						} else {
 							throw new \Exception("Unsupported field depth $sf");
 						}
