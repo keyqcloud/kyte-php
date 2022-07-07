@@ -33,20 +33,22 @@ class Model
 			$dataObjects = array();
 			$data = array();
 
+			$main_tbl = $this->kyte_model['name'];
+
 			if (isset($field, $value)) {
 				if ($isLike) {
-					$sql = "WHERE `$field` LIKE '%$value%'";
+					$sql = "WHERE `$main_tbl`.`$field` LIKE '%$value%'";
 				} else {
-					$sql = "WHERE `$field` = '$value'";
+					$sql = "WHERE `$main_tbl`.`$field` = '$value'";
 				}
 
 				if (!$all) {
-					$sql .= " AND `deleted` = '0'";
+					$sql .= " AND `$main_tbl`.`deleted` = '0'";
 				}
 			} else {
 				$sql = '';
 				if (!$all) {
-					$sql .= " WHERE `deleted` = '0'";
+					$sql .= " WHERE `$main_tbl`.`deleted` = '0'";
 				}
 			}
 
@@ -59,14 +61,14 @@ class Model
 							if ($sql != '') {
 								$sql .= " AND ";
 							}
-							$sql .= "`{$condition['field']}` {$condition['operator']} '{$condition['value']}'";
+							$sql .= "`$main_tbl`.`{$condition['field']}` {$condition['operator']} '{$condition['value']}'";
 						}
 						// default to equal
 						else {
 							if ($sql != '') {
 								$sql .= " AND ";
 							}
-							$sql .= "`{$condition['field']}` = '{$condition['value']}'";
+							$sql .= "`$main_tbl`.`{$condition['field']}` = '{$condition['value']}'";
 						}
 					}
 				}
@@ -86,10 +88,10 @@ class Model
 						$f = explode(".", $sf);
 						if (count($f) == 1) {
 							if ($i < $c) {
-								$page_sql .= " `$sf` LIKE '%$search_value%' OR";
+								$page_sql .= " `$main_tbl`.`$sf` LIKE '%$search_value%' OR";
 								$i++;
 							} else {
-								$page_sql .= " `$sf` LIKE '%$search_value%' ";
+								$page_sql .= " `$main_tbl`.`$sf` LIKE '%$search_value%' ";
 							}
 						} else if (count($f) == 2) {
 							// get struct for FK
@@ -140,7 +142,7 @@ class Model
 						if (isset($order[$i]['field'], $order[$i]['direction'])) {
 							$direction = strtoupper($order[$i]['direction']);
 							if ($direction == 'ASC' || $direction == 'DESC') {
-								$order_sql .= " `{$order[$i]['field']}` {$direction}";
+								$order_sql .= " `$main_tbl`.`{$order[$i]['field']}` {$direction}";
 								if ($i < (count($order) - 1)) {
 									$order_sql .= ', ';
 								}
@@ -150,7 +152,7 @@ class Model
 					$sql .= $order_sql;
 				}
 			} else {
-				$sql .= " ORDER BY `date_created` DESC";
+				$sql .= " ORDER BY `$main_tbl`.`date_created` DESC";
 			}
 
 			// if paging is set, add limit
