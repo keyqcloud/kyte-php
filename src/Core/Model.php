@@ -125,7 +125,8 @@ class Model
 
 			foreach ($data as $item) {
 				$obj = new \Kyte\Core\ModelObject($this->kyte_model);
-				$obj->retrieve('id', $item['id'], null, null, $all);
+				// $obj->retrieve('id', $item['id'], null, null, $all);
+				$obj->populate($item);
 				$dataObjects[] = $obj;
 			}
 
