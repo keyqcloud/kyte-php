@@ -101,7 +101,7 @@ class Model
 								$page_sql .= " `$tblName`.`{$f[1]}` LIKE '%$search_value%' OR";
 								$i++;
 							} else {
-								$page_sql .= " $tblName`.`{$f[1]}` LIKE '%$search_value%' ";
+								$page_sql .= " `$tblName`.`{$f[1]}` LIKE '%$search_value%' ";
 							}
 
 							// prepare join statement

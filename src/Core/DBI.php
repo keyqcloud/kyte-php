@@ -473,6 +473,8 @@ class DBI {
 			$query .= " $condition";
 		}
 
+		$query .= $join_query;
+
 		// DEBUG
 		if (defined('DEBUG_SQL')) {
 			error_log($query);
@@ -619,17 +621,32 @@ class DBI {
 	 * @param string $table
 	 * @param string $condition
 	 */
-	public static function count($table, $condition = null)
+	public static function count($table, $condition = null, $join = null)
 	{
 		if (!self::$dbConn) {
 			self::connect();
 		}
 
-		$query = "SELECT count(`id`) as count FROM `$table`";
+		$query = "SELECT count(`$table`.`id`) as count FROM `$table`";
 
-		if($query) {
+		$join_query = "";
+
+		if (is_array($join)) {
+			foreach($join as $j) {
+				$query .= ", `{$j['table']}`";
+				if (empty($condition)) {
+					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
+				} else {
+					$join_query .= " AND `$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
+				}
+			}
+		}
+		
+		if($condition) {
 			$query .= " $condition";
 		}
+
+		$query .= $join_query;
 
 		// DEBUG
 		if (defined('DEBUG_SQL')) {
