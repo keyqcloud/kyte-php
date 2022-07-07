@@ -474,7 +474,7 @@ class DBI {
 		// if condition was originally not empty
 		if (!$empty_cond) {
 			// remove where from $condition and replace it with AND
-			str_replace("WHERE", "AND", $condition);
+			$condition = str_replace("WHERE", "AND", $condition);
 		}
 
 		if(isset($id)) {
@@ -658,7 +658,7 @@ class DBI {
 		// if condition was originally not empty
 		if (!$empty_cond) {
 			// remove where from $condition and replace it with AND
-			str_replace("WHERE", "AND", $condition);
+			$condition = str_replace("WHERE", "AND", $condition);
 		}
 
 		if(isset($id)) {
