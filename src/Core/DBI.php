@@ -456,24 +456,31 @@ class DBI {
 
 		$join_query = "";
 
+		$empty_cond = false;
+
 		if (is_array($join)) {
 			foreach($join as $j) {
 				$query .= ", `{$j['table']}`";
 				if (empty($condition)) {
 					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
+					$empty_cond = true;
 				} else {
 					$join_query .= " AND `$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
 				}
 			}
 		}
 
+		// if condition was originally not empty
+		if (!$empty_cond) {
+			// remove where from $condition and replace it with AND
+			str_replace("WHERE", "AND", $condition);
+		}
+
 		if(isset($id)) {
 			$query .= " WHERE id = $id";
 		} else {
-			$query .= " $condition";
+			$query .= "$join_query $condition";
 		}
-
-		$query .= $join_query;
 
 		// DEBUG
 		if (defined('DEBUG_SQL')) {
@@ -631,22 +638,33 @@ class DBI {
 
 		$join_query = "";
 
+		$empty_cond = false;
+
 		if (is_array($join)) {
 			foreach($join as $j) {
 				$query .= ", `{$j['table']}`";
 				if (empty($condition)) {
 					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
+					$empty_cond = true;
 				} else {
 					$join_query .= " AND `$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
 				}
 			}
 		}
-		
-		if($condition) {
-			$query .= " $condition";
+
+		// if condition was originally not empty
+		if (!$empty_cond) {
+			// remove where from $condition and replace it with AND
+			str_replace("WHERE", "AND", $condition);
 		}
 
-		$query .= $join_query;
+		if(isset($id)) {
+			$query .= " WHERE id = $id";
+		} else {
+			
+		}
+		
+		$query .= "$join_query $condition";
 
 		// DEBUG
 		if (defined('DEBUG_SQL')) {
