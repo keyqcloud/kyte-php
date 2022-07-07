@@ -496,10 +496,20 @@ class ModelController
             if (!$this->checkPermissions('get')) {
                 throw new \Exception('Permission Denied');
             }
-            
+
             $conditions = $this->requireAccount ? [[ 'field' => 'kyte_account', 'value' => $this->account->id]] : null;
             $all = false;
             $order = null;
+
+            // handle table order requests
+            if (isset($_SERVER['HTTP_X_KYTE_PAGE_ORDER_COL'], $_SERVER['HTTP_X_KYTE_PAGE_ORDER_DIR'])) {
+                $col = $_SERVER['HTTP_X_KYTE_PAGE_ORDER_COL'];
+                $dir = $_SERVER['HTTP_X_KYTE_PAGE_ORDER_DIR'];
+                if (!empty($col) && !empty($dir)) {
+                    $order = [['field' => $col, 'direction' => $dir]];
+                }
+            }
+
             $this->hook_prequery('get', $field, $value, $conditions, $all, $order);
             
             // init model
