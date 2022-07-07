@@ -446,13 +446,26 @@ class DBI {
 	 * @param integer $id
 	 * @param string $condition
 	 */
-	public static function select($table, $id = null, $condition = null)
+	public static function select($table, $id = null, $condition = null, $join = null)
 	{
 		if (!self::$dbConn) {
 			self::connect();
 		}
 
 		$query = "SELECT `$table`.* FROM `$table`";
+
+		$join_query = "";
+
+		if (is_array($join)) {
+			foreach($join as $j) {
+				$query .= ", `{$j['table']}`";
+				if (empty($condition)) {
+					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
+				} else {
+					$join_query .= " AND `$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
+				}
+			}
+		}
 
 		if(isset($id)) {
 			$query .= " WHERE id = $id";

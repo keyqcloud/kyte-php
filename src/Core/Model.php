@@ -71,6 +71,7 @@ class Model
 				}
 			}
 
+			$join = null;
 			if (isset($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS'], $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'])) {
 				$search_fields = explode(",", $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS']);
 				$search_value = $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'];
@@ -80,11 +81,23 @@ class Model
 
 					$i = 1;
 					foreach($search_fields as $sf) {
-						if ($i < $c) {
-							$sql .= " `$sf` LIKE '%$search_value%' OR";
-							$i++;
+						$f = explode(".", $sf);
+						if (count($f) == 1) {
+							if ($i < $c) {
+								$sql .= " `$sf` LIKE '%$search_value%' OR";
+								$i++;
+							} else {
+								$sql .= " `$sf` LIKE '%$search_value%' ";
+							}
+						} else if (count($f) == 2) {
+							if ($i < $c) {
+								$sql .= " `{$f[0]}`.`{$f[1]}` LIKE '%$search_value%' OR";
+								$i++;
+							} else {
+								$sql .= " {$f[0]}`.`{$f[1]}` LIKE '%$search_value%' ";
+							}
 						} else {
-							$sql .= " `$sf` LIKE '%$search_value%' ";
+							throw new \Exception("Unsupported field depth $sf");
 						}
 					}
 
@@ -121,7 +134,7 @@ class Model
 				$sql .= " LIMIT {$this->page_size} OFFSET $offset";
 			}
 
-			$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql);
+			$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql, $join);
 
 			foreach ($data as $item) {
 				$obj = new \Kyte\Core\ModelObject($this->kyte_model);
