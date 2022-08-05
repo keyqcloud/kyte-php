@@ -28,6 +28,7 @@ class ModelController
     protected $failOnNull;
     protected $allowableActions;
     protected $checkExisting;
+    protected $existingThrowException;
 
     // array with error messages
     protected $exceptionMessages;
@@ -58,6 +59,7 @@ class ModelController
             $this->requireRoles = true;
             $this->requireAccount = true;
             $this->checkExisting = null;
+            $this->existingThrowException = true;
             $this->failOnNull = false;
 
             // page controls
@@ -383,7 +385,11 @@ class ModelController
             // check existing and fail if present
             if ($this->checkExisting) {
                 if ($obj->retrieve($this->checkExisting, $data[$this->checkExisting])) {
-                    throw new \Exception($this->model['name'].' already exists');
+                    if ($this->existingThrowException) {
+                        throw new \Exception($this->model['name'].' already exists');
+                    } else {
+                        return;
+                    }
                 }
             }
             
