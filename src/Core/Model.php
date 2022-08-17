@@ -135,55 +135,53 @@ class Model
 			// count join
 			$this->total_filtered = \Kyte\Core\DBI::count($this->kyte_model['name'], $sql, $join);
 
-			if (isset($order)) {
-				if (!empty($order)) {
-					$order_sql = ' ORDER BY ';
-					for($i = 0; $i < count($order); $i++) {
-						if (isset($order[$i]['field'], $order[$i]['direction'])) {
-							$direction = strtoupper($order[$i]['direction']);
-							if ($direction == 'ASC' || $direction == 'DESC') {
-								$f = explode(".", $order[$i]['field']);
-								if (count($f) == 1) {
-									$order_sql .= " `$main_tbl`.`{$order[$i]['field']}` {$direction}";
-								} else if (count($f) == 2) {
-									// get struct for FK
-									$fk_attr = $this->kyte_model['struct'][$f[0]];
-									// capitalize the first letter for table name
-									$tblName = $fk_attr['fk']['model'];
-									$order_sql .= " `$tblName`.`{$f[1]}` {$direction}";
+			if (!empty($order)) {
+                $order_sql = ' ORDER BY ';
+                for($i = 0; $i < count($order); $i++) {
+                    if (isset($order[$i]['field'], $order[$i]['direction'])) {
+                        $direction = strtoupper($order[$i]['direction']);
+                        if ($direction == 'ASC' || $direction == 'DESC') {
+                            $f = explode(".", $order[$i]['field']);
+                            if (count($f) == 1) {
+                                $order_sql .= " `$main_tbl`.`{$order[$i]['field']}` {$direction}";
+                            } else if (count($f) == 2) {
+                                // get struct for FK
+                                $fk_attr = $this->kyte_model['struct'][$f[0]];
+                                // capitalize the first letter for table name
+                                $tblName = $fk_attr['fk']['model'];
+                                $order_sql .= " `$tblName`.`{$f[1]}` {$direction}";
 
-									// prepare join statement
+                                // prepare join statement
 
-									// if join is null, initialize with empty array
-									if (!$join) {
-										$join = [];
-									}
+                                // if join is null, initialize with empty array
+                                if (!$join) {
+                                    $join = [];
+                                }
 
-									$found = false;
-									foreach($join as $j) {
-										if ($j['table'] == $tblName) {
-											$found = true;
-											break;
-										}
-									}
-									if (!$found) {
-										$join[] = [
-											'table' => $tblName,
-											'main_table_idx' => $f[0],
-											'table_idx' => $fk_attr['fk']['field'],
-										];
-									}
-								} else {
-									throw new \Exception("Unsupported field depth {$order[$i]['field']}");
-								}
-								if ($i < (count($order) - 1)) {
-									$order_sql .= ', ';
-								}
-							}
-						}
-					}
-					$sql .= $order_sql;
-				}
+                                $found = false;
+                                foreach($join as $j) {
+                                    if ($j['table'] == $tblName) {
+                                        $found = true;
+                                        break;
+                                    }
+                                }
+                                if (!$found) {
+                                    $join[] = [
+                                        'table' => $tblName,
+                                        'main_table_idx' => $f[0],
+                                        'table_idx' => $fk_attr['fk']['field'],
+                                    ];
+                                }
+                            } else {
+                                throw new \Exception("Unsupported field depth {$order[$i]['field']}");
+                            }
+                            if ($i < (count($order) - 1)) {
+                                $order_sql .= ', ';
+                            }
+                        }
+                    }
+                }
+                $sql .= $order_sql;
 			} else {
 				$sql .= " ORDER BY `$main_tbl`.`date_created` DESC";
 			}
@@ -243,7 +241,7 @@ class Model
 			}
 
 			$data = \Kyte\Core\DBI::group($this->kyte_model['name'], $field, $sql);
-			
+
 			return $data;
 
 		} catch (\Exception $e) {
@@ -256,7 +254,7 @@ class Model
 	{
 		try {
 			$data = \Kyte\Core\DBI::query($sql);
-			
+
 			return $data;
 
 		} catch (\Exception $e) {
@@ -272,7 +270,7 @@ class Model
 			$data = array();
 
 			if (isset($fields, $values)) {
-				
+
 				if (!$all) {
 					$sql = "WHERE (";
 				} else {
@@ -293,7 +291,7 @@ class Model
 				if (!$all) {
 					$sql .= ") AND `deleted` = '0'";
 				}
-				
+
 				$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql);
 			} else {
 				$data = $all ? \Kyte\Core\DBI::select($this->kyte_model['name'], null, null) : \Kyte\Core\DBI::select($this->kyte_model['name'], null, "WHERE `deleted` = '0'");
