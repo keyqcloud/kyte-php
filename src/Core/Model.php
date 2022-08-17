@@ -137,6 +137,11 @@ class Model
 
 			if (!empty($order)) {
                 $order_sql = ' ORDER BY ';
+                //Hack to check if something has been added to the ORDER BY sentence by using string length instead of
+                //a syntax check which is costly
+                $originalOrderByStatementLen = strlen($order_sql);
+
+                //Order field will work if formatted on a multidimensional array, this allows order combining
                 for($i = 0; $i < count($order); $i++) {
                     if (isset($order[$i]['field'], $order[$i]['direction'])) {
                         $direction = strtoupper($order[$i]['direction']);
@@ -181,7 +186,13 @@ class Model
                         }
                     }
                 }
-                $sql .= $order_sql;
+                //Hack: Check if something has been added to the ORDER BY sentence by string length otherwise we can get
+                //a MySQL syntax error, example: ... ORDER BY (empty string here); if you pass the order parameter as
+                //an unidimensional array ['field' => 'category', 'direction' => 'asc'] would crash otherwise
+                if(strlen($order_sql) > $originalOrderByStatementLen){
+                    $sql .= $order_sql;
+                }
+
 			} else {
 				$sql .= " ORDER BY `$main_tbl`.`date_created` DESC";
 			}
