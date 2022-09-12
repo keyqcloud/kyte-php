@@ -169,7 +169,7 @@ class ModelAttributeController extends ModelController
             case 'delete':
                 // TODO: consider situation where there are external tables and foreign keys
 
-                $tbl = \Kyte\Core\ModelObject(DataModel);
+                $tbl = new \Kyte\Core\ModelObject(DataModel);
                 if (!$tbl->retrieve('id', $o->dataModel)) {
                     throw new \Exception("Unable to find associated data model.");
                 }
