@@ -94,11 +94,6 @@ class ModelAttributeController extends ModelController
 
                 $updatedModel = constant($tbl->name);
 
-                // although we check existing...let's make sure that the def doesn't have it
-                if (array_key_exists($r['name'], $updatedModel['struct'])) {
-                    throw new \Exception("Whoops, looks like the attribute name is already defined in the model although not found in the database. Contact a DB admin ASAP!");
-                }
-
                 $attrs = [
                     'type'      => $r['type'] == 'date' ? 'i' : $r['type'],
                     'date'      => $r['type'] == 'date',
