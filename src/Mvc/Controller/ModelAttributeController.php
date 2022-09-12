@@ -87,7 +87,7 @@ class ModelAttributeController extends ModelController
                 break;
 
             case 'update':
-                $tbl = \Kyte\Core\ModelObject(DataModel);
+                $tbl = new \Kyte\Core\ModelObject(DataModel);
                 if (!$tbl->retrieve('id', $o->dataModel)) {
                     throw new \Exception("Unable to find associated data model.");
                 }
