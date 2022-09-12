@@ -13,7 +13,7 @@ class DataModelController extends ModelController
         switch ($method) {
             case 'new':
                 // check if new name is unique
-                if (!defined($r['name'])) {
+                if (defined($r['name'])) {
                     throw new \Exception("Model name is already used");
                 }
 
@@ -37,12 +37,12 @@ class DataModelController extends ModelController
 
             case 'update':
                 // check if model is defined
-                if (!defined($o->name)) {
+                if (defined($o->name)) {
                     throw new \Exception("Unknown model definition");
                 }
 
                 // check if new name is unique
-                if (!defined($o->name)) {
+                if (defined($r['name'])) {
                     throw new \Exception("New model name is already used");
                 }
 
