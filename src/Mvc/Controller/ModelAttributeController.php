@@ -16,7 +16,7 @@ class ModelAttributeController extends ModelController
         switch ($method) {
             case 'new':
                 // get table
-                $tbl = \Kyte\Core\ModelObject(DataModel);
+                $tbl = new \Kyte\Core\ModelObject(DataModel);
                 if (!$tbl->retrieve('id', $r['dataModel'])) {
                     throw new \Exception("Unable to find associated data model.");
                 }
