@@ -36,6 +36,15 @@ $DataModel = [
 
 		// framework attributes
 
+		'kyte_locked'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 0,		// 0 - not a kyte critical system...can be edited, 1 - cannot be deleted or edited
+			'date'		=> false,
+		],
+
 		'kyte_account'	=> [
 			'type'		=> 'i',
 			'required'	=> true,
