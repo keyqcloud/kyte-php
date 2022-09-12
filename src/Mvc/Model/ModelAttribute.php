@@ -32,7 +32,7 @@ $ModelAttribute = [
 		'unsigned'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
-			'size'		=> 11,
+			'size'		=> 1,
 			'unsigned'	=> true,
 			'date'		=> false,
 		],
@@ -40,7 +40,7 @@ $ModelAttribute = [
 		'protected'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
-			'size'		=> 11,
+			'size'		=> 1,
 			'unsigned'	=> true,
 			'default'	=> 0,		// 0 - return value, 1 - omit value
 			'date'		=> false,
