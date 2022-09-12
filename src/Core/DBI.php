@@ -546,17 +546,15 @@ class DBI {
 	}
 
 	/*
-	 * Execute custom SQL query (only selects)
+	 * Execute custom SQL query
 	 *
 	 * @param string $sql
 	 */
-	public static function query($sql)
+	public static function query($query)
 	{
 		if (!self::$dbConn) {
 			self::connect();
 		}
-
-		$query = "SELECT ".$sql;
 
 		// DEBUG
 		if (defined('DEBUG_SQL')) {
