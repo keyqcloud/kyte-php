@@ -1,32 +1,27 @@
 <?php
 
-$DataModel = [
-	'name' => 'DataModel',
+$ExternalTable = [
+	'name' => 'ExternalTable',
 	'struct' => [
-		'name'		=> [
-			'type'		=> 's',
+		// data model this ET is associated with
+		'dataModel'	=> [
+			'type'		=> 'i',
 			'required'	=> true,
-			'size'		=> 255,
+			'size'		=> 11,
+			'unsigned'	=> true,
 			'date'		=> false,
 		],
 
-		'engine'		=> [
-			'type'		=> 's',
+		// external table data model id
+		'etModel'	=> [
+			'type'		=> 'i',
 			'required'	=> false,
-			'size'		=> 255,
-			'default'	=> 'InnoDB',
+			'size'		=> 11,
+			'unsigned'	=> true,
 			'date'		=> false,
 		],
-
-		'charset'		=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'default'	=> 'utf8mb4',
-			'date'		=> false,
-		],
-
-		'application'	=> [
+		// external table data model attribute id
+		'etField'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
 			'size'		=> 11,
