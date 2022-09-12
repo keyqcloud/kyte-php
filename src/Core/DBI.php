@@ -491,7 +491,7 @@ class DBI {
 		}
 		$field .= ($attrs['required'] ? ' NOT NULL' : '');
 
-		$tbl_sql = "ALTER TABLE `$tbl_name` CHANGE `column_name_old` $field";
+		$tbl_sql = "ALTER TABLE `$tbl_name` CHANGE `$column_name_old` $field";
 
 		$result = self::$dbConn->query($tbl_sql);
 		if($result === false) {
