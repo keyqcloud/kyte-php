@@ -535,6 +535,7 @@ class Api
 		// retrieve transaction and user token corresponding to session token
 		if ($identity[1] != "0") {
 			$session_ret = $this->session->validate($identity[1]);
+			$this->response['session'] = $session_ret['sessionToken'];
 			$this->response['token'] = $session_ret['txToken'];
 			$this->response['uid'] = $session_ret['uid'];
 			
