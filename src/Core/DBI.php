@@ -301,6 +301,35 @@ class DBI {
 	}
 
 	/*
+	 * Rename table
+	 */
+	public static function renameTable($tbl_name_old, $tbl_name_new) {
+		if (!$tbl_name_old) {
+			throw new \Exception("Current table name cannot be empty.");
+			return false;
+		}
+		
+		if (!$tbl_name_new) {
+			throw new \Exception("New table name cannot be empty.");
+			return false;
+		}
+
+		if (!self::$dbConn) {
+			self::connect();
+		}
+
+		$tbl_sql = "ALTER TABLE `$tbl_name_old` RENAME TO `$tbl_name_news`";
+
+		$result = self::$dbConn->query($tbl_sql);
+		if($result === false) {
+			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+			return false;
+		}
+
+		return true;
+	}
+
+	/*
 	 * Make an insert into table in database
 	 *
 	 * @param string $table
