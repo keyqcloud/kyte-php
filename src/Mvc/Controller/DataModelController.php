@@ -27,7 +27,7 @@ class DataModelController extends ModelController
                     throw new \Exception("Failed to create table...");
                 }
 
-                if (file_put_contents("/var/www/html/app/models/{$r['name']}.php", "<?php\n\$${r['name']} = " . var_export($base_model, true) . ";") === false) {
+                if (file_put_contents("/var/www/html/app/models/{$r['name']}.php", "<?php\n\${$r['name']} = " . var_export($base_model, true) . ";") === false) {
                     if (!\Kyte\Core\DBI::dropTable($r['name'])) {
                         throw new \Exception("Failed to undo create table...we are in big trouble! Squawk 7700!");
                     }
@@ -54,7 +54,7 @@ class DataModelController extends ModelController
                 $updatedModel = constant($o->name);
                 $updatedModel['name'] = $r['name'];
 
-                if (file_put_contents("/var/www/html/app/models/{$r['name']}.php", "<?php ${r['name']} = " . var_export($updatedModel, true) . ";") === false) {
+                if (file_put_contents("/var/www/html/app/models/{$r['name']}.php", "<?php\n\${$r['name']} = " . var_export($updatedModel, true) . ";") === false) {
                     if (!\Kyte\Core\DBI::renameTable($r['name'], $o->name)) {
                         throw new \Exception("Failed to undo rename...we are in big trouble! Squawk 7700!");
                     }

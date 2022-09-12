@@ -80,7 +80,7 @@ class ModelAttributeController extends ModelController
 
                 $updatedModel['struct'][$r['name']] = $attrs;
 
-                if (file_put_contents("/var/www/html/app/models/{$tbl->name}.php", "<?php ${r['name']} = " . var_export($updatedModel, true) . ";") === false) {
+                if (file_put_contents("/var/www/html/app/models/{$tbl->name}.php", "<?php\n\${$r['name']} = " . var_export($updatedModel, true) . ";") === false) {
                     throw new \Exception("Failed to undo rename...we are in big trouble! Squawk 7700!");
                 }
 
@@ -154,7 +154,7 @@ class ModelAttributeController extends ModelController
                 // add new definition
                 $updatedModel['struct'][$r['name']] = $attrs;
 
-                if (file_put_contents("/var/www/html/app/models/{$tbl->name}.php", "<?php ${r['name']} = " . var_export($updatedModel, true) . ";") === false) {
+                if (file_put_contents("/var/www/html/app/models/{$tbl->name}.php", "<?php\n\${$r['name']} = " . var_export($updatedModel, true) . ";") === false) {
                     throw new \Exception("Failed to undo rename...we are in big trouble! Squawk 7700!");
                 }
                 break;                
@@ -182,7 +182,7 @@ class ModelAttributeController extends ModelController
                 $updatedModel = constant($tbl->name);
                 unset($updatedModel['struct'][$o->name]);
 
-                if (file_put_contents("/var/www/html/app/models/{$tbl->name}.php", "<?php ${r['name']} = " . var_export($updatedModel, true) . ";") === false) {
+                if (file_put_contents("/var/www/html/app/models/{$tbl->name}.php", "<?php\n\${$o->name} = " . var_export($updatedModel, true) . ";") === false) {
                     throw new \Exception("Failed to undo rename...we are in big trouble! Squawk 7700!");
                 }
                 break;
