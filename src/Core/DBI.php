@@ -330,6 +330,208 @@ class DBI {
 	}
 
 	/*
+	 * Add column to table
+	 */
+	public static function addColumn($tbl_name, $column, $attrs) {
+		if (!$tbl_name) {
+			throw new \Exception("Table name cannot be empty.");
+			return false;
+		}
+
+		if (!$column) {
+			throw new \Exception("Column name cannot be empty.");
+			return false;
+		}
+
+		if (!self::$dbConn) {
+			self::connect();
+		}
+		
+		// check if required attrs are set
+		if (!isset($attrs['date'])) {
+			throw new \Exception("date attribute must be declared for column $column of table $tbl_name.");
+			return false;
+		}
+
+		if (!isset($attrs['required'])) {
+			throw new \Exception("required attribute must be declared for column $column of table $tbl_name.");
+			return false;
+		}
+
+		if (!isset($attrs['type'])) {
+			throw new \Exception("type attribute must be declared for column $column of table $tbl_name.");
+			return false;
+		}
+
+		$field = "`$column`";	// column name
+		
+		// type, size and if signed or not
+		if ($attrs['date']) {
+			$field .= ' bigint unsigned';
+		} else {
+
+			if ($attrs['type'] == 'i') {
+				$field .= ' int';
+				if (array_key_exists('size', $attrs)) {
+					$field .= '('.$attrs['size'].')';
+				}
+				if (array_key_exists('unsigned', $attrs)) {
+					$field .= ' unsigned';
+				}
+			} elseif ($attrs['type'] == 's') {
+				$field .= ' varchar';
+				if (array_key_exists('size', $attrs)) {
+					$field .= '('.$attrs['size'].')';
+				} else {
+					throw new \Exception("varchar requires size to be declared for column $name of table $tbl_name.");
+					return false;
+				}
+			} elseif ($attrs['type'] == 'd' && array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
+				$field .= ' decimal('.$attrs['precision'].','.$attrs['scale'].')';
+			} elseif ($attrs['type'] == 't') {
+				$field .= ' text';
+			} else {
+				throw new \Exception("Unknown type ".$attrs['type']." for column $name of table $tbl_name.");
+				return false;
+			}
+		}
+		if (array_key_exists('default', $attrs)) {
+			// default value?
+			$field .= ' DEFAULT ';
+			$field .= (is_string($attrs['default']) ? "'".$attrs['default']."'" : $attrs['default']);
+		}
+		$field .= ($attrs['required'] ? ' NOT NULL' : '');
+
+		$tbl_sql = "ALTER TABLE `$tbl_name` ADD $field";
+
+		$result = self::$dbConn->query($tbl_sql);
+		if($result === false) {
+			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+			return false;
+		}
+
+		return true;
+	}
+
+	/*
+	 * Change column in table
+	 */
+	public static function changeColumn($tbl_name, $column_name_old, $column_name_new, $attrs) {
+		if (!$tbl_name) {
+			throw new \Exception("Table name cannot be empty.");
+			return false;
+		}
+
+		if (!$column_name_old) {
+			throw new \Exception("Current column name cannot be empty.");
+			return false;
+		}
+
+		if (!$column_name_new) {
+			throw new \Exception("New column name cannot be empty.");
+			return false;
+		}
+
+		if (!self::$dbConn) {
+			self::connect();
+		}
+		
+		// check if required attrs are set
+		if (!isset($attrs['date'])) {
+			throw new \Exception("date attribute must be declared for column $column_name_new of table $tbl_name.");
+			return false;
+		}
+
+		if (!isset($attrs['required'])) {
+			throw new \Exception("required attribute must be declared for column $column_name_new of table $tbl_name.");
+			return false;
+		}
+
+		if (!isset($attrs['type'])) {
+			throw new \Exception("type attribute must be declared for column $column_name_new of table $tbl_name.");
+			return false;
+		}
+
+		$field = "`$column_name_new`";	// column name
+		
+		// type, size and if signed or not
+		if ($attrs['date']) {
+			$field .= ' bigint unsigned';
+		} else {
+
+			if ($attrs['type'] == 'i') {
+				$field .= ' int';
+				if (array_key_exists('size', $attrs)) {
+					$field .= '('.$attrs['size'].')';
+				}
+				if (array_key_exists('unsigned', $attrs)) {
+					$field .= ' unsigned';
+				}
+			} elseif ($attrs['type'] == 's') {
+				$field .= ' varchar';
+				if (array_key_exists('size', $attrs)) {
+					$field .= '('.$attrs['size'].')';
+				} else {
+					throw new \Exception("varchar requires size to be declared for column $column_name_new of table $tbl_name.");
+					return false;
+				}
+			} elseif ($attrs['type'] == 'd' && array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
+				$field .= ' decimal('.$attrs['precision'].','.$attrs['scale'].')';
+			} elseif ($attrs['type'] == 't') {
+				$field .= ' text';
+			} else {
+				throw new \Exception("Unknown type ".$attrs['type']." for column $column_name_new of table $tbl_name.");
+				return false;
+			}
+		}
+		if (array_key_exists('default', $attrs)) {
+			// default value?
+			$field .= ' DEFAULT ';
+			$field .= (is_string($attrs['default']) ? "'".$attrs['default']."'" : $attrs['default']);
+		}
+		$field .= ($attrs['required'] ? ' NOT NULL' : '');
+
+		$tbl_sql = "ALTER TABLE `$tbl_name` CHANGE `column_name_old` $field";
+
+		$result = self::$dbConn->query($tbl_sql);
+		if($result === false) {
+			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+			return false;
+		}
+
+		return true;
+	}
+
+	/*
+	 * Drop column in table
+	 */
+	public static function dropColumn($tbl_name, $column_name) {
+		if (!$tbl_name) {
+			throw new \Exception("Table name cannot be empty.");
+			return false;
+		}
+
+		if (!$column_name) {
+			throw new \Exception("Column name cannot be empty.");
+			return false;
+		}
+
+		if (!self::$dbConn) {
+			self::connect();
+		}
+
+		$tbl_sql = "ALTER TABLE `$tbl_name` DROP `$column_name`";
+
+		$result = self::$dbConn->query($tbl_sql);
+		if($result === false) {
+			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+			return false;
+		}
+
+		return true;
+	}
+
+	/*
 	 * Make an insert into table in database
 	 *
 	 * @param string $table
