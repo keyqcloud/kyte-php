@@ -13,12 +13,13 @@ class DataModelController extends ModelController
         switch ($method) {
             case 'new':
                 // create new table with basic kyte info
+                // $tbl_sql = "CREATE TABLE `{$r['name']}`();";
 
                 break;
 
             case 'update':
                 // alter table <old_table_name> rename to <new_table_name>
-
+                $tbl_sql = "ALTER TABLE `{$o->name}` RENAME TO `{$r['name']}`;";
                 break;                
 
             default:
