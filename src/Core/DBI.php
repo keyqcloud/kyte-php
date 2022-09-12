@@ -277,6 +277,30 @@ class DBI {
 	}
 
 	/*
+	 * DROP Table
+	 * */
+	public static function dropTable($tbl_name) {
+		if (!$tbl_name) {
+			throw new \Exception("Table name cannot be empty.");
+			return false;
+		}
+
+		if (!self::$dbConn) {
+			self::connect();
+		}
+
+		$tbl_sql = "DROP TABLE `$tbl_name`";
+
+		$result = self::$dbConn->query($tbl_sql);
+		if($result === false) {
+			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+			return false;
+		}
+
+		return true;
+	}
+
+	/*
 	 * Make an insert into table in database
 	 *
 	 * @param string $table
