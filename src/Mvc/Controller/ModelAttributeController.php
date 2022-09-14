@@ -62,14 +62,15 @@ class ModelAttributeController extends ModelController
                     if (!$fk_tbl->retrieve('id', $r['foreignKeyModel'])) {
                         throw new \Exception("Unable to find data model for foreign key definition");
                     }
-                    $fk_attr = new \Kyte\Core\ModelObject(ModelAttribute);
-                    if (!$fk_attr->retrieve('id', $r['foreignKeyAttribute'])) {
-                        throw new \Exception("Unable to find attribute for data model {$fk_tbl->name} for foreign key definition");
-                    }
+                    // $fk_attr = new \Kyte\Core\ModelObject(ModelAttribute);
+                    // if (!$fk_attr->retrieve('id', $r['foreignKeyAttribute'])) {
+                    //     throw new \Exception("Unable to find attribute for data model {$fk_tbl->name} for foreign key definition");
+                    // }
 
                     $attrs['fk'] = [
                         'model' => $fk_tbl->name,
-                        'field' => $fk_attr->name,
+                        // 'field' => $fk_attr->name,
+                        'field' => 'id',
                     ];
                 }
 
@@ -128,14 +129,15 @@ class ModelAttributeController extends ModelController
                     if (!$fk_tbl->retrieve('id', $r['foreignKeyModel'])) {
                         throw new \Exception("Unable to find data model for foreign key definition");
                     }
-                    $fk_attr = new \Kyte\Core\ModelObject(ModelAttribute);
-                    if (!$fk_attr->retrieve('id', $r['foreignKeyAttribute'])) {
-                        throw new \Exception("Unable to find attribute for data model {$fk_tbl->name} for foreign key definition");
-                    }
+                    // $fk_attr = new \Kyte\Core\ModelObject(ModelAttribute);
+                    // if (!$fk_attr->retrieve('id', $r['foreignKeyAttribute'])) {
+                    //     throw new \Exception("Unable to find attribute for data model {$fk_tbl->name} for foreign key definition");
+                    // }
 
                     $attrs['fk'] = [
                         'model' => $fk_tbl->name,
-                        'field' => $fk_attr->name,
+                        // 'field' => $fk_attr->name,
+                        'field' => 'id',
                     ];
                 }
 
