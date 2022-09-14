@@ -98,6 +98,13 @@ class DataModelController extends ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'delete':
+                // delete model attributes
+                $attrs = new \Kyte\Core\Model(ModelAttribute);
+                $attrs->retrieve("dataModel", $o->id);
+                foreach($attrs->objects as $attr) {
+                    $attr->delete();
+                }
+
                 // TODO: consider situation where there are external tables and foreign keys
 
                 // drop table <table_name>
