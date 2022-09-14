@@ -33,6 +33,23 @@ class DataModelController extends ModelController
                     }
                 }
 
+                // create new roles
+                $roles = new \Kyte\Core\Model(Role);
+                $roles->retrieve("name", "Administrator");
+                foreach ($roles->objects as $role) {
+                    foreach (['new', 'update', 'get', 'delete'] as $actionType) {
+                        $permission = new \Kyte\Core\ModelObject(Permission);
+                        if (!$permission->create([
+                            'role'  => $role->id,
+                            'model' => $r['name'],
+                            'action' => $actionType,
+                            'kyte_account' => $role->kyte_acount,
+                        ])) {
+                            throw new \Exception("Failed to create permissions for new model! Squawk 7700!");
+                        }
+                    }
+                }
+
                 break;
 
             case 'update':
@@ -64,6 +81,13 @@ class DataModelController extends ModelController
                 if (!unlink("/var/www/html/app/models/{$o->name}.php")) {
                     error_log("Failed to clean up old model /var/www/html/app/models/{$o->name}.php");
                 }
+
+                // update permissions
+                $perms = new \Kyte\Core\Model(Permission);
+                $perms->retrieve("model", $o->name);
+                foreach($perms->objects as $perm) {
+                    $perm->save([ "model" => $r['name'] ]);
+                }
                 break;                
 
             default:
@@ -83,6 +107,13 @@ class DataModelController extends ModelController
 
                 if (!unlink("/var/www/html/app/models/{$o->name}.php")) {
                     error_log("Failed to clean up old model /var/www/html/app/models/{$o->name}.php");
+                }
+
+                // delete perms
+                $perms = new \Kyte\Core\Model(Permission);
+                $perms->retrieve("model", $o->name);
+                foreach($perms->objects as $perm) {
+                    $perm->delete();
                 }
                 break;
             
