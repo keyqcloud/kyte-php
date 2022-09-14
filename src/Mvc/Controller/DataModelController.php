@@ -43,7 +43,7 @@ class DataModelController extends ModelController
                             'role'  => $role->id,
                             'model' => $r['name'],
                             'action' => $actionType,
-                            'kyte_account' => $role->kyte_acount,
+                            'kyte_account' => $role->kyte_account,
                         ])) {
                             throw new \Exception("Failed to create permissions for new model! Squawk 7700!");
                         }
