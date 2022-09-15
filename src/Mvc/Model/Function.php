@@ -28,7 +28,7 @@ $Function = [
 
 		'code'		=> [
 			'type'		=> 't',
-			'required'	=> true,
+			'required'	=> false,
 			'date'		=> false,
 		],
 
