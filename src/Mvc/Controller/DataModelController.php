@@ -4,7 +4,10 @@ namespace Kyte\Mvc\Controller;
 
 class DataModelController extends ModelController
 {
-    // public function hook_init() {}
+    public function hook_init() {
+        $this->checkExisting = 'name';
+    }
+    
     // public function hook_auth() {}
 
     // public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
