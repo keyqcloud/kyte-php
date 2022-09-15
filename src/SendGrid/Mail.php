@@ -37,5 +37,3 @@ class Mail {
 		$response = $sg->send($email);
 	}
 }
-
-?>

@@ -82,5 +82,3 @@ class SessionController extends ModelController
         $this->response['data'] = [ 'txToken' => 0, 'sessionToken' => 0 ];
     }
 }
-
-?>

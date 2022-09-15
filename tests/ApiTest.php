@@ -34,5 +34,3 @@ class APiTest extends TestCase
         $this->assertTrue($api->init('BAR'));
     }
 }
-
-?>  

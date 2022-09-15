@@ -66,5 +66,3 @@ class FunctionController extends ModelController
 
     // public function hook_process_get_response(&$r) {}
 }
-
-?>

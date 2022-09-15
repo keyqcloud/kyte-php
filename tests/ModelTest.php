@@ -295,5 +295,3 @@ class ModelTest extends TestCase
         $this->assertEquals(3, $model->count());
     }
 }
-
-?>

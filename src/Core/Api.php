@@ -615,5 +615,3 @@ class Api
 		$this->response['txTimestamp'] = $now->format('U');
 	}
 }
-
-?>

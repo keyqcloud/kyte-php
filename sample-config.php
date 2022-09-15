@@ -160,4 +160,3 @@
     // 'Asia/Magadan'         => "(GMT+12:00) Magadan",
     // 'Pacific/Auckland'     => "(GMT+12:00) Auckland",
     // 'Pacific/Fiji'         => "(GMT+12:00) Fiji",
-?>

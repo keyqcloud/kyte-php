@@ -35,5 +35,3 @@ class AwsAcmTest extends TestCase
         $this->assertTrue($acm->delete());
     }
 }
-
-?>  

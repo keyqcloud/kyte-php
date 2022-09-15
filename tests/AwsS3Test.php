@@ -60,5 +60,3 @@ class AwsS3Test extends TestCase
         $this->assertEquals(hash_hmac('sha1', AWS_ACCESS_KEY_ID, 'us-east-1'), hash_hmac('sha1', $signature['access_key'], 'us-east-1'));
     }
 }
-
-?>  

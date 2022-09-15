@@ -18,4 +18,3 @@ class Version
         return sprintf('v%s.%s.%s-%s.%s (%s)', self::MAJOR, self::MINOR, self::PATCH, $branch, $commitHash, $commitDate->format('Y-m-d H:i:s'));
     }
 }
-?>

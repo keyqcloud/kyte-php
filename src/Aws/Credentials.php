@@ -36,4 +36,3 @@ class Credentials
         return $this->secretKey;
     }
 }
-?>

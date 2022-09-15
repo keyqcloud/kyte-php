@@ -16,5 +16,3 @@ class AwsCredentialTest extends TestCase
         $this->assertEquals(hash_hmac('sha1', AWS_SECRET_KEY, 'us-east-1'), hash_hmac('sha1', $credential->getSecretKey(), 'us-east-1'));
     }
 }
-
-?>  

@@ -80,4 +80,3 @@ class Kms extends Client
         return $aws_res['Plaintext'];
     }
 }
-?>

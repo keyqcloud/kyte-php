@@ -372,4 +372,3 @@ class Model
 		return null;
 	}
 }
-?>
