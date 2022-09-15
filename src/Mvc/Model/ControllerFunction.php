@@ -35,13 +35,6 @@ $ControllerFunction = [
 			'date'		=> false,
 		],
 
-		// optional description
-		'description'		=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
 		// framework attributes
 
 		'kyte_account'	=> [

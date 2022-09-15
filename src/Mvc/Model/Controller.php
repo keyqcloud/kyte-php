@@ -21,6 +21,13 @@ $Controller = [
 			'date'		=> false,
 		],
 
+		// optional description
+		'description'		=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
 		'application'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
