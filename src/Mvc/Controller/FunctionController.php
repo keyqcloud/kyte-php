@@ -57,6 +57,13 @@ class FunctionController extends ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'delete':
+                // delete corresponding controller association
+                // delete corresponding function association
+                $fs = new \Kyte\Core\Model(ControllerFunction);
+                $fs->retrieve("function", $o->id);
+                foreach($fs->objects as $fc) {
+                    $fc->delete();
+                }
                 break;
             
             default:
