@@ -107,6 +107,10 @@ class ControllerController extends ModelController
                     $fc->delete();
                 }
 
+                if (!unlink("/var/www/html/app/models/{$o->name}.php")) {
+                    error_log("Failed to clean up old model /var/www/html/app/models/{$o->name}.php");
+                }
+
                 // delete associated settings
                 $settings = new \Kyte\Core\Model(ControllerSetting);
                 $settings->retrieve("controller", $o->id);
