@@ -11,7 +11,14 @@ $Function = [
 			'date'		=> false,
 		],
 
-		// hooks, overrides, custom
+		// optional description
+		'description'		=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
+		// hooks (hook_ methods), overrides (new, update, get, delete), custom
 		'type'		=> [
 			'type'		=> 's',
 			'required'	=> true,
