@@ -97,6 +97,9 @@ class ModelController
         if (isset($_SERVER['HTTP_X_KYTE_GET_EXTERNALTABLES'])) {
             $this->getExternalTables = strtolower($_SERVER['HTTP_X_KYTE_GET_EXTERNALTABLES']) == "true" ? true : false;
         }
+        
+        $this->shipyard_init();
+
         $this->hook_init();
         
         if ($this->requireAuth) {
@@ -621,6 +624,9 @@ class ModelController
         $this->response['data'] = $response;
     }
 
+    // kyte shipyard hooks
+    public function shipyard_init() {}
+    
     // hook function - user defined
     public function hook_init() {}
     public function hook_auth() {}
