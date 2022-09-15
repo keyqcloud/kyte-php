@@ -1,7 +1,7 @@
 <?php
 
-$Permission = [
-	'name' => 'Permission',
+$ControllerFunction = [
+	'name' => 'ControllerFunction',
 	'struct' => [
 		'controller'	=> [
 			'type'		=> 'i',

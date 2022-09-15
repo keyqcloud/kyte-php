@@ -1,7 +1,7 @@
 <?php
 
-$Controller = [
-	'name' => 'Controller',
+$ControllerSetting = [
+	'name' => 'ControllerSetting',
 	'struct' => [
 		'key'		=> [
 			'type'		=> 's',
