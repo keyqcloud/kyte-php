@@ -63,7 +63,7 @@ class ControllerController extends ModelController
                         throw new \Exception("Unable to find specified data model.");
                     }
 
-                    $functions[] = "\tpublic function shipyard_init() {\r\n$\t\$this->model = {$model->name};\r\n}\r\n";
+                    $functions[] = "\tpublic function shipyard_init() {\r\n\t\t\$this->model = {$model->name};\r\n\t}\r\n";
                 }
 
                 // regenerate code base with new name and/or model
