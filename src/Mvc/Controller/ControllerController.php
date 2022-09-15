@@ -82,8 +82,8 @@ class ControllerController extends ModelController
 
                 if ($o->name != $r['name']) {
                     // remove old definition
-                    if (!unlink("/var/www/html/app/controllers/{$o->name}.php")) {
-                        error_log("Failed to clean up old model /var/www/html/app/controllers/{$o->name}.php");
+                    if (!unlink("/var/www/html/app/controllers/{$o->name}Controller.php")) {
+                        error_log("Failed to clean up old model /var/www/html/app/controllers/{$o->name}Controller.php");
                     }
                 }
 
@@ -107,8 +107,8 @@ class ControllerController extends ModelController
                     $fc->delete();
                 }
 
-                if (!unlink("/var/www/html/app/controllers/{$o->name}.php")) {
-                    error_log("Failed to clean up old model /var/www/html/app/controllers/{$o->name}.php");
+                if (!unlink("/var/www/html/app/controllers/{$o->name}Controller.php")) {
+                    error_log("Failed to clean up old model /var/www/html/app/controllers/{$o->name}Controller.php");
                 }
 
                 // delete associated settings
