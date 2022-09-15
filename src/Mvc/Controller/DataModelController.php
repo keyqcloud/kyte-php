@@ -57,40 +57,43 @@ class DataModelController extends ModelController
 
             case 'update':
                 // check if model is defined
-                if (defined($o->name)) {
+                if (!defined($o->name)) {
                     throw new \Exception("Unknown model definition");
                 }
 
-                // check if new name is unique
-                if (defined($r['name'])) {
-                    throw new \Exception("New model name is already used");
-                }
-
-                // alter table <old_table_name> rename to <new_table_name>
-                if (!\Kyte\Core\DBI::renameTable($o->name, $r['name'])) {
-                    throw new \Exception("Failed to rename table");
-                }
-
                 $updatedModel = constant($o->name);
-                $updatedModel['name'] = $r['name'];
 
-                if (file_put_contents("/var/www/html/app/models/{$r['name']}.php", "<?php\n\${$r['name']} = " . var_export($updatedModel, true) . ";") === false) {
-                    if (!\Kyte\Core\DBI::renameTable($r['name'], $o->name)) {
-                        throw new \Exception("Failed to undo rename...we are in big trouble! Squawk 7700!");
+                if ($o->name != $r['name']) {
+                    // check if new name is unique
+                    if (defined($r['name'])) {
+                        throw new \Exception("New model name is already used");
+                    }
+
+                    // alter table <old_table_name> rename to <new_table_name>
+                    if (!\Kyte\Core\DBI::renameTable($o->name, $r['name'])) {
+                        throw new \Exception("Failed to rename table");
+                    }
+
+                    $updatedModel['name'] = $r['name'];
+
+                    // remove old definition
+                    if (!unlink("/var/www/html/app/models/{$o->name}.php")) {
+                        error_log("Failed to clean up old model /var/www/html/app/models/{$o->name}.php");
+                    }
+
+                    // update permissions
+                    $perms = new \Kyte\Core\Model(Permission);
+                    $perms->retrieve("model", $o->name);
+                    foreach($perms->objects as $perm) {
+                        $perm->save([ "model" => $r['name'] ]);
                     }
                 }
-                // remove old definition
+
                 // update model definition
-                if (!unlink("/var/www/html/app/models/{$o->name}.php")) {
-                    error_log("Failed to clean up old model /var/www/html/app/models/{$o->name}.php");
+                if (file_put_contents("/var/www/html/app/models/{$r['name']}.php", "<?php\n\${$r['name']} = " . var_export($updatedModel, true) . ";") === false) {
+                    throw new \Exception("Unable to update model definition! Squawk 7700!");
                 }
 
-                // update permissions
-                $perms = new \Kyte\Core\Model(Permission);
-                $perms->retrieve("model", $o->name);
-                foreach($perms->objects as $perm) {
-                    $perm->save([ "model" => $r['name'] ]);
-                }
                 break;                
 
             default:
