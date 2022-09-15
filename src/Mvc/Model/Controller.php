@@ -19,6 +19,10 @@ $Controller = [
 			'size'		=> 11,
 			'unsigned'	=> true,
 			'date'		=> false,
+			'fk'		=> [
+				'model'	=> 'DataModel',
+				'field'	=> 'id',
+			],
 		],
 
 		// optional description
