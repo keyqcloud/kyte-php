@@ -30,7 +30,7 @@ class DataModelController extends ModelController
                     throw new \Exception("Failed to create table...");
                 }
 
-                if (file_put_contents("/var/www/html/app/models/{$r['name']}.php", "<?php\n\${$r['name']} = " . var_export($base_model, true) . ";") === false) {
+                if (file_put_contents("/var/www/html/app/models/{$r['name']}.php", "<?php\n\${$r['name']} = " . var_export($base_model, true) . ";\r\n") === false) {
                     if (!\Kyte\Core\DBI::dropTable($r['name'])) {
                         throw new \Exception("Failed to undo create table...we are in big trouble! Squawk 7700!");
                     }
