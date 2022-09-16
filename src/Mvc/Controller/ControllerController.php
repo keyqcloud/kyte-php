@@ -26,20 +26,11 @@ class ControllerController extends ModelController
                 $functions = [];
                 // check if model is specified
                 if (!empty($r['dataModel'])) {
-                    $model = new \Kyte\Core\ModelObject(DataModel);
-                    if (!$model->retrieve("id", $r['dataModel'])) {
-                        throw new \Exception("Unable to find specified data model.");
-                    }
-
-                    $functions[] = "\tpublic function shipyard_init() {\r\n\t\t\$this->model = {$model->name};\r\n\t}\r\n";
+                    $functions[] = self::generateShipyardInit($r['dataModel']);
                 }
 
-                // create code base
-                $code = self::generateCodeBase($r['name'].'Controller', $functions);
-
-                if (file_put_contents("/var/www/html/app/controllers/{$r['name']}Controller.php", $code) === false) {
-                    throw new \Exception("Failed to create controller code! Squawk 7700!");
-                }
+                // create code base and save to file
+                self::generateCodeBase($r['name'].'Controller', $functions);
 
                 break;
 
@@ -58,27 +49,14 @@ class ControllerController extends ModelController
 
                 // check if model is specified
                 if (!empty($r['dataModel'])) {
-                    $model = new \Kyte\Core\ModelObject(DataModel);
-                    if (!$model->retrieve("id", $r['dataModel'])) {
-                        throw new \Exception("Unable to find specified data model.");
-                    }
-
-                    $functions[] = "\tpublic function shipyard_init() {\r\n\t\t\$this->model = {$model->name};\r\n\t}\r\n";
+                    $functions[] = self::generateShipyardInit($r['dataModel']);
                 }
 
                 // regenerate code base with new name and/or model
-                $fs = new \Kyte\Core\Model(ControllerFunction);
-                $fs->retrieve("controller", $o->id);
-                foreach($fs->objects as $fc) {
-                    $f = new \Kyte\Core\ModelObject(constant("Function"));
-                    if (!$f->retrieve("id", $fc->function)) {
-                        throw new \Exception("Unable to find associated function.");
-                    }
-                    $functions[] = $f->code;
-                }
+                self::prepareFunctionStatements($o->id, $functions);
 
-                // update code base
-                $code = self::generateCodeBase($r['name'].'Controller', $functions);
+                // update code base and save to file
+                self::generateCodeBase($r['name'].'Controller', $functions);
 
                 if ($o->name != $r['name']) {
                     // remove old definition
@@ -87,9 +65,6 @@ class ControllerController extends ModelController
                     }
                 }
 
-                if (file_put_contents("/var/www/html/app/controllers/{$r['name']}Controller.php", $code) === false) {
-                    throw new \Exception("Failed to create controller code! Squawk 7700!");
-                }
                 break;                
 
             default:
@@ -126,6 +101,34 @@ class ControllerController extends ModelController
 
     // public function hook_process_get_response(&$r) {}
 
+    public static function generateShipyardInit($model_idx) {
+        if (empty($model_idx)) {
+            throw new \Exception("Model id cannot be empty.");
+        }
+        $model = new \Kyte\Core\ModelObject(DataModel);
+        if (!$model->retrieve("id", $model_idx)) {
+            throw new \Exception("Unable to find specified data model.");
+        }
+
+        return "\tpublic function shipyard_init() {\r\n\t\t\$this->model = {$model->name};\r\n\t}\r\n";
+    }
+
+    public static function prepareFunctionStatements($controller_idx, &$functions) {
+        if (empty($controller_idx)) {
+            throw new \Exception("Controller id cannot be empty.");
+        }
+
+        $fs = new \Kyte\Core\Model(ControllerFunction);
+        $fs->retrieve("controller", $controller_idx);
+        foreach($fs->objects as $fc) {
+            $f = new \Kyte\Core\ModelObject(constant("Function"));
+            if (!$f->retrieve("id", $fc->function)) {
+                throw new \Exception("Unable to find associated function.");
+            }
+            $functions[] = $f->code;
+        }
+    }
+
     public static function generateCodeBase($controller_name, $functions = null) {
         if (empty($controller_name)) {
             throw new \Exception("Controller name cannot be empty.");
@@ -141,6 +144,8 @@ class ControllerController extends ModelController
 
         $code .= "}\r\n";
 
-        return $code;
+        if (file_put_contents("/var/www/html/app/controllers/{$controller_name}Controller.php", $code) === false) {
+            throw new \Exception("Failed to create controller code! Squawk 7700!");
+        }
     }
 }
