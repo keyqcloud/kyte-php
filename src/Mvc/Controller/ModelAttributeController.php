@@ -10,7 +10,16 @@ class ModelAttributeController extends ModelController
 
     // public function hook_auth() {}
 
-    // public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
+    public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {
+        switch ($method) {
+            case 'get':
+                $order = [ ['field' => 'id', 'direction' => 'desc' ] ];
+				break;
+
+			default:
+				break;
+		}
+	}
 
     public function hook_preprocess($method, &$r, &$o = null) {
         switch ($method) {
