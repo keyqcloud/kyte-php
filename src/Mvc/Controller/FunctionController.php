@@ -16,10 +16,10 @@ class FunctionController extends ModelController
                 $switch_stmt = "\tswitch (\$method) {\r\n\t\tcase 'new':\r\n\t\t\tbreak;\r\n\r\n\t\tcase 'update':\r\n\t\t\tbreak;\r\n\r\n\t\tcase 'get':\r\n\t\t\tbreak;\r\n\r\n\t\tcase 'delete':\r\n\t\t\tbreak;\r\n\r\n\t\tdefault:\r\n\t\t\tbreak;\r\n\t}\r\n";
 
                 if ($r['type'] == 'hook_init') {
-                    $r['code'] = "public function hook_init() {\r\n$switch_stmt}\r\n";
+                    $r['code'] = "public function hook_init() {\r\n\r\n\t$switch_stmt}\r\n";
                 }
                 if ($r['type'] == 'hook_auth') {
-                    $r['code'] = "public function hook_auth() {\r\n$switch_stmt}\r\n";
+                    $r['code'] = "public function hook_auth() {\r\n\r\n\t}\r\n";
                 }
                 if ($r['type'] == 'hook_prequery') {
                     $r['code'] = "public function hook_prequery(\$method, &\$field, &\$value, &\$conditions, &\$all, &\$order) {\r\n$switch_stmt}\r\n";
