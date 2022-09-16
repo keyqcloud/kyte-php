@@ -46,4 +46,32 @@ class ControllerFunctionController extends ModelController
                 break;
         }
     }
+
+    public function hook_response_data($method, $o, &$r = null, &$d = null) {
+        switch ($method) {
+            case 'delete':
+                $ctrl = new \Kyte\Core\ModelObject(constant("Controller"));
+                if (!$ctrl->retrieve("id", $o->controller)) {
+                    throw new \Exception("Unable to find specified controller.");
+                }
+
+                $functions = [];
+
+                // check if model is specified
+                if (!empty($ctrl->dataModel)) {
+                    $functions[] = ControllerController::generateShipyardInit($ctrl->dataModel);
+                }
+
+                // regenerate code base with new name and/or model
+                ControllerController::prepareFunctionStatements($ctrl->id, $functions);
+
+                // update code base and save to file
+                ControllerController::generateCodeBase($ctrl->name.'Controller', $functions);
+
+                break;
+            
+            default:
+                break;
+        }
+    }
 }
