@@ -122,6 +122,14 @@ class DataModelController extends ModelController
                     error_log("Failed to clean up old model /var/www/html/app/models/{$o->name}.php");
                 }
 
+                // delete controllers and remove function association
+                $controllers = new \Kyte\Core\Model(Controller);
+                $controllers->retrieve('dataModel', $o->id);
+                foreach($controllers->objects as $controller) {
+                    $ctrl = new ControllerController(Controller, APP_DATE_FORMAT, $this->account, $this->session, $this->user, $this->response);
+                    $ctrl->delete('id', $controller->id);
+                }
+
                 // delete perms
                 $perms = new \Kyte\Core\Model(Permission);
                 $perms->retrieve("model", $o->name);
