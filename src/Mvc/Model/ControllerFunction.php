@@ -30,7 +30,7 @@ $ControllerFunction = [
 		// hook (hook_ methods), override (new, update, get, delete), custom
 		'type'		=> [
 			'type'		=> 's',
-			'required'	=> true,
+			'required'	=> false,
 			'size'		=> 255,
 			'date'		=> false,
 		],
