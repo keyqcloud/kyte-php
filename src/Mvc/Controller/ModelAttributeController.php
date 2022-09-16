@@ -13,7 +13,7 @@ class ModelAttributeController extends ModelController
     public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {
         switch ($method) {
             case 'get':
-                $order = [ ['field' => 'id', 'direction' => 'desc' ] ];
+                $order = [ ['field' => 'id', 'direction' => 'asc' ] ];
 				break;
 
 			default:
