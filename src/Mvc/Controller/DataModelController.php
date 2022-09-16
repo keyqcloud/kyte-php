@@ -126,7 +126,8 @@ class DataModelController extends ModelController
                 $controllers = new \Kyte\Core\Model(Controller);
                 $controllers->retrieve('dataModel', $o->id);
                 foreach($controllers->objects as $controller) {
-                    $ctrl = new ControllerController(Controller, APP_DATE_FORMAT, $this->account, $this->session, $this->user, $this->response);
+                    $ctrl = new ControllerController(Controller, APP_DATE_FORMAT, $this->account, $this->session, $this->user, $this->response, $this->page_size, $this->page_total, $this->page_num, $this->total_count, $this->total_filtered);
+
                     $ctrl->delete('id', $controller->id);
                 }
 
