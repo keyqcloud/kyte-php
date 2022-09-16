@@ -144,7 +144,7 @@ class ControllerController extends ModelController
 
         $code .= "}\r\n";
 
-        if (file_put_contents("/var/www/html/app/controllers/{$controller_name}Controller.php", $code) === false) {
+        if (file_put_contents("/var/www/html/app/controllers/$controller_name.php", $code) === false) {
             throw new \Exception("Failed to create controller code! Squawk 7700!");
         }
     }
