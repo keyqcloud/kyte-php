@@ -596,25 +596,28 @@ class ModelController
             }
 
             foreach ($objs->objects as $obj) {
-                $this->hook_response_data('delete', $obj);
+                $autodelete = true;
+                $this->hook_response_data('delete', $obj, $autodelete);
 
-                // if cascade delete is set delete associated data
-                if ($this->cascadeDelete && isset($this->model['externalTables'])) {
-                    // find external tables and delete associated entries
-                    foreach ($this->model['externalTables'] as $extTbl) {
-                        $dep = new \Kyte\Core\Model(constant($extTbl['model']));
-                        $dep->retrieve($extTbl['field'], $obj->id, false, $conditions);
+                if ($autodelete) {
+                    // if cascade delete is set delete associated data
+                    if ($this->cascadeDelete && isset($this->model['externalTables'])) {
+                        // find external tables and delete associated entries
+                        foreach ($this->model['externalTables'] as $extTbl) {
+                            $dep = new \Kyte\Core\Model(constant($extTbl['model']));
+                            $dep->retrieve($extTbl['field'], $obj->id, false, $conditions);
 
-                        // delete each associated entry in the table
-                        foreach ($dep->objects as $item) {
-                            $this->deleteCascade($item);
-                            $item->delete(null, null, $userId);
+                            // delete each associated entry in the table
+                            foreach ($dep->objects as $item) {
+                                $this->deleteCascade($item);
+                                $item->delete(null, null, $userId);
+                            }
                         }
                     }
-                }
 
-                // finally, delete object
-                $obj->delete(null, null, $userId);
+                    // finally, delete object
+                    $obj->delete(null, null, $userId);
+                }
             }
 
         } catch (\Exception $e) {
