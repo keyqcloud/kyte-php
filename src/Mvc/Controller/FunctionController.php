@@ -54,14 +54,33 @@ class FunctionController extends ModelController
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
+            case 'update':
             case 'delete':
-                // delete corresponding controller association
-                // delete corresponding function association
                 $fs = new \Kyte\Core\Model(ControllerFunction);
                 $fs->retrieve("function", $o->id);
+                
                 foreach($fs->objects as $fc) {
-                    $fc->delete();
+                    if ($method == 'delete') { $fc->delete(); }
+
+                    $ctrl = new \Kyte\Core\ModelObject(constant("Controller"));
+                    if (!$ctrl->retrieve("id", $fc->controller)) {
+                        throw new \Exception("Unable to find specified controller.");
+                    }
+
+                    $functions = [];
+
+                    // check if model is specified
+                    if (!empty($ctrl->dataModel)) {
+                        $functions[] = ControllerController::generateShipyardInit($ctrl->dataModel);
+                    }
+
+                    // regenerate code base with new name and/or model
+                    ControllerController::prepareFunctionStatements($ctrl->id, $functions);
+
+                    // update code base and save to file
+                    ControllerController::generateCodeBase($ctrl->name.'Controller', $functions);
                 }
+                
                 break;
             
             default:
