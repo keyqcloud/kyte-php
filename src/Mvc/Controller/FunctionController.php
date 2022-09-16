@@ -4,9 +4,7 @@ namespace Kyte\Mvc\Controller;
 
 class FunctionController extends ModelController
 {
-    public function hook_init() {
-        $this->allowableActions = ['new', 'update', 'get', 'delete'];
-    }
+    // public function hook_init() {}
 
     // public function hook_auth() {}
 
