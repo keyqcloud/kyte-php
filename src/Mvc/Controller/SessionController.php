@@ -15,6 +15,7 @@ class SessionController extends ModelController
     public function new($data)
     {
         $response = [];
+        $session = [];
 
         try {
             // check for required params
@@ -24,12 +25,12 @@ class SessionController extends ModelController
 			}
 
             // create session for user and obtain user information
-            $response[] = $this->session->create($data[USERNAME_FIELD], $data[PASSWORD_FIELD]);
+            $session = $this->session->create($data[USERNAME_FIELD], $data[PASSWORD_FIELD]);
             $obj = new \Kyte\Core\ModelObject(User);
             if (!$obj->retrieve('id', $response['uid'])) {
                 throw new \Exception("Unable to find user information");    
             }
-            $response[]['User'] = $this->getObject($obj);
+            $response[] = $this->getObject($obj);
 
             // get user account
             $account = new \Kyte\Core\ModelObject(Account);
@@ -48,8 +49,8 @@ class SessionController extends ModelController
             $this->response['kyte_num'] = $account->number;
             $this->response['kyte_iden'] = $account_api->identifier;
 
-            $this->response['token'] = $response['txToken'];
-            $this->response['session'] = $response['sessionToken'];
+            $this->response['token'] = $session['txToken'];
+            $this->response['session'] = $session['sessionToken'];
             $this->response['data'] = $response;
         } catch (\Exception $e) {
             throw $e;
