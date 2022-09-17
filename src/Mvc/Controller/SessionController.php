@@ -27,7 +27,7 @@ class SessionController extends ModelController
             // create session for user and obtain user information
             $session = $this->session->create($data[USERNAME_FIELD], $data[PASSWORD_FIELD]);
             $obj = new \Kyte\Core\ModelObject(User);
-            if (!$obj->retrieve('id', $response['uid'])) {
+            if (!$obj->retrieve('id', $session['uid'])) {
                 throw new \Exception("Unable to find user information");    
             }
             $response[] = $this->getObject($obj);
