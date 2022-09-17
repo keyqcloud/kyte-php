@@ -24,12 +24,12 @@ class SessionController extends ModelController
 			}
 
             // create session for user and obtain user information
-            $response = $this->session->create($data[USERNAME_FIELD], $data[PASSWORD_FIELD]);
+            $response[] = $this->session->create($data[USERNAME_FIELD], $data[PASSWORD_FIELD]);
             $obj = new \Kyte\Core\ModelObject(User);
             if (!$obj->retrieve('id', $response['uid'])) {
                 throw new \Exception("Unable to find user information");    
             }
-            $response['User'] = $this->getObject($obj);
+            $response[]['User'] = $this->getObject($obj);
 
             // get user account
             $account = new \Kyte\Core\ModelObject(Account);
