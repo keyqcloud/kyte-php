@@ -26,17 +26,21 @@ class SessionController extends ModelController
 
             // create session for user and obtain user information
             $session = $this->session->create($data[USERNAME_FIELD], $data[PASSWORD_FIELD]);
-            $obj = new \Kyte\Core\ModelObject(User);
-            if (!$obj->retrieve('id', $session['uid'])) {
+            $user = new \Kyte\Core\ModelObject(User);
+            if (!$user->retrieve('id', $session['uid'])) {
                 throw new \Exception("Unable to find user information");    
             }
-            $response[] = $this->getObject($obj);
-
             // get user account
             $account = new \Kyte\Core\ModelObject(Account);
-            if (!$account->retrieve('id', $obj->kyte_account)) {
+            if (!$account->retrieve('id', $user->kyte_account)) {
                 throw new \Exception("Unable to find account associated with user");
             }
+
+            // set user and account in class
+            $this->user = $user;
+            $this->account = $account;
+
+            $response[] = $this->getObject($user);
 
             // get api associated with account
             $account_api = new \Kyte\Core\ModelObject(APIKey);
