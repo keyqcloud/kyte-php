@@ -546,7 +546,13 @@ class Api
 			if (!$this->user->retrieve('id', $session_ret['uid'])) {
 				throw new \Kyte\Exception\SessionException("Invalid user session.");
 			}
-			$this->response['sessionPermission'] = $this->user->role;
+
+			// get role
+			$role = new \Kyte\Core\ModelObject(Role);
+			if (!$role->retrieve('id', $this->user->role)) {
+				throw new \Kyte\Exception\SessionException("Unauthorized access.");
+			}
+			$this->response['role'] = $role->getParams(['id', 'name']);
 
 			error_log("ACCOUNTS ".$this->account->id." and ".$this->user->kyte_account);
 
