@@ -87,6 +87,10 @@ $ModelAttribute = [
 			'size'		=> 11,
 			'unsigned'	=> true,
 			'date'		=> false,
+			'fk'		=> [
+				'model'	=> 'DataModel',
+				'field'	=> 'id',
+			],
 		],
 		// if it's a foregin key, then the data model attribute id
 		'foreignKeyAttribute'	=> [
@@ -95,10 +99,6 @@ $ModelAttribute = [
 			'size'		=> 11,
 			'unsigned'	=> true,
 			'date'		=> false,
-			'fk'		=> [
-				'model'	=> 'DataModel',
-				'field'	=> 'id',
-			],
 		],
 
 		// framework attributes
