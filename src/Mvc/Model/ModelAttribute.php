@@ -95,6 +95,10 @@ $ModelAttribute = [
 			'size'		=> 11,
 			'unsigned'	=> true,
 			'date'		=> false,
+			'fk' => [
+				'model' => 'DataModel',
+				'field' => 'id',
+			],
 		],
 
 		// framework attributes
