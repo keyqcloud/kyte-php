@@ -35,6 +35,8 @@ class ModelAttributeController extends ModelController
                     throw new \Exception("Whoops, looks like the attribute name is already defined in the model although not found in the database. Contact a DB admin ASAP!");
                 }
 
+                $attrs = self::prepareModelDef($r);
+                
                 // create new table with basic kyte info
                 if (!\Kyte\Core\DBI::addColumn($tbl->name, $r['name'], $attrs)) {
                     throw new \Exception("Failed to create column {$r['name']} in table {$tbl->name}...");
@@ -62,6 +64,8 @@ class ModelAttributeController extends ModelController
                         throw new \Exception("Whoops, looks like the attribute name is already defined in the model although not found in the database. Contact a DB admin ASAP!");
                     }
                 }
+
+                $attrs = self::prepareModelDef($r);
 
                 // create new table with basic kyte info
                 if (!\Kyte\Core\DBI::changeColumn($tbl->name, $o->name, $r['name'], $attrs)) {
@@ -161,5 +165,6 @@ class ModelAttributeController extends ModelController
             ];
         }
 
+        return $attrs;
     }
 }
