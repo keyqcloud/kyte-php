@@ -54,6 +54,7 @@ class SessionController extends ModelController
             $this->response['kyte_iden'] = $account_api->identifier;
             $this->response['role'] = $response[0]['role'];
             $this->response['token'] = $session['txToken'];
+            $this->response['account_id'] = $account->id;
             $this->response['session'] = $session['sessionToken'];
             $this->response['data'] = $response;
         } catch (\Exception $e) {
