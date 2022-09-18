@@ -73,7 +73,7 @@ class ModelAttributeController extends ModelController
                 }
 
                 // unset original definition
-                unset($updatedModel['struct'][$o->name]);
+                unset($updatedModel['struct'][$tbl->name]);
                 // add new definition
                 $updatedModel['struct'][$r['name']] = $attrs;
 
