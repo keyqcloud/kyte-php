@@ -38,7 +38,7 @@ class DataModelController extends ModelController
 
                 // create new roles
                 $roles = new \Kyte\Core\Model(Role);
-                $roles->retrieve("name", "Administrator");
+                $roles->retrieve();
                 foreach ($roles->objects as $role) {
                     foreach (['new', 'update', 'get', 'delete'] as $actionType) {
                         $permission = new \Kyte\Core\ModelObject(Permission);
