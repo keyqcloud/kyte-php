@@ -52,7 +52,7 @@ class SessionController extends ModelController
             $this->response['kyte_pub'] = $account_api->public_key;
             $this->response['kyte_num'] = $account->number;
             $this->response['kyte_iden'] = $account_api->identifier;
-            $this->response['role'] = $response['role'];
+            $this->response['role'] = $response[0]['role'];
             $this->response['token'] = $session['txToken'];
             $this->response['session'] = $session['sessionToken'];
             $this->response['data'] = $response;
