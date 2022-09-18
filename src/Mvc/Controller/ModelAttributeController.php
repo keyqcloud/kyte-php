@@ -35,52 +35,6 @@ class ModelAttributeController extends ModelController
                     throw new \Exception("Whoops, looks like the attribute name is already defined in the model although not found in the database. Contact a DB admin ASAP!");
                 }
 
-                $attrs = [
-                    'type'      => $r['type'] == 'date' ? 'i' : $r['type'],
-                    'date'      => $r['type'] == 'date',
-                    'required'  => $r['required'] == 1,
-                ];
-
-                // size
-                if (!empty($r['size'])) {
-                    $attrs['size'] = $r['size'];
-                }
-
-                // unsigned
-                if ($r['unsigned'] == 1) {
-                    $attrs['unsigned'] = true;
-                }
-
-                // protected
-                if ($r['protected'] == 1) {
-                    $attrs['protected'] = true;
-                }
-
-                // defaults
-                if (strlen($r['defaults']) > 0) {
-                    $attrs['default'] = $r['defaults'];
-                }
-
-                // foreign key
-                if (!empty($r['foreignKeyModel']) && !empty($r['foreignKeyAttribute'])) {
-
-                    // get table and attribute info
-                    $fk_tbl = new \Kyte\Core\ModelObject(DataModel);
-                    if (!$fk_tbl->retrieve('id', $r['foreignKeyModel'])) {
-                        throw new \Exception("Unable to find data model for foreign key definition");
-                    }
-                    // $fk_attr = new \Kyte\Core\ModelObject(ModelAttribute);
-                    // if (!$fk_attr->retrieve('id', $r['foreignKeyAttribute'])) {
-                    //     throw new \Exception("Unable to find attribute for data model {$fk_tbl->name} for foreign key definition");
-                    // }
-
-                    $attrs['fk'] = [
-                        'model' => $fk_tbl->name,
-                        // 'field' => $fk_attr->name,
-                        'field' => 'id',
-                    ];
-                }
-
                 // create new table with basic kyte info
                 if (!\Kyte\Core\DBI::addColumn($tbl->name, $r['name'], $attrs)) {
                     throw new \Exception("Failed to create column {$r['name']} in table {$tbl->name}...");
@@ -107,52 +61,6 @@ class ModelAttributeController extends ModelController
                     if (array_key_exists($r['name'], $updatedModel['struct'])) {
                         throw new \Exception("Whoops, looks like the attribute name is already defined in the model although not found in the database. Contact a DB admin ASAP!");
                     }
-                }
-
-                $attrs = [
-                    'type'      => $r['type'] == 'date' ? 'i' : $r['type'],
-                    'date'      => $r['type'] == 'date',
-                    'required'  => $r['required'] == 1,
-                ];
-
-                // size
-                if (!empty($r['size'])) {
-                    $attrs['size'] = $r['size'];
-                }
-
-                // unsigned
-                if ($r['unsigned'] == 1) {
-                    $attrs['unsigned'] = true;
-                }
-
-                // protected
-                if ($r['protected'] == 1) {
-                    $attrs['protected'] = true;
-                }
-
-                // defaults
-                if (strlen($r['defaults']) > 0) {
-                    $attrs['default'] = $r['defaults'];
-                }
-
-                // foreign key
-                if (!empty($r['foreignKeyModel']) && !empty($r['foreignKeyAttribute'])) {
-
-                    // get table and attribute info
-                    $fk_tbl = new \Kyte\Core\ModelObject(DataModel);
-                    if (!$fk_tbl->retrieve('id', $r['foreignKeyModel'])) {
-                        throw new \Exception("Unable to find data model for foreign key definition");
-                    }
-                    // $fk_attr = new \Kyte\Core\ModelObject(ModelAttribute);
-                    // if (!$fk_attr->retrieve('id', $r['foreignKeyAttribute'])) {
-                    //     throw new \Exception("Unable to find attribute for data model {$fk_tbl->name} for foreign key definition");
-                    // }
-
-                    $attrs['fk'] = [
-                        'model' => $fk_tbl->name,
-                        // 'field' => $fk_attr->name,
-                        'field' => 'id',
-                    ];
                 }
 
                 // create new table with basic kyte info
@@ -204,4 +112,54 @@ class ModelAttributeController extends ModelController
     }
 
     // public function hook_process_get_response(&$r) {}
+
+    public static function prepareModelDef($r) {
+        $attrs = [
+            'type'      => $r['type'] == 'date' ? 'i' : $r['type'],
+            'date'      => $r['type'] == 'date',
+            'required'  => $r['required'] == 1,
+        ];
+
+        // size
+        if (!empty($r['size'])) {
+            $attrs['size'] = $r['size'];
+        }
+
+        // unsigned
+        if ($r['unsigned'] == 1) {
+            $attrs['unsigned'] = true;
+        }
+
+        // protected
+        if ($r['protected'] == 1) {
+            $attrs['protected'] = true;
+        }
+
+        // defaults
+        if (strlen($r['defaults']) > 0) {
+            $attrs['default'] = $r['defaults'];
+        }
+
+        // foreign key
+        // if (!empty($r['foreignKeyModel']) && !empty($r['foreignKeyAttribute'])) {
+        if (!empty($r['foreignKeyModel'])) {
+
+            // get table and attribute info
+            $fk_tbl = new \Kyte\Core\ModelObject(DataModel);
+            if (!$fk_tbl->retrieve('id', $r['foreignKeyModel'])) {
+                throw new \Exception("Unable to find data model for foreign key definition");
+            }
+            // $fk_attr = new \Kyte\Core\ModelObject(ModelAttribute);
+            // if (!$fk_attr->retrieve('id', $r['foreignKeyAttribute'])) {
+            //     throw new \Exception("Unable to find attribute for data model {$fk_tbl->name} for foreign key definition");
+            // }
+
+            $attrs['fk'] = [
+                'model' => $fk_tbl->name,
+                // 'field' => $fk_attr->name,
+                'field' => 'id',
+            ];
+        }
+
+    }
 }
