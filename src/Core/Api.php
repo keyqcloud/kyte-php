@@ -426,11 +426,6 @@ class Api
 		// read in data and parse into array
 		parse_str(file_get_contents("php://input"), $this->data);
 
-		if (defined('DEBUG')) {
-			error_log("***DATA OUTPUT***");
-			error_log(print_r($this->data, true));
-		}
-			
 		// if content type is json, then parse json
 		$pattern = '/json/';
 		if (preg_match($pattern, $this->contentType)) {
@@ -439,7 +434,8 @@ class Api
 
 		if (defined('DEBUG')) {
 			error_log("***JSON DATA OUTPUT***");
-			error_log(print_r($this->data, true));
+			error_log(file_get_contents("php://input"));
+			error_log(print_r(json_decode(file_get_contents("php://input")), true), true);
 		}
 
 		if (IS_PRIVATE) {
