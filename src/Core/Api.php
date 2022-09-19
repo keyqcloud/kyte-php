@@ -425,6 +425,10 @@ class Api
 
 		// read in data and parse into array
 		parse_str(file_get_contents("php://input"), $this->data);
+
+		if (defined(DEBUG)) {
+			error_log(print_r($this->data, true));
+		}
 			
 		// if content type is json, then parse json
 		$pattern = '/json/';
