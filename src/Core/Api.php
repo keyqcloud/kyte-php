@@ -427,6 +427,7 @@ class Api
 		parse_str(file_get_contents("php://input"), $this->data);
 
 		if (defined(DEBUG)) {
+			error_log("***DATA OUTPUT***");
 			error_log(print_r($this->data, true));
 		}
 			
