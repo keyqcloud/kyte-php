@@ -20,11 +20,15 @@ class Model
 
 	private $page_size;
 	private $page_num;
+	private $search_fields;
+	private $search_value;
 
 	public function __construct($model, $page_size = null, $page_num = null, $search_fields = null, $search_value = null) {
 		$this->kyte_model = $model;
 		$this->page_size = $page_size;
 		$this->page_num = $page_num;
+		$this->search_fields = $search_fields;
+		$this->search_value = $search_value;
 	}
 
 	public function retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null)
