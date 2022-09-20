@@ -79,6 +79,7 @@ class Model
 			if (isset($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS'], $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'])) {
 				$search_fields = explode(",", $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS']);
 				$search_value = $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'];
+				error_log("*********** $search_value");
 				$c = count($search_fields);
 
 				// foreign key tables - track tables and if same tables are identified, create an alias
@@ -88,7 +89,6 @@ class Model
 
 					$i = 1;
 					foreach($search_fields as $sf) {
-						error_log("*********** $fs");
 						$f = explode(".", $sf);
 						if (count($f) == 1) {
 							if ($i < $c) {
@@ -100,8 +100,6 @@ class Model
 						} else if (count($f) == 2) {
 							// initialize alias name as null
 							$tbl_alias = null;
-
-							error_log("********** {$f[0]}");
 
 							// get struct for FK
 							$fk_attr = $this->kyte_model['struct'][$f[0]];
