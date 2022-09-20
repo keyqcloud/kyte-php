@@ -80,7 +80,7 @@ class Model
 
 			$join = null;
 			$page_sql = "";
-			error_log("*********** {$this->search_fields}");
+			error_log("*********** {$this->search_values}");
 			if (isset($this->search_fields, $this->search_values)) {
 				error_log("*********** {$this->search_fields}");
 				$search_fields = explode(",", $this->search_fields);
