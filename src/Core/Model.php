@@ -80,12 +80,10 @@ class Model
 
 			$join = null;
 			$page_sql = "";
-			error_log("*********** {$this->search_value}");
+
 			if (isset($this->search_fields, $this->search_value)) {
-				error_log("*********** {$this->search_fields}");
 				$search_fields = explode(",", $this->search_fields);
 				$c = count($search_fields);
-				error_log("*********** ".print_r($search_fields, true));
 
 				// foreign key tables - track tables and if same tables are identified, create an alias
 				$fk_tables = [];
@@ -104,12 +102,10 @@ class Model
 								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$this->search_value}%' ";
 							}
 						} else if (count($f) == 2) {
-							error_log("*********** ".print_r($f, true));
 							// initialize alias name as null
 							$tbl_alias = null;
 
 							// get struct for FK
-							error_log("*********** ".print_r($this->kyte_model['struct'], true));
 							$fk_attr = $this->kyte_model['struct'][$f[0]];
 							// capitalize the first letter for table name
 							$tblName = $fk_attr['fk']['model'];
