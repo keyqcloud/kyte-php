@@ -79,7 +79,6 @@ class Model
 			if (isset($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS'], $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'])) {
 				$search_fields = explode(",", $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS']);
 				$search_value = $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'];
-				error_log("*********** ".print_r($search_fields, true));
 				$c = count($search_fields);
 
 				// foreign key tables - track tables and if same tables are identified, create an alias
@@ -88,7 +87,9 @@ class Model
 					$page_sql .= " AND (";
 
 					$i = 1;
+					error_log("*********** ".print_r($search_fields, true));
 					foreach($search_fields as $sf) {
+						error_log("*********** $sf");
 						$f = explode(".", $sf);
 						if (count($f) == 1) {
 							if ($i < $c) {
