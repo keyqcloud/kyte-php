@@ -100,6 +100,8 @@ class Model
 							// initialize alias name as null
 							$tbl_alias = null;
 
+							error_log($f[0]);
+
 							// get struct for FK
 							$fk_attr = $this->kyte_model['struct'][$f[0]];
 							// capitalize the first letter for table name
