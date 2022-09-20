@@ -87,7 +87,7 @@ class Model
 					$page_sql .= " AND (";
 
 					$i = 1;
-					error_log("*********** ".print_r($search_fields, true));
+					
 					foreach($search_fields as $sf) {
 						error_log("*********** $sf");
 						$f = explode(".", $sf);
@@ -99,6 +99,7 @@ class Model
 								$page_sql .= " `$main_tbl`.`$sf` LIKE '%$search_value%' ";
 							}
 						} else if (count($f) == 2) {
+							error_log("*********** ".print_r($f, true));
 							// initialize alias name as null
 							$tbl_alias = null;
 
