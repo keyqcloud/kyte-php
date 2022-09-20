@@ -720,22 +720,16 @@ class DBI {
 
 				// if an alias is set (i.e. same table is being queried), update from clause, and table name
 				if (isset($j['table_alias'])) {
-					$query .= ", `{$j['table']}` {$j['table_alias']}";
+					$query .= " `{$j['table_alias']}`";
 					$tbl = $j['table_alias'];
 				}
 
 				// prepare conditions, or just the join clause
 				if (empty($condition)) {
-					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
-					if (isset($j['table_alias'])) {
-						$condition .= " AND `$table`.`{$j['main_table_idx']}` = `{$j['table_alias']}`.`{$j['table_idx']}`";
-					}
+					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$tbl}`.`{$j['table_idx']}`";
 					$empty_cond = true;
 				} else {
-					$join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
-					if (isset($j['table_alias'])) {
-						$join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$j['table_alias']}`.`{$j['table_idx']}`";
-					}
+					$join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$tbl}`.`{$j['table_idx']}`";
 					$first = false;
 				}
 			}
@@ -807,22 +801,16 @@ class DBI {
 
 				// if an alias is set (i.e. same table is being queried), update from clause, and table name
 				if (isset($j['table_alias'])) {
-					$query .= " {$j['table_alias']}";
+					$query .= " `{$j['table_alias']}`";
 					$tbl = $j['table_alias'];
 				}
 
 				// prepare conditions, or just the join clause
 				if (empty($condition)) {
 					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$tbl}`.`{$j['table_idx']}`";
-					if (isset($j['table_alias'])) {
-						$condition .= " AND `$table`.`{$j['main_table_idx']}` = `{$j['table_alias']}`.`{$j['table_idx']}`";
-					}
 					$empty_cond = true;
 				} else {
 					$join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$tbl}`.`{$j['table_idx']}`";
-					if (isset($j['table_alias'])) {
-						$join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$j['table_alias']}`.`{$j['table_idx']}`";
-					}
 					$first = false;
 				}
 			}
