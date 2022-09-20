@@ -695,6 +695,92 @@ class DBI {
 	}
 
 	/*
+	 * Return table count
+	 *
+	 * @param string $table
+	 * @param string $condition
+	 */
+	public static function count($table, $condition = null, $join = null)
+	{
+		if (!self::$dbConn) {
+			self::connect();
+		}
+
+		$query = "SELECT count(`$table`.`id`) as count FROM `$table`";
+
+		$join_query = "";
+
+		$empty_cond = false;
+		$first = true;
+
+		if (is_array($join)) {
+			foreach($join as $j) {
+				$tbl = $j['table'];
+				$query .= ", `{$j['table']}`";
+
+				// if an alias is set (i.e. same table is being queried), update from clause, and table name
+				if (isset($j['alias'])) {
+					$query .= ", `{$j['table']}` {$j['alias']}";
+					$tbl = $j['alias'];
+				}
+
+				// prepare conditions, or just the join clause
+				if (empty($condition)) {
+					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
+					if (isset($j['alias'])) {
+						$condition .= " AND `$table`.`{$j['main_table_idx']}` = `{$j['alias']}`.`{$j['table_idx']}`";
+					}
+					$empty_cond = true;
+				} else {
+					$join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
+					if (isset($j['alias'])) {
+						$join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$j['alias']}`.`{$j['table_idx']}`";
+					}
+					$first = false;
+				}
+			}
+
+			// if condition was originally not empty
+			if (!$empty_cond) {
+				// remove where from $condition and replace it with AND
+				$condition = str_replace("WHERE", "AND", $condition);
+			}
+		}
+
+		if(isset($id)) {
+			$query .= " WHERE id = $id";
+		} else {
+			
+		}
+		
+		$query .= "$join_query $condition";
+
+		// DEBUG
+		if (defined('DEBUG_SQL')) {
+			error_log($query);
+		}
+
+		$result = self::$dbConn->query($query);
+		if($result === false) {
+  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+  			return false;
+		}
+
+		$data = array();
+		while ($row = $result->fetch_assoc()) {
+			$data[] = $row;
+		}
+
+		$result->free();
+
+		if (count($data) == 1) {
+			return intval($data[0]['count']);
+		} else {
+			return -1;
+		}
+	}
+
+	/*
 	 * Select from table in database and returns the first row only
 	 *
 	 * @param string $table
@@ -716,12 +802,21 @@ class DBI {
 
 		if (is_array($join)) {
 			foreach($join as $j) {
+				$tbl = $j['table'];
 				$query .= ", `{$j['table']}`";
+
+				// if an alias is set (i.e. same table is being queried), update from clause, and table name
+				if (isset($j['alias'])) {
+					$query .= " {$j['alias']}";
+					$tbl = $j['alias'];
+				}
+
+				// prepare conditions, or just the join clause
 				if (empty($condition)) {
-					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
+					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$tbl}`.`{$j['table_idx']}`";
 					$empty_cond = true;
 				} else {
-					$join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
+					$join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$tbl}`.`{$j['table_idx']}`";
 					$first = false;
 				}
 			}
@@ -874,76 +969,5 @@ class DBI {
 		$result->free();
 		
 		return $data;
-	}
-
-	/*
-	 * Return table count
-	 *
-	 * @param string $table
-	 * @param string $condition
-	 */
-	public static function count($table, $condition = null, $join = null)
-	{
-		if (!self::$dbConn) {
-			self::connect();
-		}
-
-		$query = "SELECT count(`$table`.`id`) as count FROM `$table`";
-
-		$join_query = "";
-
-		$empty_cond = false;
-		$first = true;
-
-		if (is_array($join)) {
-			foreach($join as $j) {
-				$query .= ", `{$j['table']}`";
-				if (empty($condition)) {
-					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
-					$empty_cond = true;
-				} else {
-					$join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$j['table']}`.`{$j['table_idx']}`";
-					$first = false;
-				}
-			}
-
-			// if condition was originally not empty
-			if (!$empty_cond) {
-				// remove where from $condition and replace it with AND
-				$condition = str_replace("WHERE", "AND", $condition);
-			}
-		}
-
-		if(isset($id)) {
-			$query .= " WHERE id = $id";
-		} else {
-			
-		}
-		
-		$query .= "$join_query $condition";
-
-		// DEBUG
-		if (defined('DEBUG_SQL')) {
-			error_log($query);
-		}
-
-		$result = self::$dbConn->query($query);
-		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
-  			return false;
-		}
-
-		$data = array();
-		while ($row = $result->fetch_assoc()) {
-			$data[] = $row;
-		}
-
-		$result->free();
-
-		if (count($data) == 1) {
-			return intval($data[0]['count']);
-		} else {
-			return -1;
-		}
 	}
 }

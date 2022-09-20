@@ -80,6 +80,9 @@ class Model
 				$search_fields = explode(",", $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS']);
 				$search_value = $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'];
 				$c = count($search_fields);
+
+				// foreign key tables - track tables and if same tables are identified, create an alias
+				$fk_tables = [];
 				if ($c > 0 && !empty($search_value)) {
 					$page_sql .= " AND (";
 
@@ -94,16 +97,25 @@ class Model
 								$page_sql .= " `$main_tbl`.`$sf` LIKE '%$search_value%' ";
 							}
 						} else if (count($f) == 2) {
+							// initialize alias name as null
+							$tbl_alias = null;
+
 							// get struct for FK
 							$fk_attr = $this->kyte_model['struct'][$f[0]];
 							// capitalize the first letter for table name
 							$tblName = $fk_attr['fk']['model'];
+							$tbl = $tblName;
+							if (in_array($tblName, $fk_tables)) {
+								// generate alias
+								$tbl_alias = $tblName.bin2hex(random_bytes(5));
+								$tbl = $tbl_alias;
+							}
 
 							if ($i < $c) {
-								$page_sql .= " `$tblName`.`{$f[1]}` LIKE '%$search_value%' OR";
+								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%$search_value%' OR";
 								$i++;
 							} else {
-								$page_sql .= " `$tblName`.`{$f[1]}` LIKE '%$search_value%' ";
+								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%$search_value%' ";
 							}
 
 							// prepare join statement
@@ -117,6 +129,7 @@ class Model
 								'table' => $tblName,
 								'main_table_idx' => $f[0],
 								'table_idx' => $fk_attr['fk']['field'],
+								'table_alias' => $tbl_alias,
 							];
 						} else {
 							throw new \Exception("Unsupported field depth $sf");
@@ -152,6 +165,7 @@ class Model
                             } else if (count($f) == 2) {
                                 // get struct for FK
                                 $fk_attr = $this->kyte_model['struct'][$f[0]];
+
                                 // capitalize the first letter for table name
                                 $tblName = $fk_attr['fk']['model'];
                                 $order_sql .= " `$tblName`.`{$f[1]}` {$direction}";
