@@ -80,8 +80,8 @@ class Model
 
 			$join = null;
 			$page_sql = "";
-			error_log("*********** {$this->search_values}");
-			if (isset($this->search_fields, $this->search_values)) {
+			error_log("*********** {$this->search_value}");
+			if (isset($this->search_fields, $this->search_value)) {
 				error_log("*********** {$this->search_fields}");
 				$search_fields = explode(",", $this->search_fields);
 				$c = count($search_fields);
@@ -89,7 +89,7 @@ class Model
 
 				// foreign key tables - track tables and if same tables are identified, create an alias
 				$fk_tables = [];
-				if ($c > 0 && !empty($this->search_values)) {
+				if ($c > 0 && !empty($this->search_value)) {
 					$page_sql .= " AND (";
 
 					$i = 1;
@@ -98,10 +98,10 @@ class Model
 						$f = explode(".", $sf);
 						if (count($f) == 1) {
 							if ($i < $c) {
-								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$this->search_values}%' OR";
+								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$this->search_value}%' OR";
 								$i++;
 							} else {
-								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$this->search_values}%' ";
+								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$this->search_value}%' ";
 							}
 						} else if (count($f) == 2) {
 							error_log("*********** ".print_r($f, true));
@@ -121,10 +121,10 @@ class Model
 							}
 
 							if ($i < $c) {
-								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%{$this->search_values}%' OR";
+								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%{$this->search_value}%' OR";
 								$i++;
 							} else {
-								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%{$this->search_values}%' ";
+								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%{$this->search_value}%' ";
 							}
 
 							// prepare join statement
