@@ -81,8 +81,10 @@ class Model
 			$join = null;
 			$page_sql = "";
 			if (isset($this->search_fields, $this->search_values)) {
+				error_log("*********** {$this->search_fields}");
 				$search_fields = explode(",", $this->search_fields);
 				$c = count($search_fields);
+				error_log("*********** ".print_r($search_fields, true));
 
 				// foreign key tables - track tables and if same tables are identified, create an alias
 				$fk_tables = [];
