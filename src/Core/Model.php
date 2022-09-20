@@ -88,6 +88,7 @@ class Model
 
 					$i = 1;
 					foreach($search_fields as $sf) {
+						error_log("*********** $fs");
 						$f = explode(".", $sf);
 						if (count($f) == 1) {
 							if ($i < $c) {
@@ -100,7 +101,7 @@ class Model
 							// initialize alias name as null
 							$tbl_alias = null;
 
-							error_log($f[0]);
+							error_log("********** {$f[0]}");
 
 							// get struct for FK
 							$fk_attr = $this->kyte_model['struct'][$f[0]];
