@@ -21,7 +21,7 @@ class Model
 	private $page_size;
 	private $page_num;
 
-	public function __construct($model, $page_size = null, $page_num = null) {
+	public function __construct($model, $page_size = null, $page_num = null, $search_fields = null, $search_value = null) {
 		$this->kyte_model = $model;
 		$this->page_size = $page_size;
 		$this->page_num = $page_num;
@@ -76,14 +76,13 @@ class Model
 
 			$join = null;
 			$page_sql = "";
-			if (isset($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS'], $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'])) {
-				$search_fields = explode(",", $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS']);
-				$search_value = $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'];
+			if (isset($this->search_fields, $this->search_values)) {
+				$search_fields = explode(",", $this->search_fields);
 				$c = count($search_fields);
 
 				// foreign key tables - track tables and if same tables are identified, create an alias
 				$fk_tables = [];
-				if ($c > 0 && !empty($search_value)) {
+				if ($c > 0 && !empty($this->search_values)) {
 					$page_sql .= " AND (";
 
 					$i = 1;
@@ -92,10 +91,10 @@ class Model
 						$f = explode(".", $sf);
 						if (count($f) == 1) {
 							if ($i < $c) {
-								$page_sql .= " `$main_tbl`.`$sf` LIKE '%$search_value%' OR";
+								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$this->search_values}%' OR";
 								$i++;
 							} else {
-								$page_sql .= " `$main_tbl`.`$sf` LIKE '%$search_value%' ";
+								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$this->search_values}%' ";
 							}
 						} else if (count($f) == 2) {
 							error_log("*********** ".print_r($f, true));
@@ -115,10 +114,10 @@ class Model
 							}
 
 							if ($i < $c) {
-								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%$search_value%' OR";
+								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%{$this->search_values}%' OR";
 								$i++;
 							} else {
-								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%$search_value%' ";
+								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%{$this->search_values}%' ";
 							}
 
 							// prepare join statement

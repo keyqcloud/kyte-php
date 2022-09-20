@@ -522,7 +522,7 @@ class ModelController
             $this->hook_prequery('get', $field, $value, $conditions, $all, $order);
             
             // init model
-            $objs = new \Kyte\Core\Model($this->model, $this->page_size, $this->page_num);
+            $objs = new \Kyte\Core\Model($this->model, $this->page_size, $this->page_num, $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS'], $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE']);
             $objs->retrieve($field, $value, false, $conditions, $all, $order);
 
             // get total count
