@@ -89,7 +89,6 @@ class Model
 					$i = 1;
 					
 					foreach($search_fields as $sf) {
-						error_log("*********** $sf");
 						$f = explode(".", $sf);
 						if (count($f) == 1) {
 							if ($i < $c) {
@@ -104,6 +103,7 @@ class Model
 							$tbl_alias = null;
 
 							// get struct for FK
+							error_log("*********** ".print_r($this->kyte_model['struct'], true));
 							$fk_attr = $this->kyte_model['struct'][$f[0]];
 							// capitalize the first letter for table name
 							$tblName = $fk_attr['fk']['model'];
