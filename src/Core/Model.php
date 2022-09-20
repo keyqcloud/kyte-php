@@ -114,6 +114,8 @@ class Model
 								// generate alias
 								$tbl_alias = $tblName.bin2hex(random_bytes(5));
 								$tbl = $tbl_alias;
+							} else {
+								$fk_tables[] = $tblName;
 							}
 
 							if ($i < $c) {
