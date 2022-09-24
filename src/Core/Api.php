@@ -186,6 +186,10 @@ class Api
 			define('PAGE_SIZE', 50);
 			error_log('PAGE_SIZE constant not defined...using defaults');
 		}
+		if (!defined('USE_SESSION_MAP')) {
+			define('USE_SESSION_MAP', false);
+			error_log('USE_SESSION_MAP constant not defined...using defaults');
+		}
 
 		// only execute if called from web
 		if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {

@@ -40,7 +40,11 @@ class SessionController extends ModelController
             $this->user = $user;
             $this->account = $account;
 
-            $response[] = $this->getObject($user);
+            if (USE_SESSION_MAP) {
+                $response = $this->getObject($user);
+            } else {
+                $response[] = $this->getObject($user);
+            }
 
             // get api associated with account
             $account_api = new \Kyte\Core\ModelObject(APIKey);
