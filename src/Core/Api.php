@@ -143,16 +143,12 @@ class Api
 
 	public static function checkSyntax($filename) {
 		if (CHECK_SYNTAX_ON_IMPORT) {
-			try {
-				if (strpos(exec("php -l $filename"), "No syntax errors") === false) {
-					return false;
-				} else {
-					return true;
-				}
-			} catch (\Exception $e) {
+			if (strpos(exec("php -l $filename"), "No syntax errors") === false) {
 				$this->syntax_error = $filename;
 				error_log("Syntax error with $filename. Skipping file.");
-				// throw new \Exception("Syntax error with $filename. Skipping file.");
+				return false;
+			} else {
+				return true;
 			}
 		} else {
 			return true;
