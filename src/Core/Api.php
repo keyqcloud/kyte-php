@@ -141,11 +141,13 @@ class Api
 	}
 
 	public static function checkSyntax($filename) {
-		if (strpos(exec("php -l $filename"), "No syntax errors") === false ) {
-			throw new \Exception("Syntax error with $filename. Skipping file.");
-			return false;
-		} else {
-			return true;
+		if (CHECK_SYNTAX_ON_IMPORT) {
+			if (strpos(exec("php -l $filename"), "No syntax errors") === false ) {
+				throw new \Exception("Syntax error with $filename. Skipping file.");
+				return false;
+			} else {
+				return true;
+			}
 		}
 	}
 
@@ -198,6 +200,10 @@ class Api
 		if (!defined('USE_SESSION_MAP')) {
 			define('USE_SESSION_MAP', false);
 			error_log('USE_SESSION_MAP constant not defined...using defaults');
+		}
+		if (!defined('CHECK_SYNTAX_ON_IMPORT')) {
+			define('CHECK_SYNTAX_ON_IMPORT', false);
+			error_log('CHECK_SYNTAX_ON_IMPORT constant not defined...using defaults');
 		}
 
 		// only execute if called from web
@@ -296,7 +302,7 @@ class Api
 
 						// check syntax before importing file
 						self::checkSyntax($filename);
-						
+
 						require_once($filename);
 						if (VERBOSE_LOG) {
 							error_log("Checking if user defined controller has been defined...".(class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
