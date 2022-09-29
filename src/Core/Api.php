@@ -29,6 +29,7 @@ class Api
 	private $page_num = 1;
 	private $total_count;
 	private $total_filtered;
+	private $syntax_error = null;
 
 	private $response = [];
 	
@@ -142,8 +143,10 @@ class Api
 
 	public static function checkSyntax($filename) {
 		if (CHECK_SYNTAX_ON_IMPORT) {
-			if (strpos(exec("php -l $filename"), "No syntax errors") === false ) {
-				throw new \Exception("Syntax error with $filename. Skipping file.");
+			if (strpos(exec("php -l $filename"), "No syntax errors") === false) {
+				$this->syntax_error = $filename;
+				error_log("Syntax error with $filename. Skipping file.");
+				// throw new \Exception("Syntax error with $filename. Skipping file.");
 				return false;
 			} else {
 				return true;
@@ -648,6 +651,7 @@ class Api
 		// 	txTimestamp: ‘Thu, 30 Apr 2020 07:11:46 GMT’,
 		// 	data: {}
 		// }
+		$this->response['syntax_error'] = $this->syntax_error;
 		$this->response['session'] = '0';
 		$this->response['token'] = '0';	// default to public token
 		$this->response['uid'] = '0';
