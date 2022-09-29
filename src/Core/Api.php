@@ -154,6 +154,8 @@ class Api
 				error_log("Syntax error with $filename. Skipping file.");
 				// throw new \Exception("Syntax error with $filename. Skipping file.");
 			}
+		} else {
+			return true;
 		}
 	}
 
@@ -248,14 +250,14 @@ class Api
 			$model_name = str_replace(__DIR__ . '/../Mvc/Model/','',$model_name);
 
 			// check syntax before importing file
-			self::checkSyntax($filename);
-
-			require_once($filename);
-			if (VERBOSE_LOG) {
-				error_log("Importing builtin model $model_name...");
+			if (self::checkSyntax($filename)) {
+				require_once($filename);
+				if (VERBOSE_LOG) {
+					error_log("Importing builtin model $model_name...");
+				}
+				self::addPrimaryKey($$model_name);
+				$models[$model_name] = $$model_name;
 			}
-			self::addPrimaryKey($$model_name);
-			$models[$model_name] = $$model_name;
 		}
 
 		if(defined('APP_DIR')) {
@@ -272,28 +274,28 @@ class Api
 
 						if (!array_key_exists($model_name, $models)) {
 							// check syntax before importing file
-							self::checkSyntax($filename);
-
-							require_once($filename);
-							if (VERBOSE_LOG) {
-								error_log("Importing user defined model $model_name...");
+							if (self::checkSyntax($filename)) {
+								require_once($filename);
+								if (VERBOSE_LOG) {
+									error_log("Importing user defined model $model_name...");
+								}
+								self::addPrimaryKey($$model_name);
+								self::addKyteAttributes($$model_name);
+								$models[$model_name] = $$model_name;
 							}
-							self::addPrimaryKey($$model_name);
-							self::addKyteAttributes($$model_name);
-							$models[$model_name] = $$model_name;
 						} else {
 							// check syntax before importing file
-							self::checkSyntax($filename);
+							if (self::checkSyntax($filename)) {
+								require_once($filename);
+								// user overrides are specified
+								if (VERBOSE_LOG) {
+									error_log("Overriding defined model $model_name...");
+								}
 
-							require_once($filename);
-							// user overrides are specified
-							if (VERBOSE_LOG) {
-								error_log("Overriding defined model $model_name...");
-							}
-
-							// override or add attributes
-							foreach($$model_name['struct'] as $key => $value) {
-								$models[$model_name]['struct'][$key] = $value;
+								// override or add attributes
+								foreach($$model_name['struct'] as $key => $value) {
+									$models[$model_name]['struct'][$key] = $value;
+								}
 							}
 						}
 					}
@@ -307,11 +309,11 @@ class Api
 						$controller_name = str_replace(APP_DIR . '/app/controllers/','',$controller_name);
 
 						// check syntax before importing file
-						self::checkSyntax($filename);
-
-						require_once($filename);
-						if (VERBOSE_LOG) {
-							error_log("Checking if user defined controller has been defined...".(class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
+						if (self::checkSyntax($filename)) {
+							require_once($filename);
+							if (VERBOSE_LOG) {
+								error_log("Checking if user defined controller has been defined...".(class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
+							}
 						}
 					}
 				}      
