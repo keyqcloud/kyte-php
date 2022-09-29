@@ -140,6 +140,15 @@ class Api
 		];
 	}
 
+	public static function checkSyntax($filename) {
+		if (strpos(exec("php -l $filename"), "No syntax errors") === false ) {
+			throw new \Exception("Syntax error with $filename. Skipping file.");
+			return false;
+		} else {
+			return true;
+		}
+	}
+
 	private function bootstrap() {
 		// compatibility for older config files
 		if (!defined('ALLOW_ENC_HANDOFF')) {
@@ -226,6 +235,9 @@ class Api
 			$model_name = substr($filename, 0, strrpos($filename, "."));
 			$model_name = str_replace(__DIR__ . '/../Mvc/Model/','',$model_name);
 
+			// check syntax before importing file
+			self::checkSyntax($filename);
+
 			require_once($filename);
 			if (VERBOSE_LOG) {
 				error_log("Importing builtin model $model_name...");
@@ -247,6 +259,9 @@ class Api
 						$model_name = str_replace(APP_DIR . '/app/models/','',$model_name);
 
 						if (!array_key_exists($model_name, $models)) {
+							// check syntax before importing file
+							self::checkSyntax($filename);
+
 							require_once($filename);
 							if (VERBOSE_LOG) {
 								error_log("Importing user defined model $model_name...");
@@ -255,6 +270,9 @@ class Api
 							self::addKyteAttributes($$model_name);
 							$models[$model_name] = $$model_name;
 						} else {
+							// check syntax before importing file
+							self::checkSyntax($filename);
+
 							require_once($filename);
 							// user overrides are specified
 							if (VERBOSE_LOG) {
@@ -275,6 +293,10 @@ class Api
 					foreach (glob(APP_DIR . "/app/controllers/*.php") as $filename) {
 						$controller_name = substr($filename, 0, strrpos($filename, "."));
 						$controller_name = str_replace(APP_DIR . '/app/controllers/','',$controller_name);
+
+						// check syntax before importing file
+						self::checkSyntax($filename);
+						
 						require_once($filename);
 						if (VERBOSE_LOG) {
 							error_log("Checking if user defined controller has been defined...".(class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
