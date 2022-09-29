@@ -144,9 +144,8 @@ class Api
 	public static function checkSyntax($filename) {
 		if (CHECK_SYNTAX_ON_IMPORT) {
 			if (strpos(exec("php -l $filename"), "No syntax errors") === false) {
-				$this->syntax_error = $filename;
 				error_log("Syntax error with $filename. Skipping file.");
-				return false;
+				return $filename;
 			} else {
 				return true;
 			}
@@ -246,13 +245,16 @@ class Api
 			$model_name = str_replace(__DIR__ . '/../Mvc/Model/','',$model_name);
 
 			// check syntax before importing file
-			if (self::checkSyntax($filename)) {
+			$f = self::checkSyntax($filename);
+			if ($f === true) {
 				require_once($filename);
 				if (VERBOSE_LOG) {
 					error_log("Importing builtin model $model_name...");
 				}
 				self::addPrimaryKey($$model_name);
 				$models[$model_name] = $$model_name;
+			} else {
+				$this->syntax_error = $f;
 			}
 		}
 
@@ -270,7 +272,8 @@ class Api
 
 						if (!array_key_exists($model_name, $models)) {
 							// check syntax before importing file
-							if (self::checkSyntax($filename)) {
+							$f = self::checkSyntax($filename);
+							if ($f === true) {
 								require_once($filename);
 								if (VERBOSE_LOG) {
 									error_log("Importing user defined model $model_name...");
@@ -278,10 +281,13 @@ class Api
 								self::addPrimaryKey($$model_name);
 								self::addKyteAttributes($$model_name);
 								$models[$model_name] = $$model_name;
+							} else {
+								$this->syntax_error = $f;
 							}
 						} else {
 							// check syntax before importing file
-							if (self::checkSyntax($filename)) {
+							$f = self::checkSyntax($filename);
+							if ($f === true) {
 								require_once($filename);
 								// user overrides are specified
 								if (VERBOSE_LOG) {
@@ -292,6 +298,8 @@ class Api
 								foreach($$model_name['struct'] as $key => $value) {
 									$models[$model_name]['struct'][$key] = $value;
 								}
+							} else {
+								$this->syntax_error = $f;
 							}
 						}
 					}
@@ -305,11 +313,14 @@ class Api
 						$controller_name = str_replace(APP_DIR . '/app/controllers/','',$controller_name);
 
 						// check syntax before importing file
-						if (self::checkSyntax($filename)) {
+						$f = self::checkSyntax($filename);
+						if ($f === true) {
 							require_once($filename);
 							if (VERBOSE_LOG) {
 								error_log("Checking if user defined controller has been defined...".(class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
 							}
+						} else {
+							$this->syntax_error = $f;
 						}
 					}
 				}      
