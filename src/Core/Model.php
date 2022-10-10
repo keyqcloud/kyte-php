@@ -78,7 +78,7 @@ class Model
 			$page_sql = "";
 			if (isset($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS'], $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'])) {
 				$search_fields = explode(",", $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS']);
-				$search_value = base64_decode($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE']);
+				$search_value = urldecode(base64_decode($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE']));
 				$c = count($search_fields);
 				if ($c > 0 && !empty($search_value)) {
 					$page_sql .= " AND (";
