@@ -601,8 +601,6 @@ class Api
 			}
 			$this->response['role'] = $role->getParams(['id', 'name']);
 
-			error_log("ACCOUNTS ".$this->account->id." and ".$this->user->kyte_account);
-
 			// check is user has different account
 			// get user account
 			if ($this->user->kyte_account != $this->account->id) {
