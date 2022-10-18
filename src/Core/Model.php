@@ -88,7 +88,6 @@ class Model
 				// foreign key tables - track tables and if same tables are identified, create an alias
 				$fk_tables = [];
 				if ($c > 0 && !empty($this->search_value)) {
-					error_log("*********> SEARCH VALUE: {$this->search_value}");
 					$page_sql .= " AND (";
 
 					$i = 1;
