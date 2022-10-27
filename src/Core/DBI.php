@@ -964,4 +964,12 @@ class DBI {
 		
 		return $data;
 	}
+
+	public static function escape_string($string) {
+		if (!self::$dbConn) {
+			self::connect();
+		}
+		
+		return self::$dbConn->real_escape_string($string);
+	}
 }

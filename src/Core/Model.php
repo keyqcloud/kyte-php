@@ -40,10 +40,11 @@ class Model
 			$main_tbl = $this->kyte_model['name'];
 
 			if (isset($field, $value)) {
+				$escaped_value = addcslashes(\Kyte\Core\DBI::escape_string($value), '%_');
 				if ($isLike) {
-					$sql = "WHERE `$main_tbl`.`$field` LIKE '%$value%'";
+					$sql = "WHERE `$main_tbl`.`$field` LIKE '%$escaped_value%'";
 				} else {
-					$sql = "WHERE `$main_tbl`.`$field` = '$value'";
+					$sql = "WHERE `$main_tbl`.`$field` = '$escaped_value'";
 				}
 
 				if (!$all) {
@@ -60,19 +61,20 @@ class Model
 				if (!empty($conditions)) {
 					// iterate through each condition
 					foreach($conditions as $condition) {
+						$escaped_value = addcslashes(\Kyte\Core\DBI::escape_string($condition['value']), '%_');
 						// check if an evaluation operator is set
 						if (isset($condition['operator'])) {
 							if ($sql != '') {
 								$sql .= " AND ";
 							}
-							$sql .= "`$main_tbl`.`{$condition['field']}` {$condition['operator']} '{$condition['value']}'";
+							$sql .= "`$main_tbl`.`{$condition['field']}` {$condition['operator']} '{$escaped_value}'";
 						}
 						// default to equal
 						else {
 							if ($sql != '') {
 								$sql .= " AND ";
 							}
-							$sql .= "`$main_tbl`.`{$condition['field']}` = '{$condition['value']}'";
+							$sql .= "`$main_tbl`.`{$condition['field']}` = '{$escaped_value}'";
 						}
 					}
 				}
@@ -82,6 +84,7 @@ class Model
 			$page_sql = "";
 
 			if (isset($this->search_fields, $this->search_value)) {
+				$escaped_value = addcslashes(\Kyte\Core\DBI::escape_string($search_value), '%_');
 				$search_fields = explode(",", $this->search_fields);
 				$c = count($search_fields);
 
@@ -96,10 +99,10 @@ class Model
 						$f = explode(".", $sf);
 						if (count($f) == 1) {
 							if ($i < $c) {
-								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$this->search_value}%' OR";
+								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$escaped_value}%' OR";
 								$i++;
 							} else {
-								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$this->search_value}%' ";
+								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$escaped_value}%' ";
 							}
 						} else if (count($f) == 2) {
 							// initialize alias name as null
@@ -119,10 +122,10 @@ class Model
 							}
 
 							if ($i < $c) {
-								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%{$this->search_value}%' OR";
+								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%{$escaped_value}%' OR";
 								$i++;
 							} else {
-								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%{$this->search_value}%' ";
+								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%{$escaped_value}%' ";
 							}
 
 							// prepare join statement

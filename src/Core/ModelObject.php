@@ -118,7 +118,8 @@ class ModelObject
 	{
 		try {
 			if (isset($field, $value)) {
-				$sql = $all ? "WHERE `$field` = '$value'" : "WHERE `$field` = '$value' AND `deleted` = '0'";
+				$escaped_value = addcslashes(\Kyte\Core\DBI::escape_string($value), '%_');
+				$sql = $all ? "WHERE `$field` = '$escaped_value'" : "WHERE `$field` = '$escaped_value' AND `deleted` = '0'";
 			} else {
 				$sql = '';
 				if (!$all) {
@@ -131,19 +132,20 @@ class ModelObject
 				if (!empty($conditions)) {
 					// iterate through each condition
 					foreach($conditions as $condition) {
+						$escaped_value = addcslashes(\Kyte\Core\DBI::escape_string($condition['value']), '%_');
 						// check if an evaluation operator is set
 						if (isset($condition['operator'])) {
 							if ($sql != '') {
 								$sql .= " AND ";
 							}
-							$sql .= "`{$condition['field']}` {$condition['operator']} '{$condition['value']}'";
+							$sql .= "`{$condition['field']}` {$condition['operator']} '{$escaped_value}'";
 						}
 						// default to equal
 						else {
 							if ($sql != '') {
 								$sql .= " AND ";
 							}
-							$sql .= "`{$condition['field']}` = '{$condition['value']}'";
+							$sql .= "`{$condition['field']}` = '{$escaped_value}'";
 						}
 					}
 				}
