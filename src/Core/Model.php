@@ -84,7 +84,7 @@ class Model
 			$page_sql = "";
 
 			if (isset($this->search_fields, $this->search_value)) {
-				$escaped_value = addcslashes(\Kyte\Core\DBI::escape_string($search_value), '%_');
+				$escaped_value = addcslashes(\Kyte\Core\DBI::escape_string($this->search_value), '%_');
 				$search_fields = explode(",", $this->search_fields);
 				$c = count($search_fields);
 
