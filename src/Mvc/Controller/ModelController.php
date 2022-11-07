@@ -524,6 +524,10 @@ class ModelController
             $search_fields = isset($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS']) ? $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS'] : null;
             $search_values = isset($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE']) ? urldecode(base64_decode($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'])) : null;
 
+            if (DEBUG) {
+                error_log("HTTP_X_KYTE_PAGE_SEARCH_VALUE: ".$_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE']."; Decoded: ".$search_values);
+            }
+
             // init model
             $objs = new \Kyte\Core\Model($this->model, $this->page_size, $this->page_num, $search_fields, $search_values);
             $objs->retrieve($field, $value, false, $conditions, $all, $order);

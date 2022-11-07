@@ -155,6 +155,10 @@ class Api
 	}
 
 	private function bootstrap() {
+		if (!defined('DEBUG')) {
+			define('DEBUG', false);
+			error_log('DEBUG constant not defined...using defaults');
+		}
 		// compatibility for older config files
 		if (!defined('ALLOW_ENC_HANDOFF')) {
 			define('ALLOW_ENC_HANDOFF', true);
