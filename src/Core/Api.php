@@ -357,12 +357,18 @@ class Api
 			http_response_code(403);
 			$this->response['error'] = $e->getMessage();
 			$this->response = ['response_code' => 403] + $this->response;
+			if (defined('LOG_RESPONSE')) {
+				error_log(json_encode($this->response, JSON_PRETTY_PRINT));
+			}
 			echo json_encode($this->response);
 			exit(0);
 		} catch (\Exception $e) {
 			http_response_code(400);
 			$this->response = ['response_code' => 400] + $this->response;
 			$this->response['error'] = $e->getMessage();
+			if (defined('LOG_RESPONSE')) {
+				error_log(json_encode($this->response, JSON_PRETTY_PRINT));
+			}
 			echo json_encode($this->response);
 			exit(0);
 		}
@@ -376,6 +382,9 @@ class Api
 
 		// return response data
 		$this->response = ['response_code' => 200] + $this->response;
+		if (defined('LOG_RESPONSE')) {
+			error_log(json_encode($this->response, JSON_PRETTY_PRINT));
+		}
 		echo json_encode($this->response);
 	}
 
