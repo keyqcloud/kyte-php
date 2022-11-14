@@ -228,11 +228,6 @@ class Model
 				$sql .= " LIMIT {$this->page_size} OFFSET $offset";
 			}
 
-			error_log("______SQL_______");
-			error_log($sql);
-			error_log("______JOIN_______");
-			error_log($join);
-
 			$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql, $join);
 
 			foreach ($data as $item) {
