@@ -40,8 +40,9 @@ class Model
 			$main_tbl = $this->kyte_model['name'];
 
 			if (isset($field, $value)) {
-				$escaped_value = addcslashes(\Kyte\Core\DBI::escape_string($value), '%_');
+				$escaped_value = \Kyte\Core\DBI::escape_string($value);
 				if ($isLike) {
+					$escaped_value = addcslashes($escaped_value, '%_');
 					$sql = "WHERE `$main_tbl`.`$field` LIKE '%$escaped_value%'";
 				} else {
 					$sql = "WHERE `$main_tbl`.`$field` = '$escaped_value'";
@@ -84,7 +85,7 @@ class Model
 			$page_sql = "";
 
 			if (isset($this->search_fields, $this->search_value)) {
-				$escaped_value = addcslashes(\Kyte\Core\DBI::escape_string($this->search_value), '%_');
+				$escaped_value = \Kyte\Core\DBI::escape_string($this->search_value);
 				$search_fields = explode(",", $this->search_fields);
 				$c = count($search_fields);
 
@@ -226,6 +227,11 @@ class Model
 				$offset = $this->page_size * ($this->page_num - 1);
 				$sql .= " LIMIT {$this->page_size} OFFSET $offset";
 			}
+
+			error_log("______SQL_______");
+			error_log($sql);
+			error_log("______JOIN_______");
+			error_log($join);
 
 			$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql, $join);
 
