@@ -49,7 +49,6 @@ class ModelObject
 		$types = '';
 		foreach ($params as $key => $value) {
 			if (array_key_exists($key, $this->kyte_model['struct'])) {
-				$this->setParam($key, $value);
 				// check if type is t, in which case return 's'
 				// otherwise return type as is
 				$types .= $this->kyte_model['struct'][$key]['type'] == 't' ? 's' : $this->kyte_model['struct'][$key]['type'];
@@ -97,7 +96,7 @@ class ModelObject
 		try {
 			$types = $this->bindTypes($params);
 			$id = \Kyte\Core\DBI::insert($this->kyte_model['name'], $params, $types);
-			$this->populate($id);
+			$this->populate($params);
 
 			return true;
 		} catch (\Exception $e) {
@@ -183,6 +182,7 @@ class ModelObject
 		try {
 			$types = $this->bindTypes($params);
 			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, $params, $types);
+			$this->populate($params);
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
@@ -206,7 +206,9 @@ class ModelObject
 				if (count($o) == 0) { return false; }
 
 				foreach ($o as $key => $value) {
-					$this->setParam($key, $value);
+					if (array_key_exists($key, $this->kyte_model['struct'])) {
+						$this->setParam($key, $value);
+					}
 				}
 			} else {
 				// if $id is null from parameter, set it to the object's id value
