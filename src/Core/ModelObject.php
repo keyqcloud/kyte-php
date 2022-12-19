@@ -96,6 +96,7 @@ class ModelObject
 		try {
 			$types = $this->bindTypes($params);
 			$id = \Kyte\Core\DBI::insert($this->kyte_model['name'], $params, $types);
+			$params['id'] = $id;
 			$this->populate($params);
 
 			return true;
