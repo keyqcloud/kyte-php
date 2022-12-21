@@ -90,6 +90,7 @@ class ModelObject
 		$this->validateRequiredParams($params);
 
 		// audit attributes - set date created
+		$params['deleted'] = 0;
 		$params['date_created'] = time();
 		$params['created_by'] = isset($params['created_by']) ? $params['created_by'] : $user;
 
@@ -305,7 +306,7 @@ class ModelObject
 			$this->{$key} = $value;
 			return;
 		}
-		
+
 		if (array_key_exists($key, $this->kyte_model['struct'])) {
 			if (STRICT_TYPING) {
 				// check if type is t, in which case return 's'
