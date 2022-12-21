@@ -301,6 +301,11 @@ class ModelObject
 	}
 
 	protected function setParam($key, $value) {
+		if (is_null($value)) {
+			$this->{$key} = $value;
+			return;
+		}
+		
 		if (array_key_exists($key, $this->kyte_model['struct'])) {
 			if (STRICT_TYPING) {
 				// check if type is t, in which case return 's'
