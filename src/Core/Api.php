@@ -561,7 +561,7 @@ class Api
 			}
 			$this->response['sessionPermission'] = $this->user->role;
 
-			error_log("ACCOUNTS ".$this->account->id." and ".$this->user->kyte_account);
+			// error_log("ACCOUNTS ".$this->account->id." and ".$this->user->kyte_account);
 
 			// check is user has different account
 			// get user account
