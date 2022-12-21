@@ -301,7 +301,35 @@ class ModelObject
 	}
 
 	protected function setParam($key, $value) {
-		$this->{$key} = $value;
+		if (array_key_exists($key, $this->kyte_model['struct'])) {
+			if (STRICT_TYPING) {
+				// check if type is t, in which case return 's'
+				// otherwise return type as is
+				switch ($this->kyte_model['struct'][$key]['type']) {
+					case 's':
+					case 't':
+						$this->{$key} = strval($value);
+						break;
+
+					case 'i':
+						$this->{$key} = intval($value);
+						break;
+
+					case 'd':
+						$this->{$key} = floatval($value);
+						break;
+						
+					default:
+						$this->{$key} = $value;
+						break;
+				}
+			} else {
+				$this->{$key} = strval($value);
+			}
+		} else {
+			// allow for non model defined properties
+			$this->{$key} = $value;
+		}
 	}
 
 	public function getParam($key) {

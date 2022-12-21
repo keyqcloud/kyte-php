@@ -182,6 +182,10 @@ class Api
 			define('PAGE_SIZE', 50);
 			error_log('PAGE_SIZE constant not defined...using defaults');
 		}
+		if (!defined('STRICT_TYPING')) {
+			define('STRICT_TYPING', true);
+			error_log('STRICT_TYPING constant not defined...using defaults');
+		}
 
 		// only execute if called from web
 		if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
