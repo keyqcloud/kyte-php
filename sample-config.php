@@ -33,9 +33,6 @@
     define('CHECK_SYNTAX_ON_IMPORT', false);
     define('STRICT_TYPING', true);
 
-    /* SENDGRID INTEGRATION */
-    define('KYTE_SENDGRID_API', '');
-
     /* DB INTEGRATION */
     define('KYTE_DB_USERNAME', '');
     define('KYTE_DB_PASSWORD', '');
