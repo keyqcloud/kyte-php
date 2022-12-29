@@ -25,14 +25,13 @@
     define('USERNAME_FIELD', 'email');
     define('PASSWORD_FIELD', 'password');
     define('VERBOSE_LOG', false);
-
     define('IS_PRIVATE', true);
     define('RETURN_NO_MODEL', true);
     define('SESSION_RETURN_FK', true);
     define('PAGE_SIZE', 50);
     define('USE_SESSION_MAP', false);
     define('CHECK_SYNTAX_ON_IMPORT', false);
-    // define('', false);
+    define('STRICT_TYPING', true);
 
     /* SENDGRID INTEGRATION */
     define('KYTE_SENDGRID_API', '');
