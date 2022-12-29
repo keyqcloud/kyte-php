@@ -17,59 +17,6 @@ $Application = [
 			'date'		=> false,
 		],
 
-		'category'		=> [
-			'type'		=> 's',
-			'required'	=> true,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'domain'		=> [
-			'type'		=> 's',
-			'required'	=> true,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		's3bucket'		=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'cfDistribution' => [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'AcmArn'		 => [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'active'	=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 1,
-			'unsigned'	=> true,
-			'default'	=> 0,
-			'date'		=> false,
-		],
-
-		'verified'	=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 1,
-			'unsigned'	=> true,
-			'default'	=> 0,
-			'date'		=> false,
-		],
-
 		// database field
 
 		'db_name'		=> [
