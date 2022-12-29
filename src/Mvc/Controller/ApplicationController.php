@@ -27,28 +27,28 @@ class ApplicationController extends ModelController
                 // create database
                 \Kyte\Core\DBI::createDatabase($r['db_name'], $r['db_username'], $r['db_password']);
 
-                // get AWS credentials
-                $credentials = new \Kyte\Aws\Credentials('us-east-1');
+                // // get AWS credentials
+                // $credentials = new \Kyte\Aws\Credentials('us-east-1');
 
-                // create s3 bucket
-                $bucketName = $r['domain'];
-                $s3 = new \Kyte\Aws\S3($credentials, $bucketName, 'public');
-                $s3->createBucket();
-                $s3->createWebsite();
-                $s3->enablePublicAccess();
-                // $s3->enableVersioning();
+                // // create s3 bucket
+                // $bucketName = $r['domain'];
+                // $s3 = new \Kyte\Aws\S3($credentials, $bucketName, 'public');
+                // $s3->createBucket();
+                // $s3->createWebsite();
+                // $s3->enablePublicAccess();
+                // // $s3->enableVersioning();
 
-                // create acm certificate request
-                $acm = new \Kyte\Aws\Acm($credentials);
-                $acm->request($r['domain']);
+                // // create acm certificate request
+                // $acm = new \Kyte\Aws\Acm($credentials);
+                // $acm->request($r['domain']);
 
-                // create distribution
-                $cf = new \Kyte\Aws\CloudFront($credentials);
-                $cf->addOrigin(
-                    $r['domain'].'.s3-website-'.$credential->getRegion().'.amazonaws.com',
-                    $r['domain']
-                );
-                $cf->create();
+                // // create distribution
+                // $cf = new \Kyte\Aws\CloudFront($credentials);
+                // $cf->addOrigin(
+                //     $r['domain'].'.s3-website-'.$credential->getRegion().'.amazonaws.com',
+                //     $r['domain']
+                // );
+                // $cf->create();
 
                 break;
             
@@ -60,27 +60,27 @@ class ApplicationController extends ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'delete':
-                // get AWS credentials
-                $credentials = new \Kyte\Aws\Credentials('us-east-1');
+                // // get AWS credentials
+                // $credentials = new \Kyte\Aws\Credentials('us-east-1');
 
-                // disable distribution
-                $cf = new \Kyte\Aws\CloudFront($credentials, $o->cfDistribution);
-                $cf->disable();
+                // // disable distribution
+                // $cf = new \Kyte\Aws\CloudFront($credentials, $o->cfDistribution);
+                // $cf->disable();
 
-                // delete distribution
-                $cf->delete();
+                // // delete distribution
+                // $cf->delete();
 
                 // delete database from cluster
                 \Kyte\Core\DBI::query("DROP DATABASE `{$o->db_name}`;");
 
-                // delete acm certificate
-                $acm = new \Kyte\Aws\Acm($credentials, $o->AcmArn);
-                $acm->delete();
+                // // delete acm certificate
+                // $acm = new \Kyte\Aws\Acm($credentials, $o->AcmArn);
+                // $acm->delete();
 
-                // delete s3 bucket
-                $s3 = new \Kyte\Aws\S3($credentials, $o->s3bucket, 'public');
-                // $s3->emptyBucket(); <- create method
-                // $s3->deleteBucket();
+                // // delete s3 bucket
+                // $s3 = new \Kyte\Aws\S3($credentials, $o->s3bucket, 'public');
+                // // $s3->emptyBucket(); <- create method
+                // // $s3->deleteBucket();
 
                 break;
             
