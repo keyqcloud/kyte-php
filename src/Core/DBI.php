@@ -113,6 +113,10 @@ class DBI {
 			throw new \Exception("Database name must be specified");
 		}
 
+		if (!$username) {
+			throw new \Exception("Database username must be specified");
+		}
+
 		if (!self::$dbConn) {
 			self::connect();
 		}
