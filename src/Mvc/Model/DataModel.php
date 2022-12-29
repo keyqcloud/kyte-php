@@ -10,22 +10,6 @@ $DataModel = [
 			'date'		=> false,
 		],
 
-		'engine'		=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'default'	=> 'InnoDB',
-			'date'		=> false,
-		],
-
-		'charset'		=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'default'	=> 'utf8mb4',
-			'date'		=> false,
-		],
-
 		'application'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
