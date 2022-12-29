@@ -212,6 +212,10 @@ class Api
 			define('CHECK_SYNTAX_ON_IMPORT', false);
 			error_log('CHECK_SYNTAX_ON_IMPORT constant not defined...using defaults');
 		}
+		if (!defined('STRICT_TYPING')) {
+			define('STRICT_TYPING', true);
+			error_log('STRICT_TYPING constant not defined...using defaults');
+		}
 
 		// only execute if called from web
 		if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
