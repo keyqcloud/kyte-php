@@ -9,22 +9,13 @@
 	define('SUPPORT_PHONE', '');
     define('APP_DATE_FORMAT', 'Y/m/d');
     
-    /* BASE PATH for API - for example if in www.example.com/api/ then specify 'api/' */
+    /* BASE PATH for API - for example /var/www/html/ */
     define('APP_DIR', '');
 
 	/* AWS INTEGRATION */
 	define('AWS_ACCESS_KEY_ID', '');
 	define('AWS_SECRET_KEY', '');
 	define('AWS_KMS_KEYID', '');
-
-	/* STRIPE INTEGRATION */
-	define('STRIPE_API_SK', '');
-	define('STRIPE_API_PK', '');
-    define('STRIPE_WEBHOOK_PAYMENT', '');
-    
-    /* OneSignal INTEGRATION */
-    define('ONESIGNAL_APP_ID', '');
-    define('ONESIGNAL_API_KEY', '');
 
     /* KYTE FRAMEWORK SPECIFIC SETTINGS */
     define('ALLOW_ENC_HANDOFF', true);
@@ -41,7 +32,7 @@
     define('PAGE_SIZE', 50);
     define('USE_SESSION_MAP', false);
     define('CHECK_SYNTAX_ON_IMPORT', false);
-    define('', false);
+    // define('', false);
 
     /* SENDGRID INTEGRATION */
     define('KYTE_SENDGRID_API', '');
