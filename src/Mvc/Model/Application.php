@@ -27,20 +27,6 @@ $Application = [
 			'protected'	=> true,
 		],
 
-		'db_encoding'	=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'db_engine'	=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
 		'db_host'	=> [
 			'type'		=> 's',
 			'required'	=> false,
