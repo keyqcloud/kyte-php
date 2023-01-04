@@ -71,7 +71,7 @@ class DataModelController extends ModelController
             $attrs = new \Kyte\Core\Model(ModelAttribute);
             $attrs->retrieve("dataModel", $id);
             foreach($attrs->objects as $attr) {
-                $base_model['struct'][] = self::prepareModelDef($attr);
+                $base_model['struct'][$attr->name] = self::prepareModelDef($attr);
             }
         }
 
