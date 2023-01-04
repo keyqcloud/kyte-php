@@ -50,6 +50,7 @@ class SiteController extends ModelController
                 $cf = new \Kyte\Aws\CloudFront($credentials);
                 $cf->addOrigin(
                     $bucketName.'.s3-website-'.$region.'.amazonaws.com',
+                    $bucketName
                 );
                 $cf->create();
                 $o->save([
