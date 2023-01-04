@@ -113,6 +113,7 @@ class DBI {
 		if (self::$dbConn) {
 			self::$dbConn->close();
 		}
+		self::$dbConn = null;
 	}
 
 	/*
