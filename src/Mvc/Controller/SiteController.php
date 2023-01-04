@@ -15,7 +15,7 @@ class SiteController extends ModelController
         switch ($method) {
             case 'new':
                 $app = new \Kyte\Core\ModelObject(Application);
-                if (!$app->retrieve('id', $r['application'])) {
+                if (!$app->retrieve('id', $d['application'])) {
                     throw new \Exception("CRITICAL ERROR: Unable to find application.");
                     $o->delete();
                 }
