@@ -30,7 +30,7 @@ class SiteController extends ModelController
                     'region'        => $region,
                     's3BucketName'  => $bucketName,
                 ]);
-                $s3 = new \Kyte\Aws\S3($credentials, $bucketName, 'public');
+                $s3 = new \Kyte\Aws\S3($credentials, $bucketName, 'public-read');
                 $s3->createBucket();
                 $s3->createWebsite();
                 $s3->enablePublicAccess();
