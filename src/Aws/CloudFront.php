@@ -8,6 +8,8 @@ class CloudFront extends Client
 {
     private $distributionConfig;
     public $domainName;
+    public $Id;
+    public $Arn;
 
     // distribution configuration properties
     // https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-overview-required-fields.html
