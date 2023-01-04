@@ -165,10 +165,13 @@ class Api
 	}
 
 	public static function dbswitch($database, $username, $password, $host = KYTE_DB_HOST, $charset = KYTE_DB_CHARSET) {
-		\Kyte\Core\DBI::close();
+		if ($database == null || $username == null || $password == null) {
+			throw new \Exception("Database parameters must be provided. Database: $database\tUsername: $username\tPassword: $password");
+		}
 		if ($host == null) {
 			$host = KYTE_DB_HOST;
 		}
+		\Kyte\Core\DBI::close();
 		\Kyte\Core\DBI::setDbName($database);
 		\Kyte\Core\DBI::setDbUser($username);
 		\Kyte\Core\DBI::setDbPassword($password);
