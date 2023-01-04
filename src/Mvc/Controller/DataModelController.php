@@ -116,7 +116,7 @@ class DataModelController extends ModelController
                 }
                 \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
                 // create new table with basic kyte info
-                if (!\Kyte\Core\DBI::createTable($base_model)) {
+                if (!\Kyte\Core\DBI::createTable($r['model_definition'])) {
                     throw new \Exception("Failed to create table...");
                 }
 
