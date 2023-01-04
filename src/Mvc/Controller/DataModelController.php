@@ -43,7 +43,7 @@ class DataModelController extends ModelController
                 }
 
                 // switch dbs and create table
-                $app = \Kyte\Core\Model(Application);
+                $app = new \Kyte\Core\ModelObject(Application);
                 if (!$app->retrieve('id', $r['application'])) {
                     throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
                 }
@@ -85,7 +85,7 @@ class DataModelController extends ModelController
                     }
 
                     // switch dbs and create table
-                    $app = \Kyte\Core\Model(Application);
+                    $app = new \Kyte\Core\ModelObject(Application);
                     if (!$app->retrieve('id', $o->application)) {
                         throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
                     }
@@ -146,12 +146,12 @@ class DataModelController extends ModelController
                 // TODO: consider situation where there are external tables and foreign keys
 
                 // switch dbs and create table
-                $app = \Kyte\Core\Model(Application);
+                $app = new \Kyte\Core\ModelObject(Application);
                 if (!$app->retrieve('id', $o->application)) {
                     throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
                 }
                 \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
-                
+
                 // drop table <table_name>
                 if (!\Kyte\Core\DBI::dropTable($o->name)) {
                     throw new \Exception("Failed to drop table");
