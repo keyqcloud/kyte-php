@@ -4,7 +4,9 @@ namespace Kyte\Mvc\Controller;
 
 class ModelAttributeController extends ModelController
 {
-    // public function hook_init() {}
+    public function hook_init() {
+        $this->checkExisting = 'name';
+    }
 
     // public function hook_auth() {}
 
@@ -19,7 +21,9 @@ class ModelAttributeController extends ModelController
 		}
 	}
 
-    public function hook_preprocess($method, &$r, &$o = null) {
+    // public function hook_preprocess($method, &$r, &$o = null) {}
+
+    public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'new':
                 // get table
@@ -28,14 +32,6 @@ class ModelAttributeController extends ModelController
                     throw new \Exception("Unable to find associated data model.");
                 }
 
-                $updatedModel = constant($tbl->name);
-
-                // let's make sure that the def doesn't have it
-                if (array_key_exists($r['name'], $updatedModel['struct'])) {
-                    throw new \Exception("Whoops, looks like the attribute name is already defined in the model although not found in the database. Contact a DB admin ASAP!");
-                }
-
-                $attrs = self::prepareModelDef($r);
                 // switch dbs
                 $app = new \Kyte\Core\ModelObject(Application);
                 if (!$app->retrieve('id', $tbl->application)) {
@@ -49,11 +45,10 @@ class ModelAttributeController extends ModelController
                 // return to kyte db
                 \Kyte\Core\Api::dbconnect();
 
-                $updatedModel['struct'][$r['name']] = $attrs;
-
-                if (file_put_contents("/var/www/html/app/models/{$tbl->name}.php", "<?php\n\${$tbl->name} = " . var_export($updatedModel, true) . ";\r\n") === false) {
-                    throw new \Exception("Failed to undo rename...we are in big trouble! Squawk 7700!");
-                }
+                $model_definition = \Kyte\Mvc\Controller\DataModelController::generateModelDef($tbl->name, $tbl->id);;
+                $tbl->save([
+                    'model_definition' => var_export($model_definition, true)
+                ]);
 
                 break;
 
@@ -62,18 +57,7 @@ class ModelAttributeController extends ModelController
                 if (!$tbl->retrieve('id', $o->dataModel)) {
                     throw new \Exception("Unable to find associated data model.");
                 }
-
-                $updatedModel = constant($tbl->name);
-
-                if ($r['name'] != $o->name) {
-                    // let's make sure that the def doesn't have it
-                    if (array_key_exists($r['name'], $updatedModel['struct'])) {
-                        throw new \Exception("Whoops, looks like the attribute name is already defined in the model although not found in the database. Contact a DB admin ASAP!");
-                    }
-                }
-
-                $attrs = self::prepareModelDef($r);
-
+                
                 // switch dbs
                 $app = new \Kyte\Core\ModelObject(Application);
                 if (!$app->retrieve('id', $tbl->application)) {
@@ -87,23 +71,13 @@ class ModelAttributeController extends ModelController
                 // return to kyte db
                 \Kyte\Core\Api::dbconnect();
 
-                // unset original definition
-                unset($updatedModel['struct'][$tbl->name]);
-                // add new definition
-                $updatedModel['struct'][$r['name']] = $attrs;
+                $model_definition = \Kyte\Mvc\Controller\DataModelController::generateModelDef($tbl->name, $tbl->id);;
+                $tbl->save([
+                    'model_definition' => var_export($model_definition, true)
+                ]);
 
-                if (file_put_contents("/var/www/html/app/models/{$tbl->name}.php", "<?php\n\${$tbl->name} = " . var_export($updatedModel, true) . ";\r\n") === false) {
-                    throw new \Exception("Failed to undo rename...we are in big trouble! Squawk 7700!");
-                }
                 break;                
 
-            default:
-                break;
-        }
-    }
-
-    public function hook_response_data($method, $o, &$r = null, &$d = null) {
-        switch ($method) {
             case 'delete':
                 // TODO: consider situation where there are external tables and foreign keys
 
@@ -124,13 +98,6 @@ class ModelAttributeController extends ModelController
                 }
                 // return to kyte db
                 \Kyte\Core\Api::dbconnect();
-
-                $updatedModel = constant($tbl->name);
-                unset($updatedModel['struct'][$o->name]);
-
-                if (file_put_contents("/var/www/html/app/models/{$tbl->name}.php", "<?php\n\${$tbl->name} = " . var_export($updatedModel, true) . ";\r\n") === false) {
-                    throw new \Exception("Failed to undo rename...we are in big trouble! Squawk 7700!");
-                }
                 break;
             
             default:
@@ -139,55 +106,4 @@ class ModelAttributeController extends ModelController
     }
 
     // public function hook_process_get_response(&$r) {}
-
-    public static function prepareModelDef($r) {
-        $attrs = [
-            'type'      => $r['type'] == 'date' ? 'i' : $r['type'],
-            'date'      => $r['type'] == 'date',
-            'required'  => $r['required'] == 1,
-        ];
-
-        // size
-        if (!empty($r['size'])) {
-            $attrs['size'] = $r['size'];
-        }
-
-        // unsigned
-        if ($r['unsigned'] == 1) {
-            $attrs['unsigned'] = true;
-        }
-
-        // protected
-        if ($r['protected'] == 1) {
-            $attrs['protected'] = true;
-        }
-
-        // defaults
-        if (strlen($r['defaults']) > 0) {
-            $attrs['default'] = $r['defaults'];
-        }
-
-        // foreign key
-        // if (!empty($r['foreignKeyModel']) && !empty($r['foreignKeyAttribute'])) {
-        if (!empty($r['foreignKeyModel'])) {
-
-            // get table and attribute info
-            $fk_tbl = new \Kyte\Core\ModelObject(DataModel);
-            if (!$fk_tbl->retrieve('id', $r['foreignKeyModel'])) {
-                throw new \Exception("Unable to find data model for foreign key definition");
-            }
-            // $fk_attr = new \Kyte\Core\ModelObject(ModelAttribute);
-            // if (!$fk_attr->retrieve('id', $r['foreignKeyAttribute'])) {
-            //     throw new \Exception("Unable to find attribute for data model {$fk_tbl->name} for foreign key definition");
-            // }
-
-            $attrs['fk'] = [
-                'model' => $fk_tbl->name,
-                // 'field' => $fk_attr->name,
-                'field' => 'id',
-            ];
-        }
-
-        return $attrs;
-    }
 }
