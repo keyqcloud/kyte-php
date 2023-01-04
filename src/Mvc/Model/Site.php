@@ -1,7 +1,7 @@
 <?php
 
-$Application = [
-	'name' => 'Application',
+$Site = [
+	'name' => 'Site',
 	'struct' => [
 		'name'		=> [
 			'type'		=> 's',
