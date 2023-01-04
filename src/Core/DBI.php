@@ -105,6 +105,17 @@ class DBI {
 	}
 
 	/*
+	 * Close database connection
+	 *
+	 */
+	public static function close()
+	{
+		if (self::$dbConn) {
+			self::$dbConn->close();
+		}
+	}
+
+	/*
 	 * Create database
 	 */
 	public static function createDatabase($name, $username, &$password, $use = false)
