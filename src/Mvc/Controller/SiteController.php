@@ -25,7 +25,7 @@ class SiteController extends ModelController
                 $credentials = new \Kyte\Aws\Credentials($region);
 
                 // create s3 bucket
-                $bucketName = preg_replace('/[^A-Za-z0-9_.-]/', '-', $r['name']).'_'.$app->identifier;
+                $bucketName = preg_replace('/[^A-Za-z0-9_.-]/', '-', $r['name']).'-'.$app->identifier;
                 $o->save([
                     'region'        => $region,
                     's3BucketName'  => $bucketName,
