@@ -149,14 +149,14 @@ class DBI {
 		}
 
 		// create user
-		$result = self::$dbConn->query("CREATE USER '{$username}'@'localhost' IDENTIFIED BY '{$password}';");
+		$result = self::$dbConn->query("CREATE USER '{$username}'@'%' IDENTIFIED BY '{$password}';");
 		if($result === false) {
   			throw new \Exception("Unable to create user. [Error]:  ".htmlspecialchars(self::$dbConn->error));
   			return false;
 		}
 
 		// set privs
-		$result = self::$dbConn->query("GRANT ALL PRIVILEGES ON `{$name}`.* TO '{$username}'@'localhost';");
+		$result = self::$dbConn->query("GRANT ALL PRIVILEGES ON `{$name}`.* TO '{$username}'@'%';");
 		if($result === false) {
   			throw new \Exception("Unable to grant privileges. [Error]:  ".htmlspecialchars(self::$dbConn->error));
   			return false;
