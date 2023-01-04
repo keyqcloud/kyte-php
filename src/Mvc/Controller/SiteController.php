@@ -47,8 +47,13 @@ class SiteController extends ModelController
                 $cf->create();
                 $o->save([
                     'cfDistributionId'        => $cf->Id,
-                    'cfDomain'                => $cf->domainName
+                    'cfDomain'                => $cf->domainName,
                 ]);
+
+                $r['region'] = $region;
+                $r['s3BucketName'] = $bucketName;
+                $r['cfDistributionId'] = $cf->Id;
+                $r['cfDomain'] = $cf->domainName;
 
                 break;
             case 'delete':
