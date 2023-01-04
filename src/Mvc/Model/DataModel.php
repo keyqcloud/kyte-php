@@ -10,6 +10,12 @@ $DataModel = [
 			'date'		=> false,
 		],
 
+		'model_definition'		=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
 		'application'	=> [
 			'type'		=> 'i',
 			'required'	=> false,

@@ -12,6 +12,75 @@ class DataModelController extends ModelController
 
     // public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
 
+    public static function prepareModelDef($o) {
+        $attrs = [
+            'type'      => $o->type == 'date' ? 'i' : $o->type,
+            'date'      => $o->type == 'date',
+            'required'  => $o->required == 1,
+        ];
+
+        // size
+        if (!empty($o->size)) {
+            $attrs['size'] = $o->size;
+        }
+
+        // unsigned
+        if ($o->unsigned == 1) {
+            $attrs['unsigned'] = true;
+        }
+
+        // protected
+        if ($o->protected == 1) {
+            $attrs['protected'] = true;
+        }
+
+        // defaults
+        if (strlen($o->defaults) > 0) {
+            $attrs['default'] = $o->defaults;
+        }
+
+        // foreign key
+        // if (!empty($r['foreignKeyModel']) && !empty($r['foreignKeyAttribute'])) {
+        if (!empty($o->foreignKeyModel)) {
+
+            // get table and attribute info
+            $fk_tbl = new \Kyte\Core\ModelObject(DataModel);
+            if (!$fk_tbl->retrieve('id', $o->foreignKeyModel)) {
+                throw new \Exception("Unable to find data model for foreign key definition");
+            }
+            // $fk_attr = new \Kyte\Core\ModelObject(ModelAttribute);
+            // if (!$fk_attr->retrieve('id', $r['foreignKeyAttribute'])) {
+            //     throw new \Exception("Unable to find attribute for data model {$fk_tbl->name} for foreign key definition");
+            // }
+
+            $attrs['fk'] = [
+                'model' => $fk_tbl->name,
+                // 'field' => $fk_attr->name,
+                'field' => 'id',
+            ];
+        }
+
+        return $attrs;
+    }
+
+    public static function generateModelDef($name, $id = null) {
+        $base_model = [ 'name' => $name, 'struct' => [] ];
+
+        if ($id != null) {
+            // iterate through attributes
+            $attrs = new \Kyte\Core\Model(ModelAttribute);
+            $attrs->retrieve("dataModel", $id);
+            foreach($attrs->objects as $attr) {
+                $base_model['struct'][] = self::prepareModelDef($attr);
+            }
+        }
+
+        \Kyte\Core\Api::addPrimaryKey($base_model);
+        \Kyte\Core\Api::addKyteAttributes($base_model);
+
+        return $base_model;
+    }
+
     public function hook_preprocess($method, &$r, &$o = null) {
         switch ($method) {
             case 'new':
@@ -21,9 +90,7 @@ class DataModelController extends ModelController
                 }
 
                 // create base definition
-                $base_model = [ 'name' => $r['name'], 'struct' => [] ];
-                \Kyte\Core\Api::addPrimaryKey($base_model);
-                \Kyte\Core\Api::addKyteAttributes($base_model);
+                $r['model_definition'] = self::generateModelDef($r['name']);
 
                 // create new roles
                 $roles = new \Kyte\Core\Model(Role);
@@ -53,12 +120,6 @@ class DataModelController extends ModelController
                     throw new \Exception("Failed to create table...");
                 }
 
-                if (file_put_contents("/var/www/html/app/models/{$r['name']}.php", "<?php\n\${$r['name']} = " . var_export($base_model, true) . ";\r\n") === false) {
-                    if (!\Kyte\Core\DBI::dropTable($r['name'])) {
-                        throw new \Exception("Failed to undo create table...we are in big trouble! Squawk 7700!");
-                    }
-                }
-
                 // return to kyte db
                 \Kyte\Core\Api::dbconnect();
                 break;
@@ -68,8 +129,6 @@ class DataModelController extends ModelController
                 if (!defined($o->name)) {
                     throw new \Exception("Unknown model definition");
                 }
-
-                $updatedModel = constant($o->name);
 
                 if ($o->name != $r['name']) {
                     // check if new name is unique
@@ -95,17 +154,7 @@ class DataModelController extends ModelController
                         throw new \Exception("Failed to rename table");
                     }
 
-                    $updatedModel['name'] = $r['name'];
-
-                    // remove old definition
-                    if (!unlink("/var/www/html/app/models/{$o->name}.php")) {
-                        error_log("Failed to clean up old model /var/www/html/app/models/{$o->name}.php");
-                    }
-                }
-
-                // update model definition
-                if (file_put_contents("/var/www/html/app/models/{$r['name']}.php", "<?php\n\${$r['name']} = " . var_export($updatedModel, true) . ";") === false) {
-                    throw new \Exception("Unable to update model definition! Squawk 7700!");
+                    $r['model_definition'] = self::generateModelDef($r['name'], $o->id);
                 }
 
                 // return to kyte db
@@ -155,10 +204,6 @@ class DataModelController extends ModelController
                 // drop table <table_name>
                 if (!\Kyte\Core\DBI::dropTable($o->name)) {
                     throw new \Exception("Failed to drop table");
-                }
-
-                if (!unlink("/var/www/html/app/models/{$o->name}.php")) {
-                    error_log("Failed to clean up old model /var/www/html/app/models/{$o->name}.php");
                 }
                 
                 // return to kyte db
