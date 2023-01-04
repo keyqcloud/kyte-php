@@ -31,7 +31,13 @@ class SiteController extends ModelController
                     's3BucketName'  => $bucketName,
                 ]);
                 $s3 = new \Kyte\Aws\S3($credentials, $bucketName, 'public-read');
-                $s3->createBucket();
+                try {
+                    $s3->createBucket();
+                } catch(\Exception $e) {
+                    throw $e;
+                    $o->delete();
+                }
+                
                 $s3->createWebsite();
                 $s3->enablePublicAccess();
                 // // $s3->enableVersioning();
