@@ -39,7 +39,7 @@ class ModelAttributeController extends ModelController
                 }
                 \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
                 // create new table with basic kyte info
-                if (!\Kyte\Core\DBI::addColumn($tbl->name, $r['name'], $attrs)) {
+                if (!\Kyte\Core\DBI::addColumn($tbl->name, $r['name'], \Kyte\Mvc\Controller\DataModelController::prepareModelDef($o))) {
                     throw new \Exception("Failed to create column {$r['name']} in table {$tbl->name}...");
                 }
                 // return to kyte db
@@ -65,7 +65,7 @@ class ModelAttributeController extends ModelController
                 }
                 \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
                 // create new table with basic kyte info
-                if (!\Kyte\Core\DBI::changeColumn($tbl->name, $o->name, $r['name'], $attrs)) {
+                if (!\Kyte\Core\DBI::changeColumn($tbl->name, $o->name, $r['name'], \Kyte\Mvc\Controller\DataModelController::prepareModelDef($o))) {
                     throw new \Exception("Failed to change column {$o->name} to {$r['name']} in table {$tbl->name}...");
                 }
                 // return to kyte db
@@ -106,4 +106,55 @@ class ModelAttributeController extends ModelController
     }
 
     // public function hook_process_get_response(&$r) {}
+
+    public static function prepareModelDef($r) {
+        $attrs = [
+            'type'      => $r['type'] == 'date' ? 'i' : $r['type'],
+            'date'      => $r['type'] == 'date',
+            'required'  => $r['required'] == 1,
+        ];
+
+        // size
+        if (!empty($r['size'])) {
+            $attrs['size'] = $r['size'];
+        }
+
+        // unsigned
+        if ($r['unsigned'] == 1) {
+            $attrs['unsigned'] = true;
+        }
+
+        // protected
+        if ($r['protected'] == 1) {
+            $attrs['protected'] = true;
+        }
+
+        // defaults
+        if (strlen($r['defaults']) > 0) {
+            $attrs['default'] = $r['defaults'];
+        }
+
+        // foreign key
+        // if (!empty($r['foreignKeyModel']) && !empty($r['foreignKeyAttribute'])) {
+        if (!empty($r['foreignKeyModel'])) {
+
+            // get table and attribute info
+            $fk_tbl = new \Kyte\Core\ModelObject(DataModel);
+            if (!$fk_tbl->retrieve('id', $r['foreignKeyModel'])) {
+                throw new \Exception("Unable to find data model for foreign key definition");
+            }
+            // $fk_attr = new \Kyte\Core\ModelObject(ModelAttribute);
+            // if (!$fk_attr->retrieve('id', $r['foreignKeyAttribute'])) {
+            //     throw new \Exception("Unable to find attribute for data model {$fk_tbl->name} for foreign key definition");
+            // }
+
+            $attrs['fk'] = [
+                'model' => $fk_tbl->name,
+                // 'field' => $fk_attr->name,
+                'field' => 'id',
+            ];
+        }
+
+        return $attrs;
+    }
 }
