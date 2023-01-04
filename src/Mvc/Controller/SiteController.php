@@ -17,6 +17,7 @@ class SiteController extends ModelController
                 $app = new \Kyte\Core\ModelObject(Application);
                 if (!$app->retrieve('id', $r['application'])) {
                     throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                    $o->delete();
                 }
 
                 // get AWS credentials
