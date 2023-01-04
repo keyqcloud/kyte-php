@@ -90,7 +90,8 @@ class DataModelController extends ModelController
                 }
 
                 // create base definition
-                $r['model_definition'] = self::generateModelDef($r['name']);
+                $model_definition = self::generateModelDef($r['name']);
+                $r['model_definition'] = var_export($model_definition, true);
 
                 // create new roles
                 $roles = new \Kyte\Core\Model(Role);
@@ -116,7 +117,7 @@ class DataModelController extends ModelController
                 }
                 \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
                 // create new table with basic kyte info
-                if (!\Kyte\Core\DBI::createTable($r['model_definition'])) {
+                if (!\Kyte\Core\DBI::createTable($model_definition)) {
                     throw new \Exception("Failed to create table...");
                 }
 
@@ -154,7 +155,8 @@ class DataModelController extends ModelController
                         throw new \Exception("Failed to rename table");
                     }
 
-                    $r['model_definition'] = self::generateModelDef($r['name'], $o->id);
+                    $model_definition = self::generateModelDef($r['name'], $o->id);;
+                    $r['model_definition'] = var_export($model_definition, true);
                 }
 
                 // return to kyte db
