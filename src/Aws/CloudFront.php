@@ -7,6 +7,7 @@ use Aws\CloudFront\CloudFrontClient;
 class CloudFront extends Client
 {
     private $distributionConfig;
+    public $domainName;
 
     // distribution configuration properties
     // https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-overview-required-fields.html
@@ -139,6 +140,7 @@ class CloudFront extends Client
 
             $this->Id = $result['Distribution']['Id'];
             $this->Arn = $result['Distribution']['ARN'];
+            $this->domainName = $result['Distribution']['DomainName'];
     
             $this->distributionConfig = $result['Distribution']['DistributionConfig'];
 
@@ -311,12 +313,6 @@ class CloudFront extends Client
             throw new \Exception($e->getMessage());
             return false;
         }
-    }
-
-    public function getDomainName() {
-        $this->getConfiguration();
-
-        return $this->distributionConfig['DomainName'];
     }
 
     public function addOrigin(
