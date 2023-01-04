@@ -154,6 +154,27 @@ class Api
 		}
 	}
 
+	public static function dbconnect() {
+		\Kyte\Core\DBI::setDbUser(KYTE_DB_USERNAME);
+		\Kyte\Core\DBI::setDbPassword(KYTE_DB_PASSWORD);
+		\Kyte\Core\DBI::setDbHost(KYTE_DB_HOST);
+		\Kyte\Core\DBI::setDbName(KYTE_DB_DATABASE);
+		\Kyte\Core\DBI::setCharset(KYTE_DB_CHARSET);
+		\Kyte\Core\DBI::connect();
+	}
+
+	public static function dbswitch($database, $username, $password, $host = KYTE_DB_HOST, $charset = KYTE_DB_CHARSET) {
+		if ($host == null) {
+			$host = KYTE_DB_HOST;
+		}
+		\Kyte\Core\DBI::setDbName($database);
+		\Kyte\Core\DBI::setDbUser($username);
+		\Kyte\Core\DBI::setDbPassword($password);
+		\Kyte\Core\DBI::setDbHost($host);
+		\Kyte\Core\DBI::setCharset($charset);
+		\Kyte\Core\DBI::connect();
+	}
+
 	private function bootstrap() {
 		if (!defined('DEBUG')) {
 			define('DEBUG', false);
@@ -235,11 +256,7 @@ class Api
 		$this->loadModelsAndControllers();
 	
 		// initialize base framework
-		\Kyte\Core\DBI::setDbUser(KYTE_DB_USERNAME);
-		\Kyte\Core\DBI::setDbPassword(KYTE_DB_PASSWORD);
-		\Kyte\Core\DBI::setDbHost(KYTE_DB_HOST);
-		\Kyte\Core\DBI::setDbName(KYTE_DB_DATABASE);
-		\Kyte\Core\DBI::setCharset(KYTE_DB_CHARSET);
+		self::dbconnect();
 	}
 
 	private function loadModelsAndControllers() {

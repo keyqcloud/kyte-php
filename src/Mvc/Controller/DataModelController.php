@@ -25,17 +25,6 @@ class DataModelController extends ModelController
                 \Kyte\Core\Api::addPrimaryKey($base_model);
                 \Kyte\Core\Api::addKyteAttributes($base_model);
 
-                // create new table with basic kyte info
-                if (!\Kyte\Core\DBI::createTable($base_model)) {
-                    throw new \Exception("Failed to create table...");
-                }
-
-                if (file_put_contents("/var/www/html/app/models/{$r['name']}.php", "<?php\n\${$r['name']} = " . var_export($base_model, true) . ";\r\n") === false) {
-                    if (!\Kyte\Core\DBI::dropTable($r['name'])) {
-                        throw new \Exception("Failed to undo create table...we are in big trouble! Squawk 7700!");
-                    }
-                }
-
                 // create new roles
                 $roles = new \Kyte\Core\Model(Role);
                 $roles->retrieve();
@@ -53,6 +42,25 @@ class DataModelController extends ModelController
                     }
                 }
 
+                // switch dbs and create table
+                $app = \Kyte\Core\Model(Application);
+                if (!$app->retrieve('id', $r['application'])) {
+                    throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
+                }
+                \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+                // create new table with basic kyte info
+                if (!\Kyte\Core\DBI::createTable($base_model)) {
+                    throw new \Exception("Failed to create table...");
+                }
+
+                if (file_put_contents("/var/www/html/app/models/{$r['name']}.php", "<?php\n\${$r['name']} = " . var_export($base_model, true) . ";\r\n") === false) {
+                    if (!\Kyte\Core\DBI::dropTable($r['name'])) {
+                        throw new \Exception("Failed to undo create table...we are in big trouble! Squawk 7700!");
+                    }
+                }
+
+                // return to kyte db
+                \Kyte\Core\Api::dbconnect();
                 break;
 
             case 'update':
@@ -69,6 +77,19 @@ class DataModelController extends ModelController
                         throw new \Exception("New model name is already used");
                     }
 
+                    // update permissions
+                    $perms = new \Kyte\Core\Model(Permission);
+                    $perms->retrieve("model", $o->name);
+                    foreach($perms->objects as $perm) {
+                        $perm->save([ "model" => $r['name'] ]);
+                    }
+
+                    // switch dbs and create table
+                    $app = \Kyte\Core\Model(Application);
+                    if (!$app->retrieve('id', $o->application)) {
+                        throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
+                    }
+                    \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
                     // alter table <old_table_name> rename to <new_table_name>
                     if (!\Kyte\Core\DBI::renameTable($o->name, $r['name'])) {
                         throw new \Exception("Failed to rename table");
@@ -80,13 +101,6 @@ class DataModelController extends ModelController
                     if (!unlink("/var/www/html/app/models/{$o->name}.php")) {
                         error_log("Failed to clean up old model /var/www/html/app/models/{$o->name}.php");
                     }
-
-                    // update permissions
-                    $perms = new \Kyte\Core\Model(Permission);
-                    $perms->retrieve("model", $o->name);
-                    foreach($perms->objects as $perm) {
-                        $perm->save([ "model" => $r['name'] ]);
-                    }
                 }
 
                 // update model definition
@@ -94,6 +108,8 @@ class DataModelController extends ModelController
                     throw new \Exception("Unable to update model definition! Squawk 7700!");
                 }
 
+                // return to kyte db
+                \Kyte\Core\Api::dbconnect();
                 break;                
 
             default:
@@ -111,8 +127,31 @@ class DataModelController extends ModelController
                     $attr->delete();
                 }
 
+                // delete perms
+                $perms = new \Kyte\Core\Model(Permission);
+                $perms->retrieve("model", $o->name);
+                foreach($perms->objects as $perm) {
+                    $perm->delete();
+                }
+
+                // delete controllers and remove function association
+                // $controllers = new \Kyte\Core\Model(Controller);
+                // $controllers->retrieve('dataModel', $o->id);
+                // foreach($controllers->objects as $controller) {
+                //     $ctrl = new ControllerController(Controller, APP_DATE_FORMAT, $this->account, $this->session, $this->user, $this->response, $this->page_size, $this->page_total, $this->page_num, $this->total_count, $this->total_filtered);
+
+                //     $ctrl->delete('id', $controller->id);
+                // }
+
                 // TODO: consider situation where there are external tables and foreign keys
 
+                // switch dbs and create table
+                $app = \Kyte\Core\Model(Application);
+                if (!$app->retrieve('id', $o->application)) {
+                    throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
+                }
+                \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+                
                 // drop table <table_name>
                 if (!\Kyte\Core\DBI::dropTable($o->name)) {
                     throw new \Exception("Failed to drop table");
@@ -121,22 +160,9 @@ class DataModelController extends ModelController
                 if (!unlink("/var/www/html/app/models/{$o->name}.php")) {
                     error_log("Failed to clean up old model /var/www/html/app/models/{$o->name}.php");
                 }
-
-                // delete controllers and remove function association
-                $controllers = new \Kyte\Core\Model(Controller);
-                $controllers->retrieve('dataModel', $o->id);
-                foreach($controllers->objects as $controller) {
-                    $ctrl = new ControllerController(Controller, APP_DATE_FORMAT, $this->account, $this->session, $this->user, $this->response, $this->page_size, $this->page_total, $this->page_num, $this->total_count, $this->total_filtered);
-
-                    $ctrl->delete('id', $controller->id);
-                }
-
-                // delete perms
-                $perms = new \Kyte\Core\Model(Permission);
-                $perms->retrieve("model", $o->name);
-                foreach($perms->objects as $perm) {
-                    $perm->delete();
-                }
+                
+                // return to kyte db
+                \Kyte\Core\Api::dbconnect();
                 break;
             
             default:
