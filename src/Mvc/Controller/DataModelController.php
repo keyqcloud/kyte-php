@@ -42,7 +42,7 @@ class DataModelController extends ModelController
                     }
                 }
 
-                // switch dbs and create table
+                // switch dbs
                 $app = new \Kyte\Core\ModelObject(Application);
                 if (!$app->retrieve('id', $r['application'])) {
                     throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
@@ -84,7 +84,7 @@ class DataModelController extends ModelController
                         $perm->save([ "model" => $r['name'] ]);
                     }
 
-                    // switch dbs and create table
+                    // switch dbs
                     $app = new \Kyte\Core\ModelObject(Application);
                     if (!$app->retrieve('id', $o->application)) {
                         throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
@@ -145,7 +145,7 @@ class DataModelController extends ModelController
 
                 // TODO: consider situation where there are external tables and foreign keys
 
-                // switch dbs and create table
+                // switch dbs
                 $app = new \Kyte\Core\ModelObject(Application);
                 if (!$app->retrieve('id', $o->application)) {
                     throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");

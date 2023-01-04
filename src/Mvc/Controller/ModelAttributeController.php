@@ -36,11 +36,18 @@ class ModelAttributeController extends ModelController
                 }
 
                 $attrs = self::prepareModelDef($r);
-                
+                // switch dbs
+                $app = new \Kyte\Core\ModelObject(Application);
+                if (!$app->retrieve('id', $tbl->application)) {
+                    throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
+                }
+                \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
                 // create new table with basic kyte info
                 if (!\Kyte\Core\DBI::addColumn($tbl->name, $r['name'], $attrs)) {
                     throw new \Exception("Failed to create column {$r['name']} in table {$tbl->name}...");
                 }
+                // return to kyte db
+                \Kyte\Core\Api::dbconnect();
 
                 $updatedModel['struct'][$r['name']] = $attrs;
 
@@ -67,10 +74,18 @@ class ModelAttributeController extends ModelController
 
                 $attrs = self::prepareModelDef($r);
 
+                // switch dbs
+                $app = new \Kyte\Core\ModelObject(Application);
+                if (!$app->retrieve('id', $tbl->application)) {
+                    throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
+                }
+                \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
                 // create new table with basic kyte info
                 if (!\Kyte\Core\DBI::changeColumn($tbl->name, $o->name, $r['name'], $attrs)) {
                     throw new \Exception("Failed to change column {$o->name} to {$r['name']} in table {$tbl->name}...");
                 }
+                // return to kyte db
+                \Kyte\Core\Api::dbconnect();
 
                 // unset original definition
                 unset($updatedModel['struct'][$tbl->name]);
@@ -97,10 +112,18 @@ class ModelAttributeController extends ModelController
                     throw new \Exception("Unable to find associated data model.");
                 }
 
+                // switch dbs
+                $app = new \Kyte\Core\ModelObject(Application);
+                if (!$app->retrieve('id', $tbl->application)) {
+                    throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
+                }
+                \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
                 // drop table <table_name>
                 if (!\Kyte\Core\DBI::dropColumn($tbl->name, $o->name)) {
                     throw new \Exception("Failed to drop column {$o->name} from table {$tbl->name}");
                 }
+                // return to kyte db
+                \Kyte\Core\Api::dbconnect();
 
                 $updatedModel = constant($tbl->name);
                 unset($updatedModel['struct'][$o->name]);
