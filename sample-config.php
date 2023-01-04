@@ -18,6 +18,7 @@
 	define('AWS_KMS_KEYID', '');
 
     /* KYTE FRAMEWORK SPECIFIC SETTINGS */
+    define('DEBUG', false);
     define('ALLOW_ENC_HANDOFF', true);
     define('ALLOW_MULTILOGON', false);
     define('ALLOW_SAME_TXTOKEN', false);
