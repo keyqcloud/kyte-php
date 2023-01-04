@@ -31,6 +31,13 @@ $Site = [
 			'date'		=> false,
 		],
 
+		'cfDomain'		=> [
+			'type'		=> 's',
+			'required'	=> true,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
 		'description'		=> [
 			'type'		=> 's',
 			'required'	=> false,

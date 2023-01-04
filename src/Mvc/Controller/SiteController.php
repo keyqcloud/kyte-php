@@ -47,6 +47,7 @@ class SiteController extends ModelController
                 $cf->create();
                 $o->save([
                     'cfDistributionId'        => $cf->Id,
+                    'cfDomain'                => $cf->domainName
                 ]);
 
                 break;
