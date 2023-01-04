@@ -155,6 +155,7 @@ class Api
 	}
 
 	public static function dbconnect() {
+		\Kyte\Core\DBI::close();
 		\Kyte\Core\DBI::setDbUser(KYTE_DB_USERNAME);
 		\Kyte\Core\DBI::setDbPassword(KYTE_DB_PASSWORD);
 		\Kyte\Core\DBI::setDbHost(KYTE_DB_HOST);
@@ -164,6 +165,7 @@ class Api
 	}
 
 	public static function dbswitch($database, $username, $password, $host = KYTE_DB_HOST, $charset = KYTE_DB_CHARSET) {
+		\Kyte\Core\DBI::close();
 		if ($host == null) {
 			$host = KYTE_DB_HOST;
 		}
