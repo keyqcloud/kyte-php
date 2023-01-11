@@ -1,7 +1,7 @@
 <?php
 
-$Site = [
-	'name' => 'Site',
+$Media = [
+	'name' => 'Media',
 	'struct' => [
 		'name'		=> [
 			'type'		=> 's',
