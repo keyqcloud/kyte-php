@@ -291,8 +291,6 @@ class Api
 		if(defined('APP_DIR') && isset($_SERVER['HTTP_X_KYTE_APPID'])) {
 			$appId = $_SERVER['HTTP_X_KYTE_APPID'];
 
-			error_log($appId);
-
 			// next load user defined models
 			// if model already exists, apply changes/overrides
 			if ( file_exists( APP_DIR . "/app/" ) && is_dir( APP_DIR . "/app/" ) ) {
@@ -302,7 +300,7 @@ class Api
 				if ( file_exists( APP_DIR . "/app/models/{$appId}/" ) && is_dir( APP_DIR . "/app/models/{$appId}/" ) ) {    
 					foreach (glob(APP_DIR . "/app/models/{$appId}/*.php") as $filename) {
 						$model_name = substr($filename, 0, strrpos($filename, "."));
-						$model_name = str_replace(APP_DIR . '/app/models/{$appId}/','',$model_name);
+						$model_name = str_replace(APP_DIR . "/app/models/{$appId}/",'',$model_name);
 
 						if (!array_key_exists($model_name, $models)) {
 							// check syntax before importing file
@@ -347,7 +345,7 @@ class Api
 				if ( file_exists( APP_DIR . "/app/controllers/{$appId}/" ) && is_dir( APP_DIR . "/app/controllers/{$appId}/" ) ) {
 					foreach (glob(APP_DIR . "/app/controllers/{$appId}/*.php") as $filename) {
 						$controller_name = substr($filename, 0, strrpos($filename, "."));
-						$controller_name = str_replace(APP_DIR . '/app/controllers/{$appId}/','',$controller_name);
+						$controller_name = str_replace(APP_DIR . "/app/controllers/{$appId}/",'',$controller_name);
 
 						// check syntax before importing file
 						$f = self::checkSyntax($filename);
