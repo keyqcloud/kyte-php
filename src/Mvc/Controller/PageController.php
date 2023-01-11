@@ -23,21 +23,12 @@ class PageController extends ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'get':
-                // get api key info
-                $apikey = new \Kyte\Core\ModelObject(APIKey);
-                if (!$apikey->retrieve('kyte_account', $this->account->id)) {
-                    throw new \Exception("CRITICAL ERROR: Unable to find api information.");
-                }
-
                 // get app identifier
                 $app = new \Kyte\Core\ModelObject(Application);
                 if (!$app->retrieve('id', $r['site']['application']['id'])) {
                     throw new \Exception("CRITICAL ERROR: Unable to find application.");
                 }
 
-                $r['api_public_key'] = $apikey->public_key;
-                $r['api_identifier'] = $apikey->identifier;
-                $r['account_number'] = $this->account->number;
                 $r['application_identifier'] = $app->identifier;
                 break;
 
