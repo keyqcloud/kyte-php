@@ -39,7 +39,7 @@ class PageController extends ModelController
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
                     // compile html file
-                    $data = $this->createHtml($o, $d['html'], $d['obfuscated']);
+                    $data = $this->createHtml($o, $d['html'], $d['javascript']);
                     // write to file
                     $s3->write($o->s3key, $data);
 
@@ -97,7 +97,15 @@ class PageController extends ModelController
         $html .= '<script src="https://cdn.stratis-troika.com/kytejs/2.0.0/kyte.js" crossorigin="anonymous"></script>';
 
         // custom js
-        $html .= '<script>'.$js.'</script>';
+        $html .= '<script>$(document).ready(function() { ';
+        if ($page->protected == 1) {
+            $html .= 'if (k.isSession()) { ';
+        }
+        $html .= $js;
+        if ($page->protected == 1) {
+            $html .= ' } else { location.href="/?redir="+encodeURIComponent(window.location); }';
+        }
+        $html .= ' });</script>';
 
         // close head
         $html .= '</head>';
