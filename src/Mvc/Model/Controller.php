@@ -38,6 +38,10 @@ $Controller = [
 			'size'		=> 11,
 			'unsigned'	=> true,
 			'date'		=> false,
+			'fk'		=> [
+				'model'	=> 'Application',
+				'field'	=> 'id',
+			],
 		],
 
 		// framework attributes
