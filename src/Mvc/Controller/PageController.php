@@ -96,10 +96,10 @@ class PageController extends ModelController
         // KyteJS
         $code .= '<script src="https://cdn.stratis-troika.com/kytejs/2.0.0/kyte.js" crossorigin="anonymous"></script>';
 
-        // custom js
         $code .= '<script>';
         // add kyte connect
         $code .= $kyte_connect."\n\n";
+        // custom js
         $code .= '$(document).ready(function() { ';
         if ($page->protected == 1) {
             $code .= 'if (k.isSession()) { ';
