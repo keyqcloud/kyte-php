@@ -45,7 +45,7 @@ class PageController extends ModelController
 
                     // invalidate CF
                     $cf = new \Kyte\Aws\CloudFront($credential);
-                    $cf->createInvalidation($r['site']['cfDistributionId']);
+                    $cf->createInvalidation($r['site']['cfDistributionId'], ['/'.$o->s3key]);
                 }
                 break;
 
