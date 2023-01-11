@@ -58,6 +58,10 @@ class PageController extends ModelController
                     $s3 = new \Kyte\Aws\S3($credential, $d['site']['s3BucketName']);
                     if (!empty($o->s3key)) {
                         $s3->unlink($o->s3key);
+
+                        // invalidate CF
+                        $cf = new \Kyte\Aws\CloudFront($credential);
+                        $cf->createInvalidation($r['site']['cfDistributionId'], ['/'.$o->s3key]);
                     }
                 }
 
