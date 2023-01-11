@@ -39,7 +39,7 @@ class PageController extends ModelController
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
                     // compile html file
-                    $data = $this->createHtml($o, $d['html'], $d['javascript'], $d['stylesheet']);
+                    $data = $this->createHtml($o, $d['html'], $d['javascript'], $d['stylesheet'], $d['kyte_connect']);
                     // write to file
                     $s3->write($o->s3key, $data);
 
@@ -70,7 +70,7 @@ class PageController extends ModelController
 
     // public function hook_process_get_response(&$r) {}
 
-    private function createHtml($page, $html, $js, $style) {
+    private function createHtml($page, $html, $js, $style, $kyte_connect) {
         $code = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"><title>'.$page->title.'</title>';
         
         // bootstrap
@@ -97,7 +97,10 @@ class PageController extends ModelController
         $code .= '<script src="https://cdn.stratis-troika.com/kytejs/2.0.0/kyte.js" crossorigin="anonymous"></script>';
 
         // custom js
-        $code .= '<script>$(document).ready(function() { ';
+        $code .= '<script>';
+        // add kyte connect
+        $code .= $kyte_connect."\n\n";
+        $code .= '$(document).ready(function() { ';
         if ($page->protected == 1) {
             $code .= 'if (k.isSession()) { ';
         }
