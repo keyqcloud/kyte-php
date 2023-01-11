@@ -76,10 +76,10 @@ class ControllerController extends ModelController
                 $path = APP_DIR . "/app/controllers/" . $app->identifier;
 
                 // delete corresponding function association
-                $fs = new \Kyte\Core\Model(ControllerFunction);
+                $fs = new \Kyte\Core\Model(constant("Function"));
                 $fs->retrieve("controller", $o->id);
-                foreach($fs->objects as $fc) {
-                    $fc->delete();
+                foreach($fs->objects as $f) {
+                    $f->delete();
                 }
 
                 if (!unlink("{$path}/{$o->name}Controller.php")) {
@@ -118,13 +118,9 @@ class ControllerController extends ModelController
             throw new \Exception("Controller id cannot be empty.");
         }
 
-        $fs = new \Kyte\Core\Model(ControllerFunction);
+        $fs = new \Kyte\Core\Model(constant("Function"));
         $fs->retrieve("controller", $controller_idx);
-        foreach($fs->objects as $fc) {
-            $f = new \Kyte\Core\ModelObject(constant("Function"));
-            if (!$f->retrieve("id", $fc->function)) {
-                throw new \Exception("Unable to find associated function.");
-            }
+        foreach($fs->objects as $f) {
             $functions[] = $f->code;
         }
     }

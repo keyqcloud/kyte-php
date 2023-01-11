@@ -11,6 +11,18 @@ $Function = [
 			'date'		=> false,
 		],
 
+		'controller'	=> [
+			'type'		=> 'i',
+			'required'	=> true,
+			'size'		=> 11,
+			'unsigned'	=> true,
+			'date'		=> false,
+			'fk'		=> [
+				'model'	=> 'Controller',
+				'field'	=> 'id',
+			],
+		],
+
 		// optional description
 		'description'		=> [
 			'type'		=> 't',
