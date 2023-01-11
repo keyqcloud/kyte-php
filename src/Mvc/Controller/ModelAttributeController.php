@@ -50,6 +50,8 @@ class ModelAttributeController extends ModelController
                     'model_definition' => var_export($model_definition, true)
                 ]);
 
+                \Kyte\Mvc\Controller\DataModelController::generateModelFile($app->identifier, $tbl->name, $tbl->model_definition);
+
                 break;
 
             case 'update':
@@ -75,6 +77,8 @@ class ModelAttributeController extends ModelController
                 $tbl->save([
                     'model_definition' => var_export($model_definition, true)
                 ]);
+
+                \Kyte\Mvc\Controller\DataModelController::generateModelFile($app->identifier, $tbl->name, $tbl->model_definition);
 
                 break;                
 

@@ -81,6 +81,22 @@ class DataModelController extends ModelController
         return $base_model;
     }
 
+    public static function generateModelFile($appId, $name, $def) {
+        $path = APP_DIR . "/app/models/" . $appId;
+        if (!is_dir($path)) {
+            $ret = mkdir($path);
+
+            if ($ret !== true || !is_dir($path)) {
+                throw new \Exception("Unable to create model files for app");
+            }
+        }
+
+        // create file
+        if (file_put_contents($path."/{$name}.php", "<?php\n\${$name} = " . $def . ";\r\n") === false) {
+            throw new \Exception("Unable to write model files.");
+        }
+    }
+
     public function hook_preprocess($method, &$r, &$o = null) {
         switch ($method) {
             case 'new':
@@ -170,6 +186,11 @@ class DataModelController extends ModelController
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
+            case 'new':
+            case 'update':
+                self::generateModelFile($r['application']['identifier'], $o->name, $o->model_definition);
+                break;
+
             case 'delete':
                 // delete model attributes
                 $attrs = new \Kyte\Core\Model(ModelAttribute);
