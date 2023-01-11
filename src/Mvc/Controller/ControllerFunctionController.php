@@ -33,25 +33,20 @@ class ControllerFunctionController extends ModelController
         switch ($method) {
             case 'new':
             case 'delete':
-                $ctrl = new \Kyte\Core\ModelObject(constant("Controller"));
-                if (!$ctrl->retrieve("id", $o->controller)) {
-                    throw new \Exception("Unable to find specified controller.");
-                }
-
                 if ($method == 'delete') { $r = false; $o->delete(); }
 
                 $functions = [];
 
                 // check if model is specified
-                if (!empty($ctrl->dataModel)) {
-                    $functions[] = ControllerController::generateShipyardInit($ctrl->dataModel);
+                if (!empty($r['controller']['dataModel'])) {
+                    $functions[] = ControllerController::generateShipyardInit($r['controller']['dataModel']);
                 }
 
                 // regenerate code base with new name and/or model
-                ControllerController::prepareFunctionStatements($ctrl->id, $functions);
+                ControllerController::prepareFunctionStatements($r['controller']['id'], $functions);
 
                 // update code base and save to file
-                ControllerController::generateCodeBase($ctrl->name.'Controller', $functions);
+                ControllerController::generateCodeBase($r['controller']['application']['identifier'], $r['controller']['name'].'Controller', $functions);
 
                 break;
             

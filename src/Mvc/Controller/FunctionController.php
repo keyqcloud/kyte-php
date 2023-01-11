@@ -67,6 +67,11 @@ class FunctionController extends ModelController
                         throw new \Exception("Unable to find specified controller.");
                     }
 
+                    $app = new \Kyte\Core\ModelObject(Application);
+                    if (!$app->retrieve('id', $ctrl->application)) {
+                        throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                    }
+
                     $functions = [];
 
                     // check if model is specified
@@ -78,7 +83,7 @@ class FunctionController extends ModelController
                     ControllerController::prepareFunctionStatements($ctrl->id, $functions);
 
                     // update code base and save to file
-                    ControllerController::generateCodeBase($ctrl->name.'Controller', $functions);
+                    ControllerController::generateCodeBase($app->identifier, $ctrl->name.'Controller', $functions);
                 }
                 
                 break;

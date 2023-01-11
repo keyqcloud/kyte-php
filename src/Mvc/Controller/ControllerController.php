@@ -22,16 +22,6 @@ class ControllerController extends ModelController
                 if (class_exists($r['name'].'Controller')){
                     throw new \Exception("Custom controller name already in use.");
                 }
-
-                $functions = [];
-                // check if model is specified
-                if (!empty($r['dataModel'])) {
-                    $functions[] = self::generateShipyardInit($r['dataModel']);
-                }
-
-                // create code base and save to file
-                self::generateCodeBase($r['name'].'Controller', $functions);
-
                 break;
 
             case 'update':
@@ -44,27 +34,6 @@ class ControllerController extends ModelController
                         throw new \Exception("Custom controller name already in use.");
                     }
                 }
-
-                $functions = [];
-
-                // check if model is specified
-                if (!empty($r['dataModel'])) {
-                    $functions[] = self::generateShipyardInit($r['dataModel']);
-                }
-
-                // regenerate code base with new name and/or model
-                self::prepareFunctionStatements($o->id, $functions);
-
-                // update code base and save to file
-                self::generateCodeBase($r['name'].'Controller', $functions);
-
-                if ($o->name != $r['name']) {
-                    // remove old definition
-                    if (!unlink("/var/www/html/app/controllers/{$o->name}Controller.php")) {
-                        error_log("Failed to clean up old model /var/www/html/app/controllers/{$o->name}Controller.php");
-                    }
-                }
-
                 break;                
 
             default:
@@ -74,7 +43,38 @@ class ControllerController extends ModelController
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
+            case 'new':
+            case 'update':
+                $path = APP_DIR . "/app/controllers/" . $r['application']['identifier'];
+
+                if ($o->name != $d['name']) {
+                    // remove old definition
+                    if (!unlink($path."/{$o->name}Controller.php")) {
+                        error_log("Failed to clean up old model {$path}/{$o->name}Controller.php");
+                    }
+                }
+
+                $functions = [];
+
+                // check if model is specified
+                if (!empty($o->dataModel)) {
+                    $functions[] = self::generateShipyardInit($o->dataModel);
+                }
+
+                // regenerate code base with new name and/or model
+                self::prepareFunctionStatements($o->id, $functions);
+
+                // update code base and save to file
+                self::generateCodeBase($r['application']['identifier'], $o->name.'Controller', $functions);
+                break;
             case 'delete':
+                $app = new \Kyte\Core\ModelObject(Application);
+                if (!$app->retrieve('id', $o->application)) {
+                    throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
+                }
+
+                $path = APP_DIR . "/app/controllers/" . $app->identifier;
+
                 // delete corresponding function association
                 $fs = new \Kyte\Core\Model(ControllerFunction);
                 $fs->retrieve("controller", $o->id);
@@ -82,8 +82,8 @@ class ControllerController extends ModelController
                     $fc->delete();
                 }
 
-                if (!unlink("/var/www/html/app/controllers/{$o->name}Controller.php")) {
-                    error_log("Failed to clean up old model /var/www/html/app/controllers/{$o->name}Controller.php");
+                if (!unlink("{$path}/{$o->name}Controller.php")) {
+                    error_log("Failed to clean up old model {$path}/{$o->name}Controller.php");
                 }
 
                 // delete associated settings
@@ -129,9 +129,18 @@ class ControllerController extends ModelController
         }
     }
 
-    public static function generateCodeBase($controller_name, $functions = null) {
+    public static function generateCodeBase($appId, $controller_name, $functions = null) {
         if (empty($controller_name)) {
             throw new \Exception("Controller name cannot be empty.");
+        }
+
+        $path = APP_DIR . "/app/controllers/" . $appId;
+        if (!is_dir($path)) {
+            $ret = mkdir($path);
+
+            if ($ret !== true || !is_dir($path)) {
+                throw new \Exception("Unable to create model files for app");
+            }
         }
 
         $code = "<?php\r\n\r\nclass $controller_name extends \Kyte\Mvc\Controller\ModelController\r\n{\r\n";
@@ -144,8 +153,8 @@ class ControllerController extends ModelController
 
         $code .= "}\r\n";
 
-        if (file_put_contents("/var/www/html/app/controllers/$controller_name.php", $code) === false) {
-            throw new \Exception("Failed to create controller code! Squawk 7700!");
+        if (file_put_contents($path."/$controller_name.php", $code) === false) {
+            throw new \Exception("Unable to write controller files!");
         }
     }
 }
