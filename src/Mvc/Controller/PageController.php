@@ -31,7 +31,7 @@ class PageController extends ModelController
 
                 // get app identifier
                 $app = new \Kyte\Core\ModelObject(Application);
-                if (!$app->retrieve('id', $r['site']['application'])) {
+                if (!$app->retrieve('id', $r['site']['application']['id'])) {
                     throw new \Exception("CRITICAL ERROR: Unable to find application.");
                 }
 
