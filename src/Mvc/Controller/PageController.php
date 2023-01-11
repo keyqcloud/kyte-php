@@ -39,7 +39,7 @@ class PageController extends ModelController
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
                     // compile html file
-                    $data = $this->createHtml($o, $d['html'], $d['javascript']);
+                    $data = $this->createHtml($o, $d['html'], $d['javascript'], $d['stylesheet']);
                     // write to file
                     $s3->write($o->s3key, $data);
 
@@ -70,7 +70,7 @@ class PageController extends ModelController
 
     // public function hook_process_get_response(&$r) {}
 
-    private function createHtml($page, $html, $js) {
+    private function createHtml($page, $html, $js, $style) {
         $code = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"><title>'.$page->title.'</title>';
         
         // bootstrap
@@ -106,6 +106,9 @@ class PageController extends ModelController
             $code .= ' } else { location.href="/?redir="+encodeURIComponent(window.location); }';
         }
         $code .= ' });</script>';
+
+        // custom styles
+        $code .= '<style>'.$style.'</style>';
 
         // close head
         $code .= '</head>';

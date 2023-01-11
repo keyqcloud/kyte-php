@@ -35,6 +35,12 @@ $Page = [
 			'date'		=> false,
 		],
 
+		'stylesheet'	=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
 		'footer'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
