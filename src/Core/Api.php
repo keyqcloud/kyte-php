@@ -291,6 +291,8 @@ class Api
 		if(defined('APP_DIR') && isset($_SERVER['HTTP_X_KYTE_APPID'])) {
 			$appId = $_SERVER['HTTP_X_KYTE_APPID'];
 
+			error_log($appId);
+
 			// next load user defined models
 			// if model already exists, apply changes/overrides
 			if ( file_exists( APP_DIR . "/app/" ) && is_dir( APP_DIR . "/app/" ) ) {
