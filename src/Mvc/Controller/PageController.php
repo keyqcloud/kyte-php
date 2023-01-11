@@ -142,6 +142,10 @@ class PageController extends ModelController
 
         // close main wrapper
         $code .= '</main>';
+
+
+        // add footer
+
         // close page wrapper
         $code .= '</div>';
 
