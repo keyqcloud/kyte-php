@@ -4,9 +4,7 @@ namespace Kyte\Mvc\Controller;
 
 class ModelAttributeController extends ModelController
 {
-    public function hook_init() {
-        $this->checkExisting = 'name';
-    }
+    // public function hook_init() {}
 
     // public function hook_auth() {}
 
