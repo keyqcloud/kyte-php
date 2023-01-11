@@ -24,12 +24,12 @@ class PageController extends ModelController
         switch ($method) {
             case 'get':
                 // get app identifier
-                $app = new \Kyte\Core\ModelObject(Application);
-                if (!$app->retrieve('id', $r['site']['application']['id'])) {
-                    throw new \Exception("CRITICAL ERROR: Unable to find application.");
-                }
+                // $app = new \Kyte\Core\ModelObject(Application);
+                // if (!$app->retrieve('id', $r['site']['application']['id'])) {
+                //     throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                // }
 
-                $r['application_identifier'] = $app->identifier;
+                $r['application_identifier'] = $r['site']['application']['identifier'];
                 break;
 
             case 'update':
