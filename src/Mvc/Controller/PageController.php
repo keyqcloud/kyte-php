@@ -144,6 +144,6 @@ class PageController extends ModelController
         // close html
         $code .= '</html>';
 
-        return $html;
+        return $code;
     }
 }
