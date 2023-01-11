@@ -426,6 +426,9 @@ class Api
 						break;
 				}
 
+				// as a safety, make sure we are back on the main db
+				self::dbconnect();
+
 			} else {
 				// If a post request is made to the api endpoint with no signature, identity string, or model being passed then generate a new signature based on the post data
 				// format of the data being passed should be:

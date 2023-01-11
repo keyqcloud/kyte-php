@@ -29,6 +29,18 @@ class Model
 		$this->page_num = $page_num;
 		$this->search_fields = $search_fields;
 		$this->search_value = $search_value;
+
+        if (isset($this->kyte_model['appId'])) {
+			// if app id is set, perform context switch
+			$app = new \Kyte\Core\ModelObject(Application);
+			if (!$app->retrieve('identifier', $this->kyte_model['appId'])) {
+				throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
+			}
+			\Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+		} else {
+			// otherwise use main db
+			\Kyte\Core\Api::dbconnect();
+		}
 	}
 
 	public function retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null)
