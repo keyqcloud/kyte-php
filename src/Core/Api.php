@@ -288,17 +288,19 @@ class Api
 			}
 		}
 
-		if(defined('APP_DIR')) {
+		if(defined('APP_DIR') && isset($_SERVER['HTTP_X_KYTE_APPID'])) {
+			$appId = $_SERVER['HTTP_X_KYTE_APPID'];
+
 			// next load user defined models
 			// if model already exists, apply changes/overrides
 			if ( file_exists( APP_DIR . "/app/" ) && is_dir( APP_DIR . "/app/" ) ) {
 		
 				/* USER DEFINED MODELS */
 				// load user defined models and controllers (allow override of builtin)
-				if ( file_exists( APP_DIR . "/app/models/" ) && is_dir( APP_DIR . "/app/models/" ) ) {    
-					foreach (glob(APP_DIR . "/app/models/*.php") as $filename) {
+				if ( file_exists( APP_DIR . "/app/models/{$appId}/" ) && is_dir( APP_DIR . "/app/models/{$appId}/" ) ) {    
+					foreach (glob(APP_DIR . "/app/models/{$appId}/*.php") as $filename) {
 						$model_name = substr($filename, 0, strrpos($filename, "."));
-						$model_name = str_replace(APP_DIR . '/app/models/','',$model_name);
+						$model_name = str_replace(APP_DIR . '/app/models/{$appId}/','',$model_name);
 
 						if (!array_key_exists($model_name, $models)) {
 							// check syntax before importing file
@@ -310,6 +312,9 @@ class Api
 								}
 								self::addPrimaryKey($$model_name);
 								self::addKyteAttributes($$model_name);
+								// add app id
+								$$model_name['appId'] = $appId;
+								// add model to list of models
 								$models[$model_name] = $$model_name;
 							} else {
 								$this->syntax_error = $f;
@@ -337,10 +342,10 @@ class Api
 		
 				/* USER DEFINED CONTROLLER */
 				// load user-defined controllers
-				if ( file_exists( APP_DIR . "/app/controllers/" ) && is_dir( APP_DIR . "/app/controllers/" ) ) {
-					foreach (glob(APP_DIR . "/app/controllers/*.php") as $filename) {
+				if ( file_exists( APP_DIR . "/app/controllers/{$appId}/" ) && is_dir( APP_DIR . "/app/controllers/{$appId}/" ) ) {
+					foreach (glob(APP_DIR . "/app/controllers/{$appId}/*.php") as $filename) {
 						$controller_name = substr($filename, 0, strrpos($filename, "."));
-						$controller_name = str_replace(APP_DIR . '/app/controllers/','',$controller_name);
+						$controller_name = str_replace(APP_DIR . '/app/controllers/{$appId}/','',$controller_name);
 
 						// check syntax before importing file
 						$f = self::checkSyntax($filename);
