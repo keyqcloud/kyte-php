@@ -25,7 +25,7 @@ class PageController extends ModelController
             case 'get':
                 // get api key info
                 $apikey = new \Kyte\Core\ModelObject(APIKey);
-                if (!$app->retrieve('kyte_account', $this->account->id)) {
+                if (!$apikey->retrieve('kyte_account', $this->account->id)) {
                     throw new \Exception("CRITICAL ERROR: Unable to find api information.");
                 }
 
