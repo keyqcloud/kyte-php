@@ -30,6 +30,8 @@ class ModelAttributeController extends ModelController
                     throw new \Exception("Unable to find associated data model.");
                 }
 
+                $attrs = \Kyte\Mvc\Controller\DataModelController::prepareModelDef($o);
+
                 // switch dbs
                 $app = new \Kyte\Core\ModelObject(Application);
                 if (!$app->retrieve('id', $tbl->application)) {
@@ -37,7 +39,7 @@ class ModelAttributeController extends ModelController
                 }
                 \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
                 // create new table with basic kyte info
-                if (!\Kyte\Core\DBI::addColumn($tbl->name, $r['name'], \Kyte\Mvc\Controller\DataModelController::prepareModelDef($o))) {
+                if (!\Kyte\Core\DBI::addColumn($tbl->name, $r['name'], $attrs)) {
                     throw new \Exception("Failed to create column {$r['name']} in table {$tbl->name}...");
                 }
                 // return to kyte db
@@ -57,6 +59,8 @@ class ModelAttributeController extends ModelController
                 if (!$tbl->retrieve('id', $o->dataModel)) {
                     throw new \Exception("Unable to find associated data model.");
                 }
+
+                $attrs = \Kyte\Mvc\Controller\DataModelController::prepareModelDef($o);
                 
                 // switch dbs
                 $app = new \Kyte\Core\ModelObject(Application);
@@ -65,7 +69,7 @@ class ModelAttributeController extends ModelController
                 }
                 \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
                 // create new table with basic kyte info
-                if (!\Kyte\Core\DBI::changeColumn($tbl->name, $o->name, $r['name'], \Kyte\Mvc\Controller\DataModelController::prepareModelDef($o))) {
+                if (!\Kyte\Core\DBI::changeColumn($tbl->name, $o->name, $r['name'], $attrs)) {
                     throw new \Exception("Failed to change column {$o->name} to {$r['name']} in table {$tbl->name}...");
                 }
                 // return to kyte db
