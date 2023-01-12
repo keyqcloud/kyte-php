@@ -297,7 +297,7 @@ class CloudFront extends Client
         return true;
     }
 
-    public function getConfiguration($distributionId = null) {
+    public function getDistribution($distributionId = null) {
         try {
             $distributionId = $this->Id ? $this->Id : $distributionId;
 
@@ -305,6 +305,11 @@ class CloudFront extends Client
                 'Id' => $distributionId
             ]);
 
+            $this->Id = $result['Distribution']['Id'];
+            $this->Arn = $result['Distribution']['ARN'];
+            $this->domainName = $result['Distribution']['DomainName'];
+            $this->status = $result['Distribution']['Status'];
+            
             if (isset($result['Distribution']['DistributionConfig']))
             {
                 $this->distributionConfig = $result['Distribution']['DistributionConfig'];
