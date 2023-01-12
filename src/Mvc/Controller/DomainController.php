@@ -48,8 +48,8 @@ class DomainController extends ModelController
                 $result = $acm->describe($r['certificateArn']);
 
                 $r['status'] = $result['Certificate']['Status'];
-                if (isset($results['Certificate']['DomainValidationOptions'])) {
-                    $r['dns_validation'] = $results['Certificate']['DomainValidationOptions'];
+                if (isset($result['Certificate']['DomainValidationOptions'])) {
+                    $r['dns_validation'] = $result['Certificate']['DomainValidationOptions'];
                 }
 
                 break;
