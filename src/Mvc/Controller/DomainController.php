@@ -4,9 +4,7 @@ namespace Kyte\Mvc\Controller;
 
 class DomainController extends ModelController
 {
-    public function hook_init() {
-        $this->getExternalTables = true;
-    }
+    // public function hook_init() {}
 
     // public function hook_auth() {}
 
