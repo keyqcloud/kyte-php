@@ -26,7 +26,7 @@ class DomainController extends ModelController
                 $obj = new \Kyte\Core\ModelObject(SubjectAlternativeName);
 
                 for ($i = 0; $i < $len; $i++) {
-                    if (!obj->create([
+                    if (!$obj->create([
                         "name" => $d['name'][$i],
                         'domain' => $o->id,
                         'kyte_account' => $this->account->id,
