@@ -10,6 +10,7 @@ class CloudFront extends Client
     public $domainName;
     public $Id;
     public $Arn;
+    public $status;
 
     // distribution configuration properties
     // https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-overview-required-fields.html
@@ -143,6 +144,7 @@ class CloudFront extends Client
             $this->Id = $result['Distribution']['Id'];
             $this->Arn = $result['Distribution']['ARN'];
             $this->domainName = $result['Distribution']['DomainName'];
+            $this->status = $result['Distribution']['Status'];
     
             $this->distributionConfig = $result['Distribution']['DistributionConfig'];
 
