@@ -47,7 +47,7 @@ class DomainController extends ModelController
             case 'get':
                 $result = $acm->describe($r['certificateArn']);
 
-                $r['status'] = $results['Certificate']['Status'];
+                $r['status'] = $result['Certificate']['Status'];
 
                 break;
         }
