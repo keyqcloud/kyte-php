@@ -28,6 +28,12 @@ $Domain = [
 			],
 		],
 	],
+	'externalTable' => [
+		[
+			'model' => 'SubjectAlternativeName',
+			'field' => 'domain',
+		],
+	],
 ];
 
 ?>
