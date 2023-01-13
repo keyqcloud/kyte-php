@@ -100,8 +100,9 @@ class MediaController extends \Kyte\Mvc\Controller\ModelController
 
 			case 'delete':
                 if ($o->s3key) {
-                    $credential = new \Kyte\Aws\Credentials($r['site']['region']);
-                    $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3MediaBucketName']);
+                    $d = $this->getObject($o);
+                    $credential = new \Kyte\Aws\Credentials($d['site']['region']);
+                    $s3 = new \Kyte\Aws\S3($credential, $d['site']['s3MediaBucketName']);
                     $s3->unlink($o->s3key);
 				}
 				break;
