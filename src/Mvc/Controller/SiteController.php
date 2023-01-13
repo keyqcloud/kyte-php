@@ -54,6 +54,7 @@ class SiteController extends ModelController
                     $o->delete();
                 }
                 
+                $s3->createWebsite();
                 $s3->enablePublicAccess();
                 // enable cors for upload
                 $s3->enableCors([
