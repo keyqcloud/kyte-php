@@ -81,6 +81,14 @@ $NavigationItem = [
 			],
 		],
 
+		'itemOrder' => [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 11,
+			'unsigned' 	=> true,
+			'date'		=> false,
+		],
+
 		// framework attributes
 
 		'kyte_account'	=> [
