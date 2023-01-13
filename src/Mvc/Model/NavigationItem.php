@@ -10,6 +10,15 @@ $NavigationItem = [
 			'date'		=> false,
 		],
 
+		'isLogout' => [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned' 	=> true,
+			'date'		=> false,
+			'default'	=> 0,
+		],
+
 		'faicon'		=> [
 			'type'		=> 's',
 			'required'	=> true,
