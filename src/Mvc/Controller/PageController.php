@@ -133,7 +133,7 @@ class PageController extends ModelController
                     if (!$linked_page->retrieve('main_navigation', $page['main_navigation'])) {
                         throw new \Exception("Unable to find page");
                     }
-                    $link = $linked_page->s3key;
+                    $link = '/'.$linked_page->s3key;
                 }
                 if ($m->center == 1) {
                     if ($m->parentItem) {

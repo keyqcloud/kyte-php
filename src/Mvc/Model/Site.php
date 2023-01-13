@@ -17,6 +17,7 @@ $Site = [
 			'date'		=> false,
 		],
 
+		// site data
 		's3BucketName'		=> [
 			'type'		=> 's',
 			'required'	=> false,
@@ -32,6 +33,28 @@ $Site = [
 		],
 
 		'cfDomain'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		// static media bucket
+		's3MediaBucketName'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'cfMediaDistributionId'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'cfMediaDomain'		=> [
 			'type'		=> 's',
 			'required'	=> false,
 			'size'		=> 255,

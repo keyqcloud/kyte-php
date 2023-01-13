@@ -24,7 +24,7 @@ class SiteController extends ModelController
                 $region = 'us-east-1';
                 $credentials = new \Kyte\Aws\Credentials($region);
 
-                // create s3 bucket
+                // create s3 bucket for site data
                 $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_.-]/', '-', $r['name']).'-'.$app->identifier);
                 $o->save([
                     'region'        => $region,
@@ -40,13 +40,32 @@ class SiteController extends ModelController
                 
                 $s3->createWebsite();
                 $s3->enablePublicAccess();
-                // // $s3->enableVersioning();
 
-                // // create acm certificate request
-                // $acm = new \Kyte\Aws\Acm($credentials);
-                // $acm->request($r['domain']);
+                // create s3 bucket for static media assets
+                $mediaBucketName = strtolower(preg_replace('/[^A-Za-z0-9_.-]/', '-', $r['name']).'-static-assets-'.$app->identifier);
+                $o->save([
+                    's3MediaBucketName'  => $mediaBucketName,
+                ]);
+                $s3 = new \Kyte\Aws\S3($credentials, $mediaBucketName, 'public-read');
+                try {
+                    $s3->createBucket();
+                } catch(\Exception $e) {
+                    throw $e;
+                    $o->delete();
+                }
+                
+                $s3->createWebsite();
+                $s3->enablePublicAccess();
+                // enable cors for upload
+                $s3->enableCors([
+                    [
+                        'AllowedHeaders'    =>  ['*'],
+                        'AllowedMethods'    =>  ['GET','POST'],
+                        'AllowedOrigins'    =>  ['*'],
+                    ]
+                ]);
 
-                // create distribution
+                // create distribution for website
                 $cf = new \Kyte\Aws\CloudFront($credentials);
                 $cf->addOrigin(
                     $bucketName.'.s3-website-'.$region.'.amazonaws.com',
@@ -58,6 +77,19 @@ class SiteController extends ModelController
                     'cfDomain'                => $cf->domainName,
                 ]);
 
+                // create distribution for static assets
+                $cf = new \Kyte\Aws\CloudFront($credentials);
+                $cf->addOrigin(
+                    $mediaBucketName.'.s3-website-'.$region.'.amazonaws.com',
+                    $mediaBucketName
+                );
+                $cf->create();
+                $o->save([
+                    'cfMediaDistributionId'        => $cf->Id,
+                    'cfMediaDomain'                => $cf->domainName,
+                ]);
+
+                // update return data
                 $r['region'] = $region;
                 $r['s3BucketName'] = $bucketName;
                 $r['cfDistributionId'] = $cf->Id;
