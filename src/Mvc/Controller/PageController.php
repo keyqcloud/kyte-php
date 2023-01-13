@@ -109,14 +109,14 @@ class PageController extends ModelController
         if ($page['protected'] == 1) {
             $code .= 'if (k.isSession()) { ';
         }
-        $code .= $js;
+        $code .= $page['javascript'];
         if ($page['protected'] == 1) {
             $code .= ' } else { location.href="/?redir="+encodeURIComponent(window.location); }';
         }
         $code .= ' });</script>';
 
         // custom styles
-        $code .= '<style>'.$page['style'].'</style>';
+        $code .= '<style>'.$page['stylesheet'].'</style>';
 
         // close head
         $code .= '</head>';
@@ -134,7 +134,7 @@ class PageController extends ModelController
         if ($page['main_navigation']) {
             $code .= '<script>';
             // retrieve menu items and create array
-            $items = \Kyte\Core\Model(NavigationItem);
+            $items = new \Kyte\Core\Model(NavigationItem);
             $items->retrieve('navigation', $page['main_navigation']);
             $menu_items = [];
             $menu_items_center = [];
@@ -146,7 +146,7 @@ class PageController extends ModelController
                 $link = $m->link;
                 // if page is set, get page
                 if ($m->page) {
-                    $page = \Kyte\Core\ModelObject(Page);
+                    $page = new \Kyte\Core\ModelObject(Page);
                     if (!$page->retrieve('navigation', $page['main_navigation'])) {
                         throw new \Exception("Unable to find page");
                     }
