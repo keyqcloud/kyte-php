@@ -11,9 +11,9 @@ class MediaController extends \Kyte\Mvc\Controller\ModelController
 	public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'new':
-                $filename = preg_replace('/[^A-Za-z0-9_.-]/', '_', $d['filename']);
+                $filename = preg_replace('/[^A-Za-z0-9_.-]/', '-', $d['filename']);
 
-				$path = "assets/media/";
+				$path = date('Y-m-d');
                 $key = $path.$filename;
 
 				$o->save([
@@ -34,7 +34,7 @@ class MediaController extends \Kyte\Mvc\Controller\ModelController
                     'expiration'	=> $expiration,
                     'conditions'	=> [
                         ['acl'			=> 'private'],
-                        ['bucket'		=> $r['site']['s3BucketName']],
+                        ['bucket'		=> $r['site']['s3MediaBucketName']],
                         ['starts-with', '$key', $path],
                         ["x-amz-credential" => $credential],
                         ["x-amz-algorithm" => "AWS4-HMAC-SHA256"],
@@ -87,13 +87,13 @@ class MediaController extends \Kyte\Mvc\Controller\ModelController
 				$r['date'] = $date;
 				$r['credential'] = $credential;
 				$r['key'] = $key;
-				$r['s3endpoint'] = 'https://'.$r['site']['s3BucketName'].'.s3.'.$r['site']['region'].'.amazonaws.com';
+				$r['s3endpoint'] = 'https://'.$r['site']['s3MediaBucketName'].'.s3.'.$r['site']['region'].'.amazonaws.com';
                 break;
 
 			case 'get':
 				if ($o->s3key) {
                     $credential = new \Kyte\Aws\Credentials($r['site']['region']);
-                    $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
+                    $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3MediaBucketName']);
                     $r['download'] = $s3->getObject($o->s3key);
 				}
 				break;
@@ -101,7 +101,7 @@ class MediaController extends \Kyte\Mvc\Controller\ModelController
 			case 'delete':
                 if ($o->s3key) {
                     $credential = new \Kyte\Aws\Credentials($r['site']['region']);
-                    $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
+                    $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3MediaBucketName']);
                     $s3->unlink($o->s3key);
 				}
 				break;
