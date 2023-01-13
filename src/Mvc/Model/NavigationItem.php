@@ -21,14 +21,14 @@ $NavigationItem = [
 
 		'faicon'		=> [
 			'type'		=> 's',
-			'required'	=> true,
+			'required'	=> false,
 			'size'		=> 255,
 			'date'		=> false,
 		],
 
 		'link'		=> [
 			'type'		=> 's',
-			'required'	=> true,
+			'required'	=> false,
 			'size'		=> 255,
 			'date'		=> false,
 		],
