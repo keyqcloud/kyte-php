@@ -40,7 +40,7 @@ class PageController extends ModelController
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
                     // compile html file
-                    $data = $this->createHtml($d);
+                    $data = $this->createHtml(array_merge($r, $d));
                     // write to file
                     $s3->write($o->s3key, $data);
 
