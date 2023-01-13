@@ -146,11 +146,11 @@ class PageController extends ModelController
                 $link = $m->link;
                 // if page is set, get page
                 if ($m->page) {
-                    $page = new \Kyte\Core\ModelObject(Page);
-                    if (!$page->retrieve('navigation', $page['main_navigation'])) {
+                    $linked_page = new \Kyte\Core\ModelObject(Page);
+                    if (!$linked_page->retrieve('navigation', $page['main_navigation'])) {
                         throw new \Exception("Unable to find page");
                     }
-                    $link = $page->s3key;
+                    $link = $linked_page->s3key;
                 }
                 if ($m->center == 1) {
                     if ($m->parentItem) {
