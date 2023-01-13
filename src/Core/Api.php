@@ -176,10 +176,10 @@ class Api
 			$host = KYTE_DB_HOST;
 		}
 		//
-		if (\Kyte\Core\DBI::$dbUser == KYTE_DB_USERNAME && \Kyte\Core\DBI::$dbName == KYTE_DB_DATABASE && \Kyte\Core\DBI::$dbHost == KYTE_DB_HOST) {
+		if (\Kyte\Core\DBI::$dbUser == $username && \Kyte\Core\DBI::$dbName == $database && \Kyte\Core\DBI::$dbHost == $host) {
 			return;
 		}
-		
+
 		\Kyte\Core\DBI::close();
 		\Kyte\Core\DBI::setDbName($database);
 		\Kyte\Core\DBI::setDbUser($username);
