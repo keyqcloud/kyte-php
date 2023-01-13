@@ -54,7 +54,6 @@ class SiteController extends ModelController
                     $o->delete();
                 }
                 
-                $s3->createWebsite();
                 $s3->enablePublicAccess();
                 // enable cors for upload
                 $s3->enableCors([
@@ -80,7 +79,7 @@ class SiteController extends ModelController
                 // create distribution for static assets
                 $cf = new \Kyte\Aws\CloudFront($credentials);
                 $cf->addOrigin(
-                    $mediaBucketName.'.s3-website-'.$region.'.amazonaws.com',
+                    $mediaBucketName.'.s3.amazonaws.com',
                     $mediaBucketName
                 );
                 $cf->create();
