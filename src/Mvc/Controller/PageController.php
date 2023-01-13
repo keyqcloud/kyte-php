@@ -118,7 +118,7 @@ class PageController extends ModelController
         if ($page['main_navigation']) {
             // retrieve menu items and create array
             $items = new \Kyte\Core\Model(NavigationItem);
-            $items->retrieve('navigation', $page['main_navigation']);
+            $items->retrieve('navigation', $page['main_navigation'], false, null, false, [['field' => 'id', 'direction' => 'asc']]);
             $menu_items = [];
             $menu_items_center = [];
             $menu_items_right = [];
