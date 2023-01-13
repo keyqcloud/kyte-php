@@ -172,7 +172,7 @@ class PageController extends ModelController
             foreach(array_keys($menu_items_right_sub) as $key) {
                 $menu_items_right[$key] = '{dropdown:true,class:"me-2 text-light",label:"'.$menu_items[$key]->title.'",items:['.implode($menu_items_right_sub[$key]).']},';
             }
-            $code .= 'let appnavdef = [['.implode($menu_items_center).'],['.implode($menu_items_right).']]';
+            $code .= 'let appnavdef = [['.implode($menu_items_center).'],['.implode($menu_items_right).']];';
             $code .= 'let navbar = new KyteNav("#mainnav", appnavdef, null, '.$page['site']['name'].');navbar.create();';
             $code .= '</script>';
             $code .= '<!-- START NAV --><nav id="mainnav" class="navbar navbar-dark bg-dark navbar-expand-lg"></nav><!-- END NAV -->';
