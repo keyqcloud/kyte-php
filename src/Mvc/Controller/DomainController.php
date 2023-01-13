@@ -83,7 +83,7 @@ class DomainController extends ModelController
 
                 if (isset($data['assigned'])) {
                     // create acm client
-                    $acm = new \Kyte\Aws\Acm($credential);
+                    $acm = new \Kyte\Aws\Acm($credentials);
 
                     // check if certificate has been issued
                     $acm_result = $acm->describe($r['certificateArn']);
