@@ -20,13 +20,18 @@ class Acm extends Client
         // create idempotency token
         // $idemToken = $domainName.time();
 
-        // request certificate
-        $result = $this->client->requestCertificate([
+        $request = [
             'DomainName' => $domainName, // REQUIRED
-            'SubjectAlternativeNames' => $san,
-            // 'IdempotencyToken' => $idemToken,
             'ValidationMethod' => 'DNS',
-        ]);
+            // 'IdempotencyToken' => $idemToken,
+        ];
+
+        if (count($san) > 0) {
+            $request['SubjectAlternativeNames'] = $san;
+        }
+
+        // request certificate
+        $result = $this->client->requestCertificate($request);
 
         if (!isset($result['CertificateArn'])) {
             throw new \Exception('Unable to create new certificate');
