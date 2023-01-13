@@ -95,9 +95,7 @@ class DomainController extends ModelController
                     $aliases = [];
                     foreach($acm_result['Certificate']['DomainValidationOptions'] as $san) {
                         $aliases[] = $san['ValidationDomain'];
-                        error_log($san['ValidationDomain']);
                     }
-                    error_log($obj->certificateArn);
                     $cf->setAliases($aliases, $obj->certificateArn);
 
                 } else {
