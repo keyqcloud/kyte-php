@@ -36,8 +36,10 @@ class DomainController extends ModelController
                     }
                 }
 
+                $sans = is_array($d['name']) ? $d['name'] : [];
+
                 // make cert request
-                $r['certificateArn'] = $acm->request($r['domainName'], $d['name']);
+                $r['certificateArn'] = $acm->request($r['domainName'], $sans);
 
                 // update domain certificate arn
                 $o->save([
