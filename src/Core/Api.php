@@ -155,6 +155,10 @@ class Api
 	}
 
 	public static function dbconnect() {
+		if (\Kyte\Core\DBI::$dbUser == KYTE_DB_USERNAME && \Kyte\Core\DBI::$dbName == KYTE_DB_DATABASE && \Kyte\Core\DBI::$dbHost == KYTE_DB_HOST) {
+				return;
+		}
+
 		\Kyte\Core\DBI::close();
 		\Kyte\Core\DBI::setDbUser(KYTE_DB_USERNAME);
 		\Kyte\Core\DBI::setDbPassword(KYTE_DB_PASSWORD);
@@ -171,6 +175,11 @@ class Api
 		if ($host == null) {
 			$host = KYTE_DB_HOST;
 		}
+		//
+		if (\Kyte\Core\DBI::$dbUser == KYTE_DB_USERNAME && \Kyte\Core\DBI::$dbName == KYTE_DB_DATABASE && \Kyte\Core\DBI::$dbHost == KYTE_DB_HOST) {
+			return;
+		}
+		
 		\Kyte\Core\DBI::close();
 		\Kyte\Core\DBI::setDbName($database);
 		\Kyte\Core\DBI::setDbUser($username);
