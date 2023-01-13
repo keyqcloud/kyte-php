@@ -4,7 +4,6 @@ class MediaController extends \Kyte\Mvc\Controller\ModelController
 {
     public function hook_init() {
         $this->allowableActions = ['new', 'get','delete'];
-        $this->checkExisting = 's3key';
     }
     // public function hook_auth() {}
 
@@ -74,8 +73,7 @@ class MediaController extends \Kyte\Mvc\Controller\ModelController
                 );
 
                 $r['filename'] = $filename;
-                $r['s3key'] = $key;
-                $r['idem'] = $idem;
+                $r['s3key'] = $key;;
 				// - key
 				// - policy
 				// - credential
