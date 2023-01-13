@@ -113,26 +113,9 @@ class PageController extends ModelController
         if ($page['protected'] == 1) {
             $code .= ' } else { location.href="/?redir="+encodeURIComponent(window.location); }';
         }
-        $code .= ' });</script>';
 
-        // custom styles
-        $code .= '<style>'.$page['stylesheet'].'</style>';
-
-        // close head
-        $code .= '</head>';
-
-        // body
-        $code .= '<body>';
-
-        // loader
-        $code .= '<!-- Page loading modal.  Once session is validated, the loading modal will close. --><div id="pageLoaderModal" class="modal white" data-backdrop="static" data-keyboard="false" tabindex="-1"><div class="modal-dialog modal-sm h-100 d-flex"><div class="mx-auto align-self-center" style="width: 48px"><div class="spinner-wrapper text-center fa-6x"><span class="fas fa-sync fa-spin"></span></div></div></div></div><!--  -->';
-
-        // wrapper
-        $code .= '<div id="wrapper">';
-
-        // main navigation and header
+        // add navigation code
         if ($page['main_navigation']) {
-            $code .= '<script>';
             // retrieve menu items and create array
             $items = new \Kyte\Core\Model(NavigationItem);
             $items->retrieve('navigation', $page['main_navigation']);
@@ -174,7 +157,26 @@ class PageController extends ModelController
             }
             $code .= 'let appnavdef = [['.implode($menu_items_center).'],['.implode($menu_items_right).']];';
             $code .= 'let navbar = new KyteNav("#mainnav", appnavdef, null, "'.$page['site']['name'].'");navbar.create();';
-            $code .= '</script>';
+        }
+        $code .= ' });</script>';
+
+        // custom styles
+        $code .= '<style>'.$page['stylesheet'].'</style>';
+
+        // close head
+        $code .= '</head>';
+
+        // body
+        $code .= '<body>';
+
+        // loader
+        $code .= '<!-- Page loading modal.  Once session is validated, the loading modal will close. --><div id="pageLoaderModal" class="modal white" data-backdrop="static" data-keyboard="false" tabindex="-1"><div class="modal-dialog modal-sm h-100 d-flex"><div class="mx-auto align-self-center" style="width: 48px"><div class="spinner-wrapper text-center fa-6x"><span class="fas fa-sync fa-spin"></span></div></div></div></div><!--  -->';
+
+        // wrapper
+        $code .= '<div id="wrapper">';
+
+        // main navigation and header
+        if ($page['main_navigation']) {
             $code .= '<!-- START NAV --><nav id="mainnav" class="navbar navbar-dark bg-dark navbar-expand-lg"></nav><!-- END NAV -->';
         }
 
