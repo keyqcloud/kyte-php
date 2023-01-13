@@ -15,6 +15,13 @@ $Domain = [
 			'date'		=> false,
 			'size'	=> 512,
 		],
+
+		'assigned' => [
+			'type'		=> 's',
+			'required'	=> false,
+			'date'		=> false,
+			'size'	=> 255,
+		],
 		
 		'site'	=> [
 			'type'		=> 'i',
