@@ -133,6 +133,46 @@ class PageController extends ModelController
         // main navigation and header
         if ($page['main_navigation']) {
             $code .= '<script>';
+            // retrieve menu items and create array
+            $items = \Kyte\Core\Model(NavigationItem);
+            $items->retrieve('navigation', $page['main_navigation']);
+            $menu_items = [];
+            $menu_items_center = [];
+            $menu_items_right = [];
+            $menu_items_center_sub = [];
+            $menu_items_right_sub = [];
+            foreach($items->objects as $m) {
+                $menu_items[$m->id] = $m;
+                $link = $m->link;
+                // if page is set, get page
+                if ($m->page) {
+                    $page = \Kyte\Core\ModelObject(Page);
+                    if (!$page->retrieve('navigation', $page['main_navigation'])) {
+                        throw new \Exception("Unable to find page");
+                    }
+                    $link = $page->s3key;
+                }
+                if ($m->center == 1) {
+                    if ($m->parentItem) {
+                        $menu_items_center_sub[$m->parentItem][] = '{faicon:"'.$m->faicon.'",class:"me-2 text-light",label:"'.$m->title.'",href:"'.$link.'"},';
+                    } else {
+                        $menu_items_center[$m->id] = '{faicon:"'.$m->faicon.'",class:"me-2 text-light",label:'.$m->title.'"",href:"'.$link.'"},';
+                    }
+                } else {
+                    if ($m->parentItem) {
+                        $menu_items_right_sub[$m->parentItem][] = '{faicon:"'.$m->faicon.'",class:"me-2 text-light",label:"'.$m->title.'",href:"'.$link.'"},';
+                    } else {
+                        $menu_items_right[$m->id] = '{faicon:"'.$m->faicon.'",class:"me-2 text-light",label:"'.$m->title.'",href:"'.$link.'"},';
+                    }
+                }
+            }
+            foreach(array_keys($menu_items_center_sub) as $key) {
+                $menu_items_center[$key] = '{dropdown:true,class:"me-2 text-light",label:"'.$menu_items[$key]->title.'",items:['.implode($menu_items_center_sub[$key]).']},';
+            }
+            foreach(array_keys($menu_items_right_sub) as $key) {
+                $menu_items_right[$key] = '{dropdown:true,class:"me-2 text-light",label:"'.$menu_items[$key]->title.'",items:['.implode($menu_items_right_sub[$key]).']},';
+            }
+            $code .= 'let appnavdef = [['.implode($menu_items_center).'],['.implode($menu_items_right).']]';
             $code .= 'let navbar = new KyteNav("#mainnav", appnavdef, null, '.$page['site']['name'].');navbar.create();';
             $code .= '</script>';
             $code .= '<!-- START NAV --><nav id="mainnav" class="navbar navbar-dark bg-dark navbar-expand-lg"></nav><!-- END NAV -->';

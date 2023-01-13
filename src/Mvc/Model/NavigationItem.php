@@ -19,6 +19,15 @@ $NavigationItem = [
 			'default'	=> 0,
 		],
 
+		'center' => [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned' 	=> true,
+			'date'		=> false,
+			'default'	=> 1,
+		],
+
 		'faicon'		=> [
 			'type'		=> 's',
 			'required'	=> false,
