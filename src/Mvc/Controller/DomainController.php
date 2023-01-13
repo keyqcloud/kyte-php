@@ -86,7 +86,7 @@ class DomainController extends ModelController
                     $acm = new \Kyte\Aws\Acm($credentials);
 
                     // check if certificate has been issued
-                    $acm_result = $acm->describe($r['certificateArn']);
+                    $acm_result = $acm->describe($ret['certificateArn']);
                     if ($acm_result['Certificate']['Status'] != 'ISSUED') {
                         throw new \Exception("Unable to assign domain and SSL to site because the SSL certificate has not been issued. Please complete the domain verification");
                     }
