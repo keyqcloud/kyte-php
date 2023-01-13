@@ -40,7 +40,7 @@ class PageController extends ModelController
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
                     // compile html file
-                    $data = $this->createHtml($o, $d['html'], $d['javascript'], $d['stylesheet'], $d['kyte_connect']);
+                    $data = $this->createHtml($d);
                     // write to file
                     $s3->write($o->s3key, $data);
 
@@ -75,8 +75,8 @@ class PageController extends ModelController
 
     // public function hook_process_get_response(&$r) {}
 
-    private function createHtml($page, $html, $js, $style, $kyte_connect) {
-        $code = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"><title>'.$page->title.'</title>';
+    private function createHtml($page) {
+        $code = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"><title>'.$page['title'].'</title>';
         
         // font aweseom
         $code .= '<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.12.0/css/all.css">';
@@ -103,20 +103,20 @@ class PageController extends ModelController
 
         $code .= '<script>';
         // add kyte connect
-        $code .= $kyte_connect."\n\n";
+        $code .= $page['kyte_connect']."\n\n";
         // custom js
         $code .= '$(document).ready(function() { ';
-        if ($page->protected == 1) {
+        if ($page['protected'] == 1) {
             $code .= 'if (k.isSession()) { ';
         }
         $code .= $js;
-        if ($page->protected == 1) {
+        if ($page['protected'] == 1) {
             $code .= ' } else { location.href="/?redir="+encodeURIComponent(window.location); }';
         }
         $code .= ' });</script>';
 
         // custom styles
-        $code .= '<style>'.$style.'</style>';
+        $code .= '<style>'.$page['style'].'</style>';
 
         // close head
         $code .= '</head>';
@@ -131,7 +131,10 @@ class PageController extends ModelController
         $code .= '<div id="wrapper">';
 
         // main navigation and header
-        if ($page->main_navigation) {
+        if ($page['main_navigation']) {
+            $code .= '<script>';
+            $code .= 'let navbar = new KyteNav("#mainnav", appnavdef, null, '.$page['site']['name'].');navbar.create();';
+            $code .= '</script>';
             $code .= '<!-- START NAV --><nav id="mainnav" class="navbar navbar-dark bg-dark navbar-expand-lg"></nav><!-- END NAV -->';
         }
 
@@ -139,11 +142,11 @@ class PageController extends ModelController
         $code .= '<main>';
 
         // side navigation
-        if ($page->side_navigation) {
+        if ($page['side_navigation']) {
             $code .= '<!-- BEGIN SIDE NAVIGATION --><div id="sidenav" class="d-flex flex-column flex-shrink-0 p-3 text-white" style="width: 230px;"></div><!-- END SIDE NAVIGATION -->';
         }
 
-        $code .= '<div class="container container-flex mb-5 px-5">'.$html.'</div>';
+        $code .= '<div class="container container-flex mb-5 px-5">'.$page['html'].'</div>';
 
         // close main wrapper
         $code .= '</main>';
