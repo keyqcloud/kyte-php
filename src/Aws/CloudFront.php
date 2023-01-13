@@ -11,6 +11,7 @@ class CloudFront extends Client
     public $Id;
     public $Arn;
     public $status;
+    public $etag;
 
     // distribution configuration properties
     // https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-overview-required-fields.html
@@ -173,7 +174,8 @@ class CloudFront extends Client
 
             $result = $this->client->updateDistribution([
                 'DistributionConfig' => $this->distributionConfig,
-                'Id' => $distributionId
+                'Id' => $distributionId,
+                'IfMatch' => $this->etag,
             ]);
 
             return true;
@@ -191,7 +193,8 @@ class CloudFront extends Client
 
             $result = $this->client->updateDistribution([
                 'DistributionConfig' => $this->distributionConfig,
-                'Id' => $distributionId
+                'Id' => $distributionId,
+                'IfMatch' => $this->etag,
             ]);
             
             return true;
@@ -243,7 +246,8 @@ class CloudFront extends Client
 
             $result = $this->client->updateDistribution([
                 'DistributionConfig' => $this->distributionConfig,
-                'Id' => $distributionId
+                'Id' => $distributionId,
+                'IfMatch' => $this->etag,
             ]);
             
             return true;
@@ -267,7 +271,8 @@ class CloudFront extends Client
 
             $result = $this->client->updateDistribution([
                 'DistributionConfig' => $this->distributionConfig,
-                'Id' => $distributionId
+                'Id' => $distributionId,
+                'IfMatch' => $this->etag,
             ]);
             
             return true;
@@ -309,6 +314,7 @@ class CloudFront extends Client
             $this->Arn = $result['Distribution']['ARN'];
             $this->domainName = $result['Distribution']['DomainName'];
             $this->status = $result['Distribution']['Status'];
+            $this->etag = $result['ETag'];
             
             if (isset($result['Distribution']['DistributionConfig']))
             {
