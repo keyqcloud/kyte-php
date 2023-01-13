@@ -229,7 +229,7 @@ class CloudFront extends Client
         try {
             $distributionId = $this->Id ? $this->Id : $distributionId;
 
-            if (count($aliases) > 0 || empty($acmArn)) {
+            if (count($aliases) == 0 || empty($acmArn)) {
                 throw new \Exception("Aliases require a valid ACM certificate");
             }
 
