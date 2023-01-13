@@ -172,7 +172,7 @@ class CloudFront extends Client
             $this->distributionConfig['Enabled'] = false;
 
             $result = $this->client->updateDistribution([
-                $this->distributionConfig,
+                'DistributionConfig' => $this->distributionConfig,
                 'Id' => $distributionId
             ]);
 
@@ -190,7 +190,7 @@ class CloudFront extends Client
             $this->distributionConfig['Enabled'] = true;
 
             $result = $this->client->updateDistribution([
-                $this->distributionConfig,
+                'DistributionConfig' => $this->distributionConfig,
                 'Id' => $distributionId
             ]);
             
@@ -242,7 +242,7 @@ class CloudFront extends Client
             // $this->distributionConfig['ViewerCertificate']['CloudFrontDefaultCertificate'] = false;
 
             $result = $this->client->updateDistribution([
-                $this->distributionConfig,
+                'DistributionConfig' => $this->distributionConfig,
                 'Id' => $distributionId
             ]);
             
@@ -266,7 +266,7 @@ class CloudFront extends Client
             $this->distributionConfig['Aliases']['Quantity'] = 0;
 
             $result = $this->client->updateDistribution([
-                $this->distributionConfig,
+                'DistributionConfig' => $this->distributionConfig,
                 'Id' => $distributionId
             ]);
             
