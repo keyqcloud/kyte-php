@@ -74,11 +74,11 @@ class DomainController extends ModelController
             if ($field === null || $value === null) throw new \Exception("Field and Values params not set");
 
             $obj = new \Kyte\Core\ModelObject($this->model);
-            if ($obj->retrieve($field, $value, $conditions, null, $all)) {
+            if ($obj->retrieve($field, $value, [], null, false)) {
                 $ret = $this->getObject($obj);
 
                 // keep region as us-east-1 for compatibility with CF
-                $credential = new \Kyte\Aws\Credentials('us-east-1');
+                $credentials = new \Kyte\Aws\Credentials('us-east-1');
                 $cf = new \Kyte\Aws\CloudFront($credentials, $ret['site']['cfDistributionId']);
 
                 if (isset($data['assigned'])) {
