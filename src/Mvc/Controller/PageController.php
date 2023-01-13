@@ -147,7 +147,7 @@ class PageController extends ModelController
                 // if page is set, get page
                 if ($m->page) {
                     $linked_page = new \Kyte\Core\ModelObject(Page);
-                    if (!$linked_page->retrieve('navigation', $page['main_navigation'])) {
+                    if (!$linked_page->retrieve('main_navigation', $page['main_navigation'])) {
                         throw new \Exception("Unable to find page");
                     }
                     $link = $linked_page->s3key;
