@@ -14,7 +14,7 @@ class MediaController extends \Kyte\Mvc\Controller\ModelController
                 $filename = preg_replace('/[^A-Za-z0-9_.-]/', '-', $d['filename']);
 
 				$path = date('Y-m-d');
-                $key = $path.$filename;
+                $key = "{$path}/{$filename}";
 
 				$o->save([
 					's3key' => $key,
