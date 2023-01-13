@@ -156,7 +156,7 @@ class PageController extends ModelController
                     if ($m->parentItem) {
                         $menu_items_center_sub[$m->parentItem][] = '{faicon:"'.$m->faicon.'",class:"me-2 text-light",label:"'.$m->title.'",href:"'.$link.'"},';
                     } else {
-                        $menu_items_center[$m->id] = '{faicon:"'.$m->faicon.'",class:"me-2 text-light",label:'.$m->title.'"",href:"'.$link.'"},';
+                        $menu_items_center[$m->id] = '{faicon:"'.$m->faicon.'",class:"me-2 text-light",label:"'.$m->title.'",href:"'.$link.'"},';
                     }
                 } else {
                     if ($m->parentItem) {
@@ -173,7 +173,7 @@ class PageController extends ModelController
                 $menu_items_right[$key] = '{dropdown:true,class:"me-2 text-light",label:"'.$menu_items[$key]->title.'",items:['.implode($menu_items_right_sub[$key]).']},';
             }
             $code .= 'let appnavdef = [['.implode($menu_items_center).'],['.implode($menu_items_right).']];';
-            $code .= 'let navbar = new KyteNav("#mainnav", appnavdef, null, '.$page['site']['name'].');navbar.create();';
+            $code .= 'let navbar = new KyteNav("#mainnav", appnavdef, null, "'.$page['site']['name'].'");navbar.create();';
             $code .= '</script>';
             $code .= '<!-- START NAV --><nav id="mainnav" class="navbar navbar-dark bg-dark navbar-expand-lg"></nav><!-- END NAV -->';
         }
