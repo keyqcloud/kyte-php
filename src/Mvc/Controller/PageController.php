@@ -131,7 +131,7 @@ class PageController extends ModelController
         $code .= '<div id="wrapper">';
 
         // main navigation and header
-        if ($page->header) {
+        if ($page->main_navigation) {
             $code .= '<!-- START NAV --><nav id="mainnav" class="navbar navbar-dark bg-dark navbar-expand-lg"></nav><!-- END NAV -->';
         }
 
@@ -139,7 +139,7 @@ class PageController extends ModelController
         $code .= '<main>';
 
         // side navigation
-        if ($page->navigation) {
+        if ($page->side_navigation) {
             $code .= '<!-- BEGIN SIDE NAVIGATION --><div id="sidenav" class="d-flex flex-column flex-shrink-0 p-3 text-white" style="width: 230px;"></div><!-- END SIDE NAVIGATION -->';
         }
 

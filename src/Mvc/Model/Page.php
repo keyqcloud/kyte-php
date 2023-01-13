@@ -53,19 +53,19 @@ $Page = [
 			],
 		],
 
-		'header'	=> [
+		'main_navigation'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
 			'size'		=> 11,
 			'unsigned'	=> true,
 			'date'		=> false,
 			'fk'		=> [
-				'model'	=> 'SectionTemplate',
+				'model'	=> 'Navigation',
 				'field'	=> 'id',
 			],
 		],
 
-		'navigation'	=> [
+		'side_navigation'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
 			'size'		=> 11,
