@@ -10,6 +10,32 @@ $Navigation = [
 			'date'		=> false,
 		],
 
+		'logo'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'link'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'page'		=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 11,
+			'unsigned'	=> true,
+			'date'		=> false,
+			'fk'		=> [
+				'model'	=> 'Page',
+				'field'	=> 'id',
+			],
+		],
+
 		'description'		=> [
 			'type'		=> 't',
 			'required'	=> false,
