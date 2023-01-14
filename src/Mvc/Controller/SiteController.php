@@ -75,7 +75,6 @@ class SiteController extends ModelController
                     'cfDistributionId'        => $cf->Id,
                     'cfDomain'                => $cf->domainName,
                 ]);
-                $cf = null;
 
                 // create distribution for static assets
                 $cf = new \Kyte\Aws\CloudFront($credentials);

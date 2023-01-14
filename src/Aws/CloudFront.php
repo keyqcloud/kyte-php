@@ -80,7 +80,7 @@ class CloudFront extends Client
         ]);
 
         // set default values
-        $this->CallerReference = 'kyte'.time();
+        $this->CallerReference = 'kyte'.time().uniqid();
         $this->Aliases = [];
         $this->DefaultRootObject = '';
         $this->Origins = [];
