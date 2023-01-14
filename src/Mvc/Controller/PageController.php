@@ -118,7 +118,7 @@ class PageController extends ModelController
         if ($page['main_navigation']) {
             // retrieve menu items and create array
             $items = new \Kyte\Core\Model(NavigationItem);
-            $items->retrieve('navigation', $page['main_navigation']['id'], false, null, false, [['field' => 'id', 'direction' => 'asc']]);
+            $items->retrieve('navigation', $page['main_navigation'], false, null, false, [['field' => 'id', 'direction' => 'asc']]);
             $menu_items = [];
             $menu_items_center = [];
             $menu_items_right = [];
@@ -155,17 +155,21 @@ class PageController extends ModelController
             foreach(array_keys($menu_items_right_sub) as $key) {
                 $menu_items_right[$key] = '{dropdown:true,class:"me-2 text-light",label:"'.$menu_items[$key]->title.'",items:['.implode($menu_items_right_sub[$key]).']},';
             }
-            $nav_link = $page['main_navigation']['link'] ? $page['main_navigation']['link'] : '/';
-            if ($page['main_navigation']['page']) {
+            $main_nav = new \Kyte\Core\ModelObject(Navigation);
+            if (!$main_nav->retrieve('id', $page['main_navigation'])) {
+                throw new \Exception("Unable to find main navigation");
+            }
+            $nav_link = $main_nav->link ? $main_nav->link : '/';
+            if ($main_nav->page) {
                 $linked_page = new \Kyte\Core\ModelObject(Page);
-                if (!$linked_page->retrieve('id', $page['main_navigation']['page'])) {
+                if (!$linked_page->retrieve('id', $main_nav->page)) {
                     throw new \Exception("Unable to find page");
                 }
                 $nav_link = '/'.$linked_page->s3key;
             }
-            error_log(print_r($page['main_navigation'], true));
+            
             $code .= 'let appnavdef = [['.implode($menu_items_center).'],['.implode($menu_items_right).']];';
-            $code .= 'let navbar = new KyteNav("#mainnav", appnavdef, "'.$page['main_navigation']['logo'].'", "'.$page['site']['name'].'", null, "'.$nav_link.'");navbar.create();';
+            $code .= 'let navbar = new KyteNav("#mainnav", appnavdef, "'.$main_nav->logo.'", "'.($main_nav->logo ? '' : $page['site']['name']).'", null, "'.$nav_link.'");navbar.create();';
         }
         $code .= ' });</script>';
 
