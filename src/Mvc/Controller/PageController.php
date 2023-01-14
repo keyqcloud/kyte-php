@@ -156,8 +156,12 @@ class PageController extends ModelController
                 $menu_items_right[$key] = '{dropdown:true,class:"me-2 text-light",label:"'.$menu_items[$key]->title.'",items:['.implode($menu_items_right_sub[$key]).']},';
             }
             $nav_link = $page['main_navigation']['link'] ? $page['main_navigation']['link'] : '/';
-            if (isset($page['main_navigation']['page']['s3key'])) {
-                $nav_link = '/'.$page['main_navigation']['page']['s3key'];
+            if ($page['main_navigation']['page']) {
+                $linked_page = new \Kyte\Core\ModelObject(Page);
+                if (!$linked_page->retrieve('id', $page['main_navigation']['page'])) {
+                    throw new \Exception("Unable to find page");
+                }
+                $nav_link = '/'.$linked_page->s3key;
             }
             $code .= 'let appnavdef = [['.implode($menu_items_center).'],['.implode($menu_items_right).']];';
             $code .= 'let navbar = new KyteNav("#mainnav", appnavdef, "'.$page['main_navigation']['logo'].'", "'.$page['site']['name'].'", null, "'.$nav_link.'");navbar.create();';

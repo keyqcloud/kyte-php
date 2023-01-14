@@ -30,10 +30,10 @@ $Navigation = [
 			'size'		=> 11,
 			'unsigned'	=> true,
 			'date'		=> false,
-			'fk'		=> [
-				'model'	=> 'Page',
-				'field'	=> 'id',
-			],
+			// 'fk'		=> [
+			// 	'model'	=> 'Page',
+			// 	'field'	=> 'id',
+			// ],
 		],
 
 		'description'		=> [
