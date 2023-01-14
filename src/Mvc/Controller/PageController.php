@@ -163,7 +163,7 @@ class PageController extends ModelController
                 }
                 $nav_link = '/'.$linked_page->s3key;
             }
-            error_log(print_r($page, true));
+            error_log(print_r($page['main_navigation'], true));
             $code .= 'let appnavdef = [['.implode($menu_items_center).'],['.implode($menu_items_right).']];';
             $code .= 'let navbar = new KyteNav("#mainnav", appnavdef, "'.$page['main_navigation']['logo'].'", "'.$page['site']['name'].'", null, "'.$nav_link.'");navbar.create();';
         }
