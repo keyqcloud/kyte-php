@@ -42,7 +42,7 @@ class SiteController extends ModelController
                 $s3->enablePublicAccess();
 
                 // create s3 bucket for static media assets
-                $mediaBucketName = strtolower(preg_replace('/[^A-Za-z0-9_.-]/', '-', $r['name']).'-static-assets-'.$app->identifier);
+                $mediaBucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-static-assets-'.$app->identifier);
                 $o->save([
                     's3MediaBucketName'  => $mediaBucketName,
                 ]);
