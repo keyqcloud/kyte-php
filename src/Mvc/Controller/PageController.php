@@ -204,7 +204,7 @@ class PageController extends ModelController
             }
             //
             $code .= 'let sidenavdef = ['.implode($side_menu_items).'];';
-            $code .= 'let sidenav = new KyteSidenav("#sidenav", sidenavdef, "'.$default_sidenav.'");sidenav.create();sidenav.bind();';
+            $code .= 'let sidenav = new KyteSidenav("#sidenav", sidenavdef, "'.$default_sidenav.'");';//sidenav.create();sidenav.bind();';
         }
 
         $code .= ' });</script>';
