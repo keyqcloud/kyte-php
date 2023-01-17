@@ -175,6 +175,35 @@ class PageController extends ModelController
             $code .= 'let appnavdef = [['.implode($menu_items_center).'],['.implode($menu_items_right).']];';
             $code .= 'let navbar = new KyteNav("#mainnav", appnavdef, "'.$main_nav->logo.'", "'.($main_nav->logo ? '' : $page['site']['name']).'", null, "'.$nav_link.'");navbar.create();';
         }
+
+        // side navigation
+        if ($page['side_navigation']) {
+            // retrieve menu items and create array
+            $items = new \Kyte\Core\Model(NavigationItem);
+            $items->retrieve('navigation', $page['main_navigation'], false, null, false, [['field' => 'id', 'direction' => 'asc']]);
+            $side_menu_items = [];
+            $default_sidenav = '';
+            foreach($items->objects as $m) {
+                $link = $m->link;
+                if ($m->page) {
+                    $linked_page = new \Kyte\Core\ModelObject(Page);
+                    if (!$linked_page->retrieve('id', $m->page)) {
+                        throw new \Exception("Unable to find page");
+                    }
+                    $link = '/'.$linked_page->s3key;
+                }
+                $side_menu_items[] = '{faicon:"'.$m->faicon.'",label:"'.$m->title.'",'.(isset($link[0]) && $link[0] == '#' ? 'selector:"'.$link.'"' : 'href:"'.$link.'"').'},';
+            }
+            if (count($items->objects) > 0) {
+                if (isset($items->objects[0]->link) && $items->objects[0]->link[0] == '#') {
+                    $default_sidenav = $items->objects[0]->link;
+                }
+            }
+            //
+            $code .= 'let sidenavdef = ['.implode($side_menu_items).'];';
+            $code .= 'let sidenav = new KyteSidenav("#sidenav", sidenavdef, "'.$default_sidenav.'");sidenav.create();sidenav.bind();';
+        }
+
         $code .= ' });</script>';
 
         // custom styles
