@@ -34,6 +34,9 @@ class PageController extends ModelController
                 break;
 
             case 'update':
+                if ($o->state == 1 && !isset($d['state'])) {
+                    $o->save(['state' => 2]);
+                }
                 if (isset($d['state']) && $d['state'] == 1) {
                     // publish file to s3
                     $credential = new \Kyte\Aws\Credentials($r['site']['region']);
