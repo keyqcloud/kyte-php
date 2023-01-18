@@ -53,7 +53,7 @@ class PageController extends ModelController
                     if (strpos($o->s3key == 'index.html', "index.html") !== false) {
                         $invalidationPaths[] = '/'.str_replace("index.html", "*", $o->s3key);
                     } else {
-                        $invalidationPaths[] = ['/'.$o->s3key];
+                        $invalidationPaths[] = '/'.$o->s3key;
                     }
                     $cf->createInvalidation($r['site']['cfDistributionId'], $invalidationPaths);
                 }
