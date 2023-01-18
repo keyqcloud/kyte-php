@@ -210,7 +210,7 @@ class PageController extends ModelController
         $code .= ' });</script>';
 
         // custom styles
-        $code .= '<style>'.$page['stylesheet'].'</style>';
+        $code .= '<style>'.$page['stylesheet'].($page['side_navigation'] ? ' main {display: flex;flex-wrap: nowrap;min-height: 100vh;min-height: --webkit-fill-available;overflow-x: auto;overflow-y: hidden;}' : '').'</style>';
 
         // close head
         $code .= '</head>';
