@@ -234,7 +234,7 @@ class PageController extends ModelController
 
         // side navigation
         if ($page['side_navigation']) {
-            $code .= '<!-- BEGIN SIDE NAVIGATION --><div id="sidenav" class="d-flex flex-column flex-shrink-0 p-3 text-white" style="width: 230px;"></div><!-- END SIDE NAVIGATION -->';
+            $code .= '<!-- BEGIN SIDE NAVIGATION --><div id="sidenav" class="d-flex flex-column flex-shrink-0 p-3" style="width: 230px;"></div><!-- END SIDE NAVIGATION -->';
         }
 
         $code .= '<div class="container container-flex mb-5 px-5">'.$page['html'].'</div>';
