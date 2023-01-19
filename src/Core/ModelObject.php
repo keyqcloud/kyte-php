@@ -196,11 +196,8 @@ class ModelObject
 
 		try {
 			$types = $this->bindTypes($params);
-			error_log('model name '.$this->kyte_model['name'].'    id'.$id.'    type'.$types);
-			
 			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, $params, $types);
 			$this->populate($params);
-			error_log(print_r($params, true));
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
@@ -225,6 +222,8 @@ class ModelObject
 
 				foreach ($o as $key => $value) {
 					if (array_key_exists($key, $this->kyte_model['struct'])) {
+						error_log("printing output $key => $value");
+						// error_log(print_r($params, true));
 						$this->setParam($key, $value);
 					}
 				}
