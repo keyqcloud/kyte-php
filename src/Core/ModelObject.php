@@ -222,8 +222,6 @@ class ModelObject
 
 				foreach ($o as $key => $value) {
 					if (array_key_exists($key, $this->kyte_model['struct'])) {
-						// error_log("printing output $key => $value");
-						// error_log(print_r($params, true));
 						$this->setParam($key, $value);
 					}
 				}
