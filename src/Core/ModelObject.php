@@ -196,10 +196,7 @@ class ModelObject
 
 		try {
 			$types = $this->bindTypes($params);
-			error_log(print_r($params, true));
 			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, $params, $types);
-			error_log("AFTER  ************");
-			error_log(print_r($params, true));
 			$this->populate($params);
 			return true;
 		} catch (\Exception $e) {
