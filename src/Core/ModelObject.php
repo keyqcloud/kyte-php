@@ -200,10 +200,8 @@ class ModelObject
 			error_log(print_r($params, true));
 			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, $params, $types);
 			$this->populate($params);
-			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
