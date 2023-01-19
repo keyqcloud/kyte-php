@@ -195,8 +195,8 @@ class ModelObject
 		$params['modified_by'] = isset($params['modified_by']) ? $params['modified_by'] : $user;
 
 		try {
-			error_log('model name '.$this->kyte_model['name'].'    id'.$id.'    type'.$types);
 			$types = $this->bindTypes($params);
+			error_log('model name '.$this->kyte_model['name'].'    id'.$id.'    type'.$types);
 			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, $params, $types);
 			$this->populate($params);
 			return true;
