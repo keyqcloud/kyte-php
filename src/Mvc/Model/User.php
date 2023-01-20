@@ -17,12 +17,20 @@ $User = [
 			'date'		=> false,
 		],
 
+		'username'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
 		'password'	=> [
 			'type'		=> 's',
 			'required'	=> true,
 			'size'		=> 255,
 			'date'		=> false,
 			'protected'	=> true,
+			'password'	=> true,
 		],
 
 		'role'	=> [

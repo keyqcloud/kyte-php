@@ -324,7 +324,8 @@ class ModelController
 
     //
     //      1. covert times to unix time
-    //      2. check for foregin ands external table data
+    //      2. convert passwords to hashes
+    //      3. check for foregin ands external table data
     protected function sift(&$data) {
 
         $linkedModels = [];
@@ -336,6 +337,9 @@ class ModelController
                 if ($this->model['struct'][$key]['date']) {
                     // convert all dates to unix time
                     $data[$key] = strtotime($value);
+                }
+                if ($this->model['struct'][$key]['password']) {
+                    $data[$key] = password_hash($value, PASSWORD_DEFAULT);
                 }
             } else {
                 // see if data is in dot-notation i.e. <model>.<attribute>
