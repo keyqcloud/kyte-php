@@ -116,9 +116,9 @@ class PageController extends ModelController
         // custom js
         $code .= '$(document).ready(function() { ';
         if ($page['protected'] == 1) {
-            $code .= 'if (k.isSession()) { ';
+            $code .= 'if (k.isSession()) { '."\n";
         }
-        $code .= $page['javascript'];
+        $code .= $page['javascript']."\n";
         if ($page['protected'] == 1) {
             $code .= ' } else { location.href="/?redir="+encodeURIComponent(window.location); }';
         }
