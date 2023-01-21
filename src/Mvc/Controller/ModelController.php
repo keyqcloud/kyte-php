@@ -334,11 +334,13 @@ class ModelController
 
             // first check existing model
             if (isset($this->model['struct'][$key])) {
-                if ($this->model['struct'][$key]['date']) {
+                $requiresDateTimeFormat = isset($this->model['struct'][$key]['date']) ? $this->model['struct'][$key]['date'] : false;
+                if ($requiresDateTimeFormat) {
                     // convert all dates to unix time
                     $data[$key] = strtotime($value);
                 }
-                if ($this->model['struct'][$key]['password']) {
+                $requiresPasswordHashing = isset($this->model['struct'][$key]['password']) ? $this->model['struct'][$key]['password'] : false;
+                if ($requiresPasswordHashing) {
                     $data[$key] = password_hash($value, PASSWORD_DEFAULT);
                 }
             } else {
