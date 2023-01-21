@@ -116,6 +116,7 @@ class PageController extends ModelController
         // custom js
         $code .= '$(document).ready(function() { ';
         if ($page['protected'] == 1) {
+            $code .= 'k.addLogoutHandler("#logout");'."\n";
             $code .= 'if (k.isSession()) { '."\n";
         }
         $code .= $page['javascript']."\n";
