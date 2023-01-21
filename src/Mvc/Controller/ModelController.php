@@ -363,7 +363,13 @@ class ModelController
         return $linkedModels;
     }
 
-    // new - create new entry in db
+    /*
+     * NEW
+     *  
+     * new($data)
+     * 
+     * create new entry in db
+     */
     public function new($data)
     {
         $response = [];
@@ -429,7 +435,13 @@ class ModelController
         $this->response['data'] = $response;
     }
 
-    // update - update entry in db
+    /*
+     * UPDATE
+     *  
+     * update($field, $value, $data)
+     * 
+     * update entry in db
+     */
     public function update($field, $value, $data)
     {
         $response = [];
@@ -496,7 +508,13 @@ class ModelController
         $this->response['data'] = $response;
     }
 
-    // get - retrieve objects from db
+    /*
+     * GET
+     *  
+     * get($field, $value)
+     * 
+     * get entry from db
+     */
     public function get($field, $value)
     {
         $response = [];
@@ -579,7 +597,13 @@ class ModelController
         }
     }
 
-    // delete - delete objects from db
+    /*
+     * DELETE
+     *  
+     * delete($field, $value)
+     * 
+     * mark entry as deleted in db
+     */
     public function delete($field, $value)
     {
         $response = [];
