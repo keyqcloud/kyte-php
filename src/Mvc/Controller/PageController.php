@@ -147,15 +147,15 @@ class PageController extends ModelController
                 }
                 if ($m->center == 1) {
                     if ($m->parentItem) {
-                        $menu_items_center_sub[$m->parentItem][] = '{'.($m->logout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",class:"me-2 text-dark",label:"'.$m->title.'",href:"'.$link.'"},';
+                        $menu_items_center_sub[$m->parentItem][] = '{'.($m->isLogout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",class:"me-2 text-dark",label:"'.$m->title.'",href:"'.$link.'"},';
                     } else {
-                        $menu_items_center[$m->id] = '{'.($m->logout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",class:"me-2 text-light",label:"'.$m->title.'",href:"'.$link.'"},';
+                        $menu_items_center[$m->id] = '{'.($m->isLogout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",class:"me-2 text-light",label:"'.$m->title.'",href:"'.$link.'"},';
                     }
                 } else {
                     if ($m->parentItem) {
-                        $menu_items_right_sub[$m->parentItem][] = '{'.($m->logout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",class:"me-2 text-dark",label:"'.$m->title.'",href:"'.$link.'"},';
+                        $menu_items_right_sub[$m->parentItem][] = '{'.($m->isLogout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",class:"me-2 text-dark",label:"'.$m->title.'",href:"'.$link.'"},';
                     } else {
-                        $menu_items_right[$m->id] = '{'.($m->logout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",class:"me-2 text-light",label:"'.$m->title.'",href:"'.$link.'"},';
+                        $menu_items_right[$m->id] = '{'.($m->isLogout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",class:"me-2 text-light",label:"'.$m->title.'",href:"'.$link.'"},';
                     }
                 }
             }
