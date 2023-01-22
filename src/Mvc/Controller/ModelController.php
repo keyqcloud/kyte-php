@@ -385,6 +385,12 @@ class ModelController
                 throw new \Exception('Permission Denied');
             }
     
+            // add account information
+            $data['kyte_account'] = isset($data['kyte_account']) ? $data['kyte_account'] : $this->account->id;
+
+            // hook for any custom behaviours before creating object
+            $this->hook_preprocess('new', $data);
+            
             // go through data parameters and...
             //      1. covert times to unix time
             //      2. check for foregin key table data
@@ -407,12 +413,6 @@ class ModelController
                     }
                 }
             }
-            
-            // add account information
-            $data['kyte_account'] = isset($data['kyte_account']) ? $data['kyte_account'] : $this->account->id;
-
-            // hook for any custom behaviours before creating object
-            $this->hook_preprocess('new', $data);
 
             // add user info
             if (isset($this->user->id)) {
