@@ -467,6 +467,8 @@ class ModelController
 
             if ($obj->retrieve($field, $value, $conditions, null, $all)) {
 
+                $this->hook_preprocess('update', $data, $obj);
+                
                 // go through data parameters and...
                 //      1. covert times to unix time
                 //      2. check for foregin key table data
@@ -485,8 +487,6 @@ class ModelController
                         }
                     }
                 }
-
-                $this->hook_preprocess('update', $data, $obj);
 
                 // add user info
                 if (isset($this->user->id)) {
