@@ -582,6 +582,7 @@ class Api
 			}
 
 			// return account information in response - this is required for API handoff between master account and subaccounts
+			$this->response['kyte_api'] = APP_URL;
 			$this->response['kyte_pub'] = $sub_account_api->public_key;
 			$this->response['kyte_num'] = $this->account->number;
 			$this->response['kyte_iden'] = $sub_account_api->identifier;
