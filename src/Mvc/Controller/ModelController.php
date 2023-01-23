@@ -545,11 +545,11 @@ class ModelController
 
             // check if conditions were passed through header
             if (isset($_SERVER['HTTP_X_KYTE_QUERY_CONDITIONS'])) {
-                $supplied_conditions = json_decode(base64_decode($_SERVER['HTTP_X_KYTE_QUERY_CONDITIONS']), true);
+                $supplied_conditions = json_decode(base64_decode(stripslashes($_SERVER['HTTP_X_KYTE_QUERY_CONDITIONS'])), true);
                 if (is_array($supplied_conditions)) {
                     $conditions[] = $supplied_conditions;
                 } else {
-                    error_log("Supplied conditions were not an array. JSON may be corrupt. ".base64_decode($_SERVER['HTTP_X_KYTE_QUERY_CONDITIONS']));
+                    error_log("Supplied conditions were not an array. JSON may be corrupt. ".stripslashes(base64_decode($_SERVER['HTTP_X_KYTE_QUERY_CONDITIONS'])));
                 }
             }
 
