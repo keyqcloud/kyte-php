@@ -468,7 +468,7 @@ class ModelController
             if ($obj->retrieve($field, $value, $conditions, null, $all)) {
 
                 $this->hook_preprocess('update', $data, $obj);
-                
+
                 // go through data parameters and...
                 //      1. covert times to unix time
                 //      2. check for foregin key table data
@@ -545,6 +545,7 @@ class ModelController
 
             $this->hook_prequery('get', $field, $value, $conditions, $all, $order);
             
+            // search fields and values passed from DataTables
             $search_fields = isset($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS']) ? $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS'] : null;
             $search_values = isset($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE']) ? urldecode(base64_decode($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'])) : null;
 
