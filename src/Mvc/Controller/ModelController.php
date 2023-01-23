@@ -549,7 +549,7 @@ class ModelController
                 if (is_array($supplied_conditions)) {
                     $conditions[] = $supplied_conditions;
                 } else {
-                    error_log("Supplied conditions were not an array. JSON may be corrupt. ".$_SERVER['HTTP_X_KYTE_QUERY_CONDITIONS']);
+                    error_log("Supplied conditions were not an array. JSON may be corrupt. ".urldecode(base64_decode($_SERVER['HTTP_X_KYTE_QUERY_CONDITIONS'])));
                 }
             }
 
