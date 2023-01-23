@@ -23,6 +23,13 @@ $Page = [
 			'date'		=> false,
 		],
 
+		// json definition of page layout defined by wizard or block editor
+		'layout'	=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
 		'html'		=> [
 			'type'		=> 't',
 			'required'	=> false,
