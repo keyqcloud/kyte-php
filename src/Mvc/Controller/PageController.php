@@ -171,6 +171,7 @@ class PageController extends ModelController
                 $menu_items_right[$key] = '{dropdown:true,class:"me-2 text-light",label:"'.$menu_items[$key]->title.'",items:['.implode($menu_items_right_sub[$key]).']},';
             }
             $main_nav = new \Kyte\Core\ModelObject(Navigation);
+            error_log("main_navigation => ".$page['main_navigation']." id => ".$page['main_navigation']['id']);
             if (!$main_nav->retrieve('id', $page['main_navigation']['id'])) {
                 throw new \Exception("Unable to find main navigation for id ".$page['main_navigation']['id']);
             }
