@@ -492,10 +492,15 @@ class ModelController
                 if (isset($this->user->id)) {
                     $data['modified_by'] = $this->user->id;
                 }
-
+error_log("BEFORE: ");
+error_log(print_r($data, true));
                 $obj->save($data);
+error_log("AFTER: ");
+error_log(print_r($data, true));
                 $ret = [];
                 $ret = $this->getObject($obj);
+error_log("RET: ");
+error_log(print_r($ret, true));
                 $this->hook_response_data('update', $obj, $ret, $data);
                 $response[] = $ret;
             } else {
