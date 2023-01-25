@@ -219,7 +219,7 @@ class ModelObject
 
 			if (is_array($o)) {
 				if (count($o) == 0) { error_log("count is empty..."); return false; }
-
+error_log(print_r($o, true));
 				foreach ($o as $key => $value) {
 					if (array_key_exists($key, $this->kyte_model['struct'])) {
 						$this->setParam($key, $value);
