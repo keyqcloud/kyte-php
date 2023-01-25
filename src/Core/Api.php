@@ -484,8 +484,6 @@ class Api
 		// get request type
 		$request = $_SERVER['REQUEST_METHOD'];
 
-		error_log("REQUEST: $request");
-
 		// Access-Control headers are received during OPTIONS requests
 		if ($request == 'OPTIONS') {
 

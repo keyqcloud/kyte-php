@@ -42,6 +42,7 @@ class PageController extends ModelController
                     $credential = new \Kyte\Aws\Credentials($r['site']['region']);
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
+                    error_log("generating HTML");
                     // compile html file
                     $data = $this->createHtml(array_merge($r, $d));
                     // write to file
