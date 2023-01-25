@@ -133,7 +133,7 @@ class PageController extends ModelController
         if ($page['main_navigation']) {
             // retrieve menu items and create array
             $items = new \Kyte\Core\Model(NavigationItem);
-            $items->retrieve('navigation', $page['main_navigation'], false, null, false, [['field' => 'id', 'direction' => 'asc']]);
+            $items->retrieve('navigation', $page['main_navigation']['id'], false, null, false, [['field' => 'id', 'direction' => 'asc']]);
             $menu_items = [];
             $menu_items_center = [];
             $menu_items_right = [];
@@ -171,8 +171,8 @@ class PageController extends ModelController
                 $menu_items_right[$key] = '{dropdown:true,class:"me-2 text-light",label:"'.$menu_items[$key]->title.'",items:['.implode($menu_items_right_sub[$key]).']},';
             }
             $main_nav = new \Kyte\Core\ModelObject(Navigation);
-            if (!$main_nav->retrieve('id', $page['main_navigation'])) {
-                throw new \Exception("Unable to find main navigation for id ".$page['main_navigation']);
+            if (!$main_nav->retrieve('id', $page['main_navigation']['id'])) {
+                throw new \Exception("Unable to find main navigation for id ".$page['main_navigation']['id']);
             }
             $nav_link = $main_nav->link ? $main_nav->link : '/';
             if ($main_nav->page) {
@@ -191,7 +191,7 @@ class PageController extends ModelController
         if ($page['side_navigation']) {
             // retrieve menu items and create array
             $items = new \Kyte\Core\Model(NavigationItem);
-            $items->retrieve('navigation', $page['side_navigation'], false, null, false, [['field' => 'id', 'direction' => 'asc']]);
+            $items->retrieve('navigation', $page['side_navigation']['id'], false, null, false, [['field' => 'id', 'direction' => 'asc']]);
             $side_menu_items = [];
             $default_sidenav = '';
             foreach($items->objects as $m) {
