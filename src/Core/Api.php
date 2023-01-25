@@ -388,24 +388,14 @@ class Api
 
 			// if minimum count of elements exist, then process api request based on request type
 			if ($this->isRequest()) {
-
-				if ($this->appId) {
-					// retrieve model definition
-					//
-					// switch DBI to client database
-					//
-					$controller = new \Kyte\Client\ModelController();
+				if (class_exists('\\Kyte\Mvc\\Controller\\'.$this->model.'Controller')) {
+					$controllerClass = '\\Kyte\Mvc\\Controller\\'.$this->model.'Controller';
 				} else {
-					// initialize controller for model or view ("abstract" controller)
-					if (class_exists('\\Kyte\Mvc\\Controller\\'.$this->model.'Controller')) {
-						$controllerClass = '\\Kyte\Mvc\\Controller\\'.$this->model.'Controller';
-					} else {
-						$controllerClass = class_exists($this->model.'Controller') ? $this->model.'Controller' : '\\Kyte\\Mvc\\Controller\\ModelController';
-					}
-					// create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
-					$controller = new $controllerClass(defined($this->model) ? constant($this->model) : null, APP_DATE_FORMAT, $this->account, $this->session, $this->user, $this->response, $this->page_size, $this->page_total, $this->page_num, $this->total_count, $this->total_filtered);
-					if (!$controller) throw new \Exception("[ERROR] Unable to create controller for model: $controllerClass.");
+					$controllerClass = class_exists($this->model.'Controller') ? $this->model.'Controller' : '\\Kyte\\Mvc\\Controller\\ModelController';
 				}
+				// create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
+				$controller = new $controllerClass(defined($this->model) ? constant($this->model) : null, APP_DATE_FORMAT, $this->account, $this->session, $this->user, $this->response, $this->page_size, $this->page_total, $this->page_num, $this->total_count, $this->total_filtered);
+				if (!$controller) throw new \Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 
 				switch ($this->request) {
 					case 'POST':
@@ -494,6 +484,8 @@ class Api
 		// get request type
 		$request = $_SERVER['REQUEST_METHOD'];
 
+		error_log("REQUEST: $request");
+
 		// Access-Control headers are received during OPTIONS requests
 		if ($request == 'OPTIONS') {
 
@@ -565,9 +557,6 @@ class Api
 		$elements =  explode('/', $path);
 
 		if (count($elements) >= 1) {
-			// check if app id exists
-			// $this->appId = base64_decode(urldecode($elements[2]));
-			
 			$this->model = $elements[0];
 			$this->field = isset($elements[1]) ? $elements[1] : null;
 			$this->value = isset($elements[2]) ? urldecode($elements[2]) : null;
