@@ -67,11 +67,16 @@ class PageController extends ModelController
                     $credential = new \Kyte\Aws\Credentials($d['site']['region']);
                     $s3 = new \Kyte\Aws\S3($credential, $d['site']['s3BucketName']);
                     if (!empty($o->s3key)) {
+                        $iste = new \Kyte\Core\ModelObject(Site);
+                        if (!$site->retrieve('id', $o->site)) {
+                            throw new \Exception("Unable to delete page due to site information missing...");
+                        }
+
                         $s3->unlink($o->s3key);
 
                         // invalidate CF
                         $cf = new \Kyte\Aws\CloudFront($credential);
-                        $cf->createInvalidation($r['site']['cfDistributionId'], ['/*']);
+                        $cf->createInvalidation($site->cfDistributionId, ['/*']);
                     }
                 }
 
