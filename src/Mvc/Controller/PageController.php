@@ -172,7 +172,7 @@ class PageController extends ModelController
             }
             $main_nav = new \Kyte\Core\ModelObject(Navigation);
             if (!$main_nav->retrieve('id', $page['main_navigation'])) {
-                throw new \Exception("Unable to find main navigation");
+                throw new \Exception("Unable to find main navigation for id ".$page['main_navigation']);
             }
             $nav_link = $main_nav->link ? $main_nav->link : '/';
             if ($main_nav->page) {
