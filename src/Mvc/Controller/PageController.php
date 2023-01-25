@@ -67,7 +67,7 @@ class PageController extends ModelController
                     $credential = new \Kyte\Aws\Credentials($d['site']['region']);
                     $s3 = new \Kyte\Aws\S3($credential, $d['site']['s3BucketName']);
                     if (!empty($o->s3key)) {
-                        $iste = new \Kyte\Core\ModelObject(Site);
+                        $site = new \Kyte\Core\ModelObject(Site);
                         if (!$site->retrieve('id', $o->site)) {
                             throw new \Exception("Unable to delete page due to site information missing...");
                         }
