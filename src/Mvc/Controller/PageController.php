@@ -42,7 +42,6 @@ class PageController extends ModelController
                     $credential = new \Kyte\Aws\Credentials($r['site']['region']);
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
-                    error_log("generating HTML");
                     // compile html file
                     $data = $this->createHtml(array_merge($r, $d));
                     // write to file
@@ -91,6 +90,7 @@ class PageController extends ModelController
     // public function hook_process_get_response(&$r) {}
 
     private function createHtml($page) {
+        error_log("generating HTML");
         $code = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"><title>'.$page['title'].'</title>';
         
         // font aweseom
