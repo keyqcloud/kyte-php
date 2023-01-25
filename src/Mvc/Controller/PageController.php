@@ -43,7 +43,7 @@ class PageController extends ModelController
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
                     // compile html file
-                    $data = $this->createHtml(array_merge($r, $d));
+                    $data = $this->createHtml($r, $d['kyte_connect']);
                     // write to file
                     $s3->write($o->s3key, $data);
 
@@ -89,8 +89,7 @@ class PageController extends ModelController
 
     // public function hook_process_get_response(&$r) {}
 
-    private function createHtml($page) {
-        error_log("generating HTML");
+    private function createHtml($page, $kyte_connect) {
         $code = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"><title>'.$page['title'].'</title>';
         
         // font aweseom
@@ -118,7 +117,7 @@ class PageController extends ModelController
 
         $code .= '<script>';
         // add kyte connect
-        $code .= $page['kyte_connect']."\n\n";
+        $code .= $kyte_connect."\n\n";
         // custom js
         $code .= '$(document).ready(function() { ';
         if ($page['protected'] == 1) {
@@ -172,7 +171,6 @@ class PageController extends ModelController
                 $menu_items_right[$key] = '{dropdown:true,class:"me-2 text-light",label:"'.$menu_items[$key]->title.'",items:['.implode($menu_items_right_sub[$key]).']},';
             }
             $main_nav = new \Kyte\Core\ModelObject(Navigation);
-            error_log("main_navigation => ".$page['main_navigation']." id => ".$page['main_navigation']['id']);
             if (!$main_nav->retrieve('id', $page['main_navigation']['id'])) {
                 throw new \Exception("Unable to find main navigation for id ".$page['main_navigation']['id']);
             }
