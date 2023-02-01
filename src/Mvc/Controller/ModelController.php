@@ -556,7 +556,7 @@ class ModelController
             }
 
             $isLike = false;
-            if (isset($_SERVER['HTTP_X_KYTE_QUERY_LIKE'])) {
+            if (isset($_SERVER['HTTP_X_KYTE_QUERY_LIKE']) && $_SERVER['HTTP_X_KYTE_QUERY_LIKE']) {
                 $isLike = true;
             }
 
