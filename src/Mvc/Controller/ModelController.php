@@ -555,6 +555,11 @@ class ModelController
                 }
             }
 
+            $isLike = false;
+            if (isset($_SERVER['HTTP_X_KYTE_QUERY_LIKE'])) {
+                $isLike = true;
+            }
+
             $this->hook_prequery('get', $field, $value, $conditions, $all, $order);
             
             // search fields and values passed from DataTables
@@ -567,7 +572,7 @@ class ModelController
 
             // init model
             $objs = new \Kyte\Core\Model($this->model, $this->page_size, $this->page_num, $search_fields, $search_values);
-            $objs->retrieve($field, $value, false, $conditions, $all, $order);
+            $objs->retrieve($field, $value, $isLike, $conditions, $all, $order);
 
             // get total count
             $this->total_count = $objs->total;
