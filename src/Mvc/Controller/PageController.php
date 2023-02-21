@@ -29,7 +29,7 @@ class PageController extends ModelController
                 //     throw new \Exception("CRITICAL ERROR: Unable to find application.");
                 // }
 
-                $r['api_endpoint'] = APP_URL;
+                $r['api_endpoint'] = API_URL;
                 $r['application_identifier'] = $r['site']['application']['identifier'];
                 break;
 
