@@ -629,6 +629,9 @@ class Api
 				throw new \Kyte\Exception\SessionException("Invalid user session.");
 			}
 
+			$this->response['name'] = $this->user->name;
+			$this->response['email'] = $this->user->email;
+
 			// get role
 			$role = new \Kyte\Core\ModelObject(Role);
 			if (!$role->retrieve('id', $this->user->role)) {
