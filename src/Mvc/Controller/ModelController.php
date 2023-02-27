@@ -549,7 +549,11 @@ class ModelController
                 $decoded_string = $json_string = preg_replace('~^"?(.*?)"?$~', '$1', stripslashes(base64_decode($_SERVER['HTTP_X_KYTE_QUERY_CONDITIONS'])));
                 $supplied_conditions = json_decode($decoded_string, true);
                 if (is_array($supplied_conditions)) {
-                    $conditions = array_merge($supplied_conditions, $conditions);
+                    if ($conditions == null) {
+                        $conditions = $supplied_conditions;
+                    } else {
+                        $conditions = array_merge($supplied_conditions, $conditions);
+                    }
                 } else {
                     error_log("Supplied conditions were not an array. JSON may be corrupt. ".$decoded_string);
                 }
