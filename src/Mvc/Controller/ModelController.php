@@ -552,7 +552,7 @@ class ModelController
                     foreach ($supplied_conditions as $sc) {
                         $new_cond = [];
                         foreach(array_keys($sc) as $key) {
-                            $new_cond[$key] = rtrime($sc[$key]);
+                            $new_cond[$key] = rtrim($sc[$key]);
                         }
                         if ($conditions == null) {
                             $conditions = [];
