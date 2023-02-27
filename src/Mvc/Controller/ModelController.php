@@ -553,6 +553,7 @@ class ModelController
                         $new_cond = [];
                         foreach(array_keys($sc) as $key) {
                             $new_cond[$key] = rtrim($sc[$key]);
+                            error_log($key.' => '.$new_cond[$key]);
                         }
                         if ($conditions == null) {
                             $conditions = [];
@@ -560,7 +561,6 @@ class ModelController
                         } else {
                             $conditions[] = $new_cond;
                         }
-                        error_log(print_r($new_cond, true));
                     }
                 } else {
                     error_log("Supplied conditions were not an array. JSON may be corrupt. ".$decoded_string);
