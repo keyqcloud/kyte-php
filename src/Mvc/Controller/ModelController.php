@@ -548,6 +548,9 @@ class ModelController
             if (isset($_SERVER['HTTP_X_KYTE_QUERY_CONDITIONS'])) {
                 $decoded_string = $json_string = preg_replace('~^"?(.*?)"?$~', '$1', stripslashes(base64_decode($_SERVER['HTTP_X_KYTE_QUERY_CONDITIONS'])));
                 $supplied_conditions = json_decode($decoded_string, true);
+                foreach (array_keys($supplied_conditions) as $key) {
+                    $supplied_conditions[$key] = rtrim($supplied_conditions[$key]);
+                }
                 if (is_array($supplied_conditions)) {
                     error_log(print_r($supplied_conditions, true));
                     if ($conditions == null) {
