@@ -2,7 +2,7 @@
 
 namespace Kyte\Mvc\Controller;
 
-class NavigationController extends ModelController
+class NavigationItemController extends ModelController
 {
     // public function hook_init() {}
 
