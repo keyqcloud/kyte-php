@@ -43,7 +43,7 @@ class PageController extends ModelController
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
                     // compile html file
-                    $data = $this->createHtml($r, $d['kyte_connect']);
+                    $data = self::createHtml($r, $d['kyte_connect']);
                     // write to file
                     $s3->write($o->s3key, $data);
 
@@ -89,7 +89,7 @@ class PageController extends ModelController
 
     // public function hook_process_get_response(&$r) {}
 
-    private function createHtml($page, $kyte_connect) {
+    public static function createHtml($page, $kyte_connect) {
         $code = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"><title>'.$page['title'].'</title>';
         
         // font aweseom
