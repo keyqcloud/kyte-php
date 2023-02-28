@@ -15,10 +15,14 @@ class NavigationController extends ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'update':
-            case 'delete':                
+                $nav = $r;
+            case 'delete':
+                if ($method == 'delete') {
+                    $nav = $this->getObject($o);
+                }
                 // update pages with navigation
-                $credential = new \Kyte\Aws\Credentials($r['site']['region']);
-                $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
+                $credential = new \Kyte\Aws\Credentials($nav['site']['region']);
+                $s3 = new \Kyte\Aws\S3($credential, $nav['site']['s3BucketName']);
 
                 $pages = new \Kyte\Core\Model(Page);
                 $pages->retrieve("main_navigation", $o->id);
@@ -39,7 +43,7 @@ class NavigationController extends ModelController
                 // invalidate CF
                 $cf = new \Kyte\Aws\CloudFront($credential);
                 $invalidationPaths = ['/*'];
-                $cf->createInvalidation($r['site']['cfDistributionId'], $invalidationPaths);
+                $cf->createInvalidation($nav['site']['cfDistributionId'], $invalidationPaths);
                 break;
             
             default:
