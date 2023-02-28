@@ -14,6 +14,7 @@ class NavigationItemController extends ModelController
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
+            case 'new':
             case 'update':
             case 'delete':                
                 // update pages with navigation
