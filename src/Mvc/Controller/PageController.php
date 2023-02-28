@@ -177,10 +177,9 @@ class PageController extends ModelController
             $nav_link = $main_nav->link ? $main_nav->link : '/';
             if ($main_nav->page) {
                 $linked_page = new \Kyte\Core\ModelObject(Page);
-                if (!$linked_page->retrieve('id', $main_nav->page)) {
-                    throw new \Exception("Unable to find page");
+                if ($linked_page->retrieve('id', $main_nav->page)) {
+                    $nav_link = '/'.$linked_page->s3key;
                 }
-                $nav_link = '/'.$linked_page->s3key;
             }
             
             $code .= 'let appnavdef = [['.implode($menu_items_center).'],['.implode($menu_items_right).']];';
