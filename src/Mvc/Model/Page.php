@@ -79,7 +79,7 @@ $Page = [
 			'unsigned'	=> true,
 			'date'		=> false,
 			'fk'		=> [
-				'model'	=> 'Navigation',
+				'model'	=> 'SideNav',
 				'field'	=> 'id',
 			],
 		],
