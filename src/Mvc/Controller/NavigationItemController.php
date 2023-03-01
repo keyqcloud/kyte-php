@@ -28,7 +28,7 @@ class NavigationItemController extends ModelController
                 $s3 = new \Kyte\Aws\S3($credential, $navitem['site']['s3BucketName']);
 
                 $pages = new \Kyte\Core\Model(Page);
-                $pages->retrieve("main_navigation", $navitem['navigation']);
+                $pages->retrieve("main_navigation", $navitem['navigation']['id']);
                 // todo...somehow update to use obfuscated...
                 $apiKey = new \Kyte\Core\ModelObject(APIKey);
                 if (!$apiKey->retrieve('kyte_account', $this->account->id)) {
