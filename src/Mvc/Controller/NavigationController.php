@@ -19,13 +19,15 @@ class NavigationController extends ModelController
             case 'delete':
                 if ($method == 'delete') {
                     $nav = $this->getObject($o);
+                    $r = false;
+                    $o->delete(null, null, $this->user->id);
                 }
                 // update pages with navigation
                 $credential = new \Kyte\Aws\Credentials($nav['site']['region']);
                 $s3 = new \Kyte\Aws\S3($credential, $nav['site']['s3BucketName']);
 
                 $pages = new \Kyte\Core\Model(Page);
-                $pages->retrieve("main_navigation", $o->id);
+                $pages->retrieve("main_navigation", $nav['id']);
                 // todo...somehow update to use obfuscated...
                 $apiKey = new \Kyte\Core\ModelObject(APIKey);
                 if (!$apiKey->retrieve('kyte_account', $this->account->id)) {

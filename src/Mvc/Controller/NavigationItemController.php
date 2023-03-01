@@ -20,13 +20,15 @@ class NavigationItemController extends ModelController
             case 'delete':
                 if ($method == 'delete') {
                     $navitem = $this->getObject($o);
+                    $r = false;
+                    $o->delete(null, null, $this->user->id);
                 }
                 // update pages with navigation
                 $credential = new \Kyte\Aws\Credentials($navitem['site']['region']);
                 $s3 = new \Kyte\Aws\S3($credential, $navitem['site']['s3BucketName']);
 
                 $pages = new \Kyte\Core\Model(Page);
-                $pages->retrieve("main_navigation", $o->navigation);
+                $pages->retrieve("main_navigation", $navitem['navigation']);
                 // todo...somehow update to use obfuscated...
                 $apiKey = new \Kyte\Core\ModelObject(APIKey);
                 if (!$apiKey->retrieve('kyte_account', $this->account->id)) {
@@ -39,14 +41,12 @@ class NavigationItemController extends ModelController
                     $data = \Kyte\Mvc\Controller\PageController::createHtml($p, $kyte_connect);
                     // write to file
                     $s3->write($page->s3key, $data);
-                    error_log("updated page...");
                 }
 
                 // invalidate CF
                 $cf = new \Kyte\Aws\CloudFront($credential);
                 $invalidationPaths = ['/*'];
                 $cf->createInvalidation($navitem['site']['cfDistributionId'], $invalidationPaths);
-                error_log("invalidating...".$navitem['site']['cfDistributionId']);
                 break;
             
             default:
