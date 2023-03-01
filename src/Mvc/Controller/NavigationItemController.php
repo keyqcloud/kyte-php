@@ -39,12 +39,14 @@ class NavigationItemController extends ModelController
                     $data = \Kyte\Mvc\Controller\PageController::createHtml($p, $kyte_connect);
                     // write to file
                     $s3->write($page->s3key, $data);
+                    error_log("updated page...");
                 }
 
                 // invalidate CF
                 $cf = new \Kyte\Aws\CloudFront($credential);
                 $invalidationPaths = ['/*'];
                 $cf->createInvalidation($navitem['site']['cfDistributionId'], $invalidationPaths);
+                error_log("invalidating...".$navitem['site']['cfDistributionId']);
                 break;
             
             default:
