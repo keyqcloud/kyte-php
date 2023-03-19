@@ -651,10 +651,12 @@ class Api
 
 	private function verifySignature() {
 		$hash1 = hash_hmac('SHA256', $this->response['token'], $this->key->secret_key, true);
+		$hash1str = hash_hmac('SHA256', $this->response['token'], $this->key->secret_key, false);
 
 		if (VERBOSE_LOG > 0) error_log("hash1 ".hash_hmac('SHA256', $this->response['token'], $this->key->secret_key));
 		
 		$hash2 = hash_hmac('SHA256', $this->key->identifier, $hash1, true);
+		$hash2str = hash_hmac('SHA256', $this->key->identifier, $hash1, false);
 		
 		if (VERBOSE_LOG > 0) error_log("hash2 ".hash_hmac('SHA256', $this->key->identifier, $hash1));
 		
@@ -664,7 +666,7 @@ class Api
 		if (VERBOSE_LOG > 0) error_log("epoch ".$this->utcDate->format('U'));
 
 		if ($calculated_signature != $this->signature)
-			throw new \Kyte\Exception\SessionException("Calculated signature does not match provided signature.\nCalculated: $hash1 $hash2 $calculated_signature\nProvided: ".$this->signature);
+			throw new \Kyte\Exception\SessionException("Calculated signature does not match provided signature.\nCalculated: $hash1str $hash2str $calculated_signature\nProvided: ".$this->signature);
 	}
 
 	private function generateSignature() {
