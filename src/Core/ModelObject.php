@@ -361,16 +361,24 @@ class ModelObject
 					if ($this->kyte_model['struct'][$key]['date']) {
 						$retvals[$key] = ($value > 0 ? date($dateformat, $value) : '');
 					} else {
-						$retvals[$key] = $value;
+						$retvals[$key] = $this->strictTypingReturn($value);
 					}
 				} else {
-					$retvals[$key] = $value;
+					$retvals[$key] = "$value";
 				}
 			}
 
 			return $retvals;
 		} else {
 			return $vars;
+		}
+	}
+
+	protected function strictTypingReturn($type, $value) {
+		if (defined('STRICT_TYPING')) {
+			if ($type == 'i') {
+				return intval($value);
+			} else return "$value";
 		}
 	}
 
