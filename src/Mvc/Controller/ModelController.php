@@ -157,7 +157,7 @@ class ModelController
                         if ($obj->kyte_model['struct'][$key]['type'] == 'i') {
                             $response[$key] = intval($value);
                         } else {
-                            $response[$key] = "$value";
+                            $response[$key] = strval($value);
                         }
                     }
 
