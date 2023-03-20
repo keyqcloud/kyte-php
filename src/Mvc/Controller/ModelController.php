@@ -153,7 +153,7 @@ class ModelController
             // iterate through each param and apply filter
             foreach($response as $key => $value) {
                 if (isset($obj->kyte_model['struct'][$key])) {
-                    if (defined('STRICT_TYPING')) {
+                    if (STRICT_TYPING) {
                         if ($obj->kyte_model['struct'][$key]['type'] == 'i') {
                             $response[$key] = intval($value);
                         } else {
