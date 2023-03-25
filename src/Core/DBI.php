@@ -929,14 +929,18 @@ class DBI {
   			return false;
 		}
 
-		$data = array();
-		while ($row = $result->fetch_assoc()) {
-			$data[] = $row;
-		}
+		if (is_bool($result)) {
+			return $result;
+		} else {
+			$data = array();
+			while ($row = $result->fetch_assoc()) {
+				$data[] = $row;
+			}
 
-		$result->free();
-		
-		return $data;
+			$result->free();
+			
+			return $data;
+		}
 	}
 
 	/*

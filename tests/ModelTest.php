@@ -265,7 +265,7 @@ class ModelTest extends TestCase
 
         // test custom select
         $model = new \Kyte\Core\Model(TestTable);
-        $data = $model->customSelect('* FROM `TestTable`;');
+        $data = $model->customQuery('* FROM `TestTable`;');
         $this->assertIsArray($data);
         $this->assertCount(3, $data);
 

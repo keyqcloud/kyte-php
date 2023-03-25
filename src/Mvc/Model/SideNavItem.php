@@ -1,7 +1,7 @@
 <?php
 
-$Page = [
-	'name' => 'Page',
+$SideNavItem = [
+	'name' => 'SideNavItem',
 	'struct' => [
 		'title'		=> [
 			'type'		=> 's',
@@ -10,69 +10,33 @@ $Page = [
 			'date'		=> false,
 		],
 
-		's3key'		=> [
+		'faicon'		=> [
 			'type'		=> 's',
-			'required'	=> true,
+			'required'	=> false,
 			'size'		=> 255,
 			'date'		=> false,
 		],
 
-		'description'		=> [
-			'type'		=> 't',
+		'link'		=> [
+			'type'		=> 's',
 			'required'	=> false,
+			'size'		=> 255,
 			'date'		=> false,
 		],
 
-		// json definition of page layout defined by wizard or block editor
-		'layout'	=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
-		'html'		=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
-		'javascript'		=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
-		'stylesheet'	=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
-		'footer'	=> [
+		'page'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
 			'size'		=> 11,
 			'unsigned'	=> true,
 			'date'		=> false,
 			'fk'		=> [
-				'model'	=> 'SectionTemplate',
+				'model'	=> 'Page',
 				'field'	=> 'id',
 			],
 		],
 
-		'main_navigation'	=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 11,
-			'unsigned'	=> true,
-			'date'		=> false,
-			'fk'		=> [
-				'model'	=> 'Navigation',
-				'field'	=> 'id',
-			],
-		],
-
-		'side_navigation'	=> [
+		'sidenav'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
 			'size'		=> 11,
@@ -96,23 +60,11 @@ $Page = [
 			],
 		],
 
-		// 0 - unpublished, 1 - published, 2 - published but stale
-		'state'	=> [
+		'itemOrder' => [
 			'type'		=> 'i',
 			'required'	=> false,
-			'size'		=> 1,
-			'unsigned'	=> true,
-			'default'	=> 0,
-			'date'		=> false,
-		],
-
-		// 0 - public, 1 - private
-		'protected'	=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 1,
-			'unsigned'	=> true,
-			'default'	=> 0,
+			'size'		=> 11,
+			'unsigned' 	=> true,
 			'date'		=> false,
 		],
 

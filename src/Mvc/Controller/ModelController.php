@@ -153,6 +153,14 @@ class ModelController
             // iterate through each param and apply filter
             foreach($response as $key => $value) {
                 if (isset($obj->kyte_model['struct'][$key])) {
+                    if (STRICT_TYPING) {
+                        if ($obj->kyte_model['struct'][$key]['type'] == 'i') {
+                            $response[$key] = intval($value);
+                        } else {
+                            $response[$key] = strval($value);
+                        }
+                    }
+
                     // if protected attribute then return empty string
                     if (isset($obj->kyte_model['struct'][$key]['protected'])) {
                         if ($obj->kyte_model['struct'][$key]['protected']) {
@@ -549,7 +557,19 @@ class ModelController
                 $decoded_string = $json_string = preg_replace('~^"?(.*?)"?$~', '$1', stripslashes(base64_decode($_SERVER['HTTP_X_KYTE_QUERY_CONDITIONS'])));
                 $supplied_conditions = json_decode($decoded_string, true);
                 if (is_array($supplied_conditions)) {
-                    $conditions = array_merge($supplied_conditions, $conditions);
+                    foreach ($supplied_conditions as $sc) {
+                        $new_cond = [];
+                        foreach(array_keys($sc) as $key) {
+                            $new_cond[$key] = rtrim($sc[$key]);
+                            error_log($key.' => '.$new_cond[$key]);
+                        }
+                        if ($conditions == null) {
+                            $conditions = [];
+                            $conditions[] = $new_cond;
+                        } else {
+                            $conditions[] = $new_cond;
+                        }
+                    }
                 } else {
                     error_log("Supplied conditions were not an array. JSON may be corrupt. ".$decoded_string);
                 }

@@ -569,7 +569,7 @@ class Api
 			}
 
 			// return account information in response - this is required for API handoff between master account and subaccounts
-			$this->response['kyte_api'] = APP_URL;
+			$this->response['kyte_api'] = API_URL;
 			$this->response['kyte_pub'] = $sub_account_api->public_key;
 			$this->response['kyte_num'] = $this->account->number;
 			$this->response['kyte_iden'] = $sub_account_api->identifier;
@@ -629,6 +629,9 @@ class Api
 				throw new \Kyte\Exception\SessionException("Invalid user session.");
 			}
 
+			$this->response['name'] = $this->user->name;
+			$this->response['email'] = $this->user->email;
+
 			// get role
 			$role = new \Kyte\Core\ModelObject(Role);
 			if (!$role->retrieve('id', $this->user->role)) {
@@ -648,10 +651,12 @@ class Api
 
 	private function verifySignature() {
 		$hash1 = hash_hmac('SHA256', $this->response['token'], $this->key->secret_key, true);
+		$hash1str = hash_hmac('SHA256', $this->response['token'], $this->key->secret_key, false);
 
 		if (VERBOSE_LOG > 0) error_log("hash1 ".hash_hmac('SHA256', $this->response['token'], $this->key->secret_key));
 		
 		$hash2 = hash_hmac('SHA256', $this->key->identifier, $hash1, true);
+		$hash2str = hash_hmac('SHA256', $this->key->identifier, $hash1, false);
 		
 		if (VERBOSE_LOG > 0) error_log("hash2 ".hash_hmac('SHA256', $this->key->identifier, $hash1));
 		
@@ -661,7 +666,7 @@ class Api
 		if (VERBOSE_LOG > 0) error_log("epoch ".$this->utcDate->format('U'));
 
 		if ($calculated_signature != $this->signature)
-			throw new \Kyte\Exception\SessionException("Calculated signature does not match provided signature.\nCalculated: $hash1 $hash2 $calculated_signature\nProvided: ".$this->signature);
+			throw new \Kyte\Exception\SessionException("Calculated signature does not match provided signature.\nCalculated: $hash1str $hash2str $calculated_signature\nProvided: ".$this->signature);
 	}
 
 	private function generateSignature() {

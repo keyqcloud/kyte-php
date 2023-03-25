@@ -29,7 +29,7 @@ class PageController extends ModelController
                 //     throw new \Exception("CRITICAL ERROR: Unable to find application.");
                 // }
 
-                $r['api_endpoint'] = APP_URL;
+                $r['api_endpoint'] = API_URL;
                 $r['application_identifier'] = $r['site']['application']['identifier'];
                 break;
 
@@ -43,7 +43,7 @@ class PageController extends ModelController
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
                     // compile html file
-                    $data = $this->createHtml($r, $d['kyte_connect']);
+                    $data = self::createHtml($r, $d['kyte_connect']);
                     // write to file
                     $s3->write($o->s3key, $data);
 
@@ -89,7 +89,7 @@ class PageController extends ModelController
 
     // public function hook_process_get_response(&$r) {}
 
-    private function createHtml($page, $kyte_connect) {
+    public static function createHtml($page, $kyte_connect) {
         $code = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"><title>'.$page['title'].'</title>';
         
         // font aweseom
@@ -177,10 +177,9 @@ class PageController extends ModelController
             $nav_link = $main_nav->link ? $main_nav->link : '/';
             if ($main_nav->page) {
                 $linked_page = new \Kyte\Core\ModelObject(Page);
-                if (!$linked_page->retrieve('id', $main_nav->page)) {
-                    throw new \Exception("Unable to find page");
+                if ($linked_page->retrieve('id', $main_nav->page)) {
+                    $nav_link = '/'.$linked_page->s3key;
                 }
-                $nav_link = '/'.$linked_page->s3key;
             }
             
             $code .= 'let appnavdef = [['.implode($menu_items_center).'],['.implode($menu_items_right).']];';
@@ -190,8 +189,8 @@ class PageController extends ModelController
         // side navigation
         if ($page['side_navigation']) {
             // retrieve menu items and create array
-            $items = new \Kyte\Core\Model(NavigationItem);
-            $items->retrieve('navigation', $page['side_navigation']['id'], false, null, false, [['field' => 'id', 'direction' => 'asc']]);
+            $items = new \Kyte\Core\Model(SideNavItem);
+            $items->retrieve('sidenav', $page['side_navigation']['id'], false, null, false, [['field' => 'id', 'direction' => 'asc']]);
             $side_menu_items = [];
             $default_sidenav = '';
             foreach($items->objects as $m) {

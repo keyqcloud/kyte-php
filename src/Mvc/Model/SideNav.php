@@ -1,16 +1,9 @@
 <?php
 
-$Page = [
-	'name' => 'Page',
+$SideNav = [
+	'name' => 'SideNav',
 	'struct' => [
-		'title'		=> [
-			'type'		=> 's',
-			'required'	=> true,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		's3key'		=> [
+		'name'		=> [
 			'type'		=> 's',
 			'required'	=> true,
 			'size'		=> 255,
@@ -23,67 +16,6 @@ $Page = [
 			'date'		=> false,
 		],
 
-		// json definition of page layout defined by wizard or block editor
-		'layout'	=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
-		'html'		=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
-		'javascript'		=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
-		'stylesheet'	=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
-		'footer'	=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 11,
-			'unsigned'	=> true,
-			'date'		=> false,
-			'fk'		=> [
-				'model'	=> 'SectionTemplate',
-				'field'	=> 'id',
-			],
-		],
-
-		'main_navigation'	=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 11,
-			'unsigned'	=> true,
-			'date'		=> false,
-			'fk'		=> [
-				'model'	=> 'Navigation',
-				'field'	=> 'id',
-			],
-		],
-
-		'side_navigation'	=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 11,
-			'unsigned'	=> true,
-			'date'		=> false,
-			'fk'		=> [
-				'model'	=> 'SideNav',
-				'field'	=> 'id',
-			],
-		],
-
 		'site'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
@@ -94,16 +26,6 @@ $Page = [
 				'model'	=> 'Site',
 				'field'	=> 'id',
 			],
-		],
-
-		// 0 - unpublished, 1 - published, 2 - published but stale
-		'state'	=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 1,
-			'unsigned'	=> true,
-			'default'	=> 0,
-			'date'		=> false,
 		],
 
 		// 0 - public, 1 - private

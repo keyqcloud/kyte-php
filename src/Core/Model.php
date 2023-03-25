@@ -298,7 +298,7 @@ class Model
 		}
 	}
 
-	public function customSelect($sql)
+	public function customQuery($sql)
 	{
 		try {
 			$data = \Kyte\Core\DBI::query($sql);
