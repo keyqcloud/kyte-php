@@ -74,7 +74,7 @@ class Model
 				if (!empty($conditions)) {
 					// iterate through each condition
 					foreach($conditions as $condition) {
-						$escaped_value = addcslashes(\Kyte\Core\DBI::escape_string($condition['value']), '%_');
+						$escaped_value = \Kyte\Core\DBI::escape_string($condition['value']);
 						// check if an evaluation operator is set
 						if (isset($condition['operator'])) {
 							if ($sql != '') {
