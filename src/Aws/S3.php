@@ -79,7 +79,7 @@ class S3 extends Client
         return true;
     }
 
-    public function setPublicAccessBlock($blockPublicAcls = false, $blockPublicPolicy = false, $ignorePublicAcls = false, $restrictPublicBuckets = false) {
+    public function setPublicAccessBlock($blockPublicAcls = true, $blockPublicPolicy = true, $ignorePublicAcls = true, $restrictPublicBuckets = true) {
         try {
             $this->client->putPublicAccessBlock(
             [
