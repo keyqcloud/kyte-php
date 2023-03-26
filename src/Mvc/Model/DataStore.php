@@ -24,6 +24,23 @@ $DataStore = [
 			'date'		=> false,
 		],
 
+		'acl'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+			'default'	=> 'private',
+		],
+
+		'blockPublicAccess'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'date'		=> false,
+			'default'	=> 0,
+		],
+
 		'application'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
