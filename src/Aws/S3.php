@@ -79,6 +79,26 @@ class S3 extends Client
         return true;
     }
 
+    public function setPublicAccessBlock($blockPublicAcls = false, $blockPublicPolicy = false, $ignorePublicAcls = false, $restrictPublicBuckets = false) {
+        try {
+            $this->client->putPublicAccessBlock(
+            [
+                'Bucket' => $this->bucket,
+                'PublicAccessBlockConfiguration' => [
+                    'BlockPublicAcls' => $blockPublicAcls,
+                    'BlockPublicPolicy' => $blockPublicPolicy,
+                    'IgnorePublicAcls' => $ignorePublicAcls,
+                    'RestrictPublicBuckets' => $restrictPublicBuckets,
+                ],
+            ]);
+        } catch (\AwsException $e) {
+            throw new \Exception("Unable to delete website");
+            return false;
+        }
+        
+        return true;
+    }
+
     public function enablePublicAccess() {
         try {
             $this->enablePolicy('{"Version": "2012-10-17", "Statement": [{ "Sid": "PublicReadForGetBucketObject","Effect": "Allow","Principal": "*", "Action": "s3:GetObject", "Resource": "arn:aws:s3:::'.$this->bucket.'/*" } ]}');
