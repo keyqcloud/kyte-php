@@ -18,7 +18,7 @@ class DataStoreController extends ModelController
                 $credentials = new \Kyte\Aws\Credentials($o->region);
 
                 // create s3 bucket for site data
-                $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_.-]/', '-', $o->name));
+                $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_.-]/', '-', $o->name).'-'.uniqid());
                 $s3 = new \Kyte\Aws\S3($credentials, $bucketName, 'private');
                 try {
                     $s3->createBucket();
@@ -26,6 +26,9 @@ class DataStoreController extends ModelController
                     $o->delete();
                     throw $e;
                 }
+                $o->save([
+                    'bucketname' => $bucketName,
+                ]);
 
                 // get CORS data and create entries
                 $has_cors = false;
@@ -63,6 +66,8 @@ class DataStoreController extends ModelController
                 if ($has_cors) {
                     $s3->enableCors($cors);
                 }
+
+                $r['bucketname'] = $bucketName;
 
                 break;
             case 'delete':

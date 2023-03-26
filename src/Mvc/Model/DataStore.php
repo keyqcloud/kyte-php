@@ -10,6 +10,13 @@ $DataStore = [
 			'date'		=> false,
 		],
 
+		'bucketname'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
 		'region'		=> [
 			'type'		=> 's',
 			'required'	=> true,
