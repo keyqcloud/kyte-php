@@ -34,32 +34,26 @@ class DataStoreController extends ModelController
                     for ($i = 0; $i < count($d['cors']); $i++) {
                         if (isset($d['cors'][$i]['AllowedHeaders'], $d['cors'][$i]['AllowedMethods'], $d['cors'][$i]['AllowedOrigins'])) {
                             if (is_array($d['cors'][$i]['AllowedHeaders']) && is_array($d['cors'][$i]['AllowedMethods']) && is_array($d['cors'][$i]['AllowedOrigins'])) {
-                                $h = count($d['cors'][$i]['AllowedHeaders']);
-                                $m = count($d['cors'][$i]['AllowedMethods']);
-                                $o = count($d['cors'][$i]['AllowedOrigins']);
-        
-                                if ($h == $m && $m == $o) {
-                                    $cors[] = [
-                                        'AllowedHeaders'    =>  $d['cors'][$i]['AllowedHeaders'],
-                                        'AllowedMethods'    =>  $d['cors'][$i]['AllowedMethods'],
-                                        'AllowedOrigins'    =>  $d['cors'][$i]['AllowedOrigins'],
-                                    ];
-                                    // store cors in db
-                                    $dsc = new \Kyte\Core\ModelObject(DataStoreCORS);
-                                    if (!$dsc->create([
-                                        'allowedHeaders' => implode(',',$d['cors'][$i]['AllowedHeaders']),
-                                        'allowedMethods' => implode(',',$d['cors'][$i]['AllowedMethods']),
-                                        'allowedOrigins' => implode(',',$d['cors'][$i]['AllowedOrigins']),
-                                        'datastore' => $o->id,
-                                        'created_by' => $this->account->id,
-                                        'kyte_account' => $this->account->id,
-                                    ])) {
-                                        throw new \Exception("CRITICAL ERROR: Unable to create CORS policy. Contact support.");
-                                    }
-
-                                    // toggle flag
-                                    $has_cors = true;
+                                $cors[] = [
+                                    'AllowedHeaders'    =>  $d['cors'][$i]['AllowedHeaders'],
+                                    'AllowedMethods'    =>  $d['cors'][$i]['AllowedMethods'],
+                                    'AllowedOrigins'    =>  $d['cors'][$i]['AllowedOrigins'],
+                                ];
+                                // store cors in db
+                                $dsc = new \Kyte\Core\ModelObject(DataStoreCORS);
+                                if (!$dsc->create([
+                                    'allowedHeaders' => implode(',',$d['cors'][$i]['AllowedHeaders']),
+                                    'allowedMethods' => implode(',',$d['cors'][$i]['AllowedMethods']),
+                                    'allowedOrigins' => implode(',',$d['cors'][$i]['AllowedOrigins']),
+                                    'datastore' => $o->id,
+                                    'created_by' => $this->account->id,
+                                    'kyte_account' => $this->account->id,
+                                ])) {
+                                    throw new \Exception("CRITICAL ERROR: Unable to create CORS policy. Contact support.");
                                 }
+
+                                // toggle flag
+                                $has_cors = true;
                             }
                         }
                     }
