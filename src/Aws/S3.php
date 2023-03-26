@@ -33,7 +33,7 @@ class S3 extends Client
             ]);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (\AwsException $e) {
 			throw $e;
 			return false;
 		}
@@ -58,7 +58,7 @@ class S3 extends Client
                     ],
                 ],
             ]);
-        } catch(\Exception $e) {
+        } catch(\AwsException $e) {
             throw new \Exception("Unable to create website");
             return false;
         }
@@ -71,7 +71,7 @@ class S3 extends Client
             $result = $this->client->deleteBucketWebsite([
                 'Bucket' => $this->bucket, // REQUIRED
             ]);
-        } catch (\Exception $e) {
+        } catch (\AwsException $e) {
             throw new \Exception("Unable to delete website");
             return false;
         }
@@ -82,7 +82,7 @@ class S3 extends Client
     public function enablePublicAccess() {
         try {
             $this->enablePolicy('{"Version": "2012-10-17", "Statement": [{ "Sid": "PublicReadForGetBucketObject","Effect": "Allow","Principal": "*", "Action": "s3:GetObject", "Resource": "arn:aws:s3:::'.$this->bucket.'/*" } ]}');
-        } catch (\Exception $e) {
+        } catch (\AwsException $e) {
             throw new \Exception("Unable to apply public access policy");
             return false;
         }
@@ -101,7 +101,7 @@ class S3 extends Client
             $result = $this->client->deleteBucketPolicy([
                 'Bucket' => $this->bucket, // REQUIRED
             ]);
-        } catch(\Exception $e) {
+        } catch(\AwsException $e) {
             throw new \Exception("Unable to delete bucket policy");
             return false;
         }
@@ -135,7 +135,7 @@ class S3 extends Client
                     'Status' => 'Enabled',
                 ],
             ]);
-        } catch(\Exception $e) {
+        } catch(\AwsException $e) {
             throw new \Exception("Unable to enable versioning");
             return false;
         }
@@ -152,7 +152,7 @@ class S3 extends Client
                     'Status' => 'Suspended',
                 ],
             ]);
-        } catch(\Exception $e) {
+        } catch(\AwsException $e) {
             throw new \Exception("Unable to suspend versioning");
             return false;
         }
@@ -170,7 +170,7 @@ class S3 extends Client
             $this->bucket = null;
 
             return true;
-        } catch (\Exception $e) {
+        } catch (\AwsException $e) {
 			throw $e;
 			return false;
 		}
@@ -350,7 +350,7 @@ class S3 extends Client
                 'Body'		=> fopen($filepath, 'rb'),
                 'ACL'		=> $this->acl
             ]);
-        } catch(\Exception $e) {
+        } catch(\AwsException $e) {
             throw new \Exception("Unable to upload object");
             return false;
         }
@@ -376,7 +376,7 @@ class S3 extends Client
             }
 
             $cmd = $this->client->deleteObject($params);
-        } catch(\Exception $e) {
+        } catch(\AwsException $e) {
             throw new \Exception("Unable to delete object");
             return false;
         }
