@@ -19,7 +19,7 @@ class DataStoreController extends ModelController
 
                 // create s3 bucket for site data
                 $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_.-]/', '-', $o->name).'-'.uniqid());
-                $s3 = new \Kyte\Aws\S3($credentials, $bucketName, 'private');
+                $s3 = new \Kyte\Aws\S3($credentials, $bucketName, $o->acl);
                 try {
                     $s3->createBucket();
                 } catch(\Exception $e) {
@@ -29,6 +29,12 @@ class DataStoreController extends ModelController
                 $o->save([
                     'bucketname' => $bucketName,
                 ]);
+
+                if ($o->blockPublicAccess == 0) {
+                    $s3->setPublicAccessBlock(false, false, false, false);
+                } else {
+                    $s3->setPublicAccessBlock(); // defaults to block public access
+                }
 
                 // get CORS data and create entries
                 $has_cors = false;
