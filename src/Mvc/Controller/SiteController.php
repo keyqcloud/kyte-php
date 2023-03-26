@@ -16,8 +16,8 @@ class SiteController extends ModelController
             case 'new':
                 $app = new \Kyte\Core\ModelObject(Application);
                 if (!$app->retrieve('id', $d['application'])) {
-                    throw new \Exception("CRITICAL ERROR: Unable to find application.");
                     $o->delete();
+                    throw new \Exception("CRITICAL ERROR: Unable to find application.");
                 }
 
                 // get AWS credentials
@@ -34,8 +34,8 @@ class SiteController extends ModelController
                 try {
                     $s3->createBucket();
                 } catch(\Exception $e) {
-                    throw $e;
                     $o->delete();
+                    throw $e;
                 }
                 
                 $s3->createWebsite();
@@ -50,8 +50,8 @@ class SiteController extends ModelController
                 try {
                     $s3->createBucket();
                 } catch(\Exception $e) {
-                    throw $e;
                     $o->delete();
+                    throw $e;
                 }
                 
                 $s3->enablePublicAccess();
