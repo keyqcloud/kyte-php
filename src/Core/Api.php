@@ -188,7 +188,7 @@ class Api
 	}
 
 	public static function dbswitch($useApp = false) {
-		\Kyte\Core\DBI::$useAppDB = $userApp;
+		\Kyte\Core\DBI::$useAppDB = $useApp;
 	}
 
 	private function bootstrap() {
