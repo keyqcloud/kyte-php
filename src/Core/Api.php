@@ -590,7 +590,7 @@ class Api
 				if (!$app->retrieve('identifier', $this->appId)) {
 					throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch for app ID {$this->appId}.");
 				}
-				dbappconnect($app->db_name, $app->db_username, $app->db_password);
+				self::dbappconnect($app->db_name, $app->db_username, $app->db_password);
 			}
 
 			return true;
