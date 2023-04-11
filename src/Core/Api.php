@@ -183,7 +183,7 @@ class Api
 		\Kyte\Core\DBI::setDbUserApp($username);
 		\Kyte\Core\DBI::setDbPasswordApp($password);
 		\Kyte\Core\DBI::setDbHostApp($host);
-		\Kyte\Core\DBI::setCharsetApp($charset);
+		\Kyte\Core\DBI::setCharset($charset);
 		// \Kyte\Core\DBI::connectApp();
 	}
 
