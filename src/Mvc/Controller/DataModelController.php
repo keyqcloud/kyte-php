@@ -131,14 +131,15 @@ class DataModelController extends ModelController
                 if (!$app->retrieve('id', $r['application'])) {
                     throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
                 }
-                \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+                \Kyte\Core\Api::dbappconnect($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+                \Kyte\Core\Api::dbswitch(true);
                 // create new table with basic kyte info
                 if (!\Kyte\Core\DBI::createTable($model_definition)) {
                     throw new \Exception("Failed to create table...");
                 }
 
                 // return to kyte db
-                \Kyte\Core\Api::dbconnect();
+                \Kyte\Core\Api::dbswitch();
                 break;
 
             case 'update':
@@ -165,7 +166,8 @@ class DataModelController extends ModelController
                     if (!$app->retrieve('id', $o->application)) {
                         throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
                     }
-                    \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+                    \Kyte\Core\Api::dbappconnect($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+                    \Kyte\Core\Api::dbswitch(true);
                     // alter table <old_table_name> rename to <new_table_name>
                     if (!\Kyte\Core\DBI::renameTable($o->name, $r['name'])) {
                         throw new \Exception("Failed to rename table");
@@ -176,7 +178,7 @@ class DataModelController extends ModelController
                 }
 
                 // return to kyte db
-                \Kyte\Core\Api::dbconnect();
+                \Kyte\Core\Api::dbswitch();
                 break;                
 
             default:
@@ -222,7 +224,8 @@ class DataModelController extends ModelController
                 if (!$app->retrieve('id', $o->application)) {
                     throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
                 }
-                \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+                \Kyte\Core\Api::dbappconnect($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+                \Kyte\Core\Api::dbswitch(true);
 
                 // drop table <table_name>
                 if (!\Kyte\Core\DBI::dropTable($o->name)) {
@@ -230,7 +233,7 @@ class DataModelController extends ModelController
                 }
                 
                 // return to kyte db
-                \Kyte\Core\Api::dbconnect();
+                \Kyte\Core\Api::dbswitch();
                 break;
             
             default:

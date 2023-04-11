@@ -3,6 +3,7 @@
 namespace Kyte\Core;
 
 class DBI {
+	// main db connection instance
 	private static $dbConn;
 
 	public static $dbUser;
@@ -11,6 +12,18 @@ class DBI {
 	public static $dbHost;
 	public static $charset = 'utf8mb4';
 	public static $engine = 'InnoDB';
+
+	public static $useAppDB = false;
+
+	// app db connection instance
+	private static $dbConnApp = null;
+	public static $dbUserApp = null;
+	public static $dbPasswordApp = null;
+	public static $dbNameApp = null;
+	public static $dbHostApp = null;
+	// charset is the same as main DB
+	// public static $charsetApp = 'utf8mb4';
+	// public static $engineApp = 'InnoDB';
 
 	/*
 	 * Sets the database username to be used to connect to DB
@@ -72,6 +85,46 @@ class DBI {
 		self::$engine = $engine;
 	}
 
+	/*
+	 * Sets the database username to be used to connect to DB for App
+	 *
+	 * @param string $dbUser
+	 */
+	public static function setDbUserApp($dbUserApp)
+	{
+		self::$dbUserApp = $dbUserApp;
+	}
+
+	/*
+	 * Sets the database password to be used to connect to DB for App
+	 *
+	 * @param string $dbPassword
+	 */
+	public static function setDbPasswordApp($dbPasswordApp)
+	{
+		self::$dbPasswordApp = $dbPasswordApp;
+	}
+
+	/*
+	 * Sets the database host to be used to connect to DB for App
+	 *
+	 * @param string $dbUser
+	 */
+	public static function setDbHostApp($dbHostApp)
+	{
+		self::$dbHostApp = $dbHostApp;
+	}
+
+	/*
+	 * Sets the database name to be used to connect to DB for App
+	 *
+	 * @param string $dbName
+	 */
+	public static function setDbNameApp($dbNameApp)
+	{
+		self::$dbNameApp = $dbNameApp;
+	}
+
 	public static function dbInit($dbUser, $dbPassword, $dbHost, $dbName, $charset, $engine) {
 		self::setDbUser($dbUser);
 		self::setDbPassword($dbPassword);
@@ -79,6 +132,17 @@ class DBI {
 		self::setDbName($dbName);
 		self::setCharset($charset);
 		self::setEngine($engine);
+
+		return self::connect();
+	}
+
+	public static function dbInitApp($dbUserApp, $dbPasswordApp, $dbHostApp, $dbNameApp, $charset, $engine) {
+		self::setDbUserApp($dbUserApp);
+		self::setDbPasswordApp($dbPasswordApp);
+		self::setDbHostApp($dbHostApp);
+		self::setDbNameApp($dbNameApp);
+		self::setCharsetApp($charsetApp);
+		self::setEngineApp($engineApp);
 
 		return self::connect();
 	}
@@ -105,6 +169,27 @@ class DBI {
 	}
 
 	/*
+	 * Connect to database for App
+	 *
+	 * @param string $dbNameApp
+	 */
+	public static function connectApp()
+	{
+		if (!self::$dbConnApp) {
+			try {
+				self::$dbConnApp = new \mysqli(self::$dbHostApp, self::$dbUserApp, self::$dbPasswordApp, self::$dbNameApp);
+				// set charset to utf8mb4
+				if ( TRUE !== self::$dbConnApp->set_charset( self::$charset ) )
+					throw new \Exception( self::$dbConnApp->error, self::$dbConnApp->errno );
+			} catch (mysqli_sql_exception $e) {
+				throw $e;
+			}
+		}
+
+		return self::$dbConnApp;
+	}
+
+	/*
 	 * Close database connection
 	 *
 	 */
@@ -114,6 +199,18 @@ class DBI {
 			self::$dbConn->close();
 		}
 		self::$dbConn = null;
+	}
+
+	/*
+	 * Close database connection for App
+	 *
+	 */
+	public static function closeApp()
+	{
+		if (self::$dbConnApp) {
+			self::$dbConnApp->close();
+		}
+		self::$dbConnApp = null;
 	}
 
 	/*
@@ -129,8 +226,19 @@ class DBI {
 			throw new \Exception("Database username must be specified");
 		}
 
-		if (!self::$dbConn) {
-			self::connect();
+		// db connection
+		$con = null;
+
+		if (self::$useAppDB) {
+			if (!self::$dbConnApp) {
+				self::connectApp();
+			}
+			$con = self::$dbConnApp;
+		} else {
+			if (!self::$dbConn) {
+				self::connect();
+			}
+			$con = self::$dbConn;
 		}
 
 		// create password
@@ -142,38 +250,38 @@ class DBI {
 		}
 
 		// create database
-		$result = self::$dbConn->query("CREATE DATABASE IF NOT EXISTS `{$name}`;");
+		$result = $con->query("CREATE DATABASE IF NOT EXISTS `{$name}`;");
 		if($result === false) {
-  			throw new \Exception("Unable to create database. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+  			throw new \Exception("Unable to create database. [Error]:  ".htmlspecialchars($con->error));
   			return false;
 		}
 
 		// create user
-		$result = self::$dbConn->query("CREATE USER '{$username}'@'%' IDENTIFIED BY '{$password}';");
+		$result = $con->query("CREATE USER '{$username}'@'%' IDENTIFIED BY '{$password}';");
 		if($result === false) {
-  			throw new \Exception("Unable to create user. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+  			throw new \Exception("Unable to create user. [Error]:  ".htmlspecialchars($con->error));
   			return false;
 		}
 
 		// set privs
-		$result = self::$dbConn->query("GRANT ALL PRIVILEGES ON `{$name}`.* TO '{$username}'@'%';");
+		$result = $con->query("GRANT ALL PRIVILEGES ON `{$name}`.* TO '{$username}'@'%';");
 		if($result === false) {
-  			throw new \Exception("Unable to grant privileges. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+  			throw new \Exception("Unable to grant privileges. [Error]:  ".htmlspecialchars($con->error));
   			return false;
 		}
 
 		// flush privileges
-		$result = self::$dbConn->query("FLUSH PRIVILEGES;");
+		$result = $con->query("FLUSH PRIVILEGES;");
 		if($result === false) {
-  			throw new \Exception("Unable to flush privileges. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+  			throw new \Exception("Unable to flush privileges. [Error]:  ".htmlspecialchars($con->error));
   			return false;
 		}
 
 		// if use is true, then switch db
 		if ($use) {
-			$result = self::$dbConn->query("USE `{$name}`;");
+			$result = $con->query("USE `{$name}`;");
 			if($result === false) {
-				throw new \Exception("Unable to switch databases. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+				throw new \Exception("Unable to switch databases. [Error]:  ".htmlspecialchars($con->error));
 				return false;
 			}
 		}
@@ -189,8 +297,19 @@ class DBI {
 			throw new \Exception("Table definition cannot be empty.");
 		}
 
-		if (!self::$dbConn) {
-			self::connect();
+		// db connection
+		$con = null;
+
+		if (self::$useAppDB) {
+			if (!self::$dbConnApp) {
+				self::connectApp();
+			}
+			$con = self::$dbConnApp;
+		} else {
+			if (!self::$dbConn) {
+				self::connect();
+			}
+			$con = self::$dbConn;
 		}
 
 		$tbl_name = $modelDef['name'];
@@ -199,7 +318,7 @@ class DBI {
 		$engine = self::$engine;
 		$pk_name = '';	// store col struct for primary key
 
-		$result = self::$dbConn->query("DROP TABLE IF EXISTS `$tbl_name`;");
+		$result = $con->query("DROP TABLE IF EXISTS `$tbl_name`;");
 		if($result === false) {
 			throw new \Exception("Unable to drop tables.");
 			return false;
@@ -283,9 +402,9 @@ class DBI {
 		$tbl_sql .= "PRIMARY KEY (`$pk_name`)) ENGINE=$engine DEFAULT CHARSET=$charset;";
 
 		
-		$result = self::$dbConn->query($tbl_sql);
+		$result = $con->query($tbl_sql);
 		if($result === false) {
-			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
 			return false;
 		}
 
@@ -301,15 +420,26 @@ class DBI {
 			return false;
 		}
 
-		if (!self::$dbConn) {
-			self::connect();
+		// db connection
+		$con = null;
+
+		if (self::$useAppDB) {
+			if (!self::$dbConnApp) {
+				self::connectApp();
+			}
+			$con = self::$dbConnApp;
+		} else {
+			if (!self::$dbConn) {
+				self::connect();
+			}
+			$con = self::$dbConn;
 		}
 
 		$tbl_sql = "DROP TABLE `$tbl_name`";
 
-		$result = self::$dbConn->query($tbl_sql);
+		$result = $con->query($tbl_sql);
 		if($result === false) {
-			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
 			return false;
 		}
 
@@ -330,15 +460,26 @@ class DBI {
 			return false;
 		}
 
-		if (!self::$dbConn) {
-			self::connect();
+		// db connection
+		$con = null;
+
+		if (self::$useAppDB) {
+			if (!self::$dbConnApp) {
+				self::connectApp();
+			}
+			$con = self::$dbConnApp;
+		} else {
+			if (!self::$dbConn) {
+				self::connect();
+			}
+			$con = self::$dbConn;
 		}
 
 		$tbl_sql = "ALTER TABLE `$tbl_name_old` RENAME TO `$tbl_name_news`";
 
-		$result = self::$dbConn->query($tbl_sql);
+		$result = $con->query($tbl_sql);
 		if($result === false) {
-			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
 			return false;
 		}
 
@@ -359,8 +500,19 @@ class DBI {
 			return false;
 		}
 
-		if (!self::$dbConn) {
-			self::connect();
+		// db connection
+		$con = null;
+
+		if (self::$useAppDB) {
+			if (!self::$dbConnApp) {
+				self::connectApp();
+			}
+			$con = self::$dbConnApp;
+		} else {
+			if (!self::$dbConn) {
+				self::connect();
+			}
+			$con = self::$dbConn;
 		}
 		
 		// check if required attrs are set
@@ -420,9 +572,9 @@ class DBI {
 
 		$tbl_sql = "ALTER TABLE `$tbl_name` ADD $field";
 
-		$result = self::$dbConn->query($tbl_sql);
+		$result = $con->query($tbl_sql);
 		if($result === false) {
-			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
 			return false;
 		}
 
@@ -448,8 +600,19 @@ class DBI {
 			return false;
 		}
 
-		if (!self::$dbConn) {
-			self::connect();
+		// db connection
+		$con = null;
+
+		if (self::$useAppDB) {
+			if (!self::$dbConnApp) {
+				self::connectApp();
+			}
+			$con = self::$dbConnApp;
+		} else {
+			if (!self::$dbConn) {
+				self::connect();
+			}
+			$con = self::$dbConn;
 		}
 		
 		// check if required attrs are set
@@ -509,9 +672,9 @@ class DBI {
 
 		$tbl_sql = "ALTER TABLE `$tbl_name` CHANGE `$column_name_old` $field";
 
-		$result = self::$dbConn->query($tbl_sql);
+		$result = $con->query($tbl_sql);
 		if($result === false) {
-			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
 			return false;
 		}
 
@@ -532,15 +695,26 @@ class DBI {
 			return false;
 		}
 
-		if (!self::$dbConn) {
-			self::connect();
+		// db connection
+		$con = null;
+
+		if (self::$useAppDB) {
+			if (!self::$dbConnApp) {
+				self::connectApp();
+			}
+			$con = self::$dbConnApp;
+		} else {
+			if (!self::$dbConn) {
+				self::connect();
+			}
+			$con = self::$dbConn;
 		}
 
 		$tbl_sql = "ALTER TABLE `$tbl_name` DROP `$column_name`";
 
-		$result = self::$dbConn->query($tbl_sql);
+		$result = $con->query($tbl_sql);
 		if($result === false) {
-			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
 			return false;
 		}
 
@@ -556,9 +730,20 @@ class DBI {
 	 */
 	public static function insert($table, $params, $types)
 	{
+		// db connection
+		$con = null;
+
 		try {
-			if (!self::$dbConn) {
-				self::connect();
+			if (self::$useAppDB) {
+				if (!self::$dbConnApp) {
+					self::connectApp();
+				}
+				$con = self::$dbConnApp;
+			} else {
+				if (!self::$dbConn) {
+					self::connect();
+				}
+				$con = self::$dbConn;
 			}
 		} catch (\Exception $e) {
 			throw $e;
@@ -589,9 +774,9 @@ class DBI {
 			error_log($query);
 		}
 
-		$stmt = self::$dbConn->prepare($query);
+		$stmt = $con->prepare($query);
 		if($stmt === false) {
-  			throw new \Exception("Error preparing mysql statement '$query'; ".htmlspecialchars(self::$dbConn->error), 1);
+  			throw new \Exception("Error preparing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
   			return false;
 		}
  
@@ -599,7 +784,7 @@ class DBI {
 		// call_user_func_array(array($stmt, 'bind_param'), $bindParams);
 
 		if (!$stmt->execute()) {
-			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars(self::$dbConn->error), 1);
+			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
 			$stmt->close();
 			return false;
 		}
@@ -620,8 +805,19 @@ class DBI {
 	 */
 	public static function update($table, $id, $params, $types)
 	{
-		if (!self::$dbConn) {
-			self::connect();
+		// db connection
+		$con = null;
+
+		if (self::$useAppDB) {
+			if (!self::$dbConnApp) {
+				self::connectApp();
+			}
+			$con = self::$dbConnApp;
+		} else {
+			if (!self::$dbConn) {
+				self::connect();
+			}
+			$con = self::$dbConn;
 		}
 
 		// DEBUG
@@ -652,10 +848,10 @@ class DBI {
 			error_log($query);
 		}
 
-		$stmt = self::$dbConn->prepare($query);
+		$stmt = $con->prepare($query);
 		if($stmt === false) {
-			error_log("Error preparing mysql statement '$query'; ".htmlspecialchars(self::$dbConn->error));
-  			throw new \Exception("Error preparing mysql statement '$query'; ".htmlspecialchars(self::$dbConn->error), 1);
+			error_log("Error preparing mysql statement '$query'; ".htmlspecialchars($con->error));
+  			throw new \Exception("Error preparing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
   			return false;
 		}
  
@@ -663,8 +859,8 @@ class DBI {
 		// call_user_func_array(array($stmt, 'bind_param'), $bindParams);
 
 		if (!$stmt->execute()) {
-			error_log("Error executing mysql statement '$query'; ".htmlspecialchars(self::$dbConn->error));
-			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars(self::$dbConn->error), 1);
+			error_log("Error executing mysql statement '$query'; ".htmlspecialchars($con->error));
+			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
 			$stmt->close();
 			return false;
 		}
@@ -682,8 +878,19 @@ class DBI {
 	 */
 	public static function delete($table, $id)
 	{
-		if (!self::$dbConn) {
-			self::connect();
+		// db connection
+		$con = null;
+
+		if (self::$useAppDB) {
+			if (!self::$dbConnApp) {
+				self::connectApp();
+			}
+			$con = self::$dbConnApp;
+		} else {
+			if (!self::$dbConn) {
+				self::connect();
+			}
+			$con = self::$dbConn;
 		}
 
 		$query = "DELETE FROM `$table` WHERE id = ?";
@@ -693,16 +900,16 @@ class DBI {
 			error_log($query);
 		}
 
-		$stmt = self::$dbConn->prepare($query);
+		$stmt = $con->prepare($query);
 		if($stmt === false) {
-  			throw new \Exception("Error preparing mysql statement '$query'; ".htmlspecialchars(self::$dbConn->error), 1);
+  			throw new \Exception("Error preparing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
   			return false;
 		}
  
 		$stmt->bind_param('i', $id);
 
 		if (!$stmt->execute()) {
-			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars(self::$dbConn->error), 1);
+			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
 			$stmt->close();
 			return false;
 		}
@@ -720,8 +927,19 @@ class DBI {
 	 */
 	public static function count($table, $condition = null, $join = null)
 	{
-		if (!self::$dbConn) {
-			self::connect();
+		// db connection
+		$con = null;
+
+		if (self::$useAppDB) {
+			if (!self::$dbConnApp) {
+				self::connectApp();
+			}
+			$con = self::$dbConnApp;
+		} else {
+			if (!self::$dbConn) {
+				self::connect();
+			}
+			$con = self::$dbConn;
 		}
 
 		$query = "SELECT count(`$table`.`id`) as count FROM `$table`";
@@ -772,9 +990,9 @@ class DBI {
 			error_log($query);
 		}
 
-		$result = self::$dbConn->query($query);
+		$result = $con->query($query);
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
   			return false;
 		}
 
@@ -801,8 +1019,19 @@ class DBI {
 	 */
 	public static function select($table, $id = null, $condition = null, $join = null)
 	{
-		if (!self::$dbConn) {
-			self::connect();
+		// db connection
+		$con = null;
+
+		if (self::$useAppDB) {
+			if (!self::$dbConnApp) {
+				self::connectApp();
+			}
+			$con = self::$dbConnApp;
+		} else {
+			if (!self::$dbConn) {
+				self::connect();
+			}
+			$con = self::$dbConn;
 		}
 
 		$query = "SELECT `$table`.* FROM `$table`";
@@ -850,9 +1079,9 @@ class DBI {
 			error_log($query);
 		}
 
-		$result = self::$dbConn->query($query);
+		$result = $con->query($query);
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
   			return false;
 		}
 
@@ -874,8 +1103,19 @@ class DBI {
 	 */
 	public static function group($table, $field, $condition = null)
 	{
-		if (!self::$dbConn) {
-			self::connect();
+		// db connection
+		$con = null;
+
+		if (self::$useAppDB) {
+			if (!self::$dbConnApp) {
+				self::connectApp();
+			}
+			$con = self::$dbConnApp;
+		} else {
+			if (!self::$dbConn) {
+				self::connect();
+			}
+			$con = self::$dbConn;
 		}
 
 		$query = "SELECT `$field`, count(`$field`) FROM `$table`";
@@ -891,9 +1131,9 @@ class DBI {
 			error_log($query);
 		}
 
-		$result = self::$dbConn->query($query);
+		$result = $con->query($query);
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
   			return false;
 		}
 
@@ -914,8 +1154,19 @@ class DBI {
 	 */
 	public static function query($query)
 	{
-		if (!self::$dbConn) {
-			self::connect();
+		// db connection
+		$con = null;
+
+		if (self::$useAppDB) {
+			if (!self::$dbConnApp) {
+				self::connectApp();
+			}
+			$con = self::$dbConnApp;
+		} else {
+			if (!self::$dbConn) {
+				self::connect();
+			}
+			$con = self::$dbConn;
 		}
 
 		// DEBUG
@@ -923,9 +1174,9 @@ class DBI {
 			error_log($query);
 		}
 
-		$result = self::$dbConn->query($query);
+		$result = $con->query($query);
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
   			return false;
 		}
 
@@ -952,8 +1203,19 @@ class DBI {
 	 */
 	public static function sum($table, $sumField, $id = null, $condition = null)
 	{
-		if (!self::$dbConn) {
-			self::connect();
+		// db connection
+		$con = null;
+
+		if (self::$useAppDB) {
+			if (!self::$dbConnApp) {
+				self::connectApp();
+			}
+			$con = self::$dbConnApp;
+		} else {
+			if (!self::$dbConn) {
+				self::connect();
+			}
+			$con = self::$dbConn;
 		}
 
 		$new_field_name = 'sum_'.$sumField;
@@ -971,9 +1233,9 @@ class DBI {
 			error_log($query);
 		}
 
-		$result = self::$dbConn->query($query);
+		$result = $con->query($query);
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars(self::$dbConn->error));
+  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
   			return false;
 		}
 
@@ -988,10 +1250,21 @@ class DBI {
 	}
 
 	public static function escape_string($string) {
-		if (!self::$dbConn) {
-			self::connect();
+		// db connection
+		$con = null;
+
+		if (self::$useAppDB) {
+			if (!self::$dbConnApp) {
+				self::connectApp();
+			}
+			$con = self::$dbConnApp;
+		} else {
+			if (!self::$dbConn) {
+				self::connect();
+			}
+			$con = self::$dbConn;
 		}
 		
-		return self::$dbConn->real_escape_string($string);
+		return $con->real_escape_string($string);
 	}
 }

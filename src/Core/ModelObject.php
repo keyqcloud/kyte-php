@@ -39,15 +39,9 @@ class ModelObject
 		$this->kyte_model = $model;
 
 		if (isset($this->kyte_model['appId'])) {
-			// if app id is set, perform context switch
-			$app = new \Kyte\Core\ModelObject(Application);
-			if (!$app->retrieve('identifier', $this->kyte_model['appId'])) {
-				throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
-			}
-			\Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+			\Kyte\Core\Api::dbswitch(true);
 		} else {
-			// otherwise use main db
-			\Kyte\Core\Api::dbconnect();
+			\Kyte\Core\Api::dbswitch();
 		}
 	}
 
@@ -259,17 +253,10 @@ class ModelObject
 	public function delete($field = null, $value = null, $user = null)
 	{
 		try {
-			// TODO: CONSIDER MOVING THIS DOWN TO THE DB LEVEL AND ADD APPID AS A PARAM
 			if (isset($this->kyte_model['appId'])) {
-				// if app id is set, perform context switch
-				$app = new \Kyte\Core\ModelObject(Application);
-				if (!$app->retrieve('identifier', $this->kyte_model['appId'])) {
-					throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
-				}
-				\Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+				\Kyte\Core\Api::dbswitch(true);
 			} else {
-				// otherwise use main db
-				\Kyte\Core\Api::dbconnect();
+				\Kyte\Core\Api::dbswitch();
 			}
 
 			if (isset($field, $value)) {
@@ -302,6 +289,12 @@ class ModelObject
 	public function purge($field = null, $value = null)
 	{
 		try {
+			if (isset($this->kyte_model['appId'])) {
+				\Kyte\Core\Api::dbswitch(true);
+			} else {
+				\Kyte\Core\Api::dbswitch();
+			}
+
 			if (isset($field, $value)) {
 				if ($this->retrieve($field, $value, null, null, true)) {
 					$id = $this->id;

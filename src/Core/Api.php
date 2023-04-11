@@ -159,16 +159,15 @@ class Api
 				return;
 		}
 
-		\Kyte\Core\DBI::close();
 		\Kyte\Core\DBI::setDbUser(KYTE_DB_USERNAME);
 		\Kyte\Core\DBI::setDbPassword(KYTE_DB_PASSWORD);
 		\Kyte\Core\DBI::setDbHost(KYTE_DB_HOST);
 		\Kyte\Core\DBI::setDbName(KYTE_DB_DATABASE);
 		\Kyte\Core\DBI::setCharset(KYTE_DB_CHARSET);
-		\Kyte\Core\DBI::connect();
+		// \Kyte\Core\DBI::connect();
 	}
 
-	public static function dbswitch($database, $username, $password, $host = KYTE_DB_HOST, $charset = KYTE_DB_CHARSET) {
+	public static function dbappconnect($database, $username, $password, $host = KYTE_DB_HOST, $charset = KYTE_DB_CHARSET) {
 		if ($database == null || $username == null || $password == null) {
 			throw new \Exception("Database parameters must be provided. Database: $database\tUsername: $username\tPassword: $password");
 		}
@@ -180,13 +179,16 @@ class Api
 			return;
 		}
 
-		\Kyte\Core\DBI::close();
-		\Kyte\Core\DBI::setDbName($database);
-		\Kyte\Core\DBI::setDbUser($username);
-		\Kyte\Core\DBI::setDbPassword($password);
-		\Kyte\Core\DBI::setDbHost($host);
-		\Kyte\Core\DBI::setCharset($charset);
-		\Kyte\Core\DBI::connect();
+		\Kyte\Core\DBI::setDbNameApp($database);
+		\Kyte\Core\DBI::setDbUserApp($username);
+		\Kyte\Core\DBI::setDbPasswordApp($password);
+		\Kyte\Core\DBI::setDbHostApp($host);
+		\Kyte\Core\DBI::setCharsetApp($charset);
+		// \Kyte\Core\DBI::connectApp();
+	}
+
+	public static function dbswitch($useApp = false) {
+		\Kyte\Core\DBI::useAppDB = $userApp;
 	}
 
 	private function bootstrap() {
@@ -298,7 +300,7 @@ class Api
 		}
 
 		if(defined('APP_DIR') && isset($_SERVER['HTTP_X_KYTE_APPID'])) {
-			$appId = $_SERVER['HTTP_X_KYTE_APPID'];
+			$this->appId = $_SERVER['HTTP_X_KYTE_APPID'];
 
 			// next load user defined models
 			// if model already exists, apply changes/overrides
@@ -306,10 +308,10 @@ class Api
 		
 				/* USER DEFINED MODELS */
 				// load user defined models and controllers (allow override of builtin)
-				if ( file_exists( APP_DIR . "/app/models/{$appId}/" ) && is_dir( APP_DIR . "/app/models/{$appId}/" ) ) {    
-					foreach (glob(APP_DIR . "/app/models/{$appId}/*.php") as $filename) {
+				if ( file_exists( APP_DIR . "/app/models/{$this->appId}/" ) && is_dir( APP_DIR . "/app/models/{$this->appId}/" ) ) {    
+					foreach (glob(APP_DIR . "/app/models/{$this->appId}/*.php") as $filename) {
 						$model_name = substr($filename, 0, strrpos($filename, "."));
-						$model_name = str_replace(APP_DIR . "/app/models/{$appId}/",'',$model_name);
+						$model_name = str_replace(APP_DIR . "/app/models/{$this->appId}/",'',$model_name);
 
 						if (!array_key_exists($model_name, $models)) {
 							// check syntax before importing file
@@ -322,7 +324,7 @@ class Api
 								self::addPrimaryKey($$model_name);
 								self::addKyteAttributes($$model_name);
 								// add app id
-								$$model_name['appId'] = $appId;
+								$$model_name['appId'] = $this->appId;
 								// add model to list of models
 								$models[$model_name] = $$model_name;
 							} else {
@@ -351,10 +353,10 @@ class Api
 		
 				/* USER DEFINED CONTROLLER */
 				// load user-defined controllers
-				if ( file_exists( APP_DIR . "/app/controllers/{$appId}/" ) && is_dir( APP_DIR . "/app/controllers/{$appId}/" ) ) {
-					foreach (glob(APP_DIR . "/app/controllers/{$appId}/*.php") as $filename) {
+				if ( file_exists( APP_DIR . "/app/controllers/{$this->appId}/" ) && is_dir( APP_DIR . "/app/controllers/{$this->appId}/" ) ) {
+					foreach (glob(APP_DIR . "/app/controllers/{$this->appId}/*.php") as $filename) {
 						$controller_name = substr($filename, 0, strrpos($filename, "."));
-						$controller_name = str_replace(APP_DIR . "/app/controllers/{$appId}/",'',$controller_name);
+						$controller_name = str_replace(APP_DIR . "/app/controllers/{$this->appId}/",'',$controller_name);
 
 						// check syntax before importing file
 						$f = self::checkSyntax($filename);
@@ -580,6 +582,15 @@ class Api
 			if (IS_PRIVATE) {
 				// VERIFY SIGNATURE
 				$this->verifySignature();
+			}
+
+			// if appid is not null, create db connection for app
+			if ($this->appId != null) {
+				$app = new \Kyte\Core\ModelObject(Application);
+				if (!$app->retrieve('identifier', $this->appId)) {
+					throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch for app ID {$this->appId}.");
+				}
+				dbappconnect($app->db_name, $app->db_username, $app->db_password);
 			}
 
 			return true;

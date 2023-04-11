@@ -37,13 +37,16 @@ class ModelAttributeController extends ModelController
                 if (!$app->retrieve('id', $tbl->application)) {
                     throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
                 }
-                \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+                
+                \Kyte\Core\Api::dbappconnect($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+                \Kyte\Core\Api::dbswitch(true);
+
                 // create new table with basic kyte info
                 if (!\Kyte\Core\DBI::addColumn($tbl->name, $r['name'], $attrs)) {
                     throw new \Exception("Failed to create column {$r['name']} in table {$tbl->name}...");
                 }
                 // return to kyte db
-                \Kyte\Core\Api::dbconnect();
+                \Kyte\Core\Api::dbswitch();
 
                 $model_definition = \Kyte\Mvc\Controller\DataModelController::generateModelDef($tbl->name, $tbl->id);;
                 $tbl->save([
@@ -67,13 +70,16 @@ class ModelAttributeController extends ModelController
                 if (!$app->retrieve('id', $tbl->application)) {
                     throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
                 }
-                \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+                
+                \Kyte\Core\Api::dbappconnect($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+                \Kyte\Core\Api::dbswitch(true);
+
                 // create new table with basic kyte info
                 if (!\Kyte\Core\DBI::changeColumn($tbl->name, $o->name, $r['name'], $attrs)) {
                     throw new \Exception("Failed to change column {$o->name} to {$r['name']} in table {$tbl->name}...");
                 }
                 // return to kyte db
-                \Kyte\Core\Api::dbconnect();
+                \Kyte\Core\Api::dbswitch();
 
                 $model_definition = \Kyte\Mvc\Controller\DataModelController::generateModelDef($tbl->name, $tbl->id);;
                 $tbl->save([
@@ -97,13 +103,16 @@ class ModelAttributeController extends ModelController
                 if (!$app->retrieve('id', $tbl->application)) {
                     throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
                 }
-                \Kyte\Core\Api::dbswitch($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+                
+                \Kyte\Core\Api::dbappconnect($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+                \Kyte\Core\Api::dbswitch(true);
+                
                 // drop table <table_name>
                 if (!\Kyte\Core\DBI::dropColumn($tbl->name, $o->name)) {
                     throw new \Exception("Failed to drop column {$o->name} from table {$tbl->name}");
                 }
                 // return to kyte db
-                \Kyte\Core\Api::dbconnect();
+                \Kyte\Core\Api::dbswitch();
                 break;
             
             default:
