@@ -33,8 +33,15 @@ $Page = [
 			'default'	=> 'custom',
 		],
 
-		// json definition of page layout defined by wizard or block editor
+		// json definition of page layout defined by wizard
 		'layout'	=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
+		// json definition of page layout defined by block editor
+		'block_layout'	=> [
 			'type'		=> 't',
 			'required'	=> false,
 			'date'		=> false,
