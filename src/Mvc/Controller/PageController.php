@@ -142,6 +142,50 @@ class PageController extends ModelController
 
         // KyteJS
         $code .= '<script src="https://cdn.stratis-troika.com/kytejs/dev/kyte.js" crossorigin="anonymous"></script>';
+
+        // custom styles
+        $code .= '<style>'.$page['stylesheet'].($page['side_navigation'] ? ' main {display: flex;flex-wrap: nowrap;min-height: 100vh;min-height: --webkit-fill-available;overflow-x: auto;overflow-y: hidden;}' : '').'</style>';
+
+        // close head
+        $code .= '</head>';
+
+        // body
+        $code .= '<body>';
+
+        // loader
+        $code .= '<!-- Page loading modal.  Once session is validated, the loading modal will close. --><div id="pageLoaderModal" class="modal white" data-backdrop="static" data-keyboard="false" tabindex="-1"><div class="modal-dialog modal-sm h-100 d-flex"><div class="mx-auto align-self-center" style="width: 48px"><div class="spinner-wrapper text-center fa-6x"><span class="fas fa-sync fa-spin"></span></div></div></div></div><!--  -->';
+
+        // wrapper
+        $code .= '<div id="wrapper">';
+
+        // main navigation and header
+        if ($page['main_navigation']) {
+            $code .= '<!-- START NAV --><nav id="mainnav" class="navbar navbar-dark bg-dark navbar-expand-lg"></nav><!-- END NAV -->';
+        }
+
+        // main wrapper
+        $code .= '<main>';
+
+        // side navigation
+        if ($page['side_navigation']) {
+            $code .= '<!-- BEGIN SIDE NAVIGATION --><div id="sidenav" class="d-flex flex-column flex-shrink-0 p-3" style="width: 230px;"></div><!-- END SIDE NAVIGATION -->';
+        }
+
+        if ($page['page_type'] == 'block') {
+            $code .= '<div id="blockEditorROViewer" class="container container-flex mb-5 px-5"></div>';
+        } else {
+            $code .= '<div class="container container-flex mb-5 px-5">'.$page['html'].'</div>';
+        }
+
+        // close main wrapper
+        $code .= '</main>';
+
+
+        // add footer
+
+        // close page wrapper
+        $code .= '</div>';
+
         // begin javascript
         $code .= '<script>';
         // check if page is a block (i.e. editorjs and load viewer)
@@ -249,49 +293,6 @@ class PageController extends ModelController
         }
 
         $code .= ' });</script>';
-
-        // custom styles
-        $code .= '<style>'.$page['stylesheet'].($page['side_navigation'] ? ' main {display: flex;flex-wrap: nowrap;min-height: 100vh;min-height: --webkit-fill-available;overflow-x: auto;overflow-y: hidden;}' : '').'</style>';
-
-        // close head
-        $code .= '</head>';
-
-        // body
-        $code .= '<body>';
-
-        // loader
-        $code .= '<!-- Page loading modal.  Once session is validated, the loading modal will close. --><div id="pageLoaderModal" class="modal white" data-backdrop="static" data-keyboard="false" tabindex="-1"><div class="modal-dialog modal-sm h-100 d-flex"><div class="mx-auto align-self-center" style="width: 48px"><div class="spinner-wrapper text-center fa-6x"><span class="fas fa-sync fa-spin"></span></div></div></div></div><!--  -->';
-
-        // wrapper
-        $code .= '<div id="wrapper">';
-
-        // main navigation and header
-        if ($page['main_navigation']) {
-            $code .= '<!-- START NAV --><nav id="mainnav" class="navbar navbar-dark bg-dark navbar-expand-lg"></nav><!-- END NAV -->';
-        }
-
-        // main wrapper
-        $code .= '<main>';
-
-        // side navigation
-        if ($page['side_navigation']) {
-            $code .= '<!-- BEGIN SIDE NAVIGATION --><div id="sidenav" class="d-flex flex-column flex-shrink-0 p-3" style="width: 230px;"></div><!-- END SIDE NAVIGATION -->';
-        }
-
-        if ($page['page_type'] == 'block') {
-            $code .= '<div id="blockEditorROViewer" class="container container-flex mb-5 px-5"></div>';
-        } else {
-            $code .= '<div class="container container-flex mb-5 px-5">'.$page['html'].'</div>';
-        }
-
-        // close main wrapper
-        $code .= '</main>';
-
-
-        // add footer
-
-        // close page wrapper
-        $code .= '</div>';
 
         // close body
         $code .= '</body>';
