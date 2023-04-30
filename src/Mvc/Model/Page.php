@@ -23,6 +23,16 @@ $Page = [
 			'date'		=> false,
 		],
 
+		// the type of editor the user selected during creation
+		// block editor, login, table, form, custom
+		'page_type'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+			'default'	=> 'custom',
+		],
+
 		// json definition of page layout defined by wizard or block editor
 		'layout'	=> [
 			'type'		=> 't',
