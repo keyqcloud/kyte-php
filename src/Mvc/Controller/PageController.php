@@ -191,7 +191,7 @@ class PageController extends ModelController
         // check if page is a block (i.e. editorjs and load viewer)
         if ($page['page_type'] == 'block') {
             //blockEditorROViewer
-            $code .= 'let element_tools={paragraph:{class:editorjsParagraphLinebreakable},header:{class:Header},delimiter:Delimiter,table:Table,linkTool:{class:LinkTool},rawTool:{class:RawTool},imageTool:{class:SimpleImage},checklistTool:{class:Checklist},listTool:{class:List},warning:{class:Warning},class:alert,AnyButton:{class:AnyButton},embedTool:{class:Embed},quoteTool:{class:Quote},tooltip:{class:Tooltip}},const blockEditor=new EditorJS({holder:"blockEditorROViewer",tools:element_tools,autofocus:!0,readOnly:!0});';
+            $code .= 'let element_tools={paragraph:{class:editorjsParagraphLinebreakable},header:{class:Header},delimiter:Delimiter,table:Table,linkTool:{class:LinkTool},rawTool:{class:RawTool},imageTool:{class:SimpleImage},checklistTool:{class:Checklist},listTool:{class:List},warning:{class:Warning},class:alert,AnyButton:{class:AnyButton},embedTool:{class:Embed},quoteTool:{class:Quote},tooltip:{class:Tooltip}};const blockEditor=new EditorJS({holder:"blockEditorROViewer",tools:element_tools,autofocus:true,readOnly:true});';
         }
 
         // add kyte connect
