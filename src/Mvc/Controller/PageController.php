@@ -192,6 +192,9 @@ class PageController extends ModelController
         if ($page['page_type'] == 'block') {
             //blockEditorROViewer
             $code .= 'let element_tools={header:{class:Header},delimiter:Delimiter,table:Table,linkTool:{class:LinkTool},rawTool:{class:RawTool},imageTool:{class:SimpleImage},checklistTool:{class:Checklist},listTool:{class:List},warning:{class:Warning},AnyButton:{class:AnyButton},embedTool:{class:Embed},quoteTool:{class:Quote},tooltip:{class:Tooltip}};const blockEditor=new EditorJS({holder:"blockEditorROViewer",tools:element_tools,autofocus:true,readOnly:true});';
+            // load the page layout
+            $code .= "let blocks = ".$page['block_layout'].";";
+            $code .= 'blockEditor.blocks.render(blocks);';
         }
 
         // add kyte connect
