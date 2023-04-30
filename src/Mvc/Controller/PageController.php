@@ -279,7 +279,7 @@ class PageController extends ModelController
         }
 
         if ($page['page_type'] == 'block') {
-            $code .= '<div class="container container-flex mb-5 px-5" id="blockEditorROViewer"></div>';
+            $code .= '<div id="blockEditorROViewer" class="container container-flex mb-5 px-5"></div>';
         } else {
             $code .= '<div class="container container-flex mb-5 px-5">'.$page['html'].'</div>';
         }
