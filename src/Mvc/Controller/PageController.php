@@ -112,10 +112,44 @@ class PageController extends ModelController
         $code .= '<link rel="stylesheet" href="https://cdn.datatables.net/1.10.23/css/jquery.dataTables.min.css">';
         $code .= '<script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>';
 
+        // check if page is using editor.js, in which case we need to load the modules
+        if ($page['page_type'] == 'block') {
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/link@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/raw"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/simple-image@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/checklist@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/editorjs-alert@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/editorjs-button@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/warning@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/editorjs-undo@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/paragraph@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/editorjs-style@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/editorjs-text-color-plugin@2.0.2/dist/bundle.js"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/editorjs-tooltip@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@sotaproject/strikethrough@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/editorjs-text-alignment-blocktune@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/text-variant-tune@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@calumk/editorjs-columns@latest"></script>';
+            $code .= '<script src="https://cdn.jsdelivr.net/npm/@calumk/editorjs-paragraph-linebreakable"></script>';
+        }
+
         // KyteJS
         $code .= '<script src="https://cdn.stratis-troika.com/kytejs/dev/kyte.js" crossorigin="anonymous"></script>';
-
+        // begin javascript
         $code .= '<script>';
+        // check if page is a block (i.e. editorjs and load viewer)
+        if ($page['page_type'] == 'block') {
+            //blockEditorROViewer
+            $code .= 'let element_tools={style:EditorJSStyle.StyleInlineTool,Color:{class:window.ColorPlugin,config:{colorCollections:["#EC7878","#9C27B0","#673AB7","#3F51B5","#0070FF","#03A9F4","#00BCD4","#4CAF50","#8BC34A","#CDDC39","#FFF"],defaultColor:"#FF1300",type:"text",customPicker:!0}},Marker:{class:window.ColorPlugin,config:{defaultColor:"#FFBF00",type:"marker",icon:\'<svg fill="#000000" height="200px" width="200px" version="1.1" id="Icons" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 32 32" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <path d="M17.6,6L6.9,16.7c-0.2,0.2-0.3,0.4-0.3,0.6L6,23.9c0,0.3,0.1,0.6,0.3,0.8C6.5,24.9,6.7,25,7,25c0,0,0.1,0,0.1,0l6.6-0.6 c0.2,0,0.5-0.1,0.6-0.3L25,13.4L17.6,6z"></path> <path d="M26.4,12l1.4-1.4c1.2-1.2,1.1-3.1-0.1-4.3l-3-3c-0.6-0.6-1.3-0.9-2.2-0.9c-0.8,0-1.6,0.3-2.2,0.9L19,4.6L26.4,12z"></path> </g> <g> <path d="M28,29H4c-0.6,0-1-0.4-1-1s0.4-1,1-1h24c0.6,0,1,0.4,1,1S28.6,29,28,29z"></path> </g> </g></svg>\'}},paragraph:{class:editorjsParagraphLinebreakable,inlineToolbar:!0,tunes:["alignmentTune","textVariant"]},header:{class:Header,inlineToolbar:!0,tunes:["alignmentTune"]},strikethrough:Strikethrough,delimiter:Delimiter,table:Table,linkTool:{class:LinkTool,inlineToolbar:!0,tunes:["alignmentTune"]},rawTool:{class:RawTool,inlineToolbar:!0},imageTool:{class:SimpleImage,inlineToolbar:!0},checklistTool:{class:Checklist,inlineToolbar:!0,tunes:["alignmentTune"]},listTool:{class:List,inlineToolbar:!0,config:{defaultStyle:"unordered"},tunes:["alignmentTune"]},warning:{class:Warning,tunes:["alignmentTune"]},class:alert,AnyButton:{class:AnyButton,inlineToolbar:!1,config:{css:{btnColor:"btn--gray"}},tunes:["alignmentTune"]},embedTool:{class:Embed,inlineToolbar:!0,tunes:["alignmentTune"]},quoteTool:{class:Quote,inlineToolbar:!0,config:{quotePlaceholder:"Enter a quote",captionPlaceholder:"Quote\'s author"},tunes:["alignmentTune"]},tooltip:{class:Tooltip,config:{location:"left",highlightColor:"#FFEFD5",underline:!0,backgroundColor:"#154360",textColor:"#FDFEFE",holder:"editorId"}},textVariant:TextVariantTune,alignmentTune:{class:AlignmentBlockTune,config:{default:"left",blocks:{header:"center",list:"left"}}}},layout_tool={columns:{class:editorjsColumns,EditorJsLibrary:EditorJS,config:{tools:element_tools}}},main_tool=Object.assign({},layout_tool,element_tools);const blockEditor=new EditorJS({holder:"blockEditorROViewer",tools:main_tool,autofocus:!0,readOnly:!0});';
+        }
+
         // add kyte connect
         $code .= $kyte_connect."\n\n";
         // custom js
@@ -244,7 +278,11 @@ class PageController extends ModelController
             $code .= '<!-- BEGIN SIDE NAVIGATION --><div id="sidenav" class="d-flex flex-column flex-shrink-0 p-3" style="width: 230px;"></div><!-- END SIDE NAVIGATION -->';
         }
 
-        $code .= '<div class="container container-flex mb-5 px-5">'.$page['html'].'</div>';
+        if ($page['page_type'] == 'block') {
+            $code .= '<div class="container container-flex mb-5 px-5" id="blockEditorROViewer"></div>';
+        } else {
+            $code .= '<div class="container container-flex mb-5 px-5">'.$page['html'].'</div>';
+        }
 
         // close main wrapper
         $code .= '</main>';
