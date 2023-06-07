@@ -97,6 +97,9 @@ class ModelController
         if (isset($_SERVER['HTTP_X_KYTE_GET_EXTERNALTABLES'])) {
             $this->getExternalTables = strtolower($_SERVER['HTTP_X_KYTE_GET_EXTERNALTABLES']) == "true" ? true : false;
         }
+        
+        $this->shipyard_init();
+
         $this->hook_init();
         
         if ($this->requireAuth) {
@@ -113,7 +116,7 @@ class ModelController
     }
 
     protected function checkPermissions($requestType, $modelName = null) {
-        if ($this->requireAuth && $this->requireRoles) {
+        if (isset($this->user->id, $this->account->id) && $this->requireRoles) {
             // if model name is set then use it, otherwise use clas model
             $modelName = $modelName ? $modelName : $this->model['name'];
 
@@ -150,6 +153,14 @@ class ModelController
             // iterate through each param and apply filter
             foreach($response as $key => $value) {
                 if (isset($obj->kyte_model['struct'][$key])) {
+                    if (STRICT_TYPING) {
+                        if ($obj->kyte_model['struct'][$key]['type'] == 'i') {
+                            $response[$key] = intval($value);
+                        } else {
+                            $response[$key] = strval($value);
+                        }
+                    }
+
                     // if protected attribute then return empty string
                     if (isset($obj->kyte_model['struct'][$key]['protected'])) {
                         if ($obj->kyte_model['struct'][$key]['protected']) {
@@ -321,7 +332,8 @@ class ModelController
 
     //
     //      1. covert times to unix time
-    //      2. check for foregin ands external table data
+    //      2. convert passwords to hashes
+    //      3. check for foregin ands external table data
     protected function sift(&$data) {
 
         $linkedModels = [];
@@ -330,9 +342,14 @@ class ModelController
 
             // first check existing model
             if (isset($this->model['struct'][$key])) {
-                if ($this->model['struct'][$key]['date']) {
+                $requiresDateTimeFormat = isset($this->model['struct'][$key]['date']) ? $this->model['struct'][$key]['date'] : false;
+                if ($requiresDateTimeFormat) {
                     // convert all dates to unix time
                     $data[$key] = strtotime($value);
+                }
+                $requiresPasswordHashing = isset($this->model['struct'][$key]['password']) ? $this->model['struct'][$key]['password'] : false;
+                if ($requiresPasswordHashing) {
+                    $data[$key] = password_hash($value, PASSWORD_DEFAULT);
                 }
             } else {
                 // see if data is in dot-notation i.e. <model>.<attribute>
@@ -356,7 +373,13 @@ class ModelController
         return $linkedModels;
     }
 
-    // new - create new entry in db
+    /*
+     * NEW
+     *  
+     * new($data)
+     * 
+     * create new entry in db
+     */
     public function new($data)
     {
         $response = [];
@@ -370,6 +393,12 @@ class ModelController
                 throw new \Exception('Permission Denied');
             }
     
+            // add account information
+            $data['kyte_account'] = isset($data['kyte_account']) ? $data['kyte_account'] : $this->account->id;
+
+            // hook for any custom behaviours before creating object
+            $this->hook_preprocess('new', $data);
+            
             // go through data parameters and...
             //      1. covert times to unix time
             //      2. check for foregin key table data
@@ -392,12 +421,6 @@ class ModelController
                     }
                 }
             }
-            
-            // add account information
-            $data['kyte_account'] = isset($data['kyte_account']) ? $data['kyte_account'] : $this->account->id;
-
-            // hook for any custom behaviours before creating object
-            $this->hook_preprocess('new', $data);
 
             // add user info
             if (isset($this->user->id)) {
@@ -422,7 +445,13 @@ class ModelController
         $this->response['data'] = $response;
     }
 
-    // update - update entry in db
+    /*
+     * UPDATE
+     *  
+     * update($field, $value, $data)
+     * 
+     * update entry in db
+     */
     public function update($field, $value, $data)
     {
         $response = [];
@@ -446,6 +475,8 @@ class ModelController
 
             if ($obj->retrieve($field, $value, $conditions, null, $all)) {
 
+                $this->hook_preprocess('update', $data, $obj);
+
                 // go through data parameters and...
                 //      1. covert times to unix time
                 //      2. check for foregin key table data
@@ -465,8 +496,6 @@ class ModelController
                     }
                 }
 
-                $this->hook_preprocess('update', $data, $obj);
-
                 // add user info
                 if (isset($this->user->id)) {
                     $data['modified_by'] = $this->user->id;
@@ -475,6 +504,7 @@ class ModelController
                 $obj->save($data);
                 $ret = [];
                 $ret = $this->getObject($obj);
+
                 $this->hook_response_data('update', $obj, $ret, $data);
                 $response[] = $ret;
             } else {
@@ -489,7 +519,13 @@ class ModelController
         $this->response['data'] = $response;
     }
 
-    // get - retrieve objects from db
+    /*
+     * GET
+     *  
+     * get($field, $value)
+     * 
+     * get entry from db
+     */
     public function get($field, $value)
     {
         $response = [];
@@ -516,11 +552,47 @@ class ModelController
                 }
             }
 
+            // check if conditions were passed through header
+            if (isset($_SERVER['HTTP_X_KYTE_QUERY_CONDITIONS'])) {
+                $decoded_string = $json_string = preg_replace('~^"?(.*?)"?$~', '$1', stripslashes(base64_decode($_SERVER['HTTP_X_KYTE_QUERY_CONDITIONS'])));
+                $supplied_conditions = json_decode($decoded_string, true);
+                if (is_array($supplied_conditions)) {
+                    foreach ($supplied_conditions as $sc) {
+                        $new_cond = [];
+                        foreach(array_keys($sc) as $key) {
+                            $new_cond[$key] = rtrim($sc[$key]);
+                            error_log($key.' => '.$new_cond[$key]);
+                        }
+                        if ($conditions == null) {
+                            $conditions = [];
+                            $conditions[] = $new_cond;
+                        } else {
+                            $conditions[] = $new_cond;
+                        }
+                    }
+                } else {
+                    error_log("Supplied conditions were not an array. JSON may be corrupt. ".$decoded_string);
+                }
+            }
+
+            $isLike = false;
+            if (isset($_SERVER['HTTP_X_KYTE_QUERY_LIKE']) && $_SERVER['HTTP_X_KYTE_QUERY_LIKE'] == 'true') {
+                $isLike = true;
+            }
+
             $this->hook_prequery('get', $field, $value, $conditions, $all, $order);
             
+            // search fields and values passed from DataTables
+            $search_fields = isset($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS']) ? $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS'] : null;
+            $search_values = isset($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE']) ? urldecode(base64_decode($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'])) : null;
+
+            if (DEBUG) {
+                error_log("HTTP_X_KYTE_PAGE_SEARCH_VALUE: ".$_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE']."; Decoded: ".$search_values);
+            }
+
             // init model
-            $objs = new \Kyte\Core\Model($this->model, $this->page_size, $this->page_num);
-            $objs->retrieve($field, $value, false, $conditions, $all, $order);
+            $objs = new \Kyte\Core\Model($this->model, $this->page_size, $this->page_num, $search_fields, $search_values);
+            $objs->retrieve($field, $value, $isLike, $conditions, $all, $order);
 
             // get total count
             $this->total_count = $objs->total;
@@ -565,7 +637,13 @@ class ModelController
         }
     }
 
-    // delete - delete objects from db
+    /*
+     * DELETE
+     *  
+     * delete($field, $value)
+     * 
+     * mark entry as deleted in db
+     */
     public function delete($field, $value)
     {
         $response = [];
@@ -593,25 +671,28 @@ class ModelController
             }
 
             foreach ($objs->objects as $obj) {
-                $this->hook_response_data('delete', $obj);
+                $autodelete = true;
+                $this->hook_response_data('delete', $obj, $autodelete);
 
-                // if cascade delete is set delete associated data
-                if ($this->cascadeDelete && isset($this->model['externalTables'])) {
-                    // find external tables and delete associated entries
-                    foreach ($this->model['externalTables'] as $extTbl) {
-                        $dep = new \Kyte\Core\Model(constant($extTbl['model']));
-                        $dep->retrieve($extTbl['field'], $obj->id, false, $conditions);
+                if ($autodelete) {
+                    // if cascade delete is set delete associated data
+                    if ($this->cascadeDelete && isset($this->model['externalTables'])) {
+                        // find external tables and delete associated entries
+                        foreach ($this->model['externalTables'] as $extTbl) {
+                            $dep = new \Kyte\Core\Model(constant($extTbl['model']));
+                            $dep->retrieve($extTbl['field'], $obj->id, false, $conditions);
 
-                        // delete each associated entry in the table
-                        foreach ($dep->objects as $item) {
-                            $this->deleteCascade($item);
-                            $item->delete(null, null, $userId);
+                            // delete each associated entry in the table
+                            foreach ($dep->objects as $item) {
+                                $this->deleteCascade($item);
+                                $item->delete(null, null, $userId);
+                            }
                         }
                     }
-                }
 
-                // finally, delete object
-                $obj->delete(null, null, $userId);
+                    // finally, delete object
+                    $obj->delete(null, null, $userId);
+                }
             }
 
         } catch (\Exception $e) {
@@ -621,6 +702,9 @@ class ModelController
         $this->response['data'] = $response;
     }
 
+    // kyte shipyard hooks
+    public function shipyard_init() {}
+    
     // hook function - user defined
     public function hook_init() {}
     public function hook_auth() {}
@@ -629,5 +713,3 @@ class ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {}
     public function hook_process_get_response(&$r) {}
 }
-
-?>

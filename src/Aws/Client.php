@@ -10,4 +10,3 @@ class Client
     protected $Id;
     protected $Arn;
 }
-?>

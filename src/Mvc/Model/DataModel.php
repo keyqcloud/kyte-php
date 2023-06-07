@@ -10,33 +10,34 @@ $DataModel = [
 			'date'		=> false,
 		],
 
-		'acl'	=> [
-			'type'		=> 'i',
+		'model_definition'		=> [
+			'type'		=> 't',
 			'required'	=> false,
-			'size'		=> 11,
-			'unsigned'	=> true,
-			'default'	=> 1,		// 0 - public, 1 - private
-			'date'		=> false,
-		],
-
-		'permission'	=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 11,
-			'unsigned'	=> true,
-			'default'	=> 1,		// 0 - don't check permissions, 1 - check permissions
 			'date'		=> false,
 		],
 
 		'application'	=> [
 			'type'		=> 'i',
-			'required'	=> true,
+			'required'	=> false,
 			'size'		=> 11,
 			'unsigned'	=> true,
 			'date'		=> false,
+			'fk'		=> [
+				'model'	=> 'Application',
+				'field'	=> 'id',
+			],
 		],
 
 		// framework attributes
+
+		'kyte_locked'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 0,		// 0 - not a kyte critical system...can be edited, 1 - cannot be deleted or edited
+			'date'		=> false,
+		],
 
 		'kyte_account'	=> [
 			'type'		=> 'i',
@@ -94,5 +95,3 @@ $DataModel = [
 		],
 	],
 ];
-
-?>

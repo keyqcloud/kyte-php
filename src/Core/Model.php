@@ -20,11 +20,21 @@ class Model
 
 	private $page_size;
 	private $page_num;
+	private $search_fields;
+	private $search_value;
 
-	public function __construct($model, $page_size = null, $page_num = null) {
+	public function __construct($model, $page_size = null, $page_num = null, $search_fields = null, $search_value = null) {
 		$this->kyte_model = $model;
 		$this->page_size = $page_size;
 		$this->page_num = $page_num;
+		$this->search_fields = $search_fields;
+		$this->search_value = $search_value;
+
+        if (isset($this->kyte_model['appId'])) {
+			\Kyte\Core\Api::dbswitch(true);
+		} else {
+			\Kyte\Core\Api::dbswitch();
+		}
 	}
 
 	public function retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null)
@@ -36,10 +46,12 @@ class Model
 			$main_tbl = $this->kyte_model['name'];
 
 			if (isset($field, $value)) {
+				$escaped_value = \Kyte\Core\DBI::escape_string($value);
 				if ($isLike) {
-					$sql = "WHERE `$main_tbl`.`$field` LIKE '%$value%'";
+					$escaped_value = addcslashes($escaped_value, '%_');
+					$sql = "WHERE `$main_tbl`.`$field` LIKE '%$escaped_value%'";
 				} else {
-					$sql = "WHERE `$main_tbl`.`$field` = '$value'";
+					$sql = "WHERE `$main_tbl`.`$field` = '$escaped_value'";
 				}
 
 				if (!$all) {
@@ -56,19 +68,20 @@ class Model
 				if (!empty($conditions)) {
 					// iterate through each condition
 					foreach($conditions as $condition) {
+						$escaped_value = \Kyte\Core\DBI::escape_string($condition['value']);
 						// check if an evaluation operator is set
 						if (isset($condition['operator'])) {
 							if ($sql != '') {
 								$sql .= " AND ";
 							}
-							$sql .= "`$main_tbl`.`{$condition['field']}` {$condition['operator']} '{$condition['value']}'";
+							$sql .= "`$main_tbl`.`{$condition['field']}` {$condition['operator']} '{$escaped_value}'";
 						}
 						// default to equal
 						else {
 							if ($sql != '') {
 								$sql .= " AND ";
 							}
-							$sql .= "`$main_tbl`.`{$condition['field']}` = '{$condition['value']}'";
+							$sql .= "`$main_tbl`.`{$condition['field']}` = '{$escaped_value}'";
 						}
 					}
 				}
@@ -76,34 +89,50 @@ class Model
 
 			$join = null;
 			$page_sql = "";
-			if (isset($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS'], $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE'])) {
-				$search_fields = explode(",", $_SERVER['HTTP_X_KYTE_PAGE_SEARCH_FIELDS']);
-				$search_value = urldecode(base64_decode($_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE']));
+
+			if (isset($this->search_fields, $this->search_value)) {
+				$escaped_value = \Kyte\Core\DBI::escape_string($this->search_value);
+				$search_fields = explode(",", $this->search_fields);
 				$c = count($search_fields);
-				if ($c > 0 && !empty($search_value)) {
+
+				// foreign key tables - track tables and if same tables are identified, create an alias
+				$fk_tables = [];
+				if ($c > 0 && !empty($this->search_value)) {
 					$page_sql .= " AND (";
 
 					$i = 1;
+					
 					foreach($search_fields as $sf) {
 						$f = explode(".", $sf);
 						if (count($f) == 1) {
 							if ($i < $c) {
-								$page_sql .= " `$main_tbl`.`$sf` LIKE '%$search_value%' OR";
+								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$escaped_value}%' OR";
 								$i++;
 							} else {
-								$page_sql .= " `$main_tbl`.`$sf` LIKE '%$search_value%' ";
+								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$escaped_value}%' ";
 							}
 						} else if (count($f) == 2) {
+							// initialize alias name as null
+							$tbl_alias = null;
+
 							// get struct for FK
 							$fk_attr = $this->kyte_model['struct'][$f[0]];
 							// capitalize the first letter for table name
 							$tblName = $fk_attr['fk']['model'];
+							$tbl = $tblName;
+							if (in_array($tblName, $fk_tables)) {
+								// generate alias
+								$tbl_alias = $tblName.bin2hex(random_bytes(5));
+								$tbl = $tbl_alias;
+							} else {
+								$fk_tables[] = $tblName;
+							}
 
 							if ($i < $c) {
-								$page_sql .= " `$tblName`.`{$f[1]}` LIKE '%$search_value%' OR";
+								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%{$escaped_value}%' OR";
 								$i++;
 							} else {
-								$page_sql .= " `$tblName`.`{$f[1]}` LIKE '%$search_value%' ";
+								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%{$escaped_value}%' ";
 							}
 
 							// prepare join statement
@@ -117,6 +146,7 @@ class Model
 								'table' => $tblName,
 								'main_table_idx' => $f[0],
 								'table_idx' => $fk_attr['fk']['field'],
+								'table_alias' => $tbl_alias,
 							];
 						} else {
 							throw new \Exception("Unsupported field depth $sf");
@@ -152,6 +182,7 @@ class Model
                             } else if (count($f) == 2) {
                                 // get struct for FK
                                 $fk_attr = $this->kyte_model['struct'][$f[0]];
+
                                 // capitalize the first letter for table name
                                 $tblName = $fk_attr['fk']['model'];
                                 $order_sql .= " `$tblName`.`{$f[1]}` {$direction}";
@@ -261,7 +292,7 @@ class Model
 		}
 	}
 
-	public function customSelect($sql)
+	public function customQuery($sql)
 	{
 		try {
 			$data = \Kyte\Core\DBI::query($sql);
@@ -372,4 +403,3 @@ class Model
 		return null;
 	}
 }
-?>

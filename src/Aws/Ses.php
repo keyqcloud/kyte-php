@@ -47,4 +47,3 @@ class Ses extends Client
         return $result['MessageId'];
     }
 }
-?>

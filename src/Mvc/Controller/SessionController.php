@@ -15,6 +15,7 @@ class SessionController extends ModelController
     public function new($data)
     {
         $response = [];
+        $session = [];
 
         try {
             // check for required params
@@ -24,17 +25,25 @@ class SessionController extends ModelController
 			}
 
             // create session for user and obtain user information
-            $response = $this->session->create($data[USERNAME_FIELD], $data[PASSWORD_FIELD]);
-            $obj = new \Kyte\Core\ModelObject(User);
-            if (!$obj->retrieve('id', $response['uid'])) {
+            $session = $this->session->create($data[USERNAME_FIELD], $data[PASSWORD_FIELD]);
+            $user = new \Kyte\Core\ModelObject(User);
+            if (!$user->retrieve('id', $session['uid'])) {
                 throw new \Exception("Unable to find user information");    
             }
-            $response['User'] = $this->getObject($obj);
-
             // get user account
             $account = new \Kyte\Core\ModelObject(Account);
-            if (!$account->retrieve('id', $obj->kyte_account)) {
+            if (!$account->retrieve('id', $user->kyte_account)) {
                 throw new \Exception("Unable to find account associated with user");
+            }
+
+            // set user and account in class
+            $this->user = $user;
+            $this->account = $account;
+
+            if (USE_SESSION_MAP) {
+                $response = $this->getObject($user);
+            } else {
+                $response[] = $this->getObject($user);
             }
 
             // get api associated with account
@@ -47,9 +56,10 @@ class SessionController extends ModelController
             $this->response['kyte_pub'] = $account_api->public_key;
             $this->response['kyte_num'] = $account->number;
             $this->response['kyte_iden'] = $account_api->identifier;
-
-            $this->response['token'] = $response['txToken'];
-            $this->response['session'] = $response['sessionToken'];
+            $this->response['role'] = $response[0]['role'];
+            $this->response['token'] = $session['txToken'];
+            $this->response['account_id'] = $account->id;
+            $this->response['session'] = $session['sessionToken'];
             $this->response['data'] = $response;
         } catch (\Exception $e) {
             throw $e;
@@ -82,5 +92,3 @@ class SessionController extends ModelController
         $this->response['data'] = [ 'txToken' => 0, 'sessionToken' => 0 ];
     }
 }
-
-?>

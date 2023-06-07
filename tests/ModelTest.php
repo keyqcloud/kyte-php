@@ -132,7 +132,7 @@ class ModelTest extends TestCase
         $this->assertTrue(count($data) > 0 ? true : false);
 
         // test custom query
-        $data = \Kyte\Core\DBI::query('* FROM `TestTable`;');
+        $data = \Kyte\Core\DBI::query('SELECT * FROM `TestTable`;');
         $this->assertTrue(count($data) > 0 ? true : false);
 
         // test udpate entry
@@ -265,7 +265,7 @@ class ModelTest extends TestCase
 
         // test custom select
         $model = new \Kyte\Core\Model(TestTable);
-        $data = $model->customSelect('* FROM `TestTable`;');
+        $data = $model->customQuery('* FROM `TestTable`;');
         $this->assertIsArray($data);
         $this->assertCount(3, $data);
 
@@ -295,5 +295,3 @@ class ModelTest extends TestCase
         $this->assertEquals(3, $model->count());
     }
 }
-
-?>

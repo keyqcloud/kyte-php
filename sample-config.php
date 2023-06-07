@@ -9,7 +9,7 @@
 	define('SUPPORT_PHONE', '');
     define('APP_DATE_FORMAT', 'Y/m/d');
     
-    /* BASE PATH for API - for example if in www.example.com/api/ then specify 'api/' */
+    /* BASE PATH for API - for example /var/www/html/ */
     define('APP_DIR', '');
 
 	/* AWS INTEGRATION */
@@ -17,16 +17,8 @@
 	define('AWS_SECRET_KEY', '');
 	define('AWS_KMS_KEYID', '');
 
-	/* STRIPE INTEGRATION */
-	define('STRIPE_API_SK', '');
-	define('STRIPE_API_PK', '');
-    define('STRIPE_WEBHOOK_PAYMENT', '');
-    
-    /* OneSignal INTEGRATION */
-    define('ONESIGNAL_APP_ID', '');
-    define('ONESIGNAL_API_KEY', '');
-
     /* KYTE FRAMEWORK SPECIFIC SETTINGS */
+    define('DEBUG', false);
     define('ALLOW_ENC_HANDOFF', true);
     define('ALLOW_MULTILOGON', false);
     define('ALLOW_SAME_TXTOKEN', false);
@@ -41,9 +33,6 @@
     define('USE_SESSION_MAP', false);
     define('CHECK_SYNTAX_ON_IMPORT', false);
     define('STRICT_TYPING', true);
-
-    /* SENDGRID INTEGRATION */
-    define('KYTE_SENDGRID_API', '');
 
     /* DB INTEGRATION */
     define('KYTE_DB_USERNAME', '');
@@ -167,4 +156,3 @@
     // 'Asia/Magadan'         => "(GMT+12:00) Magadan",
     // 'Pacific/Auckland'     => "(GMT+12:00) Auckland",
     // 'Pacific/Fiji'         => "(GMT+12:00) Fiji",
-?>

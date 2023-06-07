@@ -26,5 +26,3 @@ class AwsKmsTest extends TestCase
         // $this->assertTrue($kms->scheduleDelete());
     }
 }
-
-?>  

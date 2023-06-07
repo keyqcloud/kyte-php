@@ -37,6 +37,12 @@ class ModelObject
 
 	public function __construct($model) {
 		$this->kyte_model = $model;
+
+		if (isset($this->kyte_model['appId'])) {
+			\Kyte\Core\Api::dbswitch(true);
+		} else {
+			\Kyte\Core\Api::dbswitch();
+		}
 	}
 
 	/*
@@ -119,7 +125,8 @@ class ModelObject
 	{
 		try {
 			if (isset($field, $value)) {
-				$sql = $all ? "WHERE `$field` = '$value'" : "WHERE `$field` = '$value' AND `deleted` = '0'";
+				$escaped_value = \Kyte\Core\DBI::escape_string($value);
+				$sql = $all ? "WHERE `$field` = '$escaped_value'" : "WHERE `$field` = '$escaped_value' AND `deleted` = '0'";
 			} else {
 				$sql = '';
 				if (!$all) {
@@ -132,19 +139,20 @@ class ModelObject
 				if (!empty($conditions)) {
 					// iterate through each condition
 					foreach($conditions as $condition) {
+						$escaped_value = \Kyte\Core\DBI::escape_string($condition['value']);
 						// check if an evaluation operator is set
 						if (isset($condition['operator'])) {
 							if ($sql != '') {
 								$sql .= " AND ";
 							}
-							$sql .= "`{$condition['field']}` {$condition['operator']} '{$condition['value']}'";
+							$sql .= "`{$condition['field']}` {$condition['operator']} '{$escaped_value}'";
 						}
 						// default to equal
 						else {
 							if ($sql != '') {
 								$sql .= " AND ";
 							}
-							$sql .= "`{$condition['field']}` = '{$condition['value']}'";
+							$sql .= "`{$condition['field']}` = '{$escaped_value}'";
 						}
 					}
 				}
@@ -184,7 +192,6 @@ class ModelObject
 		try {
 			$types = $this->bindTypes($params);
 			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, $params, $types);
-			$this->populate($params);
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
@@ -205,7 +212,7 @@ class ModelObject
 			}
 
 			if (is_array($o)) {
-				if (count($o) == 0) { return false; }
+				if (count($o) == 0) { error_log("count is empty..."); return false; }
 
 				foreach ($o as $key => $value) {
 					if (array_key_exists($key, $this->kyte_model['struct'])) {
@@ -245,6 +252,12 @@ class ModelObject
 	public function delete($field = null, $value = null, $user = null)
 	{
 		try {
+			if (isset($this->kyte_model['appId'])) {
+				\Kyte\Core\Api::dbswitch(true);
+			} else {
+				\Kyte\Core\Api::dbswitch();
+			}
+
 			if (isset($field, $value)) {
 				if ($this->retrieve($field, $value)) {
 					$id = $this->id;
@@ -275,6 +288,12 @@ class ModelObject
 	public function purge($field = null, $value = null)
 	{
 		try {
+			if (isset($this->kyte_model['appId'])) {
+				\Kyte\Core\Api::dbswitch(true);
+			} else {
+				\Kyte\Core\Api::dbswitch();
+			}
+
 			if (isset($field, $value)) {
 				if ($this->retrieve($field, $value, null, null, true)) {
 					$id = $this->id;

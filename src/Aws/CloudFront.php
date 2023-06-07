@@ -7,6 +7,11 @@ use Aws\CloudFront\CloudFrontClient;
 class CloudFront extends Client
 {
     private $distributionConfig;
+    public $domainName;
+    public $Id;
+    public $Arn;
+    public $status;
+    public $etag;
 
     // distribution configuration properties
     // https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-overview-required-fields.html
@@ -75,7 +80,7 @@ class CloudFront extends Client
         ]);
 
         // set default values
-        $this->CallerReference = 'kyte'.time();
+        $this->CallerReference = 'kyte'.time().uniqid();
         $this->Aliases = [];
         $this->DefaultRootObject = '';
         $this->Origins = [];
@@ -139,6 +144,8 @@ class CloudFront extends Client
 
             $this->Id = $result['Distribution']['Id'];
             $this->Arn = $result['Distribution']['ARN'];
+            $this->domainName = $result['Distribution']['DomainName'];
+            $this->status = $result['Distribution']['Status'];
     
             $this->distributionConfig = $result['Distribution']['DistributionConfig'];
 
@@ -166,8 +173,9 @@ class CloudFront extends Client
             $this->distributionConfig['Enabled'] = false;
 
             $result = $this->client->updateDistribution([
-                $this->distributionConfig,
-                'Id' => $distributionId
+                'DistributionConfig' => $this->distributionConfig,
+                'Id' => $distributionId,
+                'IfMatch' => $this->etag,
             ]);
 
             return true;
@@ -184,8 +192,9 @@ class CloudFront extends Client
             $this->distributionConfig['Enabled'] = true;
 
             $result = $this->client->updateDistribution([
-                $this->distributionConfig,
-                'Id' => $distributionId
+                'DistributionConfig' => $this->distributionConfig,
+                'Id' => $distributionId,
+                'IfMatch' => $this->etag,
             ]);
             
             return true;
@@ -223,7 +232,7 @@ class CloudFront extends Client
         try {
             $distributionId = $this->Id ? $this->Id : $distributionId;
 
-            if (count($aliases) > 0 || empty($acmArn)) {
+            if (count($aliases) == 0 || empty($acmArn)) {
                 throw new \Exception("Aliases require a valid ACM certificate");
             }
 
@@ -236,8 +245,9 @@ class CloudFront extends Client
             // $this->distributionConfig['ViewerCertificate']['CloudFrontDefaultCertificate'] = false;
 
             $result = $this->client->updateDistribution([
-                $this->distributionConfig,
-                'Id' => $distributionId
+                'DistributionConfig' => $this->distributionConfig,
+                'Id' => $distributionId,
+                'IfMatch' => $this->etag,
             ]);
             
             return true;
@@ -260,8 +270,9 @@ class CloudFront extends Client
             $this->distributionConfig['Aliases']['Quantity'] = 0;
 
             $result = $this->client->updateDistribution([
-                $this->distributionConfig,
-                'Id' => $distributionId
+                'DistributionConfig' => $this->distributionConfig,
+                'Id' => $distributionId,
+                'IfMatch' => $this->etag,
             ]);
             
             return true;
@@ -291,7 +302,7 @@ class CloudFront extends Client
         return true;
     }
 
-    public function getConfiguration($distributionId = null) {
+    public function getDistribution($distributionId = null) {
         try {
             $distributionId = $this->Id ? $this->Id : $distributionId;
 
@@ -299,6 +310,12 @@ class CloudFront extends Client
                 'Id' => $distributionId
             ]);
 
+            $this->Id = $result['Distribution']['Id'];
+            $this->Arn = $result['Distribution']['ARN'];
+            $this->domainName = $result['Distribution']['DomainName'];
+            $this->status = $result['Distribution']['Status'];
+            $this->etag = $result['ETag'];
+            
             if (isset($result['Distribution']['DistributionConfig']))
             {
                 $this->distributionConfig = $result['Distribution']['DistributionConfig'];
@@ -311,12 +328,6 @@ class CloudFront extends Client
             throw new \Exception($e->getMessage());
             return false;
         }
-    }
-
-    public function getDomainName() {
-        $this->getConfiguration();
-
-        return $this->distributionConfig['DomainName'];
     }
 
     public function addOrigin(
@@ -519,4 +530,3 @@ class CloudFront extends Client
         // ];
     }
 }
-?>

@@ -16,17 +16,22 @@ class Acm extends Client
         ]);
     }
 
-    public function request($domainName, $san = []) {
+    public function request($domainName, $san = []) { //, &$idemToken = null) {
         // create idempotency token
-        $idemToken = $domainName.time();
+        // $idemToken = $domainName.time();
+
+        $request = [
+            'DomainName' => $domainName, // REQUIRED
+            'ValidationMethod' => 'DNS',
+            // 'IdempotencyToken' => $idemToken,
+        ];
+
+        if (count($san) > 0) {
+            $request['SubjectAlternativeNames'] = $san;
+        }
 
         // request certificate
-        $result = $this->client->requestCertificate([
-            'DomainName' => $domainName, // REQUIRED
-            'SubjectAlternativeNames' => $san,
-            // 'IdempotencyToken' => $idemToken,
-            'ValidationMethod' => 'DNS',
-        ]);
+        $result = $this->client->requestCertificate($request);
 
         if (!isset($result['CertificateArn'])) {
             throw new \Exception('Unable to create new certificate');
@@ -34,9 +39,10 @@ class Acm extends Client
 
         $this->Arn = $result['CertificateArn'];
 
-        return [ 'CertificateArn' => $result['CertificateArn'], 'IdempotencyToken' => $idemToken ];
+        return $this->Arn;
     }
 
+    // https://docs.aws.amazon.com/aws-sdk-php/v3/api/api-acm-2015-12-08.html#describecertificate
     public function describe($arn = null) {
         try {
             $arn = $this->Arn ? $this->Arn : $arn;
@@ -45,6 +51,8 @@ class Acm extends Client
                 'CertificateArn' => $arn, // REQUIRED
             ]);
 
+            // 'Status' => 'PENDING_VALIDATION|ISSUED|INACTIVE|EXPIRED|VALIDATION_TIMED_OUT|REVOKED|FAILED',
+            //
             // CNAME records required
             // 'DomainValidationOptions' => [
             //     [
@@ -54,6 +62,11 @@ class Acm extends Client
             //             'Type' => 'CNAME',
             //             'Value' => '<string>',
             //     ],
+            //     'ValidationDomain' => '<string>',
+            //     'ValidationEmails' => ['<string>', ...],
+            //     'ValidationMethod' => 'EMAIL|DNS',
+            //     'ValidationStatus' => 'PENDING_VALIDATION|SUCCESS|FAILED',
+            //
         } catch(\Exception $e) {
             throw new \Exception("Unable to obtain certificate details");
         }
@@ -79,4 +92,3 @@ class Acm extends Client
         return $result;
     }
 }
-?>

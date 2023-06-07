@@ -119,5 +119,3 @@ class SessionManager
 		return true;
 	}
 }
-
-?>

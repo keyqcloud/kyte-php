@@ -13,5 +13,3 @@ class DatabaseTest extends TestCase
         $this->assertTrue(\Kyte\Core\DBI::createDatabase("TestDatabase2", "TestUser2", $password, true));
     }
 }
-
-?>  

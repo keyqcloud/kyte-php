@@ -21,5 +21,3 @@ class FunctionTest extends TestCase
         $this->assertEquals('test', $decoded);
     }
 }
-
-?>  

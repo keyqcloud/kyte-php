@@ -146,5 +146,3 @@ class AwsWebsiteTest extends TestCase
         $this->assertTrue($s3->deleteBucket());
     }
 }
-
-?>  

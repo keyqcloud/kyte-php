@@ -18,5 +18,3 @@ class AwsSesTest extends TestCase
         $this->assertIsString($result);
     }
 }
-
-?>  
