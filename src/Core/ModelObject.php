@@ -49,7 +49,6 @@ class ModelObject
 		$types = '';
 		foreach ($params as $key => $value) {
 			if (array_key_exists($key, $this->kyte_model['struct'])) {
-				$this->setParam($key, $value);
 				// check if type is t, in which case return 's'
 				// otherwise return type as is
 				$types .= $this->kyte_model['struct'][$key]['type'] == 't' ? 's' : $this->kyte_model['struct'][$key]['type'];
@@ -91,13 +90,15 @@ class ModelObject
 		$this->validateRequiredParams($params);
 
 		// audit attributes - set date created
+		$params['deleted'] = 0;
 		$params['date_created'] = time();
 		$params['created_by'] = isset($params['created_by']) ? $params['created_by'] : $user;
 
 		try {
 			$types = $this->bindTypes($params);
 			$id = \Kyte\Core\DBI::insert($this->kyte_model['name'], $params, $types);
-			$this->populate($id);
+			$params['id'] = $id;
+			$this->populate($params);
 
 			return true;
 		} catch (\Exception $e) {
@@ -183,6 +184,7 @@ class ModelObject
 		try {
 			$types = $this->bindTypes($params);
 			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, $params, $types);
+			$this->populate($params);
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
@@ -206,7 +208,9 @@ class ModelObject
 				if (count($o) == 0) { return false; }
 
 				foreach ($o as $key => $value) {
-					$this->setParam($key, $value);
+					if (array_key_exists($key, $this->kyte_model['struct'])) {
+						$this->setParam($key, $value);
+					}
 				}
 			} else {
 				// if $id is null from parameter, set it to the object's id value
@@ -298,7 +302,40 @@ class ModelObject
 	}
 
 	protected function setParam($key, $value) {
-		$this->{$key} = $value;
+		if (is_null($value)) {
+			$this->{$key} = $value;
+			return;
+		}
+
+		if (array_key_exists($key, $this->kyte_model['struct'])) {
+			if (STRICT_TYPING) {
+				// check if type is t, in which case return 's'
+				// otherwise return type as is
+				switch ($this->kyte_model['struct'][$key]['type']) {
+					case 's':
+					case 't':
+						$this->{$key} = strval($value);
+						break;
+
+					case 'i':
+						$this->{$key} = intval($value);
+						break;
+
+					case 'd':
+						$this->{$key} = floatval($value);
+						break;
+						
+					default:
+						$this->{$key} = $value;
+						break;
+				}
+			} else {
+				$this->{$key} = strval($value);
+			}
+		} else {
+			// allow for non model defined properties
+			$this->{$key} = $value;
+		}
 	}
 
 	public function getParam($key) {

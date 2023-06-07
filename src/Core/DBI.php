@@ -383,6 +383,7 @@ class DBI {
 
 		$stmt = self::$dbConn->prepare($query);
 		if($stmt === false) {
+			error_log("Error preparing mysql statement '$query'; ".htmlspecialchars(self::$dbConn->error));
   			throw new \Exception("Error preparing mysql statement '$query'; ".htmlspecialchars(self::$dbConn->error), 1);
   			return false;
 		}
@@ -391,6 +392,7 @@ class DBI {
 		// call_user_func_array(array($stmt, 'bind_param'), $bindParams);
 
 		if (!$stmt->execute()) {
+			error_log("Error executing mysql statement '$query'; ".htmlspecialchars(self::$dbConn->error));
 			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars(self::$dbConn->error), 1);
 			$stmt->close();
 			return false;

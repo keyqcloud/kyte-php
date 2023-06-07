@@ -182,6 +182,10 @@ class Api
 			define('PAGE_SIZE', 50);
 			error_log('PAGE_SIZE constant not defined...using defaults');
 		}
+		if (!defined('STRICT_TYPING')) {
+			define('STRICT_TYPING', true);
+			error_log('STRICT_TYPING constant not defined...using defaults');
+		}
 
 		// only execute if called from web
 		if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
@@ -357,12 +361,18 @@ class Api
 			http_response_code(403);
 			$this->response['error'] = $e->getMessage();
 			$this->response = ['response_code' => 403] + $this->response;
+			if (defined('LOG_RESPONSE')) {
+				error_log(json_encode($this->response, JSON_PRETTY_PRINT));
+			}
 			echo json_encode($this->response);
 			exit(0);
 		} catch (\Exception $e) {
 			http_response_code(400);
 			$this->response = ['response_code' => 400] + $this->response;
 			$this->response['error'] = $e->getMessage();
+			if (defined('LOG_RESPONSE')) {
+				error_log(json_encode($this->response, JSON_PRETTY_PRINT));
+			}
 			echo json_encode($this->response);
 			exit(0);
 		}
@@ -376,6 +386,9 @@ class Api
 
 		// return response data
 		$this->response = ['response_code' => 200] + $this->response;
+		if (defined('LOG_RESPONSE')) {
+			error_log(json_encode($this->response, JSON_PRETTY_PRINT));
+		}
 		echo json_encode($this->response);
 	}
 
@@ -426,6 +439,10 @@ class Api
 		$pattern = '/json/';
 		if (preg_match($pattern, $this->contentType)) {
 			$this->data = json_decode(file_get_contents("php://input"), true);
+		}
+
+		if (VERBOSE_LOG > 0) {
+			error_log(print_r( $this->data, true ));
 		}
 
 		if (IS_PRIVATE) {
@@ -544,7 +561,7 @@ class Api
 			}
 			$this->response['sessionPermission'] = $this->user->role;
 
-			error_log("ACCOUNTS ".$this->account->id." and ".$this->user->kyte_account);
+			// error_log("ACCOUNTS ".$this->account->id." and ".$this->user->kyte_account);
 
 			// check is user has different account
 			// get user account
