@@ -1,7 +1,7 @@
 <?php
 
-$User = [
-	'name' => 'User',
+$KyteUser = [
+	'name' => 'KyteUser',
 	'struct' => [
 		'name'		=> [
 			'type'		=> 's',
@@ -54,7 +54,7 @@ $User = [
 			'unsigned'	=> true,
 			'date'		=> false,
 			'fk'		=> [
-				'model'	=> 'Account',
+				'model'	=> 'KyteAccount',
 				'field'	=> 'id',
 			],
 		],

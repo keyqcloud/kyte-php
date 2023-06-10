@@ -1,7 +1,7 @@
 <?php
 
-$Account = [
-	'name' => 'Account',
+$KyteAccount = [
+	'name' => 'KyteAccount',
 	'struct' => [
 		'name'		=> [
 			'type'		=> 's',
