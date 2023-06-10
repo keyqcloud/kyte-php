@@ -51,6 +51,68 @@ $Application = [
 			'protected'	=> true,
 		],
 
+		// options for custom user table
+
+		'user_model'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+			'protected'	=> false,
+		],
+
+		'username_colname'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+			'protected'	=> false,
+		],
+
+		'password_colname'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+			'protected'	=> false,
+		],
+
+		// organization based user scoping
+
+		'org_model'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+			'protected'	=> false,
+		],
+
+		'userorg_colname'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+			'protected'	=> false,
+		],
+
+		// optional customer AWS credentials
+
+		'aws_public_key'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 512,
+			'date'		=> false,
+			'protected'	=> true,
+		],
+
+		'aws_secret_key'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 512,
+			'date'		=> false,
+			'protected'	=> true,
+		],
+
 		// framework attributes
 
 		'kyte_account'	=> [
