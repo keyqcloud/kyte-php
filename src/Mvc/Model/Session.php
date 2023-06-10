@@ -31,6 +31,13 @@ $Session = [
 			'date'		=> false,
 		],
 
+		'appIdentifier'		=> [
+			'type'		=> 's',
+			'required'	=> true,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
 		// audit attributes
 
 		'created_by'		=> [
