@@ -260,8 +260,8 @@ class ModelController
                         $conditions = null;
                         if ($fk_model['appId'] === null && $this->requireAccount && $fk['model'] !== 'KyteAccount') {
                             $conditions = [['field' => 'kyte_account', 'value' => $this->api->account->id]];
-                        } elseif ($this->api->org_model !== null && $this->api->userorg_colname !== null && isset($fk_model['struct'][$this->api->userorg_colname])) {
-                            $conditions = [['field' => $this->api->userorg_colname, 'value' => $this->api->user->{$this->api->userorg_colname}]];
+                        } elseif ($this->api->app->org_model !== null && $this->api->app->userorg_colname !== null && isset($fk_model['struct'][$this->api->app->userorg_colname])) {
+                            $conditions = [['field' => $this->api->app->userorg_colname, 'value' => $this->api->user->{$this->api->app->userorg_colname}]];
                         }
                         
                         $fk_obj->retrieve($fk['field'], $value, $conditions, null, true);
@@ -286,8 +286,8 @@ class ModelController
                         $conditions = null;
                         if ($et_model['appId'] === null && $this->requireAccount && $et_model['name'] !== 'KyteAccount') {
                             $conditions = [['field' => 'kyte_account', 'value' => $this->api->account->id]];
-                        } elseif ($this->api->org_model !== null && $this->api->userorg_colname !== null && isset($et_model['struct'][$this->api->userorg_colname])) {
-                            $conditions = [['field' => $this->api->userorg_colname, 'value' => $this->api->user->{$this->api->userorg_colname}]];
+                        } elseif ($this->api->app->org_model !== null && $this->api->app->userorg_colname !== null && isset($et_model['struct'][$this->api->app->userorg_colname])) {
+                            $conditions = [['field' => $this->api->app->userorg_colname, 'value' => $this->api->user->{$this->api->app->userorg_colname}]];
                         }
 
                         $et_objs->retrieve($et['field'], $response['id'], false, $conditions);
@@ -343,8 +343,8 @@ class ModelController
                             if ($this->model['appId'] === null) {
                                 // add account information
                                 $models[$this->model['struct'][$key]['fk']['model']]['kyte_account'] = $data['kyte_account'] ?? $this->api->account->id;
-                            } elseif ($this->api->org_model !== null && $this->api->userorg_colname !== null && isset($models[$this->model['struct'][$key]['fk']['model']][$this->api->userorg_colname])) {
-                                $models[$this->model['struct'][$key]['fk']['model']][$this->api->userorg_colname] = $data[$this->api->userorg_colname] ?? $this->api->user->{$this->api->userorg_colname};
+                            } elseif ($this->api->app->org_model !== null && $this->api->app->userorg_colname !== null && isset($models[$this->model['struct'][$key]['fk']['model']][$this->api->app->userorg_colname])) {
+                                $models[$this->model['struct'][$key]['fk']['model']][$this->api->app->userorg_colname] = $data[$this->api->app->userorg_colname] ?? $this->api->user->{$this->api->app->userorg_colname};
                             }
                         }
 
@@ -460,8 +460,8 @@ class ModelController
                 if ($this->model['appId'] === null) {
                     // add account information
                     $data['kyte_account'] = $data['kyte_account'] ?? $this->api->account->id;
-                } elseif ($this->api->org_model !== null && $this->api->userorg_colname !== null && isset($this->model['struct'][$this->api->userorg_colname])) {
-                    $data[$this->api->userorg_colname] = $data[$this->api->userorg_colname] ?? $this->api->user->{$this->api->userorg_colname};
+                } elseif ($this->api->app->org_model !== null && $this->api->app->userorg_colname !== null && isset($this->model['struct'][$this->api->app->userorg_colname])) {
+                    $data[$this->api->app->userorg_colname] = $data[$this->api->app->userorg_colname] ?? $this->api->user->{$this->api->app->userorg_colname};
                 }
             }
 
@@ -539,8 +539,8 @@ class ModelController
             if ($this->model !== null) {
                 if ($this->model['appId'] === null && $this->requireAccount) {
                     $conditions = [['field' => 'kyte_account', 'value' => $this->api->account->id]];
-                } elseif ($this->api->org_model !== null && $this->api->userorg_colname !== null && isset($this->model['struct'][$this->api->userorg_colname])) {
-                    $conditions = [['field' => $this->api->userorg_colname, 'value' => $this->api->user->{$this->api->userorg_colname}]];
+                } elseif ($this->api->app->org_model !== null && $this->api->app->userorg_colname !== null && isset($this->model['struct'][$this->api->app->userorg_colname])) {
+                    $conditions = [['field' => $this->api->app->userorg_colname, 'value' => $this->api->user->{$this->api->app->userorg_colname}]];
                 }
             }
             
@@ -624,8 +624,8 @@ class ModelController
             if ($this->model !== null) {
                 if ($this->model['appId'] === null && $this->requireAccount) {
                     $conditions = [['field' => 'kyte_account', 'value' => $this->api->account->id]];
-                } elseif ($this->api->org_model !== null && $this->api->userorg_colname !== null && isset($this->model['struct'][$this->api->userorg_colname])) {
-                    $conditions = [['field' => $this->api->userorg_colname, 'value' => $this->api->user->{$this->api->userorg_colname}]];
+                } elseif ($this->api->app->org_model !== null && $this->api->app->userorg_colname !== null && isset($this->model['struct'][$this->api->app->userorg_colname])) {
+                    $conditions = [['field' => $this->api->app->userorg_colname, 'value' => $this->api->user->{$this->api->app->userorg_colname}]];
                 }
             }
             
@@ -756,8 +756,8 @@ class ModelController
             if ($this->model !== null) {
                 if ($this->model['appId'] === null && $this->requireAccount) {
                     $conditions = [['field' => 'kyte_account', 'value' => $this->api->account->id]];
-                } elseif ($this->api->org_model !== null && $this->api->userorg_colname !== null && isset($this->model['struct'][$this->api->userorg_colname])) {
-                    $conditions = [['field' => $this->api->userorg_colname, 'value' => $this->api->user->{$this->api->userorg_colname}]];
+                } elseif ($this->api->app->org_model !== null && $this->api->app->userorg_colname !== null && isset($this->model['struct'][$this->api->app->userorg_colname])) {
+                    $conditions = [['field' => $this->api->app->userorg_colname, 'value' => $this->api->user->{$this->api->app->userorg_colname}]];
                 }
             }
             
