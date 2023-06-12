@@ -263,10 +263,8 @@ class ModelController
                         } elseif ($this->api->app->org_model !== null && $this->api->app->userorg_colname !== null && isset($fk_model['struct'][$this->api->app->userorg_colname])) {
                             $conditions = [['field' => $this->api->app->userorg_colname, 'value' => $this->api->user->{$this->api->app->userorg_colname}]];
                         }
-                        
-                        $fk_obj->retrieve($fk['field'], $value, $conditions, null, true);
     
-                        if ($fk_obj->found()) {
+                        if ($fk_obj->retrieve($fk['field'], $value, $conditions, null, true)) {
                             $value = $this->getObject($fk_obj); // Recursively get object for FK
                         }
                     }
