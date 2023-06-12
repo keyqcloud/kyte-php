@@ -16,7 +16,7 @@ class Api
      *
      * @var string|null
      */
-	private $appId = null;
+	public $appId = null;
 
 	/**
      * @var \Kyte\Core\ModelObject The APIKey model object.
@@ -26,22 +26,22 @@ class Api
     /**
      * * @var \Kyte\Core\ModelObject The KyteAccount model object.
      */
-    private $account = null;
+    public $account = null;
     
     /**
      * * @var \Kyte\Core\ModelObject The Session model object.
      */
-    private $session = null;
+    public $session = null;
     
     /**
      * @var \Kyte\Core\ModelObject The User model object.
      */
-    private $user = null;
+    public $user = null;
     
     /**
      * @var \Kyte\Core\ModelObject The Application model object.
      */
-    private $app = null;
+    public $app = null;
     
     /**
      * The API signature.
