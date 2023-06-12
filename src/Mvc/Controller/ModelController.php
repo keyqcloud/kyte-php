@@ -193,9 +193,14 @@ class ModelController
 
     protected function checkPermissions($requestType, $modelName = null) {
         if ($this->api->user === null) {
+            error_log("user is null");
             return true;
         }
-        
+
+        if ($this->api->account === null) {
+            error_log("account is null");
+        }
+
         // check if user id, account id is set, and whether the flag to check roles is also set to true
         // also check to make sure this isn't a service controller by checking the model
         if (!$this->api->user->id || !$this->api->account->id || !$this->requireRoles || $this->model === null) {
