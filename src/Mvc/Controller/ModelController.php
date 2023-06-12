@@ -207,10 +207,10 @@ class ModelController
     
         $role = new \Kyte\Core\ModelObject(Role);
 
-        $cond = $this->requireAccount ? [['field' => 'kyte_account', 'value' => $this->api->account->id]] : null;
+        $cond = $this->requireAccount ? [['field' => 'kyte_account', 'value' => $this->account->id]] : null;
     
         if (!$role->retrieve('id', $this->user->role, $cond)) {
-            error_log('['.$this->model['name'].'] => ['.$requestType.'] unable to find role for '.$this->user->role.' and '.$this->account->id);
+            error_log('['.$modelName.'] => ['.$requestType.'] unable to find role for '.$this->user->role.' and '.$this->account->id);
             return false;
         }
     
@@ -219,7 +219,7 @@ class ModelController
     
         $permission = new \Kyte\Core\ModelObject(Permission);
         if (!$permission->retrieve('role', $role->id, $cond)) {
-            error_log('unable to find permission');
+            error_log('unable to find permission for role id '.$role->id.' for account '.$this->account->id.' and user '.$this->user->id);
             return false;
         }
     
