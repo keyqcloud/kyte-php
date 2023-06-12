@@ -790,7 +790,7 @@ class Api
 
 			// Check if the user has a different account
 			// Get user account
-			if ($this->user->kyte_account != $this->account->id) {
+			if ($this->appId === null && $this->user->kyte_account != $this->account->id) {
 				if (!$this->account->retrieve('id', $this->user->kyte_account)) {
 					throw new \Exception("Unable to find account associated with the user");
 				}
