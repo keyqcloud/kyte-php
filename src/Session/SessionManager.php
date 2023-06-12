@@ -125,8 +125,10 @@ class SessionManager
 				throw new \Kyte\Exception\SessionException("Invalid username or password.");
 			}
 
+			$cond = $this->appId === null ? null : [['field' => 'appIdentifier', 'value' => $this->appId]];
+
 			// delete existing session
-			if (!$this->multilogon && $this->session->retrieve('uid', $this->user->id, [['field' => 'appIdentifier', 'value' => $this->appId]])) {
+			if (!$this->multilogon && $this->session->retrieve('uid', $this->user->id, $cond)) {
 				$this->hasSession = false;
 				$this->session->delete();
 			}
@@ -170,7 +172,8 @@ class SessionManager
 		$time = time();
 
 		// check if session token exists and retrieve session object
-		if (!$this->session->retrieve('sessionToken', $sessionToken, [['field' => 'appIdentifier', 'value' => $this->appId]])) {
+		$cond = $this->appId === null ? null : [['field' => 'appIdentifier', 'value' => $this->appId]];
+		if (!$this->session->retrieve('sessionToken', $sessionToken, $cond)) {
 			$this->hasSession = false;
 			throw new \Kyte\Exception\SessionException("No valid session.");
 		}
