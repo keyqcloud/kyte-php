@@ -219,7 +219,7 @@ class ModelController
     
         $permission = new \Kyte\Core\ModelObject(Permission);
         if (!$permission->retrieve('role', $role->id, $cond)) {
-            error_log('unable to find permission for role id '.$role->id.' for account '.$this->account->id.' and user '.$this->user->id);
+            error_log('unable to find permission ['.$modelName.'] for role id '.$role->id.' for account '.$this->account->id.' and user '.$this->user->id);
             return false;
         }
     
