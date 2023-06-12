@@ -260,7 +260,7 @@ class ModelController
                         $conditions = null;
                         if (!isset($fk_model['appId']) && $this->requireAccount && $fk['model'] !== 'KyteAccount') {
                             $conditions = [['field' => 'kyte_account', 'value' => $this->api->account->id]];
-                        } elseif ($this->api->app->org_model !== null && $this->api->app->userorg_colname !== null && isset($fk_model['struct'][$this->api->app->userorg_colname])) {
+                        } elseif ($this->api->app != null && $this->api->app->org_model !== null && $this->api->app->userorg_colname !== null && isset($fk_model['struct'][$this->api->app->userorg_colname])) {
                             $conditions = [['field' => $this->api->app->userorg_colname, 'value' => $this->api->user->{$this->api->app->userorg_colname}]];
                         }
     
