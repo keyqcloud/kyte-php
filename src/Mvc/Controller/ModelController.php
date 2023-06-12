@@ -209,7 +209,7 @@ class ModelController
 
         $cond = $this->requireAccount ? [['field' => 'kyte_account', 'value' => $this->api->account->id]] : null;
     
-        if (!$role->retrieve('id', $this->app->user->role, $cond)) {
+        if (!$role->retrieve('id', $this->api->user->role, $cond)) {
             error_log('['.$this->model['name'].'] => ['.$requestType.'] unable to find role for '.$this->api->user->role.' and '.$this->api->account->id);
             return false;
         }
