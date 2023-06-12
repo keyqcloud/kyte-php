@@ -62,84 +62,84 @@ class Api
      *
      * @var string|null
      */
-    private $model;
+    public $model;
     
     /**
      * The HTTP request.
      *
      * @var mixed|null
      */
-    private $request;
+    public $request;
     
     /**
      * The content type.
      *
      * @var mixed|null
      */
-    private $contentType;
+    public $contentType;
     
     /**
      * The request data.
      *
      * @var array<string,mixed>|null
      */
-    private $data;
+    public $data;
     
     /**
      * The field.
      *
      * @var string|null
      */
-    private $field = null;
+    public $field = null;
     
     /**
      * The value.
      *
      * @var string|null
      */
-    private $value = null;
+    public $value = null;
     
     /**
      * The page size.
      *
      * @var int|null
      */
-    private $page_size;
+    public $page_size;
     
     /**
      * The total number of pages.
      *
      * @var int|null
      */
-    private $page_total;
+    public $page_total;
     
     /**
      * The current page number.
      *
      * @var int
      */
-    private $page_num = 1;
+    public $page_num = 1;
     
     /**
      * The total count.
      *
      * @var int|null
      */
-    private $total_count;
+    public $total_count;
     
     /**
      * The total filtered count.
      *
      * @var int|null
      */
-    private $total_filtered;
+    public $total_filtered;
     
     /**
      * The response data.
      *
      * @var array<string,mixed>
      */
-    private $response = [];
+    public $response = [];
 	
 
 	/**
