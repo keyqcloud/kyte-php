@@ -2,33 +2,114 @@
 
 namespace Kyte\Session;
 
+/**
+ * Class SessionManager
+ *
+ * Manages user sessions and provides functionality for session creation, validation, and destruction.
+ * 
+ * @package Kyte\Session;
+ */
 class SessionManager
 {
-	private $session;
-	private $user;
-	private $username_field;
-	private $password_field;
-	public $hasSession;
+	/**
+     * @var \Kyte\Core\ModelObject The session model object.
+     */
+    private $session;
 
-	public function __construct($session_model, $account_model, $username_field = 'email', $password_field = 'password', $multilogon = false, $timeout = 3600) {
+    /**
+     * @var \Kyte\Core\ModelObject The user model object.
+     */
+    private $user;
+
+    /**
+     * @var string The field name for the username.
+     */
+    private $username_field;
+
+    /**
+     * @var string The field name for the password.
+     */
+    private $password_field;
+
+	/**
+     * @var string|null The optional application identifier.
+     */
+    private $appId = null;
+
+    /**
+     * @var int The session timeout duration in seconds.
+     */
+    private $timeout;
+
+    /**
+     * @var bool Indicates if multilogon is enabled.
+     */
+    private $multilogon;
+
+    /**
+     * @var bool Indicates if there is an active session.
+     */
+    public $hasSession;
+
+	/**
+     * SessionManager constructor.
+     *
+     * @param string $session_model   The session model name.
+     * @param string $user_model      The user model name.
+     * @param string $username_field  The field name for the username.
+     * @param string $password_field  The field name for the password.
+     * @param bool   $multilogon      Indicates if multilogon is enabled.
+     * @param int    $timeout         The session timeout duration in seconds.
+     */
+	public function __construct($session_model, $user_model, $username_field = 'email', $password_field = 'password', $appId = null, $multilogon = false, $timeout = 3600) {
 		$this->session = new \Kyte\Core\ModelObject($session_model);
-		$this->user = new \Kyte\Core\ModelObject($account_model);
+		$this->user = new \Kyte\Core\ModelObject($user_model);
 		$this->username_field = $username_field;
 		$this->password_field = $password_field;
+		$this->appId = $appId;
 		$this->timeout = $timeout;
 		$this->multilogon = $multilogon;
 		$this->hasSession = false;
 	}
 
-	protected function generateTxToken($time, $exp_time, $string) {
-		return hash_hmac('sha256', $string.'-'.$time, $exp_time);
+	/**
+	 * Generates a transaction token based on the given parameters.
+	 *
+	 * @param int    $time     The current time.
+	 * @param int    $exp_time The expiration time.
+	 * @param string $string   The string to generate the token from.
+	 *
+	 * @return string The generated transaction token.
+	 */
+	protected function generateTxToken($time, $exp_time, $string)
+	{
+		return hash_hmac('sha256', $string . '-' . $time, $exp_time);
 	}
 
-	protected function generateSessionToken($string) {
+	/**
+	 * Generates a session token based on the given string.
+	 *
+	 * @param string $string The string to generate the token from.
+	 *
+	 * @return string The generated session token.
+	 */
+	protected function generateSessionToken($string)
+	{
 		$bytes = random_bytes(5);
 		return hash_hmac('sha256', $string, bin2hex($bytes));
 	}
 
+
+	/**
+     * Creates a new session with the specified username and password.
+     *
+     * @param string $username   The username.
+     * @param string $password   The password.
+     * @param array  $conditions Additional conditions for user retrieval (optional).
+     *
+     * @return array The session parameters.
+     * @throws \Kyte\Exception\SessionException If the username or password is invalid, or session creation fails.
+     */
 	public function create($username, $password, $conditions = null)
 	{
 		if (isset($username, $password)) {
@@ -45,7 +126,7 @@ class SessionManager
 			}
 
 			// delete existing session
-			if (!$this->multilogon && $this->session->retrieve('uid', $this->user->id)) {
+			if (!$this->multilogon && $this->session->retrieve('uid', $this->user->id, [['field' => 'appIdentifier', 'value' => $this->appId]])) {
 				$this->hasSession = false;
 				$this->session->delete();
 			}
@@ -58,6 +139,7 @@ class SessionManager
 				'exp_date' => $exp_time,
 				'sessionToken' => $this->generateSessionToken($this->user->{$this->username_field}),
 				'txToken' => $this->generateTxToken($time, $exp_time, $this->user->{$this->username_field}),
+				'appIdentifier' => $this->appId,
 			]);
 			if (!$res) {
 				$this->hasSession = false;
@@ -68,17 +150,27 @@ class SessionManager
 
 			// return params for new session after successful creation
 			return $this->session->getAllParams();
-		} else throw new \Kyte\Exception\SessionException("Session credentials was not specified.");
+		} else {
+			throw new \Kyte\Exception\SessionException("Session credentials was not specified.");
+		}
 		
 	}
 
+	/**
+     * Validates a session with the given session token.
+     *
+     * @param string $sessionToken The session token.
+     *
+     * @return array The session parameters.
+     * @throws \Kyte\Exception\SessionException If the session is invalid or expired.
+     */
 	public function validate($sessionToken)
 	{
 		// get current time
 		$time = time();
 
 		// check if session token exists and retrieve session object
-		if (!$this->session->retrieve('sessionToken', $sessionToken)) {
+		if (!$this->session->retrieve('sessionToken', $sessionToken, [['field' => 'appIdentifier', 'value' => $this->appId]])) {
 			$this->hasSession = false;
 			throw new \Kyte\Exception\SessionException("No valid session.");
 		}
@@ -109,12 +201,19 @@ class SessionManager
 		return $this->session->getAllParams();
 	}
 
+	/**
+     * Destroys the current session.
+     *
+     * @return bool True if the session was destroyed successfully, false otherwise.
+     * @throws \Kyte\Exception\SessionException If there is no valid session.
+     */
 	public function destroy() {
 		$this->hasSession = false;
 
 		if (!$this->session) {
 			throw new \Kyte\Exception\SessionException("No valid session.");
 		}
+
 		$this->session->delete();
 		return true;
 	}
