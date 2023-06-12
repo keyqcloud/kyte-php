@@ -60,7 +60,7 @@ class Api
     /**
      * The HTTP request model.
      *
-     * @var mixed|null
+     * @var string|null
      */
     private $model;
     
@@ -81,35 +81,35 @@ class Api
     /**
      * The request data.
      *
-     * @var mixed|null
+     * @var array<string,mixed>|null
      */
     private $data;
     
     /**
      * The field.
      *
-     * @var mixed|null
+     * @var string|null
      */
     private $field = null;
     
     /**
      * The value.
      *
-     * @var mixed|null
+     * @var string|null
      */
     private $value = null;
     
     /**
      * The page size.
      *
-     * @var mixed|null
+     * @var int|null
      */
     private $page_size;
     
     /**
      * The total number of pages.
      *
-     * @var mixed|null
+     * @var int|null
      */
     private $page_total;
     
@@ -123,21 +123,21 @@ class Api
     /**
      * The total count.
      *
-     * @var mixed|null
+     * @var int|null
      */
     private $total_count;
     
     /**
      * The total filtered count.
      *
-     * @var mixed|null
+     * @var int|null
      */
     private $total_filtered;
     
     /**
      * The response data.
      *
-     * @var array
+     * @var array<string,mixed>
      */
     private $response = [];
 	
