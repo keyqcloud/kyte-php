@@ -33,7 +33,7 @@ $Session = [
 
 		'appIdentifier'		=> [
 			'type'		=> 's',
-			'required'	=> true,
+			'required'	=> false,
 			'size'		=> 255,
 			'date'		=> false,
 		],
