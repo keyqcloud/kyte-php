@@ -2,196 +2,165 @@
 
 namespace Kyte\Core;
 
-/*
- * Class Session
+/**
+ * Class Api
  *
- * @package Kyte
+ * This class represents the API and handles the routing of requests.
  *
+ * @package Kyte\Core
  */
-
 class Api
 {
-	private $key = null;
-	private $account;
-	private $session;
-	private $user;
-	private $request;
-	private $contentType;
-	private $signature = null;
-	private $utcDate = null;
+	/**
+     * The application ID.
+     *
+     * @var string|null
+     */
 	private $appId = null;
-	private $model;
-	private $field = null;
-	private $value = null;
-	private $data;
-	private $page_size;
-	private $page_total;
-	private $page_num = 1;
-	private $total_count;
-	private $total_filtered;
-	private $syntax_error = null;
 
-	private $response = [];
+	/**
+     * @var \Kyte\Core\ModelObject The APIKey model object.
+     */
+    private $key = null;
+    
+    /**
+     * * @var \Kyte\Core\ModelObject The KyteAccount model object.
+     */
+    private $account = null;
+    
+    /**
+     * * @var \Kyte\Core\ModelObject The Session model object.
+     */
+    private $session = null;
+    
+    /**
+     * @var \Kyte\Core\ModelObject The User model object.
+     */
+    private $user = null;
+    
+    /**
+     * @var \Kyte\Core\ModelObject The Application model object.
+     */
+    private $app = null;
+    
+    /**
+     * The API signature.
+     *
+     * @var string|null
+     */
+    private $signature = null;
+    
+    /**
+     * The UTC date.
+     *
+     * @var mixed|null
+     */
+    private $utcDate = null;
+    
+    /**
+     * The HTTP request model.
+     *
+     * @var mixed|null
+     */
+    private $model;
+    
+    /**
+     * The HTTP request.
+     *
+     * @var mixed|null
+     */
+    private $request;
+    
+    /**
+     * The content type.
+     *
+     * @var mixed|null
+     */
+    private $contentType;
+    
+    /**
+     * The request data.
+     *
+     * @var mixed|null
+     */
+    private $data;
+    
+    /**
+     * The field.
+     *
+     * @var mixed|null
+     */
+    private $field = null;
+    
+    /**
+     * The value.
+     *
+     * @var mixed|null
+     */
+    private $value = null;
+    
+    /**
+     * The page size.
+     *
+     * @var mixed|null
+     */
+    private $page_size;
+    
+    /**
+     * The total number of pages.
+     *
+     * @var mixed|null
+     */
+    private $page_total;
+    
+    /**
+     * The current page number.
+     *
+     * @var int
+     */
+    private $page_num = 1;
+    
+    /**
+     * The total count.
+     *
+     * @var mixed|null
+     */
+    private $total_count;
+    
+    /**
+     * The total filtered count.
+     *
+     * @var mixed|null
+     */
+    private $total_filtered;
+    
+    /**
+     * The response data.
+     *
+     * @var array
+     */
+    private $response = [];
 	
 
-	// override parent constriuctor
+	/**
+     * Api constructor.
+     *
+     * Initializes the base framework and sets up the environment constants.
+     */
 	public function __construct() {
-		// initialize api
-		$this->bootstrap();
-
-		// instantiate an API key object
-		$this->key = new \Kyte\Core\ModelObject(APIKey);
-		$this->session = new \Kyte\Session\SessionManager(Session, User, USERNAME_FIELD, PASSWORD_FIELD, ALLOW_MULTILOGON, SESSION_TIMEOUT);
-		$this->account = new \Kyte\Core\ModelObject(Account);
-		$this->user = new \Kyte\Core\ModelObject(User);
+		$this->defineEnvironmentConstants();
+		$this->loadModelsAndControllers();
+	
+		// initialize base framework
+		self::dbconnect();
 	}
 
-	// if origin is left null then origin validation is skipped
-	public function init($public_key)
-	{
-		if (isset($public_key)) {
-			if (!$this->key->retrieve('public_key', $public_key)) throw new \Exception("API key not found.");
-			return true;
-		} else {
-			throw new \Exception("API key is required.");
-			return false;
-		}
-	}
-
-	public static function addPrimaryKey(&$modeldef) {
-		$modeldef['struct']['id'] = [
-			'type'		=> 'i',
-			'required'	=> true,
-			'pk'		=> true,
-			'size'		=> 11,
-			'date'		=> false,
-		];
-	}
-
-	public static function addKyteAttributes(&$modeldef) {
-		$modeldef['struct']['kyte_account'] = [
-			'type'		=> 'i',
-			'required'	=> true,
-			'size'		=> 11,
-			'unsigned'	=> true,
-			'date'		=> false,
-			'fk'		=> [
-				'model'	=> 'Account',
-				'field'	=> 'id',
-			],
-		];
-
-		// audit attributes
-
-		$modeldef['struct']['created_by'] = [
-			'type'		=> 'i',
-			'required'	=> false,
-			'date'		=> false,
-			'fk'		=> [
-				'model'	=> 'User',
-				'field'	=> 'id',
-			],
-		];
-
-		$modeldef['struct']['date_created'] = [
-			'type'		=> 'i',
-			'required'	=> false,
-			'date'		=> true,
-		];
-
-		$modeldef['struct']['modified_by'] = [
-			'type'		=> 'i',
-			'required'	=> false,
-			'date'		=> false,
-			'fk'		=> [
-				'model'	=> 'User',
-				'field'	=> 'id',
-			],
-		];
-
-		$modeldef['struct']['date_modified'] = [
-			'type'		=> 'i',
-			'required'	=> false,
-			'date'		=> true,
-		];
-
-		$modeldef['struct']['deleted_by'] = [
-			'type'		=> 'i',
-			'required'	=> false,
-			'date'		=> false,
-			'fk'		=> [
-				'model'	=> 'User',
-				'field'	=> 'id',
-			],
-		];
-
-		$modeldef['struct']['date_deleted'] = [
-			'type'		=> 'i',
-			'required'	=> false,
-			'date'		=> true,
-		];
-
-		$modeldef['struct']['deleted'] = [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 1,
-			'unsigned'	=> true,
-			'default'	=> 0,
-			'date'		=> false,
-		];
-	}
-
-	public static function checkSyntax($filename) {
-		if (CHECK_SYNTAX_ON_IMPORT) {
-			if (strpos(exec("php -l $filename"), "No syntax errors") === false) {
-				error_log("Syntax error with $filename. Skipping file.");
-				return $filename;
-			} else {
-				return true;
-			}
-		} else {
-			return true;
-		}
-	}
-
-	public static function dbconnect() {
-		if (\Kyte\Core\DBI::$dbUser == KYTE_DB_USERNAME && \Kyte\Core\DBI::$dbName == KYTE_DB_DATABASE && \Kyte\Core\DBI::$dbHost == KYTE_DB_HOST) {
-				return;
-		}
-
-		\Kyte\Core\DBI::setDbUser(KYTE_DB_USERNAME);
-		\Kyte\Core\DBI::setDbPassword(KYTE_DB_PASSWORD);
-		\Kyte\Core\DBI::setDbHost(KYTE_DB_HOST);
-		\Kyte\Core\DBI::setDbName(KYTE_DB_DATABASE);
-		\Kyte\Core\DBI::setCharset(KYTE_DB_CHARSET);
-		// \Kyte\Core\DBI::connect();
-	}
-
-	public static function dbappconnect($database, $username, $password, $host = KYTE_DB_HOST, $charset = KYTE_DB_CHARSET) {
-		if ($database == null || $username == null || $password == null) {
-			throw new \Exception("Database parameters must be provided. Database: $database\tUsername: $username\tPassword: $password");
-		}
-		if ($host == null) {
-			$host = KYTE_DB_HOST;
-		}
-		//
-		if (\Kyte\Core\DBI::$dbUser == $username && \Kyte\Core\DBI::$dbName == $database && \Kyte\Core\DBI::$dbHost == $host) {
-			return;
-		}
-
-		\Kyte\Core\DBI::setDbNameApp($database);
-		\Kyte\Core\DBI::setDbUserApp($username);
-		\Kyte\Core\DBI::setDbPasswordApp($password);
-		\Kyte\Core\DBI::setDbHostApp($host);
-		\Kyte\Core\DBI::setCharset($charset);
-		// \Kyte\Core\DBI::connectApp();
-	}
-
-	public static function dbswitch($useApp = false) {
-		\Kyte\Core\DBI::$useAppDB = $useApp;
-	}
-
-	private function bootstrap() {
+	/**
+     * Defines the environment constants.
+     *
+     * This method defines various constants required by the API if they are not already defined.
+     */
+	private function defineEnvironmentConstants() {
 		if (!defined('DEBUG')) {
 			define('DEBUG', false);
 			error_log('DEBUG constant not defined...using defaults');
@@ -254,7 +223,7 @@ class Api
 			error_log('STRICT_TYPING constant not defined...using defaults');
 		}
 
-		// only execute if called from web
+		// determine localizations for non-cli requests
 		if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 			/* LOCALIZATION SUPPORT */
 			// default to English
@@ -268,135 +237,289 @@ class Api
 			$acceptLang = ['ja', 'en']; 
 			define('APP_LANG', in_array($lang, $acceptLang) ? $lang : 'en');
 		}
-	
-		$this->loadModelsAndControllers();
-	
-		// initialize base framework
-		self::dbconnect();
 	}
 
-	private function loadModelsAndControllers() {
-		// list of models
+	/**
+     * Adds a primary key to the model definition.
+     *
+     * @param array $modeldef The model definition to add the primary key to.
+     */
+	public static function addPrimaryKey(&$modeldef) {
+		$modeldef['struct']['id'] = [
+			'type'		=> 'i',
+			'required'	=> true,
+			'pk'		=> true,
+			'size'		=> 11,
+			'date'		=> false,
+		];
+	}
+
+	/**
+     * Adds audit attributes to the model definition.
+     *
+     * @param array $modeldef The model definition to add the audit attributes to.
+     */
+	public static function addKyteAttributes(&$modeldef) {
+		$modeldef['struct']['created_by'] = [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 11,
+			'unsigned'	=> true,
+			'date'		=> false,
+		];
+
+		$modeldef['struct']['date_created'] = [
+			'type'		=> 'i',
+			'required'	=> false,
+			'date'		=> true,
+		];
+
+		$modeldef['struct']['modified_by'] = [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 11,
+			'unsigned'	=> true,
+			'date'		=> false,
+		];
+
+		$modeldef['struct']['date_modified'] = [
+			'type'		=> 'i',
+			'required'	=> false,
+			'date'		=> true,
+		];
+
+		$modeldef['struct']['deleted_by'] = [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 11,
+			'unsigned'	=> true,
+			'date'		=> false,
+		];
+
+		$modeldef['struct']['date_deleted'] = [
+			'type'		=> 'i',
+			'required'	=> false,
+			'date'		=> true,
+		];
+
+		$modeldef['struct']['deleted'] = [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 0,
+			'date'		=> false,
+		];
+	}
+
+	/**
+     * Sets database credentials to the default database.
+     */
+	public static function dbconnect() {
+		if (\Kyte\Core\DBI::$dbUser == KYTE_DB_USERNAME && \Kyte\Core\DBI::$dbName == KYTE_DB_DATABASE && \Kyte\Core\DBI::$dbHost == KYTE_DB_HOST) {
+				return;
+		}
+
+		\Kyte\Core\DBI::setDbUser(KYTE_DB_USERNAME);
+		\Kyte\Core\DBI::setDbPassword(KYTE_DB_PASSWORD);
+		\Kyte\Core\DBI::setDbHost(KYTE_DB_HOST);
+		\Kyte\Core\DBI::setDbName(KYTE_DB_DATABASE);
+		\Kyte\Core\DBI::setCharset(KYTE_DB_CHARSET);
+	}
+
+	/**
+     * Sets database credentials to the specified app database.
+     *
+     * @param string $database The name of the database to connect to.
+     * @param string $username The username for the database connection.
+     * @param string $password The password for the database connection.
+     * @param string|null $host The host for the database connection. Defaults to the value of KYTE_DB_HOST.
+     * @param string|null $charset The charset for the database connection. Defaults to the value of KYTE_DB_CHARSET.
+     * @throws \Exception If the database parameters are not provided.
+     */
+	public static function dbappconnect($database, $username, $password, $host = KYTE_DB_HOST, $charset = KYTE_DB_CHARSET) {
+		if ($database == null || $username == null || $password == null) {
+			throw new \Exception("Database parameters must be provided. Database: $database\tUsername: $username\tPassword: $password");
+		}
+		if ($host == null) {
+			$host = KYTE_DB_HOST;
+		}
+		//
+		if (\Kyte\Core\DBI::$dbUser == $username && \Kyte\Core\DBI::$dbName == $database && \Kyte\Core\DBI::$dbHost == $host) {
+			return;
+		}
+
+		\Kyte\Core\DBI::setDbNameApp($database);
+		\Kyte\Core\DBI::setDbUserApp($username);
+		\Kyte\Core\DBI::setDbPasswordApp($password);
+		\Kyte\Core\DBI::setDbHostApp($host);
+		\Kyte\Core\DBI::setCharset($charset);
+	}
+
+	/**
+     * Switches the database connection to the app database.
+     *
+     * @param bool $useApp If true, the app database will be used. Otherwise, the default database will be used.
+     */
+	public static function dbswitch($useApp = false) {
+		\Kyte\Core\DBI::$useAppDB = $useApp;
+	}
+
+	/**
+	 * Load models and controllers.
+	 *
+	 * This method loads both built-in and user-defined models and controllers.
+	 * It imports the model files and adds them to the list of models.
+	 * User overrides and changes are supported for both models and controllers.
+	 *
+	 * @throws \Exception If API key is not found or required.
+	 *
+	 * @return void
+	 */
+	private function loadModelsAndControllers()
+	{
+		// List of models
 		$models = [];
 
 		/* BUILTIN DEFINED MODELS */
-		// import builtin models first, but don't define them yet incase there are user overrides and changes
+		// Import builtin models first, but don't define them yet in case there are user overrides and changes
 		foreach (glob(__DIR__ . "/../Mvc/Model/*.php") as $filename) {
-			$model_name = substr($filename, 0, strrpos($filename, "."));
-			$model_name = str_replace(__DIR__ . '/../Mvc/Model/','',$model_name);
-
-			// check syntax before importing file
-			$f = self::checkSyntax($filename);
-			if ($f === true) {
-				require_once($filename);
-				if (VERBOSE_LOG) {
-					error_log("Importing builtin model $model_name...");
-				}
-				self::addPrimaryKey($$model_name);
-				$models[$model_name] = $$model_name;
-			} else {
-				$this->syntax_error = $f;
+			$model_name = basename($filename, '.php');
+			require_once($filename);
+			if (VERBOSE_LOG) {
+				error_log("Importing builtin model $model_name...");
 			}
+			self::addPrimaryKey($$model_name);
+			$models[$model_name] = $$model_name;
 		}
 
-		if(defined('APP_DIR') && isset($_SERVER['HTTP_X_KYTE_APPID'])) {
+		if (defined('APP_DIR') && isset($_SERVER['HTTP_X_KYTE_APPID'])) {
 			$this->appId = $_SERVER['HTTP_X_KYTE_APPID'];
 
-			// next load user defined models
-			// if model already exists, apply changes/overrides
-			if ( file_exists( APP_DIR . "/app/" ) && is_dir( APP_DIR . "/app/" ) ) {
-		
+			// Next load user defined models and controllers (allow override of builtin)
+			if (file_exists(APP_DIR . "/app/") && is_dir(APP_DIR . "/app/")) {
 				/* USER DEFINED MODELS */
-				// load user defined models and controllers (allow override of builtin)
-				if ( file_exists( APP_DIR . "/app/models/{$this->appId}/" ) && is_dir( APP_DIR . "/app/models/{$this->appId}/" ) ) {    
-					foreach (glob(APP_DIR . "/app/models/{$this->appId}/*.php") as $filename) {
-						$model_name = substr($filename, 0, strrpos($filename, "."));
-						$model_name = str_replace(APP_DIR . "/app/models/{$this->appId}/",'',$model_name);
-
+				// Load user defined models
+				$userModelsPath = APP_DIR . "/app/models/{$this->appId}/";
+				if (file_exists($userModelsPath) && is_dir($userModelsPath)) {
+					foreach (glob($userModelsPath . "*.php") as $filename) {
+						$model_name = basename($filename, '.php');
 						if (!array_key_exists($model_name, $models)) {
-							// check syntax before importing file
-							$f = self::checkSyntax($filename);
-							if ($f === true) {
-								require_once($filename);
-								if (VERBOSE_LOG) {
-									error_log("Importing user defined model $model_name...");
-								}
-								self::addPrimaryKey($$model_name);
-								self::addKyteAttributes($$model_name);
-								// add app id
-								$$model_name['appId'] = $this->appId;
-								// add model to list of models
-								$models[$model_name] = $$model_name;
-							} else {
-								$this->syntax_error = $f;
+							// import controller
+							require_once($filename);
+							if (VERBOSE_LOG) {
+								error_log("Importing user defined model $model_name...");
 							}
+							self::addPrimaryKey($$model_name);
+							self::addKyteAttributes($$model_name);
+							// Add app id
+							$$model_name['appId'] = $this->appId;
+							// Add model to list of models
+							$models[$model_name] = $$model_name;
 						} else {
-							// check syntax before importing file
-							$f = self::checkSyntax($filename);
-							if ($f === true) {
-								require_once($filename);
-								// user overrides are specified
-								if (VERBOSE_LOG) {
-									error_log("Overriding defined model $model_name...");
-								}
+							// import controller
+							require_once($filename);
+							// User overrides are specified
+							if (VERBOSE_LOG) {
+								error_log("Overriding defined model $model_name...");
+							}
 
-								// override or add attributes
-								foreach($$model_name['struct'] as $key => $value) {
-									$models[$model_name]['struct'][$key] = $value;
-								}
-							} else {
-								$this->syntax_error = $f;
+							// Override or add attributes
+							foreach ($$model_name['struct'] as $key => $value) {
+								$models[$model_name]['struct'][$key] = $value;
 							}
 						}
 					}
 				}
-		
-				/* USER DEFINED CONTROLLER */
-				// load user-defined controllers
-				if ( file_exists( APP_DIR . "/app/controllers/{$this->appId}/" ) && is_dir( APP_DIR . "/app/controllers/{$this->appId}/" ) ) {
-					foreach (glob(APP_DIR . "/app/controllers/{$this->appId}/*.php") as $filename) {
-						$controller_name = substr($filename, 0, strrpos($filename, "."));
-						$controller_name = str_replace(APP_DIR . "/app/controllers/{$this->appId}/",'',$controller_name);
 
-						// check syntax before importing file
-						$f = self::checkSyntax($filename);
-						if ($f === true) {
-							require_once($filename);
-							if (VERBOSE_LOG) {
-								error_log("Checking if user defined controller has been defined...".(class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
-							}
-						} else {
-							$this->syntax_error = $f;
+				/* USER DEFINED CONTROLLER */
+				// Load user-defined controllers
+				$userControllersPath = APP_DIR . "/app/controllers/{$this->appId}/";
+				if (file_exists($userControllersPath) && is_dir($userControllersPath)) {
+					foreach (glob($userControllersPath . "*.php") as $filename) {
+						$controller_name = basename($filename, '.php');
+						// import controller
+						require_once($filename);
+						if (VERBOSE_LOG) {
+							error_log("Checking if user defined controller has been defined..." . (class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
 						}
 					}
-				}      
+				}
 			}
 		}
 
-		// define all models that were imported
-		foreach($models as $model) {
+		// Define all models that were imported
+		foreach ($models as $model_name => $model) {
 			define($model['name'], $model);
 		}
-	
-		// define list of models
-		if (!defined('KYTE_MODELS')) define('KYTE_MODELS', $models);
+
+		// Define list of models
+		if (!defined('KYTE_MODELS')) {
+			define('KYTE_MODELS', $models);
+		}
 	}
 
-	// meat of API
+	/**
+     * Routes the API request.
+     *
+     * This is the main method that handles the routing of the API request.
+     */
 	public function route() {
 		try {
-			// prepare the return response
-			$this->prepareResponse();
+			// instantiate an API key object
+			$this->key = new \Kyte\Core\ModelObject(APIKey);
+
+			// prepare response
+			// return json format:
+			// {
+			// 	token: ‘TRANSACTION_TOKEN’,
+			// 	session: ‘SESSION_TOKEN’,
+			// 	error: ‘ERROR_MESSAGE’,
+			// 	model: ‘MyModel’,
+			// 	transaction: ‘PUT’,
+			// 	txTimestamp: ‘Thu, 30 Apr 2020 07:11:46 GMT’,
+			// 	data: {}
+			// }
+			$this->response['session'] = '0';
+			$this->response['token'] = '0';	// default to public token
+			$this->response['uid'] = '0';
+			$now = new \DateTime();
+			$now->setTimezone(new \DateTimeZone('UTC'));    // Another way
+			$this->response['txTimestamp'] = $now->format('U');
+
+			// check if request is application level
+			if ($this->appId != null) {
+				// retrieve application information
+				$this->app = new \Kyte\Core\ModelObject(Application);
+				if (!$this->app->retrieve('identifier', $this->appId)) {
+					throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch for app ID {$this->appId}.");
+				}
+				
+				self::dbappconnect($this->app->db_name, $this->app->db_username, $this->app->db_password);
+			}
+			
+			// next determine session by checking if app requires app-level user table
+			if ($this->appId != null && $this->app->user_model != null && $this->app->username_colname != null && $this->app->password_colname != null) {
+				// create a session instance for in app scope
+				$this->session = new \Kyte\Session\SessionManager(Session, constant($this->app->user_model), $this->app->username_colname, $this->app->password_colname, $this->appId, ALLOW_MULTILOGON, SESSION_TIMEOUT);
+			} else {
+				// if no app id is found, or app-level user tbl is not defined then 
+				// create a session instance, and default to Kyte
+				$this->session = new \Kyte\Session\SessionManager(Session, KyteUser, USERNAME_FIELD, PASSWORD_FIELD, null, ALLOW_MULTILOGON, SESSION_TIMEOUT);
+			}
+
+			$this->account = new \Kyte\Core\ModelObject(KyteAccount);
+			$this->user = new \Kyte\Core\ModelObject(KyteUser);
 
 			// if minimum count of elements exist, then process api request based on request type
-			if ($this->isRequest()) {
+			if ($this->validateRequest()) {
 				if (class_exists('\\Kyte\Mvc\\Controller\\'.$this->model.'Controller')) {
 					$controllerClass = '\\Kyte\Mvc\\Controller\\'.$this->model.'Controller';
 				} else {
 					$controllerClass = class_exists($this->model.'Controller') ? $this->model.'Controller' : '\\Kyte\\Mvc\\Controller\\ModelController';
 				}
 				// create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
-				$controller = new $controllerClass(defined($this->model) ? constant($this->model) : null, APP_DATE_FORMAT, $this->account, $this->session, $this->user, $this->response, $this->page_size, $this->page_total, $this->page_num, $this->total_count, $this->total_filtered);
+				$controller = new $controllerClass(defined($this->model) ? constant($this->model) : null, $this, APP_DATE_FORMAT, $this->response);
 				if (!$controller) throw new \Exception("[ERROR] Unable to create controller for model: $controllerClass.");
 
 				switch ($this->request) {
@@ -478,81 +601,86 @@ class Api
 		echo json_encode($this->response);
 	}
 
-	private function cors() {
-		// get origin of requester
-		if (array_key_exists('HTTP_ORIGIN', $_SERVER)) {
-			$origin = $_SERVER['HTTP_ORIGIN'];
-		} else if (array_key_exists('HTTP_REFERER', $_SERVER)) {
-			$origin = $_SERVER['HTTP_REFERER'];
-		} else {
-			$origin = $_SERVER['REMOTE_ADDR'];
-		}
+	/**
+	 * Enables Cross-Origin Resource Sharing (CORS) and returns the request method.
+	 *
+	 * @return string The request method.
+	 */
+	private function cors()
+	{
+		// Get the origin of the requester
+		$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : $_SERVER['REMOTE_ADDR']);
 
 		header("Access-Control-Allow-Origin: $origin");
 		header('Access-Control-Allow-Credentials: true');
 		header("Content-Type: application/json; charset=utf-8");
 
-		// get request type
-		$request = $_SERVER['REQUEST_METHOD'];
+		// Get the request method
+		$requestMethod = $_SERVER['REQUEST_METHOD'];
 
 		// Access-Control headers are received during OPTIONS requests
-		if ($request == 'OPTIONS') {
+		if ($requestMethod === 'OPTIONS') {
+			// $accessControlRequestMethod = isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']) ? $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'] : '';
+			$accessControlRequestHeaders = isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']) ? $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'] : '';
 
-			if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']))
-				header("Access-Control-Allow-Methods: GET, PUT, POST, DELETE, HEAD, OPTION");         
-
-			if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']))
-				header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
+			header("Access-Control-Allow-Methods: GET, PUT, POST, DELETE, HEAD, OPTION");
+			header("Access-Control-Allow-Headers: $accessControlRequestHeaders");
 
 			exit(0);
 		}
 
-		return $request;
+		return $requestMethod;
 	}
 
-	private function isRequest() {
+	/**
+	 * Validates the request, handles CORS, and parses the request data.
+	 *
+	 * @return bool True if the request is valid, false otherwise.
+	 * @throws \Exception If API information for the account is not found.
+	 */
+	private function validateRequest()
+	{
 		// CORS Validation
 		$this->request = $this->cors();
 
-		if (array_key_exists('CONTENT_TYPE', $_SERVER)) {
-			$this->contentType = $_SERVER['CONTENT_TYPE'];
-		}
+		$this->contentType = isset($_SERVER['CONTENT_TYPE']) ? $_SERVER['CONTENT_TYPE'] : '';
 
-		// read in data and parse into array
-		parse_str(file_get_contents("php://input"), $this->data);
-
-		// if content type is json, then parse json
-		$pattern = '/json/';
-		if (preg_match($pattern, $this->contentType)) {
+		// if content type is JSON, then parse JSON
+		if (strpos($this->contentType, 'json') !== false) {
 			$this->data = json_decode(file_get_contents("php://input"), true);
+		} else {
+			// read in data and parse into an array
+			parse_str(file_get_contents("php://input"), $this->data);
 		}
 
 		if (VERBOSE_LOG > 0) {
-			error_log(print_r( $this->data, true ));
+			error_log(print_r($this->data, true));
 		}
 
 		if (IS_PRIVATE) {
-			if (isset($_SERVER['HTTP_X_KYTE_SIGNATURE'])) {
-				$this->signature = $_SERVER['HTTP_X_KYTE_SIGNATURE'];
-			} else return false;
+			$this->signature = isset($_SERVER['HTTP_X_KYTE_SIGNATURE']) ? $_SERVER['HTTP_X_KYTE_SIGNATURE'] : null;
+			if (!$this->signature) {
+				return false;
+			}
 		}
-		
-		if (isset($_SERVER['HTTP_X_KYTE_IDENTITY'])) {
-			$this->parseIdentityString($_SERVER['HTTP_X_KYTE_IDENTITY']);
-		} else return false;
+
+		$this->parseIdentityString(isset($_SERVER['HTTP_X_KYTE_IDENTITY']) ? $_SERVER['HTTP_X_KYTE_IDENTITY'] : null);
+		if (!$this->account) {
+			return false;
+		}
 
 		// set page size
 		$this->page_size = isset($_SERVER['HTTP_X_KYTE_PAGE_SIZE']) ? intval($_SERVER['HTTP_X_KYTE_PAGE_SIZE']) : PAGE_SIZE;
 		// get page num from header
 		$this->page_num = isset($_SERVER['HTTP_X_KYTE_PAGE_IDX']) ? intval($_SERVER['HTTP_X_KYTE_PAGE_IDX']) : 0;
 
-		//datatables specific
+		// datatables specific
 		$this->response['draw'] = isset($_SERVER['HTTP_X_KYTE_DRAW']) ? intval($_SERVER['HTTP_X_KYTE_DRAW']) : 0;
 
 		$this->response['CONTENT_TYPE'] = $this->contentType;
 		$this->response['transaction'] = $this->request;
 		$this->response['engine_version'] = \Kyte\Core\Version::get();
-		
+
 		// * URL format - root endpoint
 		// https://uri-to-api-endpoint / {model} [ / {field} / {value} ]
 		//
@@ -567,23 +695,22 @@ class Api
 		// Trim leading slash(es)
 		$path = ltrim($_SERVER['REQUEST_URI'], '/');
 
-		$elements =  explode('/', $path);
+		$elements = explode('/', $path);
 
 		if (count($elements) >= 1) {
 			$this->model = $elements[0];
 			$this->field = isset($elements[1]) ? $elements[1] : null;
 			$this->value = isset($elements[2]) ? urldecode($elements[2]) : null;
-			
 
 			$this->response['model'] = $this->model;
 
-			// get api associated with account
+			// get API associated with the account
 			$sub_account_api = new \Kyte\Core\ModelObject(APIKey);
 			if (!$sub_account_api->retrieve('kyte_account', $this->account->id)) {
-				throw new \Exception("[ERROR] Unable to find API information for account");
+				throw new \Exception("[ERROR] Unable to find API information for the account");
 			}
 
-			// return account information in response - this is required for API handoff between master account and subaccounts
+			// return account information in response - this is required for API handoff between the master account and subaccounts
 			$this->response['kyte_api'] = API_URL;
 			$this->response['kyte_pub'] = $sub_account_api->public_key;
 			$this->response['kyte_num'] = $this->account->number;
@@ -597,58 +724,63 @@ class Api
 				$this->verifySignature();
 			}
 
-			// if appid is not null, create db connection for app
-			if ($this->appId != null) {
-				$app = new \Kyte\Core\ModelObject(Application);
-				if (!$app->retrieve('identifier', $this->appId)) {
-					throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch for app ID {$this->appId}.");
-				}
-				self::dbappconnect($app->db_name, $app->db_username, $app->db_password);
-			}
-
 			return true;
 		}
-		
+
 		return false;
 	}
 
-	private function parseIdentityString($string) {
-		// identity string format
-		// PUBLIC_KEY%SESSION_TOKEN%DATE_TIME_GMT%ACCOUNT_NUMBER
+	/**
+	 * Parses the identity string and retrieves relevant information.
+	 *
+	 * @param string $string The identity string to parse.
+	 * @throws \Kyte\Exception\SessionException If the identity string is invalid or the API request has expired.
+	 * @throws \Exception If the API key or account information is not found.
+	 */
+	private function parseIdentityString($string)
+	{
+		// Identity string format: PUBLIC_KEY%SESSION_TOKEN%DATE_TIME_GMT%ACCOUNT_NUMBER
 		$identity = explode('%', base64_decode(urldecode($string)));
+
 		if (count($identity) != 4) {
 			throw new \Kyte\Exception\SessionException("[ERROR] Invalid identity string: $this->request.");
 		}
-		
-		// get UTC date from identity signature
+
+		// Get UTC date from identity signature
 		$this->utcDate = new \DateTime($identity[2], new \DateTimeZone('UTC'));
-		
-		// check expiration
-		if (time() > $this->utcDate->format('U') + (60*30)) {
+
+		// Check expiration
+		if (time() > $this->utcDate->format('U') + (60 * 30)) {
 			throw new \Kyte\Exception\SessionException("API request has expired.");
 		}
-		
-		// initialize API with public key from identity signature
-		$this->init($identity[0]);
 
-		// get account number from identity signature
+		// Check if identity is set and retrieve API key based on the public key
+		if (!isset($identity[0])) {
+			throw new \Exception("API key is required.");
+		}
+
+		if (!$this->key->retrieve('public_key', $identity[0])) {
+			throw new \Exception("API key not found.");
+		}
+
+		// Get account number from identity signature
 		if (!$this->account->retrieve('number', $identity[3])) {
 			throw new \Exception("[ERROR] Unable to find account for {$identity[3]}.");
 		}
-		
-		// if undefined is passed from front end then set to zero
+
+		// If 'undefined' is passed from the front end, set it to zero
 		$identity[1] = $identity[1] == 'undefined' ? "0" : $identity[1];
-		
-		// get session token from identity signature
+
+		// Get session token from identity signature
 		$this->response['session'] = $identity[1];
 
-		// retrieve transaction and user token corresponding to session token
+		// Retrieve transaction and user token corresponding to the session token
 		if ($identity[1] != "0") {
 			$session_ret = $this->session->validate($identity[1]);
 			$this->response['session'] = $session_ret['sessionToken'];
 			$this->response['token'] = $session_ret['txToken'];
 			$this->response['uid'] = $session_ret['uid'];
-			
+
 			if (!$this->user->retrieve('id', $session_ret['uid'])) {
 				throw new \Kyte\Exception\SessionException("Invalid user session.");
 			}
@@ -656,76 +788,88 @@ class Api
 			$this->response['name'] = $this->user->name;
 			$this->response['email'] = $this->user->email;
 
-			error_log("ACCOUNTS ".$this->account->id." and ".$this->user->kyte_account);
-
-			// check is user has different account
-			// get user account
+			// Check if the user has a different account
+			// Get user account
 			if ($this->user->kyte_account != $this->account->id) {
 				if (!$this->account->retrieve('id', $this->user->kyte_account)) {
-					throw new \Exception("Unable to find account associated with user");
+					throw new \Exception("Unable to find account associated with the user");
 				}
 			}
 		}
 	}
 
-	private function verifySignature() {
-		$hash1 = hash_hmac('SHA256', $this->response['token'], $this->key->secret_key, true);
-		$hash1str = hash_hmac('SHA256', $this->response['token'], $this->key->secret_key, false);
+	/**
+	 * Verify the signature of the API response.
+	 *
+	 * This method verifies the signature of the API response based on the provided token, API key, and identifier.
+	 * It compares the calculated signature with the provided signature and throws an exception if they don't match.
+	 *
+	 * @throws \Kyte\Exception\SessionException If the calculated signature does not match the provided signature.
+	 */
+	private function verifySignature()
+	{
+		$token = $this->response['token'];
+		$secretKey = $this->key->secret_key;
+		$identifier = $this->key->identifier;
 
-		if (VERBOSE_LOG > 0) error_log("hash1 ".hash_hmac('SHA256', $this->response['token'], $this->key->secret_key));
-		
-		$hash2 = hash_hmac('SHA256', $this->key->identifier, $hash1, true);
-		$hash2str = hash_hmac('SHA256', $this->key->identifier, $hash1, false);
-		
-		if (VERBOSE_LOG > 0) error_log("hash2 ".hash_hmac('SHA256', $this->key->identifier, $hash1));
-		
+		$hash1 = hash_hmac('SHA256', $token, $secretKey, true);
+		$hash1str = hash_hmac('SHA256', $token, $secretKey, false);
+
+		if (VERBOSE_LOG > 0) {
+			error_log("hash1 " . hash_hmac('SHA256', $token, $secretKey));
+		}
+
+		$hash2 = hash_hmac('SHA256', $identifier, $hash1, true);
+		$hash2str = hash_hmac('SHA256', $identifier, $hash1, false);
+
+		if (VERBOSE_LOG > 0) {
+			error_log("hash2 " . hash_hmac('SHA256', $identifier, $hash1));
+		}
+
 		$calculated_signature = hash_hmac('SHA256', $this->utcDate->format('U'), $hash2);
-		
-		if (VERBOSE_LOG > 0) error_log("hash3 $calculated_signature");
-		if (VERBOSE_LOG > 0) error_log("epoch ".$this->utcDate->format('U'));
 
-		if ($calculated_signature != $this->signature)
-			throw new \Kyte\Exception\SessionException("Calculated signature does not match provided signature.\nCalculated: $hash1str $hash2str $calculated_signature\nProvided: ".$this->signature);
+		if (VERBOSE_LOG > 0) {
+			error_log("hash3 $calculated_signature");
+			error_log("epoch " . $this->utcDate->format('U'));
+		}
+
+		if ($calculated_signature != $this->signature) {
+			throw new \Kyte\Exception\SessionException("Calculated signature does not match provided signature.\nCalculated: $hash1str $hash2str $calculated_signature\nProvided: " . $this->signature);
+		}
 	}
 
-	private function generateSignature() {
-		if ($this->request == 'POST' && ALLOW_ENC_HANDOFF && isset($this->data['key'], $this->data['identifier'], $this->data['time'])) {
-			// get api key using the public_key and identifier being passed
+
+	/**
+	 * Generate the signature for the API request.
+	 *
+	 * This method generates a signature for the API request based on the provided data.
+	 * It uses HMAC-SHA256 hashing algorithm with the API key and identifier.
+	 *
+	 * @throws \Exception If an invalid API access key is detected.
+	 */
+	private function generateSignature()
+	{
+		if ($this->request === 'POST' && ALLOW_ENC_HANDOFF && isset($this->data['key'], $this->data['identifier'], $this->data['time'])) {
+			$key = $this->data['key'];
+			$identifier = $this->data['identifier'];
+			$time = $this->data['time'];
+
+			// Retrieve API key using the public_key and identifier being passed
 			$obj = new \Kyte\Core\ModelObject(APIKey);
-			if (!$obj->retrieve('public_key', $this->data['key'], [[ 'field' => 'identifier', 'value' => $this->data['identifier'] ]])) {
+			if (!$obj->retrieve('public_key', $key, [['field' => 'identifier', 'value' => $identifier]])) {
 				throw new \Exception("Invalid API access key");
 			}
-	
-			// get date and convert to php datetime in UTC timezone
-			$date = new \DateTime($this->data['time'], new \DateTimeZone('UTC'));
 
-			// if undefined is passed from front end then set to zero
-			$this->data['token'] = $this->data['token'] == 'undefined' ? '0' : $this->data['token'];
-	
+			// Convert date to PHP DateTime in UTC timezone
+			$date = new \DateTime($time, new \DateTimeZone('UTC'));
+
+			// Set token to zero if it's undefined from the front end
+			$this->data['token'] = ($this->data['token'] === 'undefined') ? '0' : $this->data['token'];
+
 			$hash1 = hash_hmac('SHA256', $this->data['token'], $obj->secret_key, true);
-			$hash2 = hash_hmac('SHA256', $this->data['identifier'], $hash1, true);
+			$hash2 = hash_hmac('SHA256', $identifier, $hash1, true);
 			$this->response['signature'] = hash_hmac('SHA256', $date->format('U'), $hash2);
 		}
 	}
 
-	private function prepareResponse() {
-		// prepare response
-		// return json format:
-		// {
-		// 	token: ‘TRANSACTION_TOKEN’,
-		// 	session: ‘SESSION_TOKEN’,
-		// 	error: ‘ERROR_MESSAGE’,
-		// 	model: ‘MyModel’,
-		// 	transaction: ‘PUT’,
-		// 	txTimestamp: ‘Thu, 30 Apr 2020 07:11:46 GMT’,
-		// 	data: {}
-		// }
-		$this->response['syntax_error'] = $this->syntax_error;
-		$this->response['session'] = '0';
-		$this->response['token'] = '0';	// default to public token
-		$this->response['uid'] = '0';
-		$now = new \DateTime();
-		$now->setTimezone(new \DateTimeZone('UTC'));    // Another way
-		$this->response['txTimestamp'] = $now->format('U');
-	}
 }
