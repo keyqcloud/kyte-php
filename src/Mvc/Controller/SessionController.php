@@ -34,8 +34,12 @@ class SessionController extends ModelController
                 }
 
                 $this->user = $user;
-                
-                $response[] = $this->getObject($user);
+
+                if (USE_SESSION_MAP) {
+                    $response = $this->getObject($user);
+                } else {
+                    $response[] = $this->getObject($user);
+                }
             } else {
                 // check for required params
                 foreach ([USERNAME_FIELD, PASSWORD_FIELD] as $param) {
@@ -75,11 +79,11 @@ class SessionController extends ModelController
 
             // return account information in response - this is required for API handoff between master account and subaccounts
             $this->response['kyte_pub'] = $account_api->public_key;
-            $this->response['kyte_num'] = $account->number;
+            $this->response['kyte_num'] = $this->account->number;
             $this->response['kyte_iden'] = $account_api->identifier;
-            $this->response['role'] = $response[0]['role'];
+            // $this->response['role'] = $response[0]['role'];
             $this->response['token'] = $session['txToken'];
-            $this->response['account_id'] = $account->id;
+            $this->response['account_id'] = $this->account->id;
             $this->response['session'] = $session['sessionToken'];
             $this->response['data'] = $response;
         } catch (\Exception $e) {
