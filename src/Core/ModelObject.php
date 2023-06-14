@@ -45,12 +45,6 @@ class ModelObject
      */
 	public function __construct($model) {
 		$this->kyte_model = $model;
-
-		if (isset($this->kyte_model['appId'])) {
-			\Kyte\Core\Api::dbswitch(true);
-		} else {
-			\Kyte\Core\Api::dbswitch();
-		}
 	}
 
 	/**
@@ -116,6 +110,13 @@ class ModelObject
 
 		try {
 			$types = $this->bindTypes($params);
+			// check db context
+			if (isset($this->kyte_model['appId'])) {
+				\Kyte\Core\Api::dbswitch(true);
+			} else {
+				\Kyte\Core\Api::dbswitch();
+			}
+			// execute query
 			$id = \Kyte\Core\DBI::insert($this->kyte_model['name'], $params, $types);
 			$params['id'] = $id;
 			$this->populate($params);
@@ -176,6 +177,12 @@ class ModelObject
 				}
 			}
 
+			// check db context
+			if (isset($this->kyte_model['appId'])) {
+				\Kyte\Core\Api::dbswitch(true);
+			} else {
+				\Kyte\Core\Api::dbswitch();
+			}
 			// execute DB query
 			$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql);
 
@@ -212,6 +219,13 @@ class ModelObject
 
 		try {
 			$types = $this->bindTypes($params);
+			// check db context
+			if (isset($this->kyte_model['appId'])) {
+				\Kyte\Core\Api::dbswitch(true);
+			} else {
+				\Kyte\Core\Api::dbswitch();
+			}
+			// execute query
 			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, $params, $types);
 			return true;
 		} catch (\Exception $e) {
@@ -278,12 +292,6 @@ class ModelObject
 	public function delete($field = null, $value = null, $user = null)
 	{
 		try {
-			if (isset($this->kyte_model['appId'])) {
-				\Kyte\Core\Api::dbswitch(true);
-			} else {
-				\Kyte\Core\Api::dbswitch();
-			}
-
 			if (isset($field, $value)) {
 				if ($this->retrieve($field, $value)) {
 					$id = $this->id;
@@ -300,6 +308,12 @@ class ModelObject
 				return false;
 			}
 
+			// check db context
+			if (isset($this->kyte_model['appId'])) {
+				\Kyte\Core\Api::dbswitch(true);
+			} else {
+				\Kyte\Core\Api::dbswitch();
+			}
 			// set deleted flag and audit attribute - date deleted
 			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, ['date_deleted' => time(), 'deleted' => 1, 'deleted_by' => $user], 'iii');
 
@@ -321,12 +335,6 @@ class ModelObject
 	public function purge($field = null, $value = null)
 	{
 		try {
-			if (isset($this->kyte_model['appId'])) {
-				\Kyte\Core\Api::dbswitch(true);
-			} else {
-				\Kyte\Core\Api::dbswitch();
-			}
-
 			if (isset($field, $value)) {
 				if ($this->retrieve($field, $value, null, null, true)) {
 					$id = $this->id;
@@ -343,6 +351,13 @@ class ModelObject
 				return false;
 			}
 
+			// check db context
+			if (isset($this->kyte_model['appId'])) {
+				\Kyte\Core\Api::dbswitch(true);
+			} else {
+				\Kyte\Core\Api::dbswitch();
+			}
+			// execute query
 			\Kyte\Core\DBI::delete($this->kyte_model['name'], $id);
 			$this->clearParams();
 

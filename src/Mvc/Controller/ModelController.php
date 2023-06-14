@@ -170,6 +170,9 @@ class ModelController
 
     protected function init()
     {
+        // check if the external table flag has been set in the header
+        // if external table flag is set to true, set internal variable to true so we perform a database query to obtain
+        // external table information.
         if (isset($_SERVER['HTTP_X_KYTE_GET_EXTERNALTABLES'])) {
             $this->getExternalTables = strtolower($_SERVER['HTTP_X_KYTE_GET_EXTERNALTABLES']) == "true" ? true : false;
         }
