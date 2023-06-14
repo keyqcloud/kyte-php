@@ -781,6 +781,8 @@ class Api
 			$this->response['token'] = $session_ret['txToken'];
 			$this->response['uid'] = $session_ret['uid'];
 
+			error_log('******************************> '.$session_ret['uid']);
+
 			if (!$this->user->retrieve('id', $session_ret['uid'])) {
 				throw new \Kyte\Exception\SessionException("Invalid user session.");
 			}
