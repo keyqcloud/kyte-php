@@ -1,4 +1,4 @@
-## 2.1.0
+## 3.0.0
 
 * Add support for custom user table, seperate from main framework.
 * Add support for optional organization table, and scoping users based on organization.
