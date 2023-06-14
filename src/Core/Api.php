@@ -502,14 +502,15 @@ class Api
 			if ($this->appId != null && $this->app->user_model != null && $this->app->username_colname != null && $this->app->password_colname != null) {
 				// create a session instance for in app scope
 				$this->session = new \Kyte\Session\SessionManager(Session, constant($this->app->user_model), $this->app->username_colname, $this->app->password_colname, $this->appId, ALLOW_MULTILOGON, SESSION_TIMEOUT);
+				$this->user = new \Kyte\Core\ModelObject(constant($this->app->user_model));
 			} else {
 				// if no app id is found, or app-level user tbl is not defined then 
 				// create a session instance, and default to Kyte
 				$this->session = new \Kyte\Session\SessionManager(Session, KyteUser, USERNAME_FIELD, PASSWORD_FIELD, null, ALLOW_MULTILOGON, SESSION_TIMEOUT);
+				$this->user = new \Kyte\Core\ModelObject(KyteUser);
 			}
 
 			$this->account = new \Kyte\Core\ModelObject(KyteAccount);
-			$this->user = new \Kyte\Core\ModelObject(KyteUser);
 
 			// if minimum count of elements exist, then process api request based on request type
 			if ($this->validateRequest()) {
@@ -780,8 +781,6 @@ class Api
 			$this->response['session'] = $session_ret['sessionToken'];
 			$this->response['token'] = $session_ret['txToken'];
 			$this->response['uid'] = $session_ret['uid'];
-
-			error_log('******************************> '.$session_ret['uid']);
 
 			if (!$this->user->retrieve('id', $session_ret['uid'])) {
 				throw new \Kyte\Exception\SessionException("Invalid user session.");
