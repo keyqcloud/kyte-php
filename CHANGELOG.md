@@ -1,3 +1,9 @@
+## 3.0.1
+
+* Add email templates
+* Ability to send from a email utility class
+* Prepopulate template with data in associative array format
+
 ## 3.0.0
 
 * Add support for custom user table, seperate from main framework.
