@@ -1,3 +1,7 @@
+## 3.0.2
+
+* Add KyteProfile controller for updating user profile on Kyte Shipyard
+
 ## 3.0.1
 
 * Add email templates
