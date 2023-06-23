@@ -1,3 +1,7 @@
+## 3.0.4
+
+* Make account number a non-protected entry
+
 ## 3.0.3
 
 * Bug fix for Kyte Profile

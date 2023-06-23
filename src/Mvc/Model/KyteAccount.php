@@ -15,7 +15,7 @@ $KyteAccount = [
 			'required'	=> true,
 			'size'		=> 32,
 			'date'		=> false,
-			'protected' => true,
+			// 'protected' => true,
 		],
 
 		// audit attributes
