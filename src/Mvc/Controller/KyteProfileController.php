@@ -10,8 +10,8 @@ class KyteProfileController extends ModelController
     // public function hook_auth() {}
 
     public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {
-        $condition[] = ['field' => 'id', 'value' => $this->user->id];
-        $condition[] = ['field' => 'kyte_account', 'value' => $this->account->id];
+        $conditions[] = ['field' => 'id', 'value' => $this->user->id];
+        $conditions[] = ['field' => 'kyte_account', 'value' => $this->account->id];
     }
 
     // public function hook_preprocess($method, &$r, &$o = null) {}
