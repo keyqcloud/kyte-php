@@ -1,3 +1,7 @@
+## 3.0.3
+
+* Bug fix for Kyte Profile
+
 ## 3.0.2
 
 * Add KyteProfile controller for updating user profile on Kyte Shipyard
