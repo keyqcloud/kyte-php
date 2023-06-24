@@ -1,3 +1,8 @@
+## 3.0.5
+
+* User interal AWS credential wrapper for Email utility
+* Return account object for user profile
+
 ## 3.0.4
 
 * Make account number a non-protected entry
