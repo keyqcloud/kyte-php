@@ -229,7 +229,7 @@ class ModelObject
 			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, $params, $types);
 
 			// populate with new data
-			$this->populate($param);
+			$this->populate($params);
 
 			return true;
 		} catch (\Exception $e) {
