@@ -227,6 +227,10 @@ class ModelObject
 			}
 			// execute query
 			\Kyte\Core\DBI::update($this->kyte_model['name'], $id, $params, $types);
+
+			// populate with new data
+			populate($param);
+
 			return true;
 		} catch (\Exception $e) {
 			throw $e;

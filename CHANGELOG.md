@@ -1,3 +1,7 @@
+## 3.0.8
+
+* Fix bug where stale data was returned after an update
+
 ## 3.0.7
 
 * Return user role if present
