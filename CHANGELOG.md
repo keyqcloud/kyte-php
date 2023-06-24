@@ -1,3 +1,7 @@
+## 3.0.7
+
+* Return user role if present
+
 ## 3.0.6
 
 * Fix bug where preg_match did not replace and returned null
