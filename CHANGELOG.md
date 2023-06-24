@@ -1,3 +1,7 @@
+## 3.0.6
+
+* Fix bug where preg_match did not replace and returned null
+
 ## 3.0.5
 
 * User interal AWS credential wrapper for Email utility

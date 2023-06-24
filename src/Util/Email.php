@@ -75,14 +75,15 @@ class Email {
 
     private function replacePlaceholders($htmlTemplate, $data) {
         if (strlen($htmlTemplate) < 1) {
-            return null;
+            throw new \Exception("Supplied template HTML is empty.");
         }
-        $pattern = '/{{([^}]+)}}/'; // Regular expression pattern to match {{<key>}}
+        $pattern = array();
         $replacement = array();
-      
+
         // Loop through the associative array and build the replacement array
         foreach ($data as $key => $value) {
-            $replacement['{{'.$key.'}}'] = $value;
+            $pattern[] = '/{{'.$key.'}}/'; // pattern to match {{<key>}}
+            $replacement[] = $value;
         }
       
         // Perform the replacement using preg_replace
