@@ -33,7 +33,7 @@ class Email {
             $this->accessKey = $accessKey ? $accessKey : AWS_ACCESS_KEY_ID;
             $this->secretKey = $secretKey ? $secretKey : AWS_SECRET_KEY;
             $this->region = $region;
-            $this->credentials = new \Aws\Credentials\Credentials($this->accessKey, $this->secretKey);
+            $this->credentials = new \Kyte\Aws\Credentials($this->region, $this->accessKey, $this->secretKey);
             $this->ses = new \Kyte\Aws\Ses($this->credentials, $sender ? $sender : APP_NAME.' <'.APP_EMAIL.'>');
         } catch (\Exception $e) {
 			throw "Unable to create credential for ".$this->$accessKey.'. [ERROR] '.$e;
