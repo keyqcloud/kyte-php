@@ -1,3 +1,7 @@
+## 3.0.9
+
+* Fix bug where internal method was not being used
+
 ## 3.0.8
 
 * Fix bug where stale data was returned after an update
