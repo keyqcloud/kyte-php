@@ -25,7 +25,7 @@ class S3 extends Client
     public function createBucket() {
         try {
             $this->client->createBucket([
-                'ACL' => $this->acl, // 'private|public-read|public-read-write|authenticated-read'
+                // 'ACL' => $this->acl, // 'private|public-read|public-read-write|authenticated-read'
                 'Bucket' => $this->bucket, // REQUIRED
                 'CreateBucketConfiguration' => [
                     'LocationConstraint' => $this->credentials->getRegion() //'ap-northeast-1|ap-southeast-2|ap-southeast-1|cn-north-1|eu-central-1|eu-west-1|us-east-1|us-west-1|us-west-2|sa-east-1'
