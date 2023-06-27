@@ -30,7 +30,7 @@ class SiteController extends ModelController
                     'region'        => $region,
                     's3BucketName'  => $bucketName,
                 ]);
-                $s3 = new \Kyte\Aws\S3($credentials, $bucketName, 'public-read');
+                $s3 = new \Kyte\Aws\S3($credentials, $bucketName);
                 try {
                     $s3->createBucket();
                 } catch(\Exception $e) {
@@ -38,15 +38,18 @@ class SiteController extends ModelController
                     throw $e;
                 }
                 
+                // create website, which enable:
+                // 1 - static web hosting
+                // 2 - removes public access block
+                // 3 - enables public access policy (GET)
                 $s3->createWebsite();
-                $s3->enablePublicAccess();
 
                 // create s3 bucket for static media assets
                 $mediaBucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-static-assets-'.$app->identifier);
                 $o->save([
                     's3MediaBucketName'  => $mediaBucketName,
                 ]);
-                $s3 = new \Kyte\Aws\S3($credentials, $mediaBucketName, 'public-read');
+                $s3 = new \Kyte\Aws\S3($credentials, $mediaBucketName);
                 try {
                     $s3->createBucket();
                 } catch(\Exception $e) {
@@ -54,6 +57,9 @@ class SiteController extends ModelController
                     throw $e;
                 }
                 
+                // remove public access block
+                $s3->deletePublicAccessBlock();
+                // enable public access policy (GET)
                 $s3->enablePublicAccess();
                 // enable cors for upload
                 $s3->enableCors([
