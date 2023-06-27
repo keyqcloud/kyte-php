@@ -35,7 +35,6 @@ class S3 extends Client
             return true;
         } catch (\AwsException $e) {
 			throw $e;
-			return false;
 		}
 
         // if ($context) {
@@ -60,7 +59,6 @@ class S3 extends Client
             ]);
         } catch(\AwsException $e) {
             throw new \Exception("Unable to create website");
-            return false;
         }
 
         return true;
@@ -73,7 +71,6 @@ class S3 extends Client
             ]);
         } catch (\AwsException $e) {
             throw new \Exception("Unable to delete website");
-            return false;
         }
         
         return true;
@@ -93,9 +90,20 @@ class S3 extends Client
             ]);
         } catch (\AwsException $e) {
             throw new \Exception("Unable to delete website");
-            return false;
         }
         
+        return true;
+    }
+
+    public function deletePublicAccessBlock() {
+        try {
+            $this->client->client->deletePublicAccessBlock([
+                'Bucket' => $this->bucket,
+            ]);
+        } catch (\AwsException $e) {
+            throw new \Exception("Unable to delete website");
+        }
+
         return true;
     }
 
@@ -104,7 +112,6 @@ class S3 extends Client
             $this->enablePolicy('{"Version": "2012-10-17", "Statement": [{ "Sid": "PublicReadForGetBucketObject","Effect": "Allow","Principal": "*", "Action": "s3:GetObject", "Resource": "arn:aws:s3:::'.$this->bucket.'/*" } ]}');
         } catch (\AwsException $e) {
             throw new \Exception("Unable to apply public access policy");
-            return false;
         }
         return true;
     }
@@ -123,7 +130,6 @@ class S3 extends Client
             ]);
         } catch(\AwsException $e) {
             throw new \Exception("Unable to delete bucket policy");
-            return false;
         }
         
         return true;
@@ -157,7 +163,6 @@ class S3 extends Client
             ]);
         } catch(\AwsException $e) {
             throw new \Exception("Unable to enable versioning");
-            return false;
         }
 
         return true;
@@ -174,7 +179,6 @@ class S3 extends Client
             ]);
         } catch(\AwsException $e) {
             throw new \Exception("Unable to suspend versioning");
-            return false;
         }
 
         return true;
@@ -192,7 +196,6 @@ class S3 extends Client
             return true;
         } catch (\AwsException $e) {
 			throw $e;
-			return false;
 		}
     }
 
@@ -372,7 +375,6 @@ class S3 extends Client
             ]);
         } catch(\AwsException $e) {
             throw new \Exception("Unable to upload object");
-            return false;
         }
 
         return true;
@@ -398,7 +400,6 @@ class S3 extends Client
             $cmd = $this->client->deleteObject($params);
         } catch(\AwsException $e) {
             throw new \Exception("Unable to delete object");
-            return false;
         }
         
         return true;
