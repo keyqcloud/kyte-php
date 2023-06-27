@@ -1,3 +1,7 @@
+## 3.0.11
+
+* Fix in response to new S3 requirement that disables ACL in favor of bucket ownership policies. https://aws.amazon.com/about-aws/whats-new/2022/12/amazon-s3-automatically-enable-block-public-access-disable-access-control-lists-buckets-april-2023/?nc1=h_ls
+
 ## 3.0.10
 
 * Fix bug where internal property was not accessible
