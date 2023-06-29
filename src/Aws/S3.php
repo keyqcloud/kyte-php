@@ -105,7 +105,7 @@ class S3 extends Client
 
     public function deletePublicAccessBlock() {
         try {
-            $this->client->client->deletePublicAccessBlock([
+            $this->client->deletePublicAccessBlock([
                 'Bucket' => $this->bucket,
             ]);
         } catch (\AwsException $e) {

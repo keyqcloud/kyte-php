@@ -1,5 +1,9 @@
 ## 3.0.11
 
+* Fix bug with deleting a public access block for a s3 bucket
+
+## 3.0.11
+
 * Fix in response to new S3 requirement that disables ACL in favor of bucket ownership policies. https://aws.amazon.com/about-aws/whats-new/2022/12/amazon-s3-automatically-enable-block-public-access-disable-access-control-lists-buckets-april-2023/?nc1=h_ls
 * Add method to S3 wrapper for deleting public access block to allow for public access to s3 bucket
 
