@@ -1,4 +1,4 @@
-## 3.0.11
+## 3.0.12
 
 * Fix bug with deleting a public access block for a s3 bucket
 
