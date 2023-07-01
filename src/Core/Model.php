@@ -37,7 +37,7 @@ class Model
 		}
 	}
 
-	public function retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null)
+	public function retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null, $limit = null)
 	{
 		try {
 			$dataObjects = array();
@@ -158,12 +158,12 @@ class Model
 			}
 
 			// get total count
-			$this->total = \Kyte\Core\DBI::count($this->kyte_model['name'], $sql);
+			$this->total = \Kyte\Core\DBI::count($this->kyte_model['name'], $limit > 0 ? $sql." LIMIT $limit" : $sql);
 
 			// add page sql
 			$sql .= $page_sql;
 			// count join
-			$this->total_filtered = \Kyte\Core\DBI::count($this->kyte_model['name'], $sql, $join);
+			$this->total_filtered = \Kyte\Core\DBI::count($this->kyte_model['name'], $limit > 0 ? $sql." LIMIT $limit" : $sql, $join);
 
 			if (!empty($order)) {
                 $order_sql = ' ORDER BY ';
@@ -230,15 +230,22 @@ class Model
 
 			// if paging is set, add limit
 			if ($this->page_size && $this->page_num) {
-				$offset = $this->page_size * ($this->page_num - 1);
-				$sql .= " LIMIT {$this->page_size} OFFSET $offset";
+				if ($limit > 0 && $limit < $this->page_size) {
+					$sql .= " LIMIT $limit";
+				} else {
+					$offset = $this->page_size * ($this->page_num - 1);
+					$sql .= " LIMIT {$this->page_size} OFFSET $offset";
+				}
+			} else {
+				if ($limit > 0) {
+					$sql .= " LIMIT $limit";
+				}
 			}
 
 			$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql, $join);
 
 			foreach ($data as $item) {
 				$obj = new \Kyte\Core\ModelObject($this->kyte_model);
-				// $obj->retrieve('id', $item['id'], null, null, $all);
 				$obj->populate($item);
 				$dataObjects[] = $obj;
 			}
@@ -341,7 +348,7 @@ class Model
 
 			foreach ($data as $item) {
 				$obj = new \Kyte\Core\ModelObject($this->kyte_model);
-				$obj->retrieve('id', $item['id'], null, null, $all);
+				$obj->populate($item);
 				$dataObjects[] = $obj;
 			}
 
@@ -373,7 +380,7 @@ class Model
 
 			foreach ($data as $item) {
 				$obj = new \Kyte\Core\ModelObject($this->kyte_model);
-				$obj->retrieve('id', $item['id'], null, null, $all);
+				$obj->populate($item);
 				$dataObjects[] = $obj;
 			}
 
@@ -395,11 +402,18 @@ class Model
 		return count($this->objects);
 	}
 
-	public function returnFirst()
+	public function first()
 	{
 		if ($this->count() > 0) {
 			return $this->objects[0];
 		}
 		return null;
+	}
+	public function last()
+	{
+		if ($this->count() == 0) {
+			return null;
+		}
+		return $this->objects[$this->count()];
 	}
 }

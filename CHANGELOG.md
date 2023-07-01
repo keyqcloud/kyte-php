@@ -1,3 +1,10 @@
+## 3.0.13
+
+* add method to return first item from array from model query
+* add method to return last item from array from model query
+* improve custom query performance
+* add support for specifing a sql LIMIT
+
 ## 3.0.12
 
 * Fix bug with deleting a public access block for a s3 bucket

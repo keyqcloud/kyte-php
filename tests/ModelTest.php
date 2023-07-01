@@ -249,7 +249,7 @@ class ModelTest extends TestCase
         // test return first
         $model = new \Kyte\Core\Model(TestTable);
         $this->assertTrue($model->retrieve('category', 'Test'));
-        $this->assertIsObject($model->returnFirst());
+        $this->assertIsObject($model->first());
 
         // test group by
         $model = new \Kyte\Core\Model(TestTable);
