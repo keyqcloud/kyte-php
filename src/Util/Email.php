@@ -70,7 +70,7 @@ class Email {
     }
 
     public function sendEmail($emailAddresses, $subject, $body) {
-        $this->ses->send($emailAddresses, $subject, $body);
+        return $this->ses->send($emailAddresses, $subject, $body);
     }
 
     private function replacePlaceholders($htmlTemplate, $data) {

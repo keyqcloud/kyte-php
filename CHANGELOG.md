@@ -1,3 +1,7 @@
+## 3.0.14
+
+* return message ID from AWS SES if succesfully sent email
+
 ## 3.0.13
 
 * add method to return first item from array from model query
