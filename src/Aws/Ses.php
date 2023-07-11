@@ -6,7 +6,6 @@ use Aws\Ses\SesClient;
 
 class Ses extends Client
 {
-    private $credentials;
     private $sender;
     private $replyToAddresses;
 

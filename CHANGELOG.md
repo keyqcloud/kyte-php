@@ -1,3 +1,7 @@
+## 3.0.24
+
+* Fix issue with variable scoping
+
 ## 3.0.23
 
 * SES add support for specifying reply to addresses
