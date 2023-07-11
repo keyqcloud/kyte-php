@@ -1,3 +1,7 @@
+## 3.0.18
+
+* Resolve issue where updating a page nav caused protected pages to be included in sitemap
+
 ## 3.0.17
 
 * Add formatting to XML sitemap output

@@ -34,10 +34,6 @@ class SideNavController extends ModelController
                     throw new \Exception("Unable to find key");
                 }
 
-                // create or update sitemap
-                $urlset = \Kyte\Mvc\Controller\PageController::generateSitemapUrlSet();
-                $sitemap = $urlset[0];
-
                 // iterate through each page
                 foreach($pages->objects as $page) {
                     $p = $this->getObject($page);
@@ -46,12 +42,10 @@ class SideNavController extends ModelController
                     $data = \Kyte\Mvc\Controller\PageController::createHtml($p, $kyte_connect);
                     // write to file
                     $s3->write($page->s3key, $data);
-
-                    $sitemap .= \Kyte\Mvc\Controller\PageController::generateSitemapUrlTag($page, $nav['site']['aliasDomain'] ? $nav['site']['aliasDomain'] : $nav['site']['cfDomain']);
                 }
 
-                // write sitemap file
-                $sitemap .= $urlset[1];
+                // create or update sitemap
+                $sitemap = \Kyte\Mvc\Controller\PageController::updateSitemap($nav['site']['id'], $nav['site']['aliasDomain'] ? $nav['site']['aliasDomain'] : $nav['site']['cfDomain']);
                 $s3->write('sitemap.xml', $sitemap);
 
                 // invalidate CF
