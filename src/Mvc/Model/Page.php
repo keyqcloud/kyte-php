@@ -132,6 +132,15 @@ $Page = [
 			'date'		=> false,
 		],
 
+		'obfuscate_js' => [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 0,
+			'date'		=> false,
+		],
+
 		// 0 - public, 1 - private
 		'protected'	=> [
 			'type'		=> 'i',
