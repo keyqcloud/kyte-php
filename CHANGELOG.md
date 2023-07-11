@@ -1,3 +1,7 @@
+## 3.0.25
+
+* No longer update pages or sitemap when nav or side nav items are changes
+
 ## 3.0.24
 
 * Fix issue with variable scoping
