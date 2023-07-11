@@ -1,3 +1,7 @@
+## 3.0.16
+
+* Reduce number of CF invalidation calls to optimize performance
+
 ## 3.0.15
 
 * Add support for generating and managing sitemaps when pages are created, updated, deleted

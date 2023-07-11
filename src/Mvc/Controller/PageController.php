@@ -47,21 +47,19 @@ class PageController extends ModelController
                     // write to file
                     $s3->write($o->s3key, $data);
 
+                    // create or update sitemap
+                    $sitemap = self::updateSitemap($r['site']['id'], $r['site']['aliasDomain'] ? $r['site']['aliasDomain'] : $r['site']['cfDomain']);
+                    $s3->write('sitemap.xml', $sitemap);
+
                     // invalidate CF
                     $cf = new \Kyte\Aws\CloudFront($credential);
-                    $invalidationPaths = [];
+                    $invalidationPaths = ['/sitemap.xml'];
                     if (strpos($o->s3key, "index.html") !== false) {
                         $invalidationPaths[] = '/'.str_replace("index.html", "*", $o->s3key);
                     } else {
                         $invalidationPaths[] = '/'.$o->s3key;
                     }
                     $cf->createInvalidation($r['site']['cfDistributionId'], $invalidationPaths);
-
-                    // create or update sitemap
-                    $sitemap = self::updateSitemap($r['site']['id'], $r['site']['aliasDomain'] ? $r['site']['aliasDomain'] : $r['site']['cfDomain']);
-                    $s3->write('sitemap.xml', $sitemap);
-                    // invalidate cache
-                    $cf->createInvalidation($r['site']['cfDistributionId'], '/sitemap.xml');
                 }
                 break;
 
@@ -76,15 +74,13 @@ class PageController extends ModelController
                         // delete s3 file
                         $s3->unlink($o->s3key);
 
-                        // invalidate CF
-                        $cf = new \Kyte\Aws\CloudFront($credential);
-                        $cf->createInvalidation($d['site']['cfDistributionId'], ['/*']);
-
                         // create or update sitemap
                         $sitemap = self::updateSitemap($d['site']['id'], $d['site']['aliasDomain'] ? $d['site']['aliasDomain'] : $d['site']['cfDomain']);
                         $s3->write('sitemap.xml', $sitemap);
-                        // invalidate cache
-                        $cf->createInvalidation($d['site']['cfDistributionId'], '/sitemap.xml');
+
+                        // invalidate CF
+                        $cf = new \Kyte\Aws\CloudFront($credential);
+                        $cf->createInvalidation($d['site']['cfDistributionId'], ['/*']);
                     }
                 }
 
