@@ -1,3 +1,12 @@
+## 3.0.20
+
+* Add feature to check if alias conforms to SSL certificate and domain assigned to CF distribution
+* Add meta description for SEO
+* Add open graph meta tags for SEO
+* Add robots meta tag for SEO
+* Add canonical tag for SEO
+* Add option to specify obfuscation preference for pages
+
 ## 3.0.19
 
 * Fix bug with empty sitemap when editing navigation items
