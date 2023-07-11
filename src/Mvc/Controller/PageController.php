@@ -320,13 +320,13 @@ class PageController extends ModelController
     }
 
     public static function generateSitemapUrlTag($page, $siteDomain) {
-        return '<url><loc>https://'.$siteDomain.'/'.$page->s3key.'</loc><lastmod>'.date('Y-m-d', $page->date_modified).'</lastmod></url>';
+        return "\t<url>\n\t\t<loc>https://$siteDomain/{$page->s3key}</loc>\n\t\t<lastmod>".date('Y-m-d', $page->date_modified)."</lastmod>\n\t</url>\n";
     }
 
     public static function generateSitemapUrlSet() {
         return [
-            '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-            '</urlset>'
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n",
+            "</urlset>"
         ];
     }
 }

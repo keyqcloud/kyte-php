@@ -1,3 +1,7 @@
+## 3.0.17
+
+* Add formatting to XML sitemap output
+
 ## 3.0.16
 
 * Reduce number of CF invalidation calls to optimize performance
