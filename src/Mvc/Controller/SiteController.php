@@ -25,6 +25,17 @@ class SiteController extends ModelController
                         }
                     }
                     $matched = false;
+                    // Remove slashes and protocols from the domain
+                    $r['aliasDomain'] = preg_replace('#^https?://#', '', $r['aliasDomain']);
+
+                    // Validate domain format
+                    $pattern = '/^(\*\.)?([a-z0-9-]+\.)*[a-z0-9-]+$/i';
+                    $validFormat = preg_match($pattern, $r['aliasDomain']);
+                    if (!$validFormat) {
+                        throw new \Exception('Alias is not a valid domain format.');
+                    }
+
+                    // check if there is a match
                     foreach ($domains as $domain) {
                         if (fnmatch($domain, $r['aliasDomain'])) {
                             $matched = true;
