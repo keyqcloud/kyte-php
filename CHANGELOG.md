@@ -1,3 +1,7 @@
+## 3.0.23
+
+* SES add support for specifying reply to addresses
+
 ## 3.0.22
 
 * Support for Google Analytics

@@ -6,11 +6,14 @@ use Aws\Ses\SesClient;
 
 class Ses extends Client
 {
+    private $credentials;
     private $sender;
+    private $replyToAddresses;
 
-    public function __construct($credentials, $sender) {
+    public function __construct($credentials, $sender, $replyToAddresses = []) {
         $this->credentials = $credentials;
         $this->sender = $sender;
+        $this->replyToAddresses = count($replyToAddresses) == 0 ? [$this->sender] : $replyToAddresses;
 
         $this->client = new SesClient([
             'credentials' => $this->credentials->getCredentials(),
@@ -24,7 +27,7 @@ class Ses extends Client
             'Destination' => [
                 'ToAddresses' => $recipients,
             ],
-            'ReplyToAddresses' => [$this->sender],
+            'ReplyToAddresses' => $this->replyToAddresses,
             'Source' => $this->sender,
             'Message' => [
                 'Body' => [
