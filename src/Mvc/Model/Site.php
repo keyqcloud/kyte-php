@@ -39,6 +39,13 @@ $Site = [
 			'date'		=> false,
 		],
 
+		'aliasDomain'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
 		// static media bucket
 		's3MediaBucketName'		=> [
 			'type'		=> 's',
