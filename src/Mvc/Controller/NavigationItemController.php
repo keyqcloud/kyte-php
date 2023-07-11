@@ -38,9 +38,8 @@ class NavigationItemController extends ModelController
                 // iterate through each page
                 foreach($pages->objects as $page) {
                     $p = $this->getObject($page);
-                    $kyte_connect = "let endpoint = 'https://".API_URL."';var k = new Kyte(endpoint, '".$apiKey->public_key."', '".$apiKey->identifier."', '".$this->account->number."', '".$p['site']['application']['identifier']."');k.init();\n\n";
                     // compile html file
-                    $data = \Kyte\Mvc\Controller\PageController::createHtml($p, $kyte_connect);
+                    $data = \Kyte\Mvc\Controller\PageController::createHtml($p);
                     // write to file
                     $s3->write($page->s3key, $data);
                 }

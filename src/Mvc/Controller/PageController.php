@@ -43,7 +43,7 @@ class PageController extends ModelController
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
                     // compile html file
-                    $data = self::createHtml($r, $d['kyte_connect']);
+                    $data = self::createHtml($r);
                     // write to file
                     $s3->write($o->s3key, $data);
 
@@ -93,7 +93,7 @@ class PageController extends ModelController
 
     // public function hook_process_get_response(&$r) {}
 
-    public static function createHtml($page, $kyte_connect) {
+    public static function createHtml($page) {
         $code = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"><title>'.$page['title'].'</title>';
 
         // SEO
@@ -211,14 +211,18 @@ class PageController extends ModelController
         }
 
         // add kyte connect
-        $code .= $kyte_connect."\n\n";
+        $code .= $page['kyte_connect']."\n\n";
         // custom js
         $code .= '$(document).ready(function() { ';
         if ($page['protected'] == 1) {
             $code .= 'k.addLogoutHandler("#logout");'."\n";
             $code .= 'if (k.isSession()) { '."\n";
         }
-        $code .= $page['javascript']."\n";
+        if ($page['obfuscate_js'] == 1) {
+            $code .= $page['javascript_obfuscated']."\n";
+        } else {
+            $code .= $page['javascript']."\n";
+        }
         if ($page['protected'] == 1) {
             $code .= ' } else { location.href="/?redir="+encodeURIComponent(window.location); }';
         }

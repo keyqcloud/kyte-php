@@ -59,6 +59,18 @@ $Page = [
 			'date'		=> false,
 		],
 
+		'javascript_obfuscated'		=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
+		'kyte_connect'		=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
 		'stylesheet'	=> [
 			'type'		=> 't',
 			'required'	=> false,
