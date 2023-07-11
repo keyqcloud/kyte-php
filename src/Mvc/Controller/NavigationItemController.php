@@ -29,11 +29,17 @@ class NavigationItemController extends ModelController
 
                 $pages = new \Kyte\Core\Model(Page);
                 $pages->retrieve("main_navigation", $navitem['navigation']['id']);
-                // todo...somehow update to use obfuscated...
+                
                 $apiKey = new \Kyte\Core\ModelObject(APIKey);
                 if (!$apiKey->retrieve('kyte_account', $this->account->id)) {
                     throw new \Exception("Unable to find key");
                 }
+
+                // create or update sitemap
+                $urlset = \Kyte\Mvc\Controller\PageController::generateSitemapUrlSet();
+                $sitemap = $urlset[0];
+
+                // iterate through each page
                 foreach($pages->objects as $page) {
                     $p = $this->getObject($page);
                     $kyte_connect = "let endpoint = 'https://".API_URL."';var k = new Kyte(endpoint, '".$apiKey->public_key."', '".$apiKey->identifier."', '".$this->account->number."', '".$p['site']['application']['identifier']."');k.init();\n\n";
@@ -41,7 +47,13 @@ class NavigationItemController extends ModelController
                     $data = \Kyte\Mvc\Controller\PageController::createHtml($p, $kyte_connect);
                     // write to file
                     $s3->write($page->s3key, $data);
+
+                    $sitemap .= \Kyte\Mvc\Controller\PageController::generateSitemapUrlTag($page, $navitem['site']['aliasDomain'] ? $navitem['site']['aliasDomain'] : $navitem['site']['cfDomain']);
                 }
+
+                // write sitemap file
+                $sitemap .= $urlset[1];
+                $s3->write('sitemap.xml', $sitemap);
 
                 // invalidate CF
                 $cf = new \Kyte\Aws\CloudFront($credential);

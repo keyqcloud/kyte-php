@@ -56,6 +56,12 @@ class PageController extends ModelController
                         $invalidationPaths[] = '/'.$o->s3key;
                     }
                     $cf->createInvalidation($r['site']['cfDistributionId'], $invalidationPaths);
+
+                    // create or update sitemap
+                    $sitemap = self::updateSitemap($r['site']['id'], $r['site']['aliasDomain'] ? $r['site']['aliasDomain'] : $r['site']['cfDomain']);
+                    $s3->write('sitemap.xml', $sitemap);
+                    // invalidate cache
+                    $cf->createInvalidation($r['site']['cfDistributionId'], '/sitemap.xml');
                 }
                 break;
 
@@ -67,16 +73,18 @@ class PageController extends ModelController
                     $credential = new \Kyte\Aws\Credentials($d['site']['region']);
                     $s3 = new \Kyte\Aws\S3($credential, $d['site']['s3BucketName']);
                     if (!empty($o->s3key)) {
-                        $site = new \Kyte\Core\ModelObject(Site);
-                        if (!$site->retrieve('id', $o->site)) {
-                            throw new \Exception("Unable to delete page due to site information missing...");
-                        }
-
+                        // delete s3 file
                         $s3->unlink($o->s3key);
 
                         // invalidate CF
                         $cf = new \Kyte\Aws\CloudFront($credential);
-                        $cf->createInvalidation($site->cfDistributionId, ['/*']);
+                        $cf->createInvalidation($d['site']['cfDistributionId'], ['/*']);
+
+                        // create or update sitemap
+                        $sitemap = self::updateSitemap($d['site']['id'], $d['site']['aliasDomain'] ? $d['site']['aliasDomain'] : $d['site']['cfDomain']);
+                        $s3->write('sitemap.xml', $sitemap);
+                        // invalidate cache
+                        $cf->createInvalidation($d['site']['cfDistributionId'], '/sitemap.xml');
                     }
                 }
 
@@ -300,5 +308,29 @@ class PageController extends ModelController
         $code .= '</html>';
 
         return $code;
+    }
+
+    public static function updateSitemap($siteIdx, $siteDomain) {
+        $pages = new \Kyte\Core\Model(Page);
+        $pages->retrieve('state', '1', false, [['field' => 'protected', 'value' => '0'],['field' => 'sitemap_include', 'value' => '1'],['field' => 'site', 'value' => $siteIdx]]);
+        $urlset = self::generateSitemapUrlSet();
+        $sitemap = $urlset[0];
+        foreach($pages->objects as $page) {
+            $sitemap .= self::generateSitemapUrlTag($page, $siteDomain);
+        }
+        $sitemap .= $urlset[1];
+
+        return $sitemap;
+    }
+
+    public static function generateSitemapUrlTag($page, $siteDomain) {
+        return '<url><loc>https://'.$siteDomain.'/'.$page->s3key.'</loc><lastmod>'.date('Y-m-d', $page->date_modified).'</lastmod></url>';
+    }
+
+    public static function generateSitemapUrlSet() {
+        return [
+            '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+            '</urlset>'
+        ];
     }
 }
