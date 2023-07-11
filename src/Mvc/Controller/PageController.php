@@ -95,6 +95,18 @@ class PageController extends ModelController
 
     public static function createHtml($page, $kyte_connect) {
         $code = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"><title>'.$page['title'].'</title>';
+
+        // SEO
+        $code .= '<meta property="og:title" content="'.$page['title'].'" />';
+        if (strlen($page['description'])) {
+            $code .= '<meta property="og:description" content="'.$page['description'].'" />';
+            $code .= '<meta name="description" content="'.$page['description'].'">';
+        }
+        if ($page['sitemap_include'] == 1) {
+            $code .= '<meta name="robots" content="index,follow" />';
+        }
+        $code .= '<link rel="canonical" href="https://'.(strlen($page['site']['aliasDomain']) > 0 ? $page['site']['aliasDomain'] : $page['site']['cfDomain']).'/'.$page['s3key'].'" />';
+
         
         // font aweseom
         $code .= '<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.12.0/css/all.css">';
