@@ -324,7 +324,7 @@ class PageController extends ModelController
 
     public static function updateSitemap($siteIdx, $siteDomain) {
         $pages = new \Kyte\Core\Model(Page);
-        $pages->retrieve('state', '1', false, [['field' => 'protected', 'value' => '0'],['field' => 'sitemap_include', 'value' => '1'],['field' => 'site', 'value' => $siteIdx]]);
+        $pages->retrieve('state', '1', false, [['field' => 'protected', 'value' => '0'],['field' => 'sitemap_include', 'value' => '1'],['field' => 'site', 'value' => $siteIdx]], false, [['field' => 'date_modified', 'direction' => 'desc']]);
         $urlset = self::generateSitemapUrlSet();
         $sitemap = $urlset[0];
         foreach($pages->objects as $page) {

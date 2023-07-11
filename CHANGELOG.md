@@ -1,3 +1,7 @@
+## 3.0.21
+
+* Order sitemap by date modified
+
 ## 3.0.20
 
 * Add feature to check if alias conforms to SSL certificate and domain assigned to CF distribution
