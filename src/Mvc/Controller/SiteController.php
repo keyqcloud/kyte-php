@@ -9,7 +9,39 @@ class SiteController extends ModelController
 
     // public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
 
-    // public function hook_preprocess($method, &$r, &$o = null) {}
+    public function hook_preprocess($method, &$r, &$o = null) {
+        switch ($method) {
+            case 'update':
+                if (strlen($r['aliasDomain']) > 0) {
+                    $domains = [];
+                    $assignedDomain = new \Kyte\Core\ModelObject(Domain);
+                    if ($assignedDomain->retrieve('assigned', $o->cfDistributionId)) {
+                        $domains[] = $assignedDomain->domainName;
+                        // get any SANs
+                        $sans = new \Kyte\Core\Model(SubjectAlternativeName);
+                        $sans->retrieve('domain', $assignedDomain->id);
+                        foreach ($sans->objects as $san) {
+                            $domains[] = $san->name;
+                        }
+                    }
+                    $matched = false;
+                    foreach ($domains as $domain) {
+                        if (fnmatch($domain, $r['aliasDomain'])) {
+                            $matched = true;
+                            break;
+                        }
+                    }
+
+                    if (!$matched) {
+                        throw new \Exception('Alias domain does not match the assigned SSL domain or subject alternative name.');
+                    }
+                }
+                break;
+            
+            default:
+                break;
+        }
+    }
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
