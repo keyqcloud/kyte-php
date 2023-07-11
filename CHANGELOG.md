@@ -1,13 +1,20 @@
+## 3.0.15
+
+* Add support for generating and managing sitemaps when pages are created, updated, deleted
+* Add support for updating sitemaps when menu items change
+* When generating sitemaps, skip pages that are password protected
+* Add feature to specify alias domain for site
+
 ## 3.0.14
 
-* return message ID from AWS SES if succesfully sent email
+* Return message ID from AWS SES if succesfully sent email
 
 ## 3.0.13
 
-* add method to return first item from array from model query
-* add method to return last item from array from model query
-* improve custom query performance
-* add support for specifing a sql LIMIT
+* Add method to return first item from array from model query
+* Add method to return last item from array from model query
+* Improve custom query performance
+* Add support for specifing a sql LIMIT
 
 ## 3.0.12
 
