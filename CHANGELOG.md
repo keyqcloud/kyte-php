@@ -1,3 +1,7 @@
+## 3.0.19
+
+* Fix bug with empty sitemap when editing navigation items
+
 ## 3.0.18
 
 * Resolve issue where updating a page nav caused protected pages to be included in sitemap

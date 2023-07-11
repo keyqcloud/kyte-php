@@ -46,7 +46,7 @@ class SideNavItemController extends ModelController
                 }
 
                 // create or update sitemap
-                $sitemap = \Kyte\Mvc\Controller\PageController::updateSitemap($nav['site']['id'], $nav['site']['aliasDomain'] ? $nav['site']['aliasDomain'] : $nav['site']['cfDomain']);
+                $sitemap = \Kyte\Mvc\Controller\PageController::updateSitemap($navitem['site']['id'], $navitem['site']['aliasDomain'] ? $navitem['site']['aliasDomain'] : $navitem['site']['cfDomain']);
                 $s3->write('sitemap.xml', $sitemap);
 
                 // invalidate CF
