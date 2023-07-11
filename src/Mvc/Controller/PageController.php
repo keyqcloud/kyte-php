@@ -94,7 +94,22 @@ class PageController extends ModelController
     // public function hook_process_get_response(&$r) {}
 
     public static function createHtml($page) {
-        $code = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"><title>'.$page['title'].'</title>';
+        $gtm_body_script = '';  // empty gtm body script...if gtm code is present, will be populates with gtm script
+
+        $code = '<!DOCTYPE html><html><head>';
+        
+        // Google Analytics
+        if (strlen($page['site']['ga_code']) > 0) {
+            $code .= self::generateGAIntegration($page['site']['ga_code']);
+        }
+        // Google Tag Manager
+        if (strlen($page['site']['gtm_code']) > 0) {
+            $gtm_script = self::generateGTMIntegration($page['site']['gtm_code']);
+            $code .= $gtm_script[0];
+            $gtm_body_script = $gtm_script[1];
+        }
+
+        $code .= '<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"><title>'.$page['title'].'</title>';
 
         // SEO
         $code .= '<meta property="og:title" content="'.$page['title'].'" />';
@@ -167,6 +182,11 @@ class PageController extends ModelController
 
         // body
         $code .= '<body>';
+
+        // Google Tag Manager
+        if (strlen($page['site']['gtm_code']) > 0) {
+            $code .= $gtm_body_script;
+        }
 
         // loader
         $code .= '<!-- Page loading modal.  Once session is validated, the loading modal will close. --><div id="pageLoaderModal" class="modal white" data-backdrop="static" data-keyboard="false" tabindex="-1"><div class="modal-dialog modal-sm h-100 d-flex"><div class="mx-auto align-self-center" style="width: 48px"><div class="spinner-wrapper text-center fa-6x"><span class="fas fa-sync fa-spin"></span></div></div></div></div><!--  -->';
@@ -320,6 +340,17 @@ class PageController extends ModelController
         $code .= '</html>';
 
         return $code;
+    }
+
+    public static function generateGAIntegration($ga_code) {
+        return "<!-- Google tag (gtag.js) --><script async src=\"https://www.googletagmanager.com/gtag/js?id=$ga_code\"></script><script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date());gtag('config', '$ga_code');</script>";
+    }
+
+    public static function generateGTMIntegration($gtm_code) {
+        return [
+            "<!-- Google Tag Manager --><script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','$gtm_code');</script><!-- End Google Tag Manager -->",
+            "<!-- Google Tag Manager (noscript) --><noscript><iframe src=\"https://www.googletagmanager.com/ns.html?id=$gtm_code\" height=\"0\" width=\"0\" style=\"display:none;visibility:hidden\"></iframe></noscript><!-- End Google Tag Manager (noscript) -->"
+        ];
     }
 
     public static function updateSitemap($siteIdx, $siteDomain) {

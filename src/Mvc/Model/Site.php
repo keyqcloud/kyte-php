@@ -46,6 +46,20 @@ $Site = [
 			'date'		=> false,
 		],
 
+		'ga_code'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'gtm_code'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
 		// static media bucket
 		's3MediaBucketName'		=> [
 			'type'		=> 's',

@@ -1,3 +1,8 @@
+## 3.0.22
+
+* Support for Google Analytics
+* Support for Google Tag Manager
+
 ## 3.0.21
 
 * Order sitemap by date modified
