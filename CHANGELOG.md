@@ -1,3 +1,7 @@
+## 3.0.26
+
+* Order menu items by item order attribute
+
 ## 3.0.25
 
 * Add support for bulk updating nav items

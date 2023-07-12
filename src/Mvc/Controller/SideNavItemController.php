@@ -8,7 +8,12 @@ class SideNavItemController extends ModelController
 
     // public function hook_auth() {}
 
-    // public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
+    public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {
+        $order = [
+            ['field' => 'itemOrder'],
+            ['direction' => 'asc'],
+        ];
+    }
 
     // public function hook_preprocess($method, &$r, &$o = null) {}
 

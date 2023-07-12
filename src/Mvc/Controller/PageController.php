@@ -251,7 +251,7 @@ class PageController extends ModelController
         if ($page['main_navigation']) {
             // retrieve menu items and create array
             $items = new \Kyte\Core\Model(NavigationItem);
-            $items->retrieve('navigation', $page['main_navigation']['id'], false, null, false, [['field' => 'id', 'direction' => 'asc']]);
+            $items->retrieve('navigation', $page['main_navigation']['id'], false, null, false, [['field' => 'itemOrder', 'direction' => 'asc']]);
             $menu_items = [];
             $menu_items_center = [];
             $menu_items_right = [];
@@ -308,7 +308,7 @@ class PageController extends ModelController
         if ($page['side_navigation']) {
             // retrieve menu items and create array
             $items = new \Kyte\Core\Model(SideNavItem);
-            $items->retrieve('sidenav', $page['side_navigation']['id'], false, null, false, [['field' => 'id', 'direction' => 'asc']]);
+            $items->retrieve('sidenav', $page['side_navigation']['id'], false, null, false, [['field' => 'itemOrder', 'direction' => 'asc']]);
             $side_menu_items = [];
             $default_sidenav = '';
             foreach($items->objects as $m) {
