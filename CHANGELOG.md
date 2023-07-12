@@ -1,3 +1,7 @@
+## 3.0.28
+
+* Optimize to only update supplied values
+
 ## 3.0.27
 
 * Resolve issue with undefined model for virtual controller

@@ -64,17 +64,33 @@ class NavItemsController extends ModelController
                     }
     
                     $params = [];
-                    $params['title'] = $navitem['title'];
-                    $params['faicon'] = $navitem['faicon'];
-                    $params['link'] = $navitem['link'];
-                    $params['page'] = $navitem['page'];
-                    $params['itemOrder'] = $navitem['itemOrder'];
+                    if (isset($navitem['title'])) {
+                        $params['title'] = $navitem['title'];
+                    }
+                    if (isset($navitem['faicon'])) {
+                        $params['faicon'] = $navitem['faicon'];
+                    }
+                    if (isset($navitem['link'])) {
+                        $params['link'] = $navitem['link'];
+                    }
+                    if (isset($navitem['page'])) {
+                        $params['page'] = $navitem['page'];
+                    }
+                    if (isset($navitem['itemOrder'])) {
+                        $params['itemOrder'] = $navitem['itemOrder'];
+                    }
 
                     if ($field == 'NavigationItem') {
                         // unique to NavigationItem
-                        $params['isLogout'] = $navitem['isLogout'];
-                        $params['center'] = $navitem['center'];
-                        $params['parentItem'] = $navitem['parentItem'];
+                        if (isset($navitem['isLogout'])) {
+                            $params['isLogout'] = $navitem['isLogout'];
+                        }
+                        if (isset($navitem['center'])) {
+                            $params['center'] = $navitem['center'];
+                        }
+                        if (isset($navitem['parentItem'])) {
+                            $params['parentItem'] = $navitem['parentItem'];
+                        }
                     }
 
                     $obj->save($params);
