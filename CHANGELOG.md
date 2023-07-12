@@ -1,3 +1,7 @@
+## 3.0.29
+
+* Fix order query for nav items
+
 ## 3.0.28
 
 * Optimize to only update supplied values
