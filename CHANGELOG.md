@@ -1,3 +1,7 @@
+## 3.0.26
+
+* Add support for bulk updating nav items
+
 ## 3.0.25
 
 * No longer update pages or sitemap when nav or side nav items are changes
