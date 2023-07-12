@@ -204,13 +204,13 @@ class PageController extends ModelController
 
         // side navigation
         if ($page['side_navigation']) {
-            $code .= '<!-- BEGIN SIDE NAVIGATION --><div id="sidenav-wrapper class="class="d-flex flex-column flex-shrink-0 p-3"><div id="sidenav" class="p-3" style="width: 230px;"></div></div><!-- END SIDE NAVIGATION -->';
+            $code .= '<!-- BEGIN SIDE NAVIGATION --><div id="sidenav-wrapper class="class="d-flex flex-column flex-shrink-0 py-3"><div id="sidenav" class="p-3" style="width: 230px;"></div></div><!-- END SIDE NAVIGATION -->';
         }
 
         if ($page['page_type'] == 'block') {
-            $code .= '<div id="blockEditorROViewer" class="container container-flex mb-5 px-5"></div>';
+            $code .= '<div id="blockEditorROViewer" class="container container-flex"></div>';
         } else {
-            $code .= '<div class="container container-flex mb-5 px-5">'.$page['html'].'</div>';
+            $code .= '<div class="container container-flex">'.$page['html'].'</div>';
         }
 
         // close main wrapper

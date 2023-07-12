@@ -1,3 +1,7 @@
+## 3.0.31
+
+* Removing padding and margins around containers to allow users for maximum styling and customization
+
 ## 3.0.30
 
 * Add wrapper around sidenav div for better customization and styling options
