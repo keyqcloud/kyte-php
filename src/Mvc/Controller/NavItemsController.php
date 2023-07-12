@@ -20,7 +20,7 @@ class NavItemsController extends ModelController
             if ($field === null || $value === null) throw new \Exception("Field and Values params not set");
             // determine model
             if ($field == 'NavigationItem' || $field == "SideNavItem") {
-                $this->model(constant($field));
+                $this->model = constant($field);
             } else {
                 throw new \Exception("Unknown navigation item model type provided.");
             }

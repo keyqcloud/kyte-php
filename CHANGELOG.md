@@ -1,3 +1,7 @@
+## 3.0.27
+
+* Resolve issue with undefined model for virtual controller
+
 ## 3.0.26
 
 * Order menu items by item order attribute
