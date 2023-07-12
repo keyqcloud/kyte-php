@@ -204,7 +204,7 @@ class PageController extends ModelController
 
         // side navigation
         if ($page['side_navigation']) {
-            $code .= '<!-- BEGIN SIDE NAVIGATION --><div id="sidenav" class="d-flex flex-column flex-shrink-0 p-3" style="width: 230px;"></div><!-- END SIDE NAVIGATION -->';
+            $code .= '<!-- BEGIN SIDE NAVIGATION --><div id="sidenav-wrapper class="class="d-flex flex-column flex-shrink-0 p-3"><div id="sidenav" class="p-3" style="width: 230px;"></div></div><!-- END SIDE NAVIGATION -->';
         }
 
         if ($page['page_type'] == 'block') {

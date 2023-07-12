@@ -1,3 +1,7 @@
+## 3.0.30
+
+* Add wrapper around sidenav div for better customization and styling options
+
 ## 3.0.29
 
 * Fix order query for nav items
