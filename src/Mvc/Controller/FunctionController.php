@@ -13,7 +13,7 @@ class FunctionController extends ModelController
     public function hook_preprocess($method, &$r, &$o = null) {
         switch ($method) {
             case 'new':
-                $switch_stmt = "\tswitch (\$method) {\r\n\t\tcase 'new':\r\n\t\t\tbreak;\r\n\r\n\t\tcase 'update':\r\n\t\t\tbreak;\r\n\r\n\t\tcase 'get':\r\n\t\t\tbreak;\r\n\r\n\t\tcase 'delete':\r\n\t\t\tbreak;\r\n\r\n\t\tdefault:\r\n\t\t\tbreak;\r\n}\r\n";
+                $switch_stmt = "\tswitch (\$method) {\r\n\t\tcase 'new':\r\n\t\t\tbreak;\r\n\r\n\t\tcase 'update':\r\n\t\t\tbreak;\r\n\r\n\t\tcase 'get':\r\n\t\t\tbreak;\r\n\r\n\t\tcase 'delete':\r\n\t\t\tbreak;\r\n\r\n\t\tdefault:\r\n\t\t\tbreak;\r\t}\r\n";
 
                 if ($r['type'] == 'hook_init') {
                     $r['code'] = "public function hook_init() {\r\n\t\r\n}\r\n";
