@@ -1,3 +1,7 @@
+## 3.0.33 (draft)
+
+* Fix formatting issue for switch statement in controller functions
+
 ## 3.0.32
 
 * Order main nav items by 'center' attribute first, then item order
