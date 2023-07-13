@@ -10,6 +10,7 @@ class NavigationItemController extends ModelController
 
     public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {
         $order = [
+            ['field' => 'center', 'direction' => 'desc'],
             ['field' => 'itemOrder', 'direction' => 'asc'],
         ];
     }

@@ -1,3 +1,7 @@
+## 3.0.32
+
+* Order main nav items by 'center' attribute first, then item order
+
 ## 3.0.31
 
 * Removing padding and margins around containers to allow users for maximum styling and customization
