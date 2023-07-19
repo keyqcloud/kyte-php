@@ -16,6 +16,43 @@ $SideNav = [
 			'date'		=> false,
 		],
 
+		// custom styles
+		'bgColor'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 7,
+			'default'	=> '#124ef5',
+			'date'		=> false,
+		],
+		'fgColor'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 7,
+			'default'	=> '#dce4fd',
+			'date'		=> false,
+		],
+		'bgActiveColor'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 7,
+			'default'	=> '#2764f5',
+			'date'		=> false,
+		],
+		'fgActiveColor'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 7,
+			'default'	=> '#ffffff',
+			'date'		=> false,
+		],
+		'columnStyle'		=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 2,
+			'default'	=> 0,
+			'date'		=> false,
+		],
+
 		'site'	=> [
 			'type'		=> 'i',
 			'required'	=> false,

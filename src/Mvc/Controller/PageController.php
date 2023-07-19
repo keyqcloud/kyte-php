@@ -177,6 +177,22 @@ class PageController extends ModelController
         // custom styles
         $code .= '<style>'.$page['stylesheet'].($page['side_navigation'] ? ' main {display: flex;flex-wrap: nowrap;min-height: 100vh;min-height: --webkit-fill-available;overflow-x: auto;overflow-y: hidden;}' : '').'</style>';
 
+        // navigation styles
+        if ($page['side_navigation']) {
+            $code .='<style>';
+            if ($page['side_navigation']['columnStyle'] == 1) {
+                $code .= '#sidenav { background-color: '.$page['side_navigation']['bgColor'].'; margin: 1rem;border-radius: 1em;filter: drop-shadow(0px 0px 6px #000);}';
+            } else if($page['side_navigation']['columnStyle'] == 2) {
+                $code .= '#sidenav { background-color: '.$page['side_navigation']['bgColor'].'; margin: 1rem;border-radius: 1em;filter: drop-shadow(0px 0px 6px #000); height: 100%; }';
+            } else {
+                $code .= '#sidenav-wrapper { background-color: '.$page['side_navigation']['bgColor'].'; }';
+            }
+            
+            $code .= '#sidenav a { color: '.$page['side_navigation']['fgColor'].' !important; }';
+            $code .= '#sidenav .nav-pills .nav-link.active { background-color: '.$page['side_navigation']['bgActiveColor'].' !important; color: '.$page['side_navigation']['fgActiveColor'].' !important; }';
+            $code .='</style>';
+        }
+
         // close head
         $code .= '</head>';
 
@@ -204,7 +220,7 @@ class PageController extends ModelController
 
         // side navigation
         if ($page['side_navigation']) {
-            $code .= '<!-- BEGIN SIDE NAVIGATION --><div id="sidenav-wrapper class="class="d-flex flex-column flex-shrink-0 py-3"><div id="sidenav" class="p-3" style="width: 230px;"></div></div><!-- END SIDE NAVIGATION -->';
+            $code .= '<!-- BEGIN SIDE NAVIGATION --><div id="sidenav-wrapper" class="d-flex flex-column flex-shrink-0 py-3"><div id="sidenav" class="p-3" style="width: 230px;"></div></div><!-- END SIDE NAVIGATION -->';
         }
 
         if ($page['page_type'] == 'block') {
@@ -288,14 +304,10 @@ class PageController extends ModelController
             foreach(array_keys($menu_items_right_sub) as $key) {
                 $menu_items_right[$key] = '{dropdown:true,class:"me-2 text-light",label:"'.$menu_items[$key]->title.'",items:['.implode($menu_items_right_sub[$key]).']},';
             }
-            $main_nav = new \Kyte\Core\ModelObject(Navigation);
-            if (!$main_nav->retrieve('id', $page['main_navigation']['id'])) {
-                throw new \Exception("Unable to find main navigation for id ".$page['main_navigation']['id']);
-            }
-            $nav_link = $main_nav->link ? $main_nav->link : '/';
-            if ($main_nav->page) {
+            $nav_link = $page['main_navigation']['link'] ? $page['main_navigation']['link'] : '/';
+            if ($page['main_navigation']['page']) {
                 $linked_page = new \Kyte\Core\ModelObject(Page);
-                if ($linked_page->retrieve('id', $main_nav->page)) {
+                if ($linked_page->retrieve('id', $page['main_navigation']['page'])) {
                     $nav_link = '/'.$linked_page->s3key;
                 }
             }

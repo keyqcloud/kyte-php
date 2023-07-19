@@ -1,5 +1,7 @@
-## 3.0.33 (draft)
+## 3.0.33
 
+* Fix issue with invalid HTML attribute for side navigation wrapper
+* Add ability to customize side navigation style
 * Fix formatting issue for switch statement in controller functions
 
 ## 3.0.32
