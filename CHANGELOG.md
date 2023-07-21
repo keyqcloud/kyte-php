@@ -1,3 +1,7 @@
+## 3.0.36
+
+* Ability to override account level scoping
+
 ## 3.0.35
 
 * Fix bug where API_URL was never defined (incorrectly defined as APP_URL)
