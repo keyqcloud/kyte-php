@@ -1,6 +1,6 @@
 <?php
 	/* APP BASE URL */
-	define('APP_URL', $_SERVER['SERVER_NAME']);
+	define('API_URL', $_SERVER['SERVER_NAME']);
 
     /* GENERAL APP SETTINGS */
     define('APP_NAME', '');
