@@ -1,3 +1,7 @@
+## 3.0.34
+
+* Fix regression where nav logo disapeared
+
 ## 3.0.33
 
 * Fix issue with invalid HTML attribute for side navigation wrapper

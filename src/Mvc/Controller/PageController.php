@@ -313,7 +313,7 @@ class PageController extends ModelController
             }
             
             $code .= 'let appnavdef = [['.implode($menu_items_center).'],['.implode($menu_items_right).']];';
-            $code .= 'let navbar = new KyteNav("#mainnav", appnavdef, "'.$main_nav->logo.'", "'.($main_nav->logo ? '' : $page['site']['name']).'", null, "'.$nav_link.'");navbar.create();';
+            $code .= 'let navbar = new KyteNav("#mainnav", appnavdef, "'.$page['main_navigation']['logo'].'", "'.($page['main_navigation']['logo'] ? '' : $page['site']['name']).'", null, "'.$nav_link.'");navbar.create();';
         }
 
         // side navigation
