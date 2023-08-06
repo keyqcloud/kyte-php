@@ -34,6 +34,11 @@ class DataModelController extends ModelController
             $attrs['protected'] = true;
         }
 
+        // password
+        if ($r['password'] == 1) {
+            $attrs['password'] = true;
+        }
+
         // defaults
         if (strlen($o->defaults) > 0) {
             $attrs['default'] = $o->defaults;

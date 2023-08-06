@@ -6,7 +6,7 @@ $Function = [
 		// function name (arbitrary, not used in controller)
 		'name'		=> [
 			'type'		=> 's',
-			'required'	=> true,
+			'required'	=> false,
 			'size'		=> 255,
 			'date'		=> false,
 		],

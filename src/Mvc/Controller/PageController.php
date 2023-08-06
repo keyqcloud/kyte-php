@@ -224,9 +224,9 @@ class PageController extends ModelController
         }
 
         if ($page['page_type'] == 'block') {
-            $code .= '<div id="blockEditorROViewer" class="container container-flex"></div>';
+            $code .= '<div id="blockEditorROViewer"'.($page['use_container'] == 1 ? 'class="container container-flex"' : '').'></div>';
         } else {
-            $code .= '<div class="container container-flex">'.$page['html'].'</div>';
+            $code .= '<div id="kyte-page-container"'.($page['use_container'] == 1 ? 'class="container container-flex"' : '').'>'.$page['html'].'</div>';
         }
 
         // close main wrapper

@@ -1,3 +1,11 @@
+## 3.0.37
+
+* Add flag to determine if a container div should be used to wrap the HTML content
+* Fix bug that caused endless looping if parent item was accidentally set to self
+* Add password attribute for model
+* Check if hook or override of specified type already exists for a controller
+* Make function name optional
+
 ## 3.0.36
 
 * Ability to override account level scoping

@@ -153,6 +153,15 @@ $Page = [
 			'date'		=> false,
 		],
 
+		'use_container' => [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 1,
+			'date'		=> false,
+		],
+
 		// 0 - public, 1 - private
 		'protected'	=> [
 			'type'		=> 'i',

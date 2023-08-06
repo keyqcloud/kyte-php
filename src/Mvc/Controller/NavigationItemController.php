@@ -15,7 +15,19 @@ class NavigationItemController extends ModelController
         ];
     }
 
-    // public function hook_preprocess($method, &$r, &$o = null) {}
+    public function hook_preprocess($method, &$r, &$o = null) {
+        switch ($method) {
+            case 'update':
+                if ($r['parentItem'] == $o->parentItem) {
+                    $r['parentItem'] = 0;   // let's soft fail if the parent item is the same as self to avoid recurssion
+                    error_log('Prevent potential recurssion for menu item '.$o->parentItem);
+                }
+                break;
+            
+            default:
+                break;
+        }
+    }
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
