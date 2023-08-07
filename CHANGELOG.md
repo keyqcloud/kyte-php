@@ -1,3 +1,7 @@
+## 3.0.40
+
+* Add support for user to specify a region to create a new site in
+
 ## 3.0.39
 
 * Fix to apply navigation font color to title too

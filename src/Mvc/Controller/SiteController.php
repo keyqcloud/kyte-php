@@ -63,6 +63,21 @@ class SiteController extends ModelController
                     throw new \Exception("CRITICAL ERROR: Unable to find application.");
                 }
 
+                // validate provided region
+                $validS3Regions = [
+                    "us-east-1", "us-east-2", "us-west-1", "us-west-2",
+                    "ap-south-1", "ap-northeast-1", "ap-northeast-2", "ap-southeast-1", "ap-southeast-2",
+                    "ca-central-1", "eu-central-1", "eu-north-1", "eu-west-1", "eu-west-2", "eu-west-3",
+                    "sa-east-1", "cn-north-1", "cn-northwest-1"
+                ];
+                
+                $region = $r['region'];
+                
+                // if user provided region string is not valid then throw an exception
+                if (!in_array($region, $validS3Regions)) {
+                    throw new \Exception("Unknown region $region. Please check to make sure you specified a valid region for AWS S3.");
+                }
+
                 // get AWS credentials
                 $region = 'us-east-1';
                 $credentials = new \Kyte\Aws\Credentials($region);
