@@ -180,7 +180,8 @@ class PageController extends ModelController
         // main navigation styles
         if ($page['main_navigation']) {
             $code .='<style>';
-            $code .= '#mainnav { background-color: '.$page['main_navigation']['bgColor'].' !important; color: '.$page['main_navigation']['fgColor'].' !important; }';
+            $code .= '#mainnav { background-color: '.$page['main_navigation']['bgColor'].' !important; }';
+            $code .= '#mainnav a { color: '.$page['main_navigation']['fgColor'].' !important; }';
             $code .= '#mainnav .dropdown-menu { background-color: '.$page['main_navigation']['bgDropdownColor'].' !important; }';
             $code .= '#mainnav .dropdown-item { color: '.$page['main_navigation']['fgDropdownColor'].' !important; }';
             $code .='</style>';

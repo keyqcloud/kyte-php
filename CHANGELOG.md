@@ -1,3 +1,7 @@
+## 3.0.39
+
+* Fix to apply navigation font color to title too
+
 ## 3.0.38
 
 * Add ability to change main navigation foreground color
