@@ -1,3 +1,7 @@
+## 3.0.41
+
+* Fix issue with column name change
+
 ## 3.0.40
 
 * Add support for user to specify a region to create a new site in
