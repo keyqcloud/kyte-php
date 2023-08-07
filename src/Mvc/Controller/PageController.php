@@ -177,7 +177,15 @@ class PageController extends ModelController
         // custom styles
         $code .= '<style>'.$page['stylesheet'].($page['side_navigation'] ? ' main {display: flex;flex-wrap: nowrap;min-height: 100vh;min-height: --webkit-fill-available;overflow-x: auto;overflow-y: hidden;}' : '').'</style>';
 
-        // navigation styles
+        // main navigation styles
+        if ($page['main_navigation']) {
+            $code .='<style>';
+            $code .= '#mainnav { background-color: '.$page['main_navigation']['bgColor'].' !important; color: '.$page['main_navigation']['fgColor'].' !important; }';
+            $code .= '#mainnav .dropdown-menu { background-color: '.$page['main_navigation']['bgDropdownColor'].' !important; }';
+            $code .= '#mainnav .dropdown-item { color: '.$page['main_navigation']['fgDropdownColor'].' !important; }';
+            $code .='</style>';
+        }
+        // side navigation styles
         if ($page['side_navigation']) {
             $code .='<style>';
             if ($page['side_navigation']['columnStyle'] == 1) {
@@ -212,7 +220,7 @@ class PageController extends ModelController
 
         // main navigation and header
         if ($page['main_navigation']) {
-            $code .= '<!-- START NAV --><nav id="mainnav" class="navbar navbar-dark bg-dark navbar-expand-lg"></nav><!-- END NAV -->';
+            $code .= '<!-- START NAV --><nav id="mainnav" class="navbar navbar-expand-lg'.($page['main_navigation']['isStickyTop'] == 1 ? ' sticky-top' : '').'"></nav><!-- END NAV -->';
         }
 
         // main wrapper

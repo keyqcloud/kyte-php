@@ -54,6 +54,44 @@ $Navigation = [
 			],
 		],
 
+		// custom styles
+		'bgColor'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 7,
+			'default'	=> '#212529',
+			'date'		=> false,
+		],
+		'fgColor'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 7,
+			'default'	=> '#f8f9fa',
+			'date'		=> false,
+		],
+		'bgDropdownColor'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 7,
+			'default'	=> '#ffffff',
+			'date'		=> false,
+		],
+		'fgDropdownColor'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 7,
+			'default'	=> '#212529',
+			'date'		=> false,
+		],
+		'isStickyTop'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 0,
+			'date'		=> false,
+		],
+
 		// 0 - public, 1 - private
 		'protected'	=> [
 			'type'		=> 'i',

@@ -1,3 +1,11 @@
+## 3.0.38
+
+* Add ability to change main navigation foreground color
+* Add ability to change main navigation background colors
+* Add ability to make main navigation stick to top
+* Add ability to change main navigation dropdown foreground color
+* Add ability to change main navigation dropdown background color
+
 ## 3.0.37
 
 * Add flag to determine if a container div should be used to wrap the HTML content
