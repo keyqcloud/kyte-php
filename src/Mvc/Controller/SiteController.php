@@ -83,7 +83,7 @@ class SiteController extends ModelController
                 $credentials = new \Kyte\Aws\Credentials($region);
 
                 // create s3 bucket for site data
-                $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_.-]/', '-', $r['name']).'-'.$app->identifier);
+                $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-'.$app->identifier);
                 $o->save([
                     'region'        => $region,
                     's3BucketName'  => $bucketName,
@@ -107,20 +107,20 @@ class SiteController extends ModelController
                 $o->save([
                     's3MediaBucketName'  => $mediaBucketName,
                 ]);
-                $s3 = new \Kyte\Aws\S3($credentials, $mediaBucketName);
+                $medias3 = new \Kyte\Aws\S3($credentials, $mediaBucketName);
                 try {
-                    $s3->createBucket();
+                    $medias3->createBucket();
                 } catch(\Exception $e) {
                     $o->delete();
                     throw $e;
                 }
                 
                 // remove public access block
-                $s3->deletePublicAccessBlock();
+                $medias3->deletePublicAccessBlock();
                 // enable public access policy (GET)
-                $s3->enablePublicAccess();
+                $medias3->enablePublicAccess();
                 // enable cors for upload
-                $s3->enableCors([
+                $medias3->enableCors([
                     [
                         'AllowedHeaders'    =>  ['*'],
                         'AllowedMethods'    =>  ['GET','POST'],
