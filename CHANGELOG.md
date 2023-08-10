@@ -1,6 +1,10 @@
+## 3.0.45
+
+* Use async function to apply bucket policies
+
 ## 3.0.44
 
-* declare a new variable for static media s3 for clarity
+* Declare a new variable for static media s3 for clarity
 * Fix issue where region was not being set
 
 ## 3.0.43

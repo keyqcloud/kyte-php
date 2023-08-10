@@ -125,10 +125,12 @@ class S3 extends Client
     }
 
     public function enablePolicy($policy) {
-        $result = $this->client->putBucketPolicy([
+        $promise = $this->client->putBucketPolicyAsync([
             'Bucket' => $this->bucket,
             'Policy' => $policy,
         ]);
+        
+        return $promise;
     }
 
     public function deletePolicy() {
