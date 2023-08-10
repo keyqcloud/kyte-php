@@ -1,3 +1,7 @@
+## 3.0.44
+
+* Fix issue where region was not being set
+
 ## 3.0.43
 
 * Failed to tag correctly

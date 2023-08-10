@@ -79,8 +79,7 @@ class SiteController extends ModelController
                     throw new \Exception("Unknown region $region. Please check to make sure you specified a valid region for AWS S3.");
                 }
 
-                // get AWS credentials
-                $region = 'us-east-1';
+                // get AWS credential
                 $credentials = new \Kyte\Aws\Credentials($region);
 
                 // create s3 bucket for site data
