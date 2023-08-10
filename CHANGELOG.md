@@ -1,3 +1,7 @@
+## 3.0.43
+
+* Failed to tag correctly
+
 ## 3.0.42
 
 * Fix issue where site entry in DB is created even if region is blank or wrong.
