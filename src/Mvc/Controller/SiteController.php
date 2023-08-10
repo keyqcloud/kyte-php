@@ -75,6 +75,7 @@ class SiteController extends ModelController
                 
                 // if user provided region string is not valid then throw an exception
                 if (!in_array($region, $validS3Regions)) {
+                    $o->delete();
                     throw new \Exception("Unknown region $region. Please check to make sure you specified a valid region for AWS S3.");
                 }
 

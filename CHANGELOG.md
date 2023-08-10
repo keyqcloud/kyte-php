@@ -1,3 +1,7 @@
+## 3.0.42
+
+* Fix issue where site entry in DB is created even if region is blank or wrong.
+
 ## 3.0.41
 
 * Fix issue with column name change
