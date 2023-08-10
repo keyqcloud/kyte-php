@@ -1,9 +1,6 @@
-## 3.0.45
-
-* declare a new variable for static media s3 for clarity
-
 ## 3.0.44
 
+* declare a new variable for static media s3 for clarity
 * Fix issue where region was not being set
 
 ## 3.0.43
