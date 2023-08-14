@@ -1,3 +1,7 @@
+## 3.0.55
+
+* Fix bug where code to check existing model names is not scoped within application
+
 ## 3.0.45
 
 * Use async function to apply bucket policies

@@ -4,9 +4,7 @@ namespace Kyte\Mvc\Controller;
 
 class DataModelController extends ModelController
 {
-    public function hook_init() {
-        $this->checkExisting = 'name';
-    }
+    // public function hook_init() {}
 
     // public function hook_auth() {}
 
@@ -107,7 +105,13 @@ class DataModelController extends ModelController
             case 'new':
                 // check if new name is unique
                 if (defined($r['name'])) {
-                    throw new \Exception("Model name is already used");
+                    throw new \Exception("Model name conflicts with existing model or system model name.");
+                }
+
+                // check if model already exists for this particular application
+                $existModel = \Kyte\Core\ModelObject(DataModel);
+                if ($existModel->retrieve('name', $r['name'], [['field' => 'application', 'value' => $r['application']]])) {
+                    throw new \Exception("Model already exists.");
                 }
 
                 // create base definition
@@ -156,7 +160,13 @@ class DataModelController extends ModelController
                 if ($o->name != $r['name']) {
                     // check if new name is unique
                     if (defined($r['name'])) {
-                        throw new \Exception("New model name is already used");
+                        throw new \Exception("New model name conflicts with existing model or system model name.");
+                    }
+
+                    // check if model already exists for this particular application
+                    $existModel = \Kyte\Core\ModelObject(DataModel);
+                    if ($existModel->retrieve('name', $r['name'], [['field' => 'application', 'value' => $r['application']]])) {
+                        throw new \Exception("New model name is already in use.");
                     }
 
                     // update permissions
