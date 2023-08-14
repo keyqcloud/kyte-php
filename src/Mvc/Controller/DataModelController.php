@@ -109,7 +109,7 @@ class DataModelController extends ModelController
                 }
 
                 // check if model already exists for this particular application
-                $existModel = \Kyte\Core\ModelObject(DataModel);
+                $existModel = new \Kyte\Core\ModelObject(DataModel);
                 if ($existModel->retrieve('name', $r['name'], [['field' => 'application', 'value' => $r['application']]])) {
                     throw new \Exception("Model already exists.");
                 }
@@ -164,7 +164,7 @@ class DataModelController extends ModelController
                     }
 
                     // check if model already exists for this particular application
-                    $existModel = \Kyte\Core\ModelObject(DataModel);
+                    $existModel = new \Kyte\Core\ModelObject(DataModel);
                     if ($existModel->retrieve('name', $r['name'], [['field' => 'application', 'value' => $r['application']]])) {
                         throw new \Exception("New model name is already in use.");
                     }

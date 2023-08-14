@@ -1,3 +1,7 @@
+## 3.0.47
+
+* Fix ciritcal bug with DataModel ModelObject instantiation
+
 ## 3.0.46
 
 * Fix bug where code to check existing model names is not scoped within application
