@@ -1,4 +1,4 @@
-## 3.0.55
+## 3.0.46
 
 * Fix bug where code to check existing model names is not scoped within application
 
