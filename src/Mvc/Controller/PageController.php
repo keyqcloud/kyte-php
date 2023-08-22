@@ -172,7 +172,7 @@ class PageController extends ModelController
         }
 
         // KyteJS
-        $code .= '<script src="https://cdn.stratis-troika.com/kytejs/dev/kyte.js" crossorigin="anonymous"></script>';
+        $code .= '<script src="'.KYTE_JS_CDN.'" crossorigin="anonymous"></script>';
 
         // custom styles
         $code .= '<style>'.$page['stylesheet'].($page['side_navigation'] ? ' main {display: flex;flex-wrap: nowrap;min-height: 100vh;min-height: --webkit-fill-available;overflow-x: auto;overflow-y: hidden;}' : '').'</style>';

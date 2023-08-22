@@ -1,3 +1,8 @@
+## 3.0.48
+
+* Allow custom CDN for each implementation
+* If custom CDN is not defined, default to current stable
+
 ## 3.0.47
 
 * Fix ciritcal bug with DataModel ModelObject instantiation

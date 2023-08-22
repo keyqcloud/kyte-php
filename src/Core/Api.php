@@ -165,6 +165,11 @@ class Api
 			define('DEBUG', false);
 			error_log('DEBUG constant not defined...using defaults');
 		}
+		// check if cdn is define...if not default to current stable
+		if (!defined('KYTE_JS_CDN')) {
+			define('KYTE_JS_CDN', 'http://cdn.keyqcloud.com/kyte/js/stable/kyte.js');
+			error_log('KYTE_JS_CDN constant not defined...using defaults');
+		}
 		// compatibility for older config files
 		if (!defined('ALLOW_ENC_HANDOFF')) {
 			define('ALLOW_ENC_HANDOFF', true);
