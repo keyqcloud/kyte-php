@@ -1,3 +1,7 @@
+## 3.0.49
+
+* Fix default CDN to use HTTPS
+
 ## 3.0.48
 
 * Allow custom CDN for each implementation
