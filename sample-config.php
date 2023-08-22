@@ -9,7 +9,7 @@
 	define('SUPPORT_PHONE', '');
     define('APP_DATE_FORMAT', 'Y/m/d');
 
-    define('KYTE_JS_CDN', 'http://cdn.keyqcloud.com/kyte/js/stable/kyte.js');
+    define('KYTE_JS_CDN', 'https://cdn.keyqcloud.com/kyte/js/stable/kyte.js');
     
     /* BASE PATH for API - for example /var/www/html/ */
     define('APP_DIR', '');

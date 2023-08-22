@@ -167,7 +167,7 @@ class Api
 		}
 		// check if cdn is define...if not default to current stable
 		if (!defined('KYTE_JS_CDN')) {
-			define('KYTE_JS_CDN', 'http://cdn.keyqcloud.com/kyte/js/stable/kyte.js');
+			define('KYTE_JS_CDN', 'https://cdn.keyqcloud.com/kyte/js/stable/kyte.js');
 			error_log('KYTE_JS_CDN constant not defined...using defaults');
 		}
 		// compatibility for older config files
