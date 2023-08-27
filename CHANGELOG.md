@@ -1,3 +1,7 @@
+## 3.0.51
+
+* Fix bug where session token is null
+
 ## 3.0.50
 
 * Remove redundant call to retrieve user object
