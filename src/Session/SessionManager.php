@@ -201,7 +201,7 @@ class SessionManager
 		$this->hasSession = true;
 
 		// return session variable
-		return $this->session->getAllParams();
+		return ['session' => $this->session, 'user' => $this->user];
 	}
 
 	/**

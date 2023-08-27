@@ -1,3 +1,7 @@
+## 3.0.50
+
+* Remove redundant call to retrieve user object
+
 ## 3.0.49
 
 * Fix default CDN to use HTTPS

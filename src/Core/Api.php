@@ -783,14 +783,12 @@ class Api
 		// Retrieve transaction and user token corresponding to the session token
 		if ($identity[1] != "0") {
 			$session_ret = $this->session->validate($identity[1]);
-			$this->response['session'] = $session_ret['sessionToken'];
-			$this->response['token'] = $session_ret['txToken'];
-			$this->response['uid'] = $session_ret['uid'];
+			$this->response['session'] = $session_ret['session']->$sessionToken;
+			$this->response['token'] = $session_ret['session']->txToken;
 
-			if (!$this->user->retrieve('id', $session_ret['uid'])) {
-				throw new \Kyte\Exception\SessionException("Invalid user session.");
-			}
+			$this->user = $session_ret['user'];
 
+			$this->response['uid'] = $this->user->id;
 			$this->response['name'] = $this->user->name;
 			$this->response['email'] = $this->user->email;
 			if ($this->user->role) {
