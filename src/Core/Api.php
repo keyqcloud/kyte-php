@@ -187,6 +187,10 @@ class Api
 			define('SESSION_TIMEOUT', 3600);
 			error_log('SESSION_TIMEOUT constant not defined...using defaults');
 		}
+		if (!defined('SIGNATURE_TIMEOUT')) {
+			define('SIGNATURE_TIMEOUT', 600);
+			error_log('SIGNATURE_TIMEOUT constant not defined...using defaults');
+		}
 		if (!defined('USERNAME_FIELD')) {
 			define('USERNAME_FIELD', 'email');
 			error_log('USERNAME_FIELD constant not defined...using defaults');
@@ -756,7 +760,7 @@ class Api
 		$this->utcDate = new \DateTime($identity[2], new \DateTimeZone('UTC'));
 
 		// Check expiration
-		if (time() > $this->utcDate->format('U') + (60 * 30)) {
+		if (time() > $this->utcDate->format('U') + SIGNATURE_TIMEOUT) {
 			throw new \Kyte\Exception\SessionException("API request has expired.");
 		}
 

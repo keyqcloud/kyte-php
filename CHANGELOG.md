@@ -1,6 +1,8 @@
 ## 3.0.50
 
 * Remove redundant call to retrieve user object
+* Reduce signature timeout to 5 min
+* Create constant for signature timeout 
 
 ## 3.0.49
 
