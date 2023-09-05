@@ -4,7 +4,9 @@ namespace Kyte\Mvc\Controller;
 
 class PageController extends ModelController
 {
-    // public function hook_init() {}
+    public function hook_init() {
+        $this->dateformat = 'm/d/Y H:i:s';
+    }
     // public function hook_auth() {}
 
     // public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
