@@ -17,7 +17,7 @@ class ApplicationController extends ModelController
                     throw new \Exception('AWS Access and Secret key are required along with the username associated with the credential.');
                 }
                 $aws = new \Kyte\Core\ModelObject(KyteAWSKey);
-                if ($aws->retrieve('private_key', $r['aws_private_key'], [['field'=>'aws_public_key', 'value'=>$r['aws_public_key']]])) {
+                if ($aws->retrieve('private_key', $r['aws_private_key'], [['field'=>'public_key', 'value'=>$r['aws_public_key']]])) {
                     $r['aws_key'] = $aws->id;
                 } else {
                     if ($aws->create([
