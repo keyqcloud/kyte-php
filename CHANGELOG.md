@@ -1,3 +1,10 @@
+## 3.0.53
+
+* Add application-level AWS key (foreign key)
+* Add model for AWS keys
+* Move kyte connect and obfuscated version of kyte connect to Application model
+* Update to use application specific AWS for application management
+
 ## 3.0.52
 
 * Update to datetime format for Page controller
