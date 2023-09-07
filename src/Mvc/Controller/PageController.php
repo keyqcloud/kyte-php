@@ -24,17 +24,6 @@ class PageController extends ModelController
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
-            case 'get':
-                // get app identifier
-                // $app = new \Kyte\Core\ModelObject(Application);
-                // if (!$app->retrieve('id', $r['site']['application']['id'])) {
-                //     throw new \Exception("CRITICAL ERROR: Unable to find application.");
-                // }
-
-                $r['api_endpoint'] = API_URL;
-                $r['application_identifier'] = $r['site']['application']['identifier'];
-                break;
-
             case 'update':
                 if ($o->state == 1 && !isset($d['state'])) {
                     $o->save(['state' => 2]);
