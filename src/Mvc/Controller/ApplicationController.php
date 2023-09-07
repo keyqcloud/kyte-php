@@ -12,6 +12,9 @@ class ApplicationController extends ModelController
     public function hook_preprocess($method, &$r, &$o = null) {
         switch ($method) {
             case 'new':
+                // check aws creds and add if not present
+
+
                 // create new application identifier
                 $r['identifier'] = uniqid();
                 // create db name
@@ -26,29 +29,6 @@ class ApplicationController extends ModelController
 
                 // create database
                 \Kyte\Core\DBI::createDatabase($r['db_name'], $r['db_username'], $r['db_password']);
-
-                // // get AWS credentials
-                // $credentials = new \Kyte\Aws\Credentials('us-east-1');
-
-                // // create s3 bucket
-                // $bucketName = $r['domain'];
-                // $s3 = new \Kyte\Aws\S3($credentials, $bucketName, 'public');
-                // $s3->createBucket();
-                // $s3->createWebsite();
-                // $s3->enablePublicAccess();
-                // // $s3->enableVersioning();
-
-                // // create acm certificate request
-                // $acm = new \Kyte\Aws\Acm($credentials);
-                // $acm->request($r['domain']);
-
-                // // create distribution
-                // $cf = new \Kyte\Aws\CloudFront($credentials);
-                // $cf->addOrigin(
-                //     $r['domain'].'.s3-website-'.$credential->getRegion().'.amazonaws.com',
-                //     $r['domain']
-                // );
-                // $cf->create();
 
                 break;
             
