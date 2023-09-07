@@ -40,8 +40,13 @@ class PageController extends ModelController
                     $o->save(['state' => 2]);
                 }
                 if (isset($d['state']) && $d['state'] == 1) {
+                    $app = new \Kyte\Core\ModelObject(Application);
+                    if (!$app->retrieve('id', $r['site']['application']['id'])) {
+                        throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                    }
+
                     // publish file to s3
-                    $credential = new \Kyte\Aws\Credentials($r['site']['region']);
+                    $credential = new \Kyte\Aws\Credentials($r['site']['region'], $app->aws_public_key, $app->aws_private_key);
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
                     // compile html file
@@ -68,9 +73,14 @@ class PageController extends ModelController
             case 'delete':
                 // check if s3 file exists and delete
                 if ($o->state > 0) {
+                    $app = new \Kyte\Core\ModelObject(Application);
+                    if (!$app->retrieve('id', $d['site']['application']['id'])) {
+                        throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                    }
+
                     // delete file
                     $d = $this->getObject($o);
-                    $credential = new \Kyte\Aws\Credentials($d['site']['region']);
+                    $credential = new \Kyte\Aws\Credentials($d['site']['region'], $app->aws_public_key, $app->aws_private_key);
                     $s3 = new \Kyte\Aws\S3($credential, $d['site']['s3BucketName']);
                     if (!empty($o->s3key)) {
                         // delete s3 file

@@ -80,7 +80,7 @@ class SiteController extends ModelController
                 }
 
                 // get AWS credential
-                $credentials = new \Kyte\Aws\Credentials($region);
+                $credentials = new \Kyte\Aws\Credentials($region, $app->aws_public_key, $app->aws_private_key);
 
                 // create s3 bucket for site data
                 $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-'.$app->identifier);

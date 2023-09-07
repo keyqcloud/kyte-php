@@ -22,8 +22,13 @@ class SideNavController extends ModelController
                     $r = false;
                     $o->delete(null, null, $this->user->id);
                 }
+                $app = new \Kyte\Core\ModelObject(Application);
+                if (!$app->retrieve('id', $nav['site']['application']['id'])) {
+                    throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                }
+
                 // update pages with navigation
-                $credential = new \Kyte\Aws\Credentials($nav['site']['region']);
+                $credential = new \Kyte\Aws\Credentials($nav['site']['region'], $app->aws_public_key, $app->aws_private_key);
                 $s3 = new \Kyte\Aws\S3($credential, $nav['site']['s3BucketName']);
 
                 $pages = new \Kyte\Core\Model(Page);
