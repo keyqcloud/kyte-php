@@ -268,7 +268,12 @@ class PageController extends ModelController
         }
 
         // add kyte connect
-        $code .= $page['kyte_connect']."\n\n";
+        if ($page['site']['application']['obfuscate_kyte_connect'] == 1) {
+            $code .= $page['site']['application']['kyte_connect_obfuscated']."\n\n";
+        } else {
+            $code .= $page['site']['application']['kyte_connect']."\n\n";
+        }
+
         // custom js
         $code .= '$(document).ready(function() { ';
         if ($page['protected'] == 1) {
