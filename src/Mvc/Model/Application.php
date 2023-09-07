@@ -130,6 +130,21 @@ $Application = [
 			]
 		],
 
+		'aws_public_key'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'aws_private_key'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+			'protected'	=> true,
+		],
+
 		// framework attributes
 
 		'kyte_account'	=> [
