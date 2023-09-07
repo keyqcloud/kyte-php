@@ -125,7 +125,7 @@ $Application = [
 			'date'		=> false,
 			'unsigned'	=> true,
 			'fk' => [
-				'model'	=> 'AWSKey',
+				'model'	=> 'KyteAWSKey',
 				'field'	=> 'id',
 			]
 		],
