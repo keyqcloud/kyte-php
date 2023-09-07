@@ -95,22 +95,39 @@ $Application = [
 			'protected'	=> false,
 		],
 
-		// optional customer AWS credentials
-
-		'aws_public_key'	=> [
-			'type'		=> 's',
+		'obfuscate_kyte_connect' => [
+			'type'		=> 'i',
 			'required'	=> false,
-			'size'		=> 512,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 1,
 			'date'		=> false,
-			'protected'	=> true,
 		],
 
-		'aws_secret_key'	=> [
-			'type'		=> 's',
+		'kyte_connect'		=> [
+			'type'		=> 't',
 			'required'	=> false,
-			'size'		=> 512,
 			'date'		=> false,
-			'protected'	=> true,
+		],
+
+		'kyte_connect_obfuscated'		=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
+		// optional customer AWS credentials
+
+		'aws_key'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 11,
+			'date'		=> false,
+			'unsigned'	=> true,
+			'fk' => [
+				'model'	=> 'AWSKey',
+				'field'	=> 'id',
+			]
 		],
 
 		// framework attributes
