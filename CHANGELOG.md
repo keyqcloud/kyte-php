@@ -1,3 +1,7 @@
+## 3.0.55
+
+* fix tag issue
+
 ## 3.0.54
 
 * Use shorter username for database
