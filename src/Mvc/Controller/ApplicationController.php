@@ -40,7 +40,7 @@ class ApplicationController extends ModelController
 
                 // TODO: create new user and add privs to isolate db
                 // create new username
-                $r['db_username'] = $r['db_name'];
+                $r['db_username'] = 'db'.$r['identifier'];
 
                 // TODO: create db in different cluster
                 // $r['db_host'] = '';
