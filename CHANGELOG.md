@@ -1,3 +1,7 @@
+## 3.0.54
+
+* Use shorter username for database
+
 ## 3.0.53
 
 * Add application-level AWS key (foreign key)
