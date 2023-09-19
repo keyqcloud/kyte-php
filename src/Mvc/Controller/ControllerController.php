@@ -15,6 +15,10 @@ class ControllerController extends ModelController
     public function hook_preprocess($method, &$r, &$o = null) {
         switch ($method) {
             case 'new':
+                $existingController = new \Kyte\Core\ModelObject(constant('Controller'));
+                if ($existingController->retrieve('name', $r['name'], [['field' => 'application', 'value' => $r['application']]])) {
+                    throw new \Exception("Controller name already exists in application scope.");
+                }
                 // check if new name is unique
                 if (class_exists('\\Kyte\Mvc\\Controller\\'.$r['name'].'Controller')) {
                     throw new \Exception("Controller name already in use by Kyte core API.");
@@ -26,6 +30,10 @@ class ControllerController extends ModelController
 
             case 'update':
                 if ($o->name != $r['name']) {
+                    $existingController = new \Kyte\Core\ModelObject(constant('Controller'));
+                    if ($existingController->retrieve('name', $r['name'], [['field' => 'application', 'value' => $r['application']]])) {
+                        throw new \Exception("New controller name already exists in application scope.");
+                    }
                     // check if new name is unique
                     if (class_exists('\\Kyte\Mvc\\Controller\\'.$r['name'].'Controller')) {
                         throw new \Exception("Controller name already in use by Kyte core API.");

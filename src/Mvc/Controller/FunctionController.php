@@ -17,7 +17,7 @@ class FunctionController extends ModelController
 
                 if ($r['type'] == 'hook_init') {
                     $f = new \Kyte\Core\Model(constant("Function"));
-                    $f->retrieve('controller', $r['controller'], false [['field' => 'type', 'value' => $r['type']]]);
+                    $f->retrieve('controller', $r['controller'], false, [['field' => 'type', 'value' => $r['type']], ['field' => 'application', 'value' => $app->identifier]]);
                     if ($f->count() > 0) {
                         throw new \Exception('Hook of type '.$r['type'].' already exists for this controller.');
                     }
@@ -25,7 +25,7 @@ class FunctionController extends ModelController
                 }
                 if ($r['type'] == 'hook_auth') {
                     $f = new \Kyte\Core\Model(constant("Function"));
-                    $f->retrieve('controller', $r['controller'], false [['field' => 'type', 'value' => $r['type']]]);
+                    $f->retrieve('controller', $r['controller'], false, [['field' => 'type', 'value' => $r['type']], ['field' => 'application', 'value' => $app->identifier]]);
                     if ($f->count() > 0) {
                         throw new \Exception('Hook of type '.$r['type'].' already exists for this controller.');
                     }
@@ -33,7 +33,7 @@ class FunctionController extends ModelController
                 }
                 if ($r['type'] == 'hook_prequery') {
                     $f = new \Kyte\Core\Model(constant("Function"));
-                    $f->retrieve('controller', $r['controller'], false [['field' => 'type', 'value' => $r['type']]]);
+                    $f->retrieve('controller', $r['controller'], false, [['field' => 'type', 'value' => $r['type']], ['field' => 'application', 'value' => $app->identifier]]);
                     if ($f->count() > 0) {
                         throw new \Exception('Hook of type '.$r['type'].' already exists for this controller.');
                     }
@@ -41,7 +41,7 @@ class FunctionController extends ModelController
                 }
                 if ($r['type'] == 'hook_preprocess') {
                     $f = new \Kyte\Core\Model(constant("Function"));
-                    $f->retrieve('controller', $r['controller'], false [['field' => 'type', 'value' => $r['type']]]);
+                    $f->retrieve('controller', $r['controller'], false, [['field' => 'type', 'value' => $r['type']], ['field' => 'application', 'value' => $app->identifier]]);
                     if ($f->count() > 0) {
                         throw new \Exception('Hook of type '.$r['type'].' already exists for this controller.');
                     }
@@ -49,7 +49,7 @@ class FunctionController extends ModelController
                 }
                 if ($r['type'] == 'hook_response_data') {
                     $f = new \Kyte\Core\Model(constant("Function"));
-                    $f->retrieve('controller', $r['controller'], false [['field' => 'type', 'value' => $r['type']]]);
+                    $f->retrieve('controller', $r['controller'], false, [['field' => 'type', 'value' => $r['type']], ['field' => 'application', 'value' => $app->identifier]]);
                     if ($f->count() > 0) {
                         throw new \Exception('Hook of type '.$r['type'].' already exists for this controller.');
                     }
@@ -57,7 +57,7 @@ class FunctionController extends ModelController
                 }
                 if ($r['type'] == 'hook_process_get_response') {
                     $f = new \Kyte\Core\Model(constant("Function"));
-                    $f->retrieve('controller', $r['controller'], false [['field' => 'type', 'value' => $r['type']]]);
+                    $f->retrieve('controller', $r['controller'], false, [['field' => 'type', 'value' => $r['type']], ['field' => 'application', 'value' => $app->identifier]]);
                     if ($f->count() > 0) {
                         throw new \Exception('Hook of type '.$r['type'].' already exists for this controller.');
                     }
@@ -65,7 +65,7 @@ class FunctionController extends ModelController
                 }
                 if ($r['type'] == 'new') {
                     $f = new \Kyte\Core\Model(constant("Function"));
-                    $f->retrieve('controller', $r['controller'], false [['field' => 'type', 'value' => $r['type']]]);
+                    $f->retrieve('controller', $r['controller'], false, [['field' => 'type', 'value' => $r['type']], ['field' => 'application', 'value' => $app->identifier]]);
                     if ($f->count() > 0) {
                         throw new \Exception('Override of type '.$r['type'].' already exists for this controller.');
                     }
@@ -73,7 +73,7 @@ class FunctionController extends ModelController
                 }
                 if ($r['type'] == 'update') {
                     $f = new \Kyte\Core\Model(constant("Function"));
-                    $f->retrieve('controller', $r['controller'], false [['field' => 'type', 'value' => $r['type']]]);
+                    $f->retrieve('controller', $r['controller'], false, [['field' => 'type', 'value' => $r['type']], ['field' => 'application', 'value' => $app->identifier]]);
                     if ($f->count() > 0) {
                         throw new \Exception('Override of type '.$r['type'].' already exists for this controller.');
                     }
@@ -81,7 +81,7 @@ class FunctionController extends ModelController
                 }
                 if ($r['type'] == 'get') {
                     $f = new \Kyte\Core\Model(constant("Function"));
-                    $f->retrieve('controller', $r['controller'], false [['field' => 'type', 'value' => $r['type']]]);
+                    $f->retrieve('controller', $r['controller'], false, [['field' => 'type', 'value' => $r['type']], ['field' => 'application', 'value' => $app->identifier]]);
                     if ($f->count() > 0) {
                         throw new \Exception('Override of type '.$r['type'].' already exists for this controller.');
                     }
@@ -89,7 +89,7 @@ class FunctionController extends ModelController
                 }
                 if ($r['type'] == 'delete') {
                     $f = new \Kyte\Core\Model(constant("Function"));
-                    $f->retrieve('controller', $r['controller'], false [['field' => 'type', 'value' => $r['type']]]);
+                    $f->retrieve('controller', $r['controller'], false, [['field' => 'type', 'value' => $r['type']], ['field' => 'application', 'value' => $app->identifier]]);
                     if ($f->count() > 0) {
                         throw new \Exception('Override of type '.$r['type'].' already exists for this controller.');
                     }
