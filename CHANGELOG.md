@@ -1,3 +1,7 @@
+## 3.0.56
+
+* Store user agent, remote IP, and forwarded IP in session table
+
 ## 3.0.55
 
 * fix tag issue
