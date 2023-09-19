@@ -795,7 +795,7 @@ class Api
 			$this->response['uid'] = $this->user->id;
 			$this->response['name'] = $this->user->name;
 			$this->response['email'] = $this->user->email;
-			if ($this->user->role) {
+			if (isset($this->user->role)) {
 				$this->response['role'] = $this->user->role;
 			}
 
