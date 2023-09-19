@@ -112,6 +112,12 @@ class SessionManager
      */
 	public function create($username, $password, $conditions = null)
 	{
+		$remoteIP = $_SERVER['REMOTE_ADDR'];
+		$userAgent = $_SERVER['HTTP_USER_AGENT'];
+
+		error_log("****** remoteIp $remoteIp");
+		error_log("****** userAgent $userAgent");
+
 		if (isset($username, $password)) {
 
 			// verify user
@@ -170,6 +176,12 @@ class SessionManager
 	{
 		// get current time
 		$time = time();
+
+		$remoteIP = $_SERVER['REMOTE_ADDR'];
+		$userAgent = $_SERVER['HTTP_USER_AGENT'];
+
+		error_log("****** remoteIp $remoteIp");
+		error_log("****** userAgent $userAgent");
 
 		// check if session token exists and retrieve session object
 		$cond = $this->appId === null ? null : [['field' => 'appIdentifier', 'value' => $this->appId]];
