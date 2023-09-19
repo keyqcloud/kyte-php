@@ -115,7 +115,7 @@ class SessionManager
 		$remoteIP = $_SERVER['REMOTE_ADDR'];
 		$userAgent = $_SERVER['HTTP_USER_AGENT'];
 
-		error_log("****** remoteIp $remoteIp");
+		error_log("****** remoteIP $remoteIP");
 		error_log("****** userAgent $userAgent");
 
 		if (isset($username, $password)) {
@@ -180,7 +180,7 @@ class SessionManager
 		$remoteIP = $_SERVER['REMOTE_ADDR'];
 		$userAgent = $_SERVER['HTTP_USER_AGENT'];
 
-		error_log("****** remoteIp $remoteIp");
+		error_log("****** remoteIP $remoteIP");
 		error_log("****** userAgent $userAgent");
 
 		// check if session token exists and retrieve session object
