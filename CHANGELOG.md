@@ -1,3 +1,7 @@
+## 3.0.58
+
+* Check for existing controller and function names within scope of application
+
 ## 3.0.57
 
 * Fix issue where controller of same name in different app causes error
