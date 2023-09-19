@@ -1,3 +1,7 @@
+## 3.0.59
+
+* Remove extra condition for checking function name within scope of application
+
 ## 3.0.58
 
 * Check for existing controller and function names within scope of application
