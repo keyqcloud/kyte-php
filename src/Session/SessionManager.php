@@ -113,9 +113,11 @@ class SessionManager
 	public function create($username, $password, $conditions = null)
 	{
 		$remoteIP = $_SERVER['REMOTE_ADDR'];
+		$forwardedIP = $_SERVER['HTTP_X_FORWARDED_FOR'];
 		$userAgent = $_SERVER['HTTP_USER_AGENT'];
 
 		error_log("****** remoteIP $remoteIP");
+		error_log("****** forwardedIP $forwardedIP");
 		error_log("****** userAgent $userAgent");
 
 		if (isset($username, $password)) {
@@ -178,9 +180,11 @@ class SessionManager
 		$time = time();
 
 		$remoteIP = $_SERVER['REMOTE_ADDR'];
+		$forwardedIP = $_SERVER['HTTP_X_FORWARDED_FOR'];
 		$userAgent = $_SERVER['HTTP_USER_AGENT'];
 
 		error_log("****** remoteIP $remoteIP");
+		error_log("****** forwardedIP $forwardedIP");
 		error_log("****** userAgent $userAgent");
 
 		// check if session token exists and retrieve session object
