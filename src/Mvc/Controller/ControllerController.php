@@ -4,9 +4,9 @@ namespace Kyte\Mvc\Controller;
 
 class ControllerController extends ModelController
 {
-    public function hook_init() {
-        $this->checkExisting = 'name';
-    }
+    // public function hook_init() {
+    //     $this->checkExisting = 'name';
+    // }
 
     // public function hook_auth() {}
 

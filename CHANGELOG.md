@@ -1,3 +1,7 @@
+## 3.0.57
+
+* Fix issue where controller of same name in different app causes error
+
 ## 3.0.56
 
 * Store user agent, remote IP, and forwarded IP in session table
