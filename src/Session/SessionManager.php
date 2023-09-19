@@ -116,10 +116,6 @@ class SessionManager
 		$forwardedIP = $_SERVER['HTTP_X_FORWARDED_FOR'];
 		$userAgent = $_SERVER['HTTP_USER_AGENT'];
 
-		error_log("****** remoteIP $remoteIP");
-		error_log("****** forwardedIP $forwardedIP");
-		error_log("****** userAgent $userAgent");
-
 		if (isset($username, $password)) {
 
 			// verify user
@@ -150,6 +146,9 @@ class SessionManager
 				'sessionToken' => $this->generateSessionToken($this->user->{$this->username_field}),
 				'txToken' => $this->generateTxToken($time, $exp_time, $this->user->{$this->username_field}),
 				'appIdentifier' => $this->appId,
+				'remoteIP' => $remoteIP,
+				'forwardedIP' => $forwardedIP,
+				'userAgent' => $userAgent,
 			]);
 			if (!$res) {
 				$this->hasSession = false;
@@ -182,10 +181,6 @@ class SessionManager
 		$remoteIP = $_SERVER['REMOTE_ADDR'];
 		$forwardedIP = $_SERVER['HTTP_X_FORWARDED_FOR'];
 		$userAgent = $_SERVER['HTTP_USER_AGENT'];
-
-		error_log("****** remoteIP $remoteIP");
-		error_log("****** forwardedIP $forwardedIP");
-		error_log("****** userAgent $userAgent");
 
 		// check if session token exists and retrieve session object
 		$cond = $this->appId === null ? null : [['field' => 'appIdentifier', 'value' => $this->appId]];

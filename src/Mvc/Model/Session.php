@@ -38,6 +38,27 @@ $Session = [
 			'date'		=> false,
 		],
 
+		'remoteIP'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 64,
+			'date'		=> false,
+		],
+
+		'forwardedIP'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 64,
+			'date'		=> false,
+		],
+
+		'userAgent'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 512,
+			'date'		=> false,
+		],
+
 		// audit attributes
 
 		'created_by'		=> [
