@@ -58,13 +58,6 @@ class S3 extends Client
                     ],
                 ],
             ]);
-
-            // remove public access block
-            $this->deletePublicAccessBlock();
-
-            // add policy to enable public access (GET)
-            $this->enablePublicAccess();
-
         } catch(\AwsException $e) {
             throw new \Exception("Unable to create website");
         }

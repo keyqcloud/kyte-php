@@ -91,16 +91,13 @@ class SiteController extends ModelController
                 $s3 = new \Kyte\Aws\S3($credentials, $bucketName);
                 try {
                     $s3->createBucket();
+                    $s3->deletePublicAccessBlock();
+                    $s3->enablePublicAccess();
+                    $s3->createWebsite();
                 } catch(\Exception $e) {
                     $o->delete();
                     throw $e;
                 }
-                
-                // create website, which enable:
-                // 1 - static web hosting
-                // 2 - removes public access block
-                // 3 - enables public access policy (GET)
-                $s3->createWebsite();
 
                 // create s3 bucket for static media assets
                 $mediaBucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-static-assets-'.$app->identifier);
@@ -110,23 +107,22 @@ class SiteController extends ModelController
                 $medias3 = new \Kyte\Aws\S3($credentials, $mediaBucketName);
                 try {
                     $medias3->createBucket();
+                    // remove public access block
+                    $medias3->deletePublicAccessBlock();
+                    // enable public access policy (GET)
+                    $medias3->enablePublicAccess();
+                    // enable cors for upload
+                    $medias3->enableCors([
+                        [
+                            'AllowedHeaders'    =>  ['*'],
+                            'AllowedMethods'    =>  ['GET','POST'],
+                            'AllowedOrigins'    =>  ['*'],
+                        ]
+                    ]);
                 } catch(\Exception $e) {
                     $o->delete();
                     throw $e;
                 }
-                
-                // remove public access block
-                $medias3->deletePublicAccessBlock();
-                // enable public access policy (GET)
-                $medias3->enablePublicAccess();
-                // enable cors for upload
-                $medias3->enableCors([
-                    [
-                        'AllowedHeaders'    =>  ['*'],
-                        'AllowedMethods'    =>  ['GET','POST'],
-                        'AllowedOrigins'    =>  ['*'],
-                    ]
-                ]);
 
                 // create distribution for website
                 $cf = new \Kyte\Aws\CloudFront($credentials);
