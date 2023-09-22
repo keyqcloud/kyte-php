@@ -1,3 +1,9 @@
+## 3.0.60
+
+* Fix ability to delete model files
+* Resolve issue with password object being access as array element
+* Fix issue where s3 bucket doens't get website enabled
+
 ## 3.0.59
 
 * Remove extra condition for checking function name within scope of application
