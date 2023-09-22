@@ -725,6 +725,7 @@ class Api
 			$this->response['kyte_pub'] = $sub_account_api->public_key;
 			$this->response['kyte_num'] = $this->account->number;
 			$this->response['kyte_iden'] = $sub_account_api->identifier;
+			$this->response['kyte_app_id'] = $this->appId === null ? '' : $this->appId;
 			$this->response['account_id'] = $this->account->id;
 
 			// default is always public.

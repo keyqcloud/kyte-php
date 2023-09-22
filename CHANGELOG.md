@@ -1,3 +1,7 @@
+## 3.0.61
+
+* Return application id in response
+
 ## 3.0.60
 
 * Fix ability to delete model files
