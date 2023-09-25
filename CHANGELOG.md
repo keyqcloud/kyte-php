@@ -1,3 +1,7 @@
+## 3.0.62
+
+* Require AMPHP as new dependency
+
 ## 3.0.61
 
 * Return application id in response
