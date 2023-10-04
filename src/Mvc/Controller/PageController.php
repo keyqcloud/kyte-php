@@ -25,6 +25,10 @@ class PageController extends ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'get':
+                $app = new \Kyte\Core\ModelObject(Application);
+                if (!$app->retrieve('id', $r['site']['application']['id'])) {
+                    throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                }
                 $credential = new \Kyte\Aws\Credentials($r['site']['region'], $app->aws_public_key, $app->aws_private_key);
                 $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
                 $r['download_link'] = $s3->getObject($o->s3key);
