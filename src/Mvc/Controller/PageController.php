@@ -24,6 +24,11 @@ class PageController extends ModelController
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
+            case 'get':
+                $credential = new \Kyte\Aws\Credentials($r['site']['region'], $app->aws_public_key, $app->aws_private_key);
+                $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
+                $r['download_link'] = $s3->getObject($o->s3key);
+                break;
             case 'update':
                 if ($o->state == 1 && !isset($d['state'])) {
                     $o->save(['state' => 2]);

@@ -1,3 +1,7 @@
+## 3.0.63
+
+* Return downloadable link for pages
+
 ## 3.0.62
 
 * Require AMPHP as new dependency
