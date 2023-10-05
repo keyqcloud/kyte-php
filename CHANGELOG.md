@@ -1,3 +1,7 @@
+## 3.0.65
+
+* Update section template with new attributes
+
 ## 3.0.64
 
 * Retrieve app object before requesting s3 presigned url
