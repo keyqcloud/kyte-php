@@ -1,3 +1,7 @@
+## 3.0.52
+
+* Update section template with new attributes
+
 ## 3.0.51
 
 * Fix bug where session token is null

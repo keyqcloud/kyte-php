@@ -35,6 +35,27 @@ $SectionTemplate = [
 			'date'		=> false,
 		],
 
+		'javascript_obfuscated'		=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
+		'stylesheet'		=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
+		'obfuscate_js' => [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 0,
+			'date'		=> false,
+		],
+
 		'navigation'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
