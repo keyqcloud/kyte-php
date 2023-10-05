@@ -19,13 +19,19 @@ class MediaController extends \Kyte\Mvc\Controller\ModelController
 					's3key' => $key,
 				]);
 
+                $app = new \Kyte\Core\ModelObject(Application);
+                if (!$app->retrieve('id', $r['site']['application']['id'])) {
+                    $o->delete();
+                    throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                }
+
                 $dt = new DateTime();
                 $exp = new DateTime('+2 hours');
                 $dt->setTimezone(new DateTimeZone('UTC'));
                 $exp->setTimezone(new DateTimeZone('UTC'));
                 $expiration = $exp->format('Y-m-d\TH:i:s\Z');
                 $ymd = $dt->format('Ymd');
-                $credential = AWS_ACCESS_KEY_ID."/".$ymd."/".$r['site']['region']."/s3/aws4_request";
+                $credential = $app->aws_public_key."/".$ymd."/".$r['site']['region']."/s3/aws4_request";
                 // $date = $ymd."T000000Z";
                 $date = $dt->format('Ymd\THis\Z');
 
@@ -45,7 +51,7 @@ class MediaController extends \Kyte\Mvc\Controller\ModelController
                 $hash1 = hash_hmac(
                     'sha256',
                     $ymd,
-                    "AWS4".AWS_SECRET_KEY,
+                    "AWS4".$app->aws_private_key,
                     true
                 );
                 $hash2 = hash_hmac(
@@ -90,7 +96,13 @@ class MediaController extends \Kyte\Mvc\Controller\ModelController
 
 			case 'get':
 				if ($o->s3key) {
-                    $credential = new \Kyte\Aws\Credentials($r['site']['region']);
+                    $app = new \Kyte\Core\ModelObject(Application);
+                    if (!$app->retrieve('id', $r['site']['application']['id'])) {
+                        throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                    }
+
+                    // keep region as us-east-1 for compatibility with CF
+                    $credential = new \Kyte\Aws\Credentials($r['site']['region'], $app->aws_public_key, $app->aws_private_key);
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3MediaBucketName']);
                     $r['download'] = $s3->getObject($o->s3key);
 				}
@@ -98,8 +110,13 @@ class MediaController extends \Kyte\Mvc\Controller\ModelController
 
 			case 'delete':
                 if ($o->s3key) {
+                    $app = new \Kyte\Core\ModelObject(Application);
+                    if (!$app->retrieve('id', $d['site']['application']['id'])) {
+                        throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                    }
+
                     $d = $this->getObject($o);
-                    $credential = new \Kyte\Aws\Credentials($d['site']['region']);
+                    $credential = new \Kyte\Aws\Credentials($d['site']['region'], $app->aws_public_key, $app->aws_private_key);
                     $s3 = new \Kyte\Aws\S3($credential, $d['site']['s3MediaBucketName']);
                     $s3->unlink($o->s3key);
 				}

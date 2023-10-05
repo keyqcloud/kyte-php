@@ -1,7 +1,7 @@
 <?php
 
-$Application = [
-	'name' => 'Application',
+$KyteCodeAsset = [
+	'name' => 'KyteCodeAsset',
 	'struct' => [
 		'name'		=> [
 			'type'		=> 's',
@@ -10,139 +10,93 @@ $Application = [
 			'date'		=> false,
 		],
 
-		'identifier'		=> [
+		// can be S3 key or url of script/sytlesheet
+		'path'		=> [
 			'type'		=> 's',
 			'required'	=> false,
 			'size'		=> 255,
 			'date'		=> false,
 		],
 
-		// database field
+		'description'		=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
 
-		'db_name'		=> [
+		// javascript or css
+		'asset_type'		=> [
 			'type'		=> 's',
 			'required'	=> false,
 			'size'		=> 255,
 			'date'		=> false,
-			'protected'	=> true,
+			'default'	=> 'custom',
 		],
 
-		'db_host'	=> [
-			'type'		=> 's',
+		'code'		=> [
+			'type'		=> 't',
 			'required'	=> false,
-			'size'		=> 255,
 			'date'		=> false,
-			'protected'	=> true,
 		],
 
-		'db_username'	=> [
-			'type'		=> 's',
+		'obfuscated'		=> [
+			'type'		=> 't',
 			'required'	=> false,
-			'size'		=> 255,
 			'date'		=> false,
-			'protected'	=> true,
 		],
 
-		'db_password'	=> [
-			'type'		=> 's',
+		'site'	=> [
+			'type'		=> 'i',
 			'required'	=> false,
-			'size'		=> 255,
+			'size'		=> 11,
+			'unsigned'	=> true,
 			'date'		=> false,
-			'protected'	=> true,
+			'fk'		=> [
+				'model'	=> 'Site',
+				'field'	=> 'id',
+			],
 		],
 
-		// options for custom user table
-
-		'user_model'	=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-			'protected'	=> false,
-		],
-
-		'username_colname'	=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-			'protected'	=> false,
-		],
-
-		'password_colname'	=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-			'protected'	=> false,
-		],
-
-		// organization based user scoping
-
-		'org_model'	=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-			'protected'	=> false,
-		],
-
-		'userorg_colname'	=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-			'protected'	=> false,
-		],
-
-		'obfuscate_kyte_connect' => [
+		// 0 - unpublished, 1 - published, 2 - published but stale
+		'state'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
 			'size'		=> 1,
 			'unsigned'	=> true,
-			'default'	=> 1,
+			'default'	=> 0,
 			'date'		=> false,
 		],
 
-		'kyte_connect'		=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
-		'kyte_connect_obfuscated'		=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
-		// optional customer AWS credentials
-
-		'aws_key'	=> [
+		'include_global'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
-			'size'		=> 11,
-			'date'		=> false,
+			'size'		=> 1,
 			'unsigned'	=> true,
-			'fk' => [
-				'model'	=> 'KyteAWSKey',
-				'field'	=> 'id',
-			]
+			'default'	=> 0,
+			'date'		=> false,
 		],
 
-		'aws_public_key'	=> [
+		'is_url'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 0,
+			'date'		=> false,
+		],
+
+		'integrity'		=> [
 			'type'		=> 's',
 			'required'	=> false,
 			'size'		=> 255,
 			'date'		=> false,
 		],
 
-		'aws_private_key'	=> [
+		'crossorigin'		=> [
 			'type'		=> 's',
 			'required'	=> false,
 			'size'		=> 255,
 			'date'		=> false,
-			'protected'	=> true,
 		],
 
 		// framework attributes

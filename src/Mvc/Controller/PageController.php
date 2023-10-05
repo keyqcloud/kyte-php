@@ -4,7 +4,9 @@ namespace Kyte\Mvc\Controller;
 
 class PageController extends ModelController
 {
-    // public function hook_init() {}
+    public function hook_init() {
+        $this->dateformat = 'm/d/Y H:i:s';
+    }
     // public function hook_auth() {}
 
     // public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
@@ -23,23 +25,26 @@ class PageController extends ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'get':
-                // get app identifier
-                // $app = new \Kyte\Core\ModelObject(Application);
-                // if (!$app->retrieve('id', $r['site']['application']['id'])) {
-                //     throw new \Exception("CRITICAL ERROR: Unable to find application.");
-                // }
-
-                $r['api_endpoint'] = API_URL;
-                $r['application_identifier'] = $r['site']['application']['identifier'];
+                $app = new \Kyte\Core\ModelObject(Application);
+                if (!$app->retrieve('id', $r['site']['application']['id'])) {
+                    throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                }
+                $credential = new \Kyte\Aws\Credentials($r['site']['region'], $app->aws_public_key, $app->aws_private_key);
+                $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
+                $r['download_link'] = $s3->getObject($o->s3key);
                 break;
-
             case 'update':
                 if ($o->state == 1 && !isset($d['state'])) {
                     $o->save(['state' => 2]);
                 }
                 if (isset($d['state']) && $d['state'] == 1) {
+                    $app = new \Kyte\Core\ModelObject(Application);
+                    if (!$app->retrieve('id', $r['site']['application']['id'])) {
+                        throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                    }
+
                     // publish file to s3
-                    $credential = new \Kyte\Aws\Credentials($r['site']['region']);
+                    $credential = new \Kyte\Aws\Credentials($r['site']['region'], $app->aws_public_key, $app->aws_private_key);
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
                     // compile html file
@@ -66,9 +71,14 @@ class PageController extends ModelController
             case 'delete':
                 // check if s3 file exists and delete
                 if ($o->state > 0) {
+                    $app = new \Kyte\Core\ModelObject(Application);
+                    if (!$app->retrieve('id', $d['site']['application']['id'])) {
+                        throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                    }
+
                     // delete file
                     $d = $this->getObject($o);
-                    $credential = new \Kyte\Aws\Credentials($d['site']['region']);
+                    $credential = new \Kyte\Aws\Credentials($d['site']['region'], $app->aws_public_key, $app->aws_private_key);
                     $s3 = new \Kyte\Aws\S3($credential, $d['site']['s3BucketName']);
                     if (!empty($o->s3key)) {
                         // delete s3 file
@@ -256,7 +266,12 @@ class PageController extends ModelController
         }
 
         // add kyte connect
-        $code .= $page['kyte_connect']."\n\n";
+        if ($page['site']['application']['obfuscate_kyte_connect'] == 1) {
+            $code .= $page['site']['application']['kyte_connect_obfuscated']."\n\n";
+        } else {
+            $code .= $page['site']['application']['kyte_connect']."\n\n";
+        }
+
         // custom js
         $code .= '$(document).ready(function() { ';
         if ($page['protected'] == 1) {

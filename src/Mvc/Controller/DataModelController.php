@@ -33,7 +33,7 @@ class DataModelController extends ModelController
         }
 
         // password
-        if ($r['password'] == 1) {
+        if ($o->password == 1) {
             $attrs['password'] = true;
         }
 
@@ -249,6 +249,13 @@ class DataModelController extends ModelController
                 
                 // return to kyte db
                 \Kyte\Core\Api::dbswitch();
+
+                // delete file
+                $path = APP_DIR . "/app/models/" . $app->identifier;
+
+                if (!unlink("{$path}/{$o->name}.php")) {
+                    error_log("Failed to clean up old model {$path}/{$o->name}.php");
+                }
                 break;
             
             default:

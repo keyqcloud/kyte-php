@@ -12,6 +12,27 @@ class ApplicationController extends ModelController
     public function hook_preprocess($method, &$r, &$o = null) {
         switch ($method) {
             case 'new':
+                // check aws creds and add if not present
+                if (!isset($r['aws_public_key'], $r['aws_private_key'], $r['aws_username'])) {
+                    throw new \Exception('AWS Access and Secret key are required along with the username associated with the credential.');
+                }
+                $aws = new \Kyte\Core\ModelObject(KyteAWSKey);
+                if ($aws->retrieve('private_key', $r['aws_private_key'], [['field'=>'public_key', 'value'=>$r['aws_public_key']]])) {
+                    $r['aws_key'] = $aws->id;
+                } else {
+                    if ($aws->create([
+                        'private_key' => $r['aws_private_key'],
+                        'public_key' => $r['aws_public_key'],
+                        'username' => $r['aws_username'],
+                        'created_by' => $this->user->id,
+                        'kyte_account' => $this->account->id,
+                    ])) {
+                        $r['aws_key'] = $aws->id;
+                    } else {
+                        throw new \Exception("Unable to create new AWS credentials.");
+                    }
+                }
+
                 // create new application identifier
                 $r['identifier'] = uniqid();
                 // create db name
@@ -19,36 +40,13 @@ class ApplicationController extends ModelController
 
                 // TODO: create new user and add privs to isolate db
                 // create new username
-                $r['db_username'] = $r['db_name'];
+                $r['db_username'] = 'db'.$r['identifier'];
 
                 // TODO: create db in different cluster
                 // $r['db_host'] = '';
 
                 // create database
                 \Kyte\Core\DBI::createDatabase($r['db_name'], $r['db_username'], $r['db_password']);
-
-                // // get AWS credentials
-                // $credentials = new \Kyte\Aws\Credentials('us-east-1');
-
-                // // create s3 bucket
-                // $bucketName = $r['domain'];
-                // $s3 = new \Kyte\Aws\S3($credentials, $bucketName, 'public');
-                // $s3->createBucket();
-                // $s3->createWebsite();
-                // $s3->enablePublicAccess();
-                // // $s3->enableVersioning();
-
-                // // create acm certificate request
-                // $acm = new \Kyte\Aws\Acm($credentials);
-                // $acm->request($r['domain']);
-
-                // // create distribution
-                // $cf = new \Kyte\Aws\CloudFront($credentials);
-                // $cf->addOrigin(
-                //     $r['domain'].'.s3-website-'.$credential->getRegion().'.amazonaws.com',
-                //     $r['domain']
-                // );
-                // $cf->create();
 
                 break;
             

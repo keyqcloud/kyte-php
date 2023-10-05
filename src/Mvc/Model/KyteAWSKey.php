@@ -1,61 +1,37 @@
 <?php
 
-$Session = [
-	'name' => 'Session',
+$KyteAWSKey = [
+	'name' => 'KyteAWSKey',
 	'struct' => [
-		'uid'		=> [
+		'username'		=> [
+			'type'		=> 's',
+			'required'	=> true,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'public_key'	=> [
+			'type'		=> 's',
+			'required'	=> true,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'private_key'	=> [
+			'type'		=> 's',
+			'required'	=> true,
+			'size'		=> 255,
+			'date'		=> false,
+			'protected'	=> true,
+		],
+
+		// framework attributes
+
+		'kyte_account'	=> [
 			'type'		=> 'i',
 			'required'	=> true,
 			'size'		=> 11,
 			'unsigned'	=> true,
-			'date'		=> false,
-		],
-
-		'exp_date'		=> [
-			'type'		=> 'i',
-			'required'	=> true,
-			'date'		=> true,
-		],
-
-		'sessionToken'		=> [
-			'type'		=> 's',
-			'required'	=> true,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'txToken'		=> [
-			'type'		=> 's',
-			'required'	=> true,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'appIdentifier'		=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'remoteIP'		=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 64,
-			'date'		=> false,
-		],
-
-		'forwardedIP'		=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 64,
-			'date'		=> false,
-		],
-
-		'userAgent'		=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 512,
 			'date'		=> false,
 		],
 

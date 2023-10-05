@@ -65,12 +65,6 @@ $Page = [
 			'date'		=> false,
 		],
 
-		'kyte_connect'		=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
 		'stylesheet'	=> [
 			'type'		=> 't',
 			'required'	=> false,

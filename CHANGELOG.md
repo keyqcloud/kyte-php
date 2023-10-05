@@ -1,6 +1,59 @@
+## 3.0.64
+
+* Retrieve app object before requesting s3 presigned url
+
+## 3.0.63
+
+* Return downloadable link for pages
+
+## 3.0.62
+
+* Require AMPHP as new dependency
+
+## 3.0.61
+
+* Return application id in response
+
+## 3.0.60
+
+* Fix ability to delete model files
+* Resolve issue with password object being access as array element
+* Fix issue where s3 bucket doens't get website enabled
+
+## 3.0.59
+
+* Remove extra condition for checking function name within scope of application
+
+## 3.0.58
+
+* Check for existing controller and function names within scope of application
+
+## 3.0.57
+
+* Fix issue where controller of same name in different app causes error
+
+## 3.0.56
+
+* Store user agent, remote IP, and forwarded IP in session table
+
+## 3.0.55
+
+* fix tag issue
+
+## 3.0.54
+
+* Use shorter username for database
+
+## 3.0.53
+
+* Add application-level AWS key (foreign key)
+* Add model for AWS keys
+* Move kyte connect and obfuscated version of kyte connect to Application model
+* Update to use application specific AWS for application management
+
 ## 3.0.52
 
-* Update section template with new attributes
+* Update to datetime format for Page controller
 
 ## 3.0.51
 

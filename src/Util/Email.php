@@ -21,17 +21,20 @@ class Email {
                     throw new \Exception('Sender parameter is null but APP_EMAIL is not defined. Please supply a sender parameter or define APP_EMAIL in your configuration file.');
                 }
             }
-            // check to make sure valid AWS access key is provided, either as a paramter or in the configs
-            if ($accessKey == null && !defined('AWS_ACCESS_KEY_ID')) {
-                throw new \Exception('AWS access key parameter is null but AWS_ACCESS_KEY_ID is not defined. Please supply an access key parameter or define AWS_ACCESS_KEY_ID in your configuration file.');
-            }
-            // check to make sure valid AWS secret key is provided, either as a paramter or in the configs
-            if ($secretKey == null && !defined('AWS_SECRET_KEY')) {
-                throw new \Exception('AWS secret key parameter is null but AWS_SECRET_KEY is not defined. Please supply a secret key parameter or define AWS_SECRET_KEY in your configuration file.');
-            }
             $this->appId = $appId;
-            $this->accessKey = $accessKey ? $accessKey : AWS_ACCESS_KEY_ID;
-            $this->secretKey = $secretKey ? $secretKey : AWS_SECRET_KEY;
+            $this->accessKey = $accessKey;
+            $this->secretKey = $secretKey;
+            if (($accessKey === null || $secretKey === null) && $appId === null) {
+                throw new \Exception('If AWS access and secret keys are left empty, application ID is required');
+            } else if($appId !== null) {
+                $app = new \Kyte\Core\ModelObject(Application);
+                if (!$app->retrieve('id', $appId)) {
+                    throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                }
+
+                $this->accessKey = $app->aws_public_key;
+                $this->secretKey = $app->aws_private_key;
+            }
             $this->region = $region;
             $this->credentials = new \Kyte\Aws\Credentials($this->region, $this->accessKey, $this->secretKey);
             $this->ses = new \Kyte\Aws\Ses($this->credentials, $sender ? $sender : APP_NAME.' <'.APP_EMAIL.'>');

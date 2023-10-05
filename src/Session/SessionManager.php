@@ -112,6 +112,10 @@ class SessionManager
      */
 	public function create($username, $password, $conditions = null)
 	{
+		$remoteIP = $_SERVER['REMOTE_ADDR'];
+		$forwardedIP = $_SERVER['HTTP_X_FORWARDED_FOR'];
+		$userAgent = $_SERVER['HTTP_USER_AGENT'];
+
 		if (isset($username, $password)) {
 
 			// verify user
@@ -142,6 +146,9 @@ class SessionManager
 				'sessionToken' => $this->generateSessionToken($this->user->{$this->username_field}),
 				'txToken' => $this->generateTxToken($time, $exp_time, $this->user->{$this->username_field}),
 				'appIdentifier' => $this->appId,
+				'remoteIP' => $remoteIP,
+				'forwardedIP' => $forwardedIP,
+				'userAgent' => $userAgent,
 			]);
 			if (!$res) {
 				$this->hasSession = false;
@@ -170,6 +177,10 @@ class SessionManager
 	{
 		// get current time
 		$time = time();
+
+		$remoteIP = $_SERVER['REMOTE_ADDR'];
+		$forwardedIP = $_SERVER['HTTP_X_FORWARDED_FOR'];
+		$userAgent = $_SERVER['HTTP_USER_AGENT'];
 
 		// check if session token exists and retrieve session object
 		$cond = $this->appId === null ? null : [['field' => 'appIdentifier', 'value' => $this->appId]];

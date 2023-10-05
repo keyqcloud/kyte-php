@@ -13,8 +13,14 @@ class DomainController extends ModelController
     // public function hook_preprocess($method, &$r, &$o = null) {}
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
+        $app = new \Kyte\Core\ModelObject(Application);
+        if (!$app->retrieve('id', $r['site']['application']['id'])) {
+            $o->delete();
+            throw new \Exception("CRITICAL ERROR: Unable to find application.");
+        }
+
         // keep region as us-east-1 for compatibility with CF
-        $credential = new \Kyte\Aws\Credentials('us-east-1');
+        $credential = new \Kyte\Aws\Credentials('us-east-1', $app->aws_public_key, $app->aws_private_key);
 
         // create acm client
         $acm = new \Kyte\Aws\Acm($credential);
@@ -78,7 +84,13 @@ class DomainController extends ModelController
                 $ret = $this->getObject($obj);
 
                 // keep region as us-east-1 for compatibility with CF
-                $credentials = new \Kyte\Aws\Credentials('us-east-1');
+                $app = new \Kyte\Core\ModelObject(Application);
+                if (!$app->retrieve('id', $ret['site']['application']['id'])) {
+                    throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                }
+
+                // keep region as us-east-1 for compatibility with CF
+                $credentials = new \Kyte\Aws\Credentials('us-east-1', $app->aws_public_key, $app->aws_private_key);
                 $cf = new \Kyte\Aws\CloudFront($credentials, $ret['site']['cfDistributionId']);
 
                 if (isset($data['assigned'])) {

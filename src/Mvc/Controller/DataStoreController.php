@@ -14,8 +14,14 @@ class DataStoreController extends ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'new':
+                $app = new \Kyte\Core\ModelObject(Application);
+                if (!$app->retrieve('id', $o->application)) {
+                    $o->delete();
+                    throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                }
+
                 // get AWS credentials
-                $credentials = new \Kyte\Aws\Credentials($o->region);
+                $credentials = new \Kyte\Aws\Credentials($o->region, $app->aws_public_key, $app->aws_private_key);
 
                 // create s3 bucket for site data
                 $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_.-]/', '-', $o->name).'-'.uniqid());
