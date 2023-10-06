@@ -1,3 +1,7 @@
+## 3.0.69
+
+* Fix issue where section stylesheets were not propagated
+
 ## 3.0.68
 
 * Fix bug where numeric values caused a mysql escape error
