@@ -1,3 +1,7 @@
+## 3.0.66
+
+* Add capability to add footer
+
 ## 3.0.65
 
 * Update section template with new attributes

@@ -211,6 +211,9 @@ class PageController extends ModelController
             $code .= '#sidenav .nav-pills .nav-link.active { background-color: '.$page['side_navigation']['bgActiveColor'].' !important; color: '.$page['side_navigation']['fgActiveColor'].' !important; }';
             $code .='</style>';
         }
+        if ($page['footer']) {
+            $code .='<style>footer { position:fixed; bottom:0; width:100%; background-color: #191715; }</style>';
+        }
 
         // close head
         $code .= '</head>';
@@ -251,11 +254,15 @@ class PageController extends ModelController
         // close main wrapper
         $code .= '</main>';
 
-
-        // add footer
-
         // close page wrapper
         $code .= '</div>';
+
+        // footer
+        if ($page['footer']) {
+            $code .= '<footer>';
+            $code .= $page['footer']['html'];
+            $code .= '</footer>';
+        }
 
         // begin javascript
         $code .= '<script>';
@@ -366,6 +373,14 @@ class PageController extends ModelController
             //
             $code .= 'let sidenavdef = ['.implode($side_menu_items).'];';
             $code .= 'let sidenav = new KyteSidenav("#sidenav", sidenavdef, "'.$default_sidenav.'");sidenav.create();sidenav.bind();';
+        }
+
+        if ($page['footer']) {
+            if ($page['footer']['obfuscate_js'] == 1) {
+                $code .= $page['footer']['javascript_obfuscated']."\n";
+            } else {
+                $code .= $page['footer']['javascript']."\n";
+            }
         }
 
         $code .= ' });</script>';
