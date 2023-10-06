@@ -212,7 +212,7 @@ class PageController extends ModelController
             $code .='</style>';
         }
         if ($page['footer']) {
-            $code .='<style>footer { color: #ffffff !important; position:fixed; bottom:0; width:100%; background-color: #191715 !important; }'.$$page['footer']['stylesheet'].'</style>';
+            $code .='<style>footer { color: #ffffff !important; position:fixed; bottom:0; width:100%; background-color: #191715 !important; }'.$page['footer']['stylesheet'].'</style>';
         }
 
         // close head

@@ -1,3 +1,7 @@
+## 3.0.70
+
+* Fix array to string conversion for footer styles
+
 ## 3.0.69
 
 * Fix issue where section stylesheets were not propagated
