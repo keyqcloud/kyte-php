@@ -1,3 +1,7 @@
+## 3.0.67
+
+* Add font color to footer styles
+
 ## 3.0.66
 
 * Add capability to add footer
