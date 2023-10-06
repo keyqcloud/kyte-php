@@ -1,3 +1,7 @@
+## 3.0.68
+
+* Fix bug where numeric values caused a mysql escape error
+
 ## 3.0.67
 
 * Add font color to footer styles

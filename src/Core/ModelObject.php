@@ -144,7 +144,7 @@ class ModelObject
 	{
 		try {
 			if (isset($field, $value)) {
-				$escaped_value = \Kyte\Core\DBI::escape_string($value);
+				$escaped_value = is_string($value) ? \Kyte\Core\DBI::escape_string($value) : $value;
 				$sql = $all ? "WHERE `$field` = '$escaped_value'" : "WHERE `$field` = '$escaped_value' AND `deleted` = '0'";
 			} else {
 				$sql = '';
