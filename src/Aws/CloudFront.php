@@ -132,11 +132,20 @@ class CloudFront extends Client
         $this->ViewerProtocolPolicy = 'redirect-to-https';
     }
 
-    public function create() {
+    public function create($aliases = [], $acmArn = '') {
         try {
             // generate CF config
             $this->generateNewConfiguration();
-            
+
+            // if SAN and acm certificate arn is provided then configure them with distribution
+            if (count($aliases) > 0 && strlen($acmArn) > 0) {
+                $this->distributionConfig['ViewerCertificate'] = [];
+                $this->distributionConfig['ViewerCertificate']['MinimumProtocolVersion'] = $this->ViewerCertificateMinimumProtocolVersion;
+                $this->distributionConfig['ViewerCertificate']['SSLSupportMethod'] = $this->ViewerCertificateSSLSupportMethod;
+                $this->distributionConfig['Aliases']['Items'] = $aliases;
+                $this->distributionConfig['Aliases']['Quantity'] = count($aliases);
+                $this->distributionConfig['ViewerCertificate']['ACMCertificateArn'] = $acmArn;   
+            }
             
             $result = $this->client->createDistribution([
                 'DistributionConfig' => $this->distributionConfig

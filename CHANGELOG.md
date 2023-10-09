@@ -1,3 +1,7 @@
+## 3.0.71
+
+* Ability to assign acm cert and aliases when creating CF distribution
+
 ## 3.0.70
 
 * Fix array to string conversion for footer styles
