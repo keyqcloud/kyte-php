@@ -76,7 +76,7 @@ class Email {
         return $this->ses->send($emailAddresses, $subject, $body);
     }
 
-    private function replacePlaceholders($htmlTemplate, $data) {
+    public function replacePlaceholders($htmlTemplate, $data) {
         if (strlen($htmlTemplate) < 1) {
             throw new \Exception("Supplied template HTML is empty.");
         }

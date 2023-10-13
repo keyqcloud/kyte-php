@@ -1,3 +1,7 @@
+## 3.0.72
+
+* Make replace placeholders for HTML a public method
+
 ## 3.0.71
 
 * Ability to assign acm cert and aliases when creating CF distribution
