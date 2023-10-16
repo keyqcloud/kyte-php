@@ -56,6 +56,21 @@ $SectionTemplate = [
 			'date'		=> false,
 		],
 
+		'bgColor'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 7,
+			'default'	=> '#191715',
+			'date'		=> false,
+		],
+		'fgColor'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 7,
+			'default'	=> '#ffffff',
+			'date'		=> false,
+		],
+
 		'navigation'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
