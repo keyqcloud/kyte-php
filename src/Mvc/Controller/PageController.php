@@ -103,6 +103,27 @@ class PageController extends ModelController
 
     // public function hook_process_get_response(&$r) {}
 
+    public static function isColorDark($color)
+    {
+        // Remove the # if it's there
+        $color = ltrim($color, '#');
+    
+        // Convert the hex color to RGB
+        $r = hexdec(substr($color, 0, 2));
+        $g = hexdec(substr($color, 2, 2));
+        $b = hexdec(substr($color, 4, 2));
+    
+        // Calculate the relative luminance
+        $luminance = (0.2126 * $r + 0.7152 * $g + 0.0722 * $b) / 255;
+    
+        // Decide whether the color is light or dark based on the luminance threshold
+        if ($luminance > 0.5) {
+            return true; // Light color
+        } else {
+            return false; // Dark color
+        }
+    }
+
     public static function createHtml($page) {
         $gtm_body_script = '';  // empty gtm body script...if gtm code is present, will be populates with gtm script
 
@@ -212,7 +233,7 @@ class PageController extends ModelController
             $code .='</style>';
         }
         if ($page['footer']) {
-            $code .='<style>footer { color: #ffffff !important; position:fixed; bottom:0; width:100%; background-color: #191715 !important; }'.$page['footer']['stylesheet'].'</style>';
+            $code .='<style>footer { color: '.$page['footer']['fgColor'].' !important; position:fixed; bottom:0; width:100%; background-color: '.$page['footer']['bgColor'].' !important; }'.$page['footer']['stylesheet'].'</style>';
         }
 
         // close head
@@ -234,7 +255,7 @@ class PageController extends ModelController
 
         // main navigation and header
         if ($page['main_navigation']) {
-            $code .= '<!-- START NAV --><nav id="mainnav" class="navbar navbar-expand-lg'.($page['main_navigation']['isStickyTop'] == 1 ? ' sticky-top' : '').'"></nav><!-- END NAV -->';
+            $code .= '<!-- START NAV --><nav id="mainnav" class="navbar '.(self::isColorDark($page['main_navigation']['bgColor']) ? 'navbar-light' : 'navbar-dark').' navbar-expand-lg'.($page['main_navigation']['isStickyTop'] == 1 ? ' sticky-top' : '').'"></nav><!-- END NAV -->';
         }
 
         // main wrapper

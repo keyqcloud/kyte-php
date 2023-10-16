@@ -1,3 +1,8 @@
+## 3.0.73
+
+* Assign navbar-light or navbar-dark based on background color luminance using WCAG 2.0 guidelines
+* Ability to customize footer background color
+
 ## 3.0.72
 
 * Make replace placeholders for HTML a public method
