@@ -72,7 +72,7 @@ class SessionController extends ModelController
             }
 
             // get api associated with account
-            $account_api = new \Kyte\Core\ModelObject(APIKey);
+            $account_api = new \Kyte\Core\ModelObject(KyteAPIKey);
             if (!$account_api->retrieve('kyte_account', $this->account->id)) {
                 throw new \Exception("[ERROR] Unable to find API information for account");
             }

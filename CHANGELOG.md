@@ -1,3 +1,8 @@
+## 3.0.75
+
+* Rename APIKey table to KyteAPIKey to accomodate new model for 3rd party api keys
+* Create table for 3rd party APIKeys
+
 ## 3.0.74
 
 * Add sleep to help improve async call to AWS when generating buckets and configuring permissions

@@ -19,7 +19,7 @@ class Api
 	public $appId = null;
 
 	/**
-     * @var \Kyte\Core\ModelObject The APIKey model object.
+     * @var \Kyte\Core\ModelObject The KyteAPIKey model object.
      */
     private $key = null;
     
@@ -476,7 +476,7 @@ class Api
 	public function route() {
 		try {
 			// instantiate an API key object
-			$this->key = new \Kyte\Core\ModelObject(APIKey);
+			$this->key = new \Kyte\Core\ModelObject(KyteAPIKey);
 
 			// prepare response
 			// return json format:
@@ -715,7 +715,7 @@ class Api
 			$this->response['model'] = $this->model;
 
 			// get API associated with the account
-			$sub_account_api = new \Kyte\Core\ModelObject(APIKey);
+			$sub_account_api = new \Kyte\Core\ModelObject(KyteAPIKey);
 			if (!$sub_account_api->retrieve('kyte_account', $this->account->id)) {
 				throw new \Exception("[ERROR] Unable to find API information for the account");
 			}
@@ -867,7 +867,7 @@ class Api
 			$time = $this->data['time'];
 
 			// Retrieve API key using the public_key and identifier being passed
-			$obj = new \Kyte\Core\ModelObject(APIKey);
+			$obj = new \Kyte\Core\ModelObject(KyteAPIKey);
 			if (!$obj->retrieve('public_key', $key, [['field' => 'identifier', 'value' => $identifier]])) {
 				throw new \Exception("Invalid API access key");
 			}

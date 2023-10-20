@@ -1,49 +1,34 @@
 <?php
 
-$APIKey = [
-	'name' => 'APIKey',
+$KyteAPIKey = [
+	'name' => 'KyteAPIKey',
 	'struct' => [
-		'name'		=> [
+		'identifier'		=> [
 			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'username'		=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'token'	=> [
-			'type'		=> 's',
-			'required'	=> false,
+			'required'	=> true,
 			'size'		=> 255,
 			'date'		=> false,
 		],
 
 		'public_key'	=> [
 			'type'		=> 's',
-			'required'	=> false,
+			'required'	=> true,
 			'size'		=> 255,
 			'date'		=> false,
 		],
 
-		'private_key'	=> [
+		'secret_key'	=> [
 			'type'		=> 's',
-			'required'	=> false,
+			'required'	=> true,
 			'size'		=> 255,
 			'date'		=> false,
 			'protected'	=> true,
 		],
 
-		'description'	=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-			'protected'	=> true,
+		'epoch'		=> [
+			'type'		=> 'i',
+			'required'	=> true,
+			'date'		=> true,
 		],
 
 		// framework attributes
