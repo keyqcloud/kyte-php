@@ -17,7 +17,7 @@ class AppModelWrapperController extends ModelController
         }
 
         $this->api->app = new \Kyte\Core\ModelObject(Application);
-        if (!$this->api->app->retrieve('identifier', $field)) {
+        if (!$this->api->app->retrieve('id', $field)) {
             throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch for app ID {$field}.");
         }
 
