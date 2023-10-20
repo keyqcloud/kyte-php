@@ -22,7 +22,7 @@ class AppModelWrapperController extends ModelController
         }
 
         // load app specific models
-        \Kyte\Core\Api::loadAppModelsAndControllers($field);
+        \Kyte\Core\Api::loadAppModelsAndControllers($this->api->app->identifier);
 
         // specify model of this wrapper controller
         $this->model = constant($value);
