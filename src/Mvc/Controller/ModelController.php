@@ -200,6 +200,10 @@ class ModelController
         if (!isset($this->user->id, $this->account->id) && $this->requireRoles && $this->model === null) {
             return true; // Skip permission check if conditions are not met
         }
+
+        if (!$this->requireRoles) {
+            return true;
+        }
     
         $modelName = $modelName ?? $this->model['name'];
     
