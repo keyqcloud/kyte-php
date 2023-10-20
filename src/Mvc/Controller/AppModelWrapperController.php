@@ -6,13 +6,11 @@ class AppModelWrapperController extends ModelController
 {
     public function hook_init() {
         $this->requireRoles = false;
-        error_log("set role to false!");
     }
 
     // public function hook_auth() {}
 
     public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {
-        error_log("Get data info!");
         $appModel = new \Kyte\Core\ModelObject(DataModel);
         if (!$appModel->retrieve('application', $field, [['field' => 'name', 'value' => $value]])) {
             throw new \Exception('Unable to find model for specified application.');
@@ -23,14 +21,12 @@ class AppModelWrapperController extends ModelController
             throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch for app ID {$field}.");
         }
 
-        error_log("Loading new models");
         // load app specific models
         \Kyte\Core\Api::loadAppModelsAndControllers($field);
 
         // specify model of this wrapper controller
         $this->model = constant($value);
 
-        error_log("PREPARING DB SWITCH!");
         \Kyte\Core\Api::dbappconnect($this->api->app->db_name, $this->api->app->db_username, $this->api->app->db_password);
 
         $field = null;
