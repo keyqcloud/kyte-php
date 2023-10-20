@@ -43,7 +43,6 @@ $APIKey = [
 			'type'		=> 't',
 			'required'	=> false,
 			'date'		=> false,
-			'protected'	=> true,
 		],
 
 		// framework attributes
