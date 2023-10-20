@@ -375,6 +375,56 @@ class Api
 	}
 
 	/**
+	 * Load app specific models and controllers.
+	 *
+	 * This method loads both app specific user-defined models and controllers.
+	 * It imports the model files and adds them to the list of models.
+	 * User overrides and changes are supported for both models and controllers.
+	 *
+	 * @throws \Exception If API key is not found or required.
+	 *
+	 * @return void
+	 */
+	public static function loadAppModelsAndControllers($appId) {
+		// Next load user defined models and controllers (allow override of builtin)
+		if (file_exists(APP_DIR . "/app/") && is_dir(APP_DIR . "/app/")) {
+			/* USER DEFINED MODELS */
+			// Load user defined models
+			$userModelsPath = APP_DIR . "/app/models/{$appId}/";
+			if (file_exists($userModelsPath) && is_dir($userModelsPath)) {
+				foreach (glob($userModelsPath . "*.php") as $filename) {
+					$model_name = basename($filename, '.php');
+					// import controller
+					require_once($filename);
+					if (VERBOSE_LOG) {
+						error_log("Importing user defined model $model_name...");
+					}
+					self::addPrimaryKey($$model_name);
+					self::addKyteAttributes($$model_name);
+					// Add app id
+					$$model_name['appId'] = $appId;
+					// define model constanct
+					define($model_name, $$model_name);
+				}
+			}
+
+			/* USER DEFINED CONTROLLER */
+			// Load user-defined controllers
+			$userControllersPath = APP_DIR . "/app/controllers/{$appId}/";
+			if (file_exists($userControllersPath) && is_dir($userControllersPath)) {
+				foreach (glob($userControllersPath . "*.php") as $filename) {
+					$controller_name = basename($filename, '.php');
+					// import controller
+					require_once($filename);
+					if (VERBOSE_LOG) {
+						error_log("Checking if user defined controller has been defined..." . (class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
+					}
+				}
+			}
+		}
+	}
+
+	/**
 	 * Load models and controllers.
 	 *
 	 * This method loads both built-in and user-defined models and controllers.
@@ -387,9 +437,6 @@ class Api
 	 */
 	private function loadModelsAndControllers()
 	{
-		// List of models
-		$models = [];
-
 		/* BUILTIN DEFINED MODELS */
 		// Import builtin models first, but don't define them yet in case there are user overrides and changes
 		foreach (glob(__DIR__ . "/../Mvc/Model/*.php") as $filename) {
@@ -399,72 +446,14 @@ class Api
 				error_log("Importing builtin model $model_name...");
 			}
 			self::addPrimaryKey($$model_name);
-			$models[$model_name] = $$model_name;
+			// define model constanct
+			define($model_name, $$model_name);
 		}
 
 		if (defined('APP_DIR') && isset($_SERVER['HTTP_X_KYTE_APPID'])) {
 			$this->appId = $_SERVER['HTTP_X_KYTE_APPID'];
-
-			// Next load user defined models and controllers (allow override of builtin)
-			if (file_exists(APP_DIR . "/app/") && is_dir(APP_DIR . "/app/")) {
-				/* USER DEFINED MODELS */
-				// Load user defined models
-				$userModelsPath = APP_DIR . "/app/models/{$this->appId}/";
-				if (file_exists($userModelsPath) && is_dir($userModelsPath)) {
-					foreach (glob($userModelsPath . "*.php") as $filename) {
-						$model_name = basename($filename, '.php');
-						if (!array_key_exists($model_name, $models)) {
-							// import controller
-							require_once($filename);
-							if (VERBOSE_LOG) {
-								error_log("Importing user defined model $model_name...");
-							}
-							self::addPrimaryKey($$model_name);
-							self::addKyteAttributes($$model_name);
-							// Add app id
-							$$model_name['appId'] = $this->appId;
-							// Add model to list of models
-							$models[$model_name] = $$model_name;
-						} else {
-							// import controller
-							require_once($filename);
-							// User overrides are specified
-							if (VERBOSE_LOG) {
-								error_log("Overriding defined model $model_name...");
-							}
-
-							// Override or add attributes
-							foreach ($$model_name['struct'] as $key => $value) {
-								$models[$model_name]['struct'][$key] = $value;
-							}
-						}
-					}
-				}
-
-				/* USER DEFINED CONTROLLER */
-				// Load user-defined controllers
-				$userControllersPath = APP_DIR . "/app/controllers/{$this->appId}/";
-				if (file_exists($userControllersPath) && is_dir($userControllersPath)) {
-					foreach (glob($userControllersPath . "*.php") as $filename) {
-						$controller_name = basename($filename, '.php');
-						// import controller
-						require_once($filename);
-						if (VERBOSE_LOG) {
-							error_log("Checking if user defined controller has been defined..." . (class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
-						}
-					}
-				}
-			}
-		}
-
-		// Define all models that were imported
-		foreach ($models as $model_name => $model) {
-			define($model['name'], $model);
-		}
-
-		// Define list of models
-		if (!defined('KYTE_MODELS')) {
-			define('KYTE_MODELS', $models);
+			// import app specific models and controllers
+			self::loadAppModelsAndControllers($this->appId);
 		}
 	}
 
