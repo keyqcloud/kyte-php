@@ -197,12 +197,8 @@ class ModelController
     protected function checkPermissions($requestType, $modelName = null) {
         // check if user id, account id is set, and whether the flag to check roles is also set to true
         // also check to make sure this isn't a service controller by checking the model
-        if (!isset($this->user->id, $this->account->id) && $this->requireRoles && $this->model === null) {
+        if (!isset($this->user->id, $this->account->id) || !$this->requireRoles || $this->model === null) {
             return true; // Skip permission check if conditions are not met
-        }
-
-        if (!$this->requireRoles) {
-            return true;
         }
     
         $modelName = $modelName ?? $this->model['name'];
