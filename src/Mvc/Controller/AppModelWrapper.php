@@ -2,7 +2,7 @@
 
 namespace Kyte\Mvc\Controller;
 
-class ControllerController extends ModelController
+class AppModelWrapperController extends ModelController
 {
     public function hook_init() {}
 
