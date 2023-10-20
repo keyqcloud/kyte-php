@@ -1,3 +1,8 @@
+## 3.0.76
+
+* Add utility script for release new version
+* Fix issue where API key description was being redacted
+
 ## 3.0.75
 
 * Rename APIKey table to KyteAPIKey to accomodate new model for 3rd party api keys
