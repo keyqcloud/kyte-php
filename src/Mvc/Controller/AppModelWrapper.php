@@ -6,6 +6,7 @@ class AppModelWrapperController extends ModelController
 {
     public function hook_init() {
         $this->requireRoles = false;
+        error_log("set role to false!");
     }
 
     // public function hook_auth() {}
@@ -31,6 +32,10 @@ class AppModelWrapperController extends ModelController
 
         error_log("PREPARING DB SWITCH!");
         \Kyte\Core\Api::dbappconnect($this->api->app->db_name, $this->api->app->db_username, $this->api->app->db_password);
+
+        $field = null;
+        $value = null;
+        $conditions = [];
     }
 
     // public function hook_preprocess($method, &$r, &$o = null) {}

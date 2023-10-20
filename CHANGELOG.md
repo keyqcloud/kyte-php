@@ -1,3 +1,8 @@
+## 3.0.77
+
+* Add missing required roles check
+* Add controller wrapper for manipulating app-level models
+
 ## 3.0.76
 
 * Add utility script for release new version
