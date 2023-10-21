@@ -93,18 +93,21 @@ class SiteController extends ModelController
                 $s3 = new \Kyte\Aws\S3($credentials, $bucketName);
                 $medias3 = new \Kyte\Aws\S3($credentials, $mediaBucketName);
                 try {
-                    $s3->createBucket();
                     $medias3->createBucket();
                     usleep(250000);
-
                     // remove public access block
-                    $s3->deletePublicAccessBlock();
                     $medias3->deletePublicAccessBlock();
                     usleep(250000);
-                    
                     // enable public access policy (GET)
-                    $s3->enablePublicAccess();
                     $medias3->enablePublicAccess();
+                    usleep(250000);
+
+                    // setup web
+                    $s3->createBucket();
+                    usleep(250000);
+                    $s3->deletePublicAccessBlock();
+                    usleep(250000);
+                    $s3->enablePublicAccess();
                     usleep(10000000); // wait 10 sec before attempting cors
                     
                     $s3->createWebsite();
