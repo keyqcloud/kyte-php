@@ -1,6 +1,7 @@
 ## 3.0.78
 
 * Increase sleep between s3 policy requests
+* Add epoch time to end of buckent name to improve on uniqueness
 
 ## 3.0.77
 

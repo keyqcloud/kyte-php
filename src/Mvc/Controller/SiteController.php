@@ -83,7 +83,7 @@ class SiteController extends ModelController
                 $credentials = new \Kyte\Aws\Credentials($region, $app->aws_public_key, $app->aws_private_key);
 
                 // create s3 bucket for site data
-                $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-'.$app->identifier);
+                $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-'.$app->identifier.'-'.time());
                 $o->save([
                     'region'        => $region,
                     's3BucketName'  => $bucketName,
@@ -91,11 +91,11 @@ class SiteController extends ModelController
                 $s3 = new \Kyte\Aws\S3($credentials, $bucketName);
                 try {
                     $s3->createBucket();
-                    usleep(200000); // delay for 1/10th of a second
+                    usleep(250000);
                     $s3->deletePublicAccessBlock();
-                    usleep(200000); // delay for 1/10th of a second
+                    usleep(250000);
                     $s3->enablePublicAccess();
-                    usleep(200000); // delay for 1/10th of a second
+                    usleep(250000);
                     $s3->createWebsite();
                 } catch(\Exception $e) {
                     $o->delete();
@@ -103,20 +103,20 @@ class SiteController extends ModelController
                 }
 
                 // create s3 bucket for static media assets
-                $mediaBucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-static-assets-'.$app->identifier);
+                $mediaBucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-static-assets-'.$app->identifier.'-'.time());
                 $o->save([
                     's3MediaBucketName'  => $mediaBucketName,
                 ]);
                 $medias3 = new \Kyte\Aws\S3($credentials, $mediaBucketName);
                 try {
                     $medias3->createBucket();
-                    usleep(200000); // delay for 1/10th of a second
+                    usleep(250000);
                     // remove public access block
                     $medias3->deletePublicAccessBlock();
-                    usleep(200000); // delay for 1/10th of a second
+                    usleep(250000);
                     // enable public access policy (GET)
                     $medias3->enablePublicAccess();
-                    usleep(200000); // delay for 1/10th of a second
+                    usleep(250000);
                     // enable cors for upload
                     $medias3->enableCors([
                         [
