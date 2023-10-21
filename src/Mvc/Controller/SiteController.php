@@ -108,9 +108,11 @@ class SiteController extends ModelController
                     $s3->deletePublicAccessBlock();
                     usleep(100000);
                     $s3->enablePublicAccess();
-                    usleep(15000000); // wait 10 sec before attempting cors
-                    
+                    usleep(100000);
                     $s3->createWebsite();
+
+                    usleep(15000000); // wait 15 sec before attempting cors
+
                     // enable cors for upload
                     $medias3->enableCors([
                         [
