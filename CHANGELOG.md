@@ -1,3 +1,7 @@
+## 3.0.78
+
+* Increase sleep between s3 policy requests
+
 ## 3.0.77
 
 * Add missing required roles check

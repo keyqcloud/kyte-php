@@ -91,11 +91,11 @@ class SiteController extends ModelController
                 $s3 = new \Kyte\Aws\S3($credentials, $bucketName);
                 try {
                     $s3->createBucket();
-                    usleep(100000); // delay for 1/10th of a second
+                    usleep(200000); // delay for 1/10th of a second
                     $s3->deletePublicAccessBlock();
-                    usleep(100000); // delay for 1/10th of a second
+                    usleep(200000); // delay for 1/10th of a second
                     $s3->enablePublicAccess();
-                    usleep(100000); // delay for 1/10th of a second
+                    usleep(200000); // delay for 1/10th of a second
                     $s3->createWebsite();
                 } catch(\Exception $e) {
                     $o->delete();
@@ -110,13 +110,13 @@ class SiteController extends ModelController
                 $medias3 = new \Kyte\Aws\S3($credentials, $mediaBucketName);
                 try {
                     $medias3->createBucket();
-                    usleep(100000); // delay for 1/10th of a second
+                    usleep(200000); // delay for 1/10th of a second
                     // remove public access block
                     $medias3->deletePublicAccessBlock();
-                    usleep(100000); // delay for 1/10th of a second
+                    usleep(200000); // delay for 1/10th of a second
                     // enable public access policy (GET)
                     $medias3->enablePublicAccess();
-                    usleep(100000); // delay for 1/10th of a second
+                    usleep(200000); // delay for 1/10th of a second
                     // enable cors for upload
                     $medias3->enableCors([
                         [
