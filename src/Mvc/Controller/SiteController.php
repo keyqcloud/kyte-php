@@ -84,39 +84,30 @@ class SiteController extends ModelController
 
                 // create s3 bucket for site data
                 $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-'.$app->identifier.'-'.time());
+                $mediaBucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-static-assets-'.$app->identifier.'-'.time());
                 $o->save([
                     'region'        => $region,
                     's3BucketName'  => $bucketName,
-                ]);
-                $s3 = new \Kyte\Aws\S3($credentials, $bucketName);
-                try {
-                    $s3->createBucket();
-                    usleep(250000);
-                    $s3->deletePublicAccessBlock();
-                    usleep(250000);
-                    $s3->enablePublicAccess();
-                    usleep(250000);
-                    $s3->createWebsite();
-                } catch(\Exception $e) {
-                    $o->delete();
-                    throw $e;
-                }
-
-                // create s3 bucket for static media assets
-                $mediaBucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-static-assets-'.$app->identifier.'-'.time());
-                $o->save([
                     's3MediaBucketName'  => $mediaBucketName,
                 ]);
+                $s3 = new \Kyte\Aws\S3($credentials, $bucketName);
                 $medias3 = new \Kyte\Aws\S3($credentials, $mediaBucketName);
                 try {
+                    $s3->createBucket();
                     $medias3->createBucket();
                     usleep(250000);
+
                     // remove public access block
+                    $s3->deletePublicAccessBlock();
                     $medias3->deletePublicAccessBlock();
                     usleep(250000);
+                    
                     // enable public access policy (GET)
+                    $s3->enablePublicAccess();
                     $medias3->enablePublicAccess();
                     usleep(10000000); // wait 10 sec before attempting cors
+                    
+                    $s3->createWebsite();
                     // enable cors for upload
                     $medias3->enableCors([
                         [
