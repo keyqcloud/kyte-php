@@ -116,7 +116,7 @@ class SiteController extends ModelController
                     usleep(250000);
                     // enable public access policy (GET)
                     $medias3->enablePublicAccess();
-                    usleep(1000000);
+                    usleep(5000000); // wait 5 sec before attempting cors
                     // enable cors for upload
                     $medias3->enableCors([
                         [
