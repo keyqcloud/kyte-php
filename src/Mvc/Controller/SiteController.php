@@ -128,6 +128,8 @@ class SiteController extends ModelController
 
                 // create distribution for website
                 $cf = new \Kyte\Aws\CloudFront($credentials);
+                // TODO: endpoint url changes based on region!
+                // see: https://docs.aws.amazon.com/general/latest/gr/s3.html#s3_website_region_endpoints
                 $cf->addOrigin(
                     $bucketName.'.s3-website-'.$region.'.amazonaws.com',
                     $bucketName
