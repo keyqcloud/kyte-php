@@ -174,34 +174,6 @@ class PageController extends ModelController
         $code .= '<link rel="stylesheet" href="https://cdn.datatables.net/1.10.23/css/jquery.dataTables.min.css">';
         $code .= '<script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>';
 
-        // check if page is using editor.js, in which case we need to load the modules
-        if ($page['page_type'] == 'block') {
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/link@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/raw"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/simple-image@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/checklist@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/editorjs-alert@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/editorjs-button@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/warning@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/editorjs-undo@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/paragraph@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/editorjs-style@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/editorjs-text-color-plugin@2.0.2/dist/bundle.js"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/editorjs-tooltip@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@sotaproject/strikethrough@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/editorjs-text-alignment-blocktune@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@editorjs/text-variant-tune@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@calumk/editorjs-columns@latest"></script>';
-            $code .= '<script src="https://cdn.jsdelivr.net/npm/@calumk/editorjs-paragraph-linebreakable"></script>';
-        }
-
         // KyteJS
         $code .= '<script src="'.KYTE_JS_CDN.'" crossorigin="anonymous"></script>';
 
@@ -266,11 +238,7 @@ class PageController extends ModelController
             $code .= '<!-- BEGIN SIDE NAVIGATION --><div id="sidenav-wrapper" class="d-flex flex-column flex-shrink-0 py-3"><div id="sidenav" class="p-3" style="width: 230px;"></div></div><!-- END SIDE NAVIGATION -->';
         }
 
-        if ($page['page_type'] == 'block') {
-            $code .= '<div id="blockEditorROViewer"'.($page['use_container'] == 1 ? 'class="container container-flex"' : '').'></div>';
-        } else {
-            $code .= '<div id="kyte-page-container"'.($page['use_container'] == 1 ? 'class="container container-flex"' : '').'>'.$page['html'].'</div>';
-        }
+        $code .= '<div id="kyte-page-container"'.($page['use_container'] == 1 ? 'class="container container-flex"' : '').'>'.$page['html'].'</div>';
 
         // close main wrapper
         $code .= '</main>';
@@ -287,11 +255,6 @@ class PageController extends ModelController
 
         // begin javascript
         $code .= '<script>';
-        // check if page is a block (i.e. editorjs and load viewer)
-        if ($page['page_type'] == 'block') {
-            //blockEditorROViewer
-            $code .= 'let element_tools={header:{class:Header},delimiter:Delimiter,table:Table,linkTool:{class:LinkTool},rawTool:{class:RawTool},imageTool:{class:SimpleImage},checklistTool:{class:Checklist},listTool:{class:List},warning:{class:Warning},AnyButton:{class:AnyButton},embedTool:{class:Embed},quoteTool:{class:Quote},tooltip:{class:Tooltip}};const blockEditor=new EditorJS({holder:"blockEditorROViewer",tools:element_tools,autofocus:true,readOnly:true, data:'.$page['block_layout'].'});';
-        }
 
         // add kyte connect
         if ($page['site']['application']['obfuscate_kyte_connect'] == 1) {

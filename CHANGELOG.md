@@ -1,3 +1,7 @@
+## 3.0.79
+
+* Remove editor.js dependence in page generator
+
 ## 3.0.78
 
 * Increase sleep between s3 policy requests
