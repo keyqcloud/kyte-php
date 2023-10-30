@@ -159,23 +159,23 @@ class PageController extends ModelController
         
         // retrieve libraries
         $libraries = new \Kyte\Core\Model(KyteLibrary);
-        $libraries->retrieve('include_all', 1);
+        $libraries->retrieve('include_all', 1, false, [['field' => 'site', 'value' => $page['site']['id']]]);
         foreach($libraries->objects as $library) {
             switch ($library->script_type) {
                 case 'js':
-                    $code .= '<script src="/'.$library->s3key.'"></script>';
+                    $code .= '<script src="/'.$library->link.'"></script>';
                     break;
                 case 'css':
-                    $code .= '<link rel="stylesheet" href="/'.$library->s3key.'">';
+                    $code .= '<link rel="stylesheet" href="/'.$library->link.'">';
                     break;
                 default:
-                    error_log("Unknown library type {$library->script_type} for {$library->name} located {$library->s3key}");
+                    error_log("Unknown library type {$library->script_type} for {$library->name} located {$library->link}");
             }
         }
 
         // retrieve custom scripts
         $scripts = new \Kyte\Core\Model(KyteScript);
-        $scripts->retrieve('include_all', 1, false, [['field' => 'state', 'value' => 1]]);
+        $scripts->retrieve('include_all', 1, false, [['field' => 'state', 'value' => 1],['field' => 'site', 'value' => $page['site']['id']]]);
         foreach($scripts->objects as $script) {
             switch ($script->script_type) {
                 case 'js':
