@@ -33,7 +33,6 @@ class KyteLibraryController extends ModelController
 
                 // iterate through each page
                 foreach($pages->objects as $page) {
-error_log("Updating page {$page->title}");
                     $p = $this->getObject($page);
                     // compile html file
                     $data = \Kyte\Mvc\Controller\PageController::createHtml($p);
