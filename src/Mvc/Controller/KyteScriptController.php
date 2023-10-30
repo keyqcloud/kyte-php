@@ -52,7 +52,7 @@ class KyteScriptController extends ModelController
 
                     $pages = new \Kyte\Core\Model(Page);
                     $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $r['site']['id']]]);
-
+error_log($pages->count());
                     // iterate through each page
                     foreach($pages->objects as $page) {
                         $p = $this->getObject($page);
