@@ -1,5 +1,6 @@
 ## 3.0.80
 
+* Add controller for managing custom libraries
 * New model for storing links to libraries like JQuery
 * Fix bug where publishing a nav or side nav publishes all pages (including drafts)
 * New model for scripts to be used accross pages or entire site
