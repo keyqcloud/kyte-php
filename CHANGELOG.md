@@ -3,6 +3,7 @@
 * New model for storing links to libraries like JQuery
 * Fix bug where publishing a nav or side nav publishes all pages (including drafts)
 * New model for scripts to be used accross pages or entire site
+* Controller for creating custom scripts and invalidating cache
 * Remove unecessary assignment of variables in PageController (begin bug)
 * Support website endpoint for different regions https://docs.aws.amazon.com/general/latest/gr/s3.html#s3_website_region_endpoints
 
