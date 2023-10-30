@@ -80,7 +80,7 @@ $KyteScript = [
 			'required'	=> false,
 			'size'		=> 1,
 			'unsigned'	=> true,
-			'default'	=> 0,
+			'default'	=> 1,
 			'date'		=> false,
 		],
 
