@@ -157,6 +157,37 @@ class PageController extends ModelController
         // font aweseom
         $code .= '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">';
         
+        // retrieve libraries
+        $libraries = new \Kyte\Core\Model(KyteLibrary);
+        $libraries->retrieve('include_all', 1);
+        foreach($libraries->objects as $library) {
+            switch ($library->script_type) {
+                case 'js':
+                    $code .= '<script src="/'.$library->s3key.'"></script>';
+                    break;
+                case 'css':
+                    $code .= '<link rel="stylesheet" href="/'.$library->s3key.'">';
+                    break;
+                default:
+                    error_log("Unknown library type {$library->script_type} for {$library->name} located {$library->s3key}");
+            }
+        }
+
+        // retrieve custom scripts
+        $scripts = new \Kyte\Core\Model(KyteScript);
+        $scripts->retrieve('include_all', 1, false, [['field' => 'state', 'value' => 1]]);
+        foreach($scripts->objects as $script) {
+            switch ($script->script_type) {
+                case 'js':
+                    $code .= '<script src="/'.$script->s3key.'"></script>';
+                    break;
+                case 'css':
+                    $code .= '<link rel="stylesheet" href="/'.$script->s3key.'">';
+                    break;
+                default:
+                    error_log("Unknown custom script type {$script->script_type} for script name {$script->name} located {$script->s3key}");
+            }
+        }
 
         // KyteJS
         $code .= '<script src="'.KYTE_JS_CDN.'" crossorigin="anonymous"></script>';
