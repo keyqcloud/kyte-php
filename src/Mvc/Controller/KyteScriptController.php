@@ -51,7 +51,7 @@ class KyteScriptController extends ModelController
                     $s3->write($o->s3key, $o->obfuscate_js ? $o->content_js_obfuscated : $o->content);
 
                     $pages = new \Kyte\Core\Model(Page);
-                    $pages->retrieve("state", 1);
+                    $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $r['site']['id']]]);
 
                     // iterate through each page
                     foreach($pages->objects as $page) {
@@ -86,7 +86,7 @@ class KyteScriptController extends ModelController
                         $s3->unlink($o->s3key);
 
                         $pages = new \Kyte\Core\Model(Page);
-                        $pages->retrieve("state", 1);
+                        $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $r['site']['id']]]);
 
                         // iterate through each page
                         foreach($pages->objects as $page) {

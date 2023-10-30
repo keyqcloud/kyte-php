@@ -29,7 +29,7 @@ class KyteScriptController extends ModelController
                 $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
                 $pages = new \Kyte\Core\Model(Page);
-                $pages->retrieve("state", 1);
+                $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $r['site']['id']]]);
 
                 // iterate through each page
                 foreach($pages->objects as $page) {
@@ -59,7 +59,7 @@ class KyteScriptController extends ModelController
                 $s3 = new \Kyte\Aws\S3($credential, $d['site']['s3BucketName']);
                 
                 $pages = new \Kyte\Core\Model(Page);
-                $pages->retrieve("state", 1);
+                $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $r['site']['id']]]);
 
                 // iterate through each page
                 foreach($pages->objects as $page) {

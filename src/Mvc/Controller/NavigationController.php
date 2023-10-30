@@ -32,7 +32,7 @@ class NavigationController extends ModelController
                 $s3 = new \Kyte\Aws\S3($credential, $nav['site']['s3BucketName']);
 
                 $pages = new \Kyte\Core\Model(Page);
-                $pages->retrieve("main_navigation", $nav['id'], false, [['field' => 'state', 'value' => 1]]);
+                $pages->retrieve("main_navigation", $nav['id'], false, [['field' => 'state', 'value' => 1],['field' => 'site', 'value' => $r['site']['id']]]);
 
                 // iterate through each page
                 foreach($pages->objects as $page) {
