@@ -161,13 +161,12 @@ class PageController extends ModelController
         $libraries = new \Kyte\Core\Model(KyteLibrary);
         $libraries->retrieve('include_all', 1, false, [['field' => 'site', 'value' => $page['site']['id']]]);
         foreach($libraries->objects as $library) {
-            error_log("Updating page {$library->name}");
             switch ($library->script_type) {
                 case 'js':
-                    $code .= '<script src="/'.$library->link.'"></script>';
+                    $code .= '<script src="'.$library->link.'"></script>';
                     break;
                 case 'css':
-                    $code .= '<link rel="stylesheet" href="/'.$library->link.'">';
+                    $code .= '<link rel="stylesheet" href="'.$library->link.'">';
                     break;
                 default:
                     error_log("Unknown library type {$library->script_type} for {$library->name} located {$library->link}");
