@@ -43,7 +43,7 @@ class KyteLibraryController extends ModelController
                 // invalidate CF
                 $cf = new \Kyte\Aws\CloudFront($credential);
                 $invalidationPaths = ['/*'];
-                $cf->createInvalidation($nav['site']['cfDistributionId'], $invalidationPaths);
+                $cf->createInvalidation($r['site']['cfDistributionId'], $invalidationPaths);
                 break;
 
             case 'delete':
