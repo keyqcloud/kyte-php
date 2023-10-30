@@ -65,6 +65,16 @@ $KyteScript = [
 			'date'		=> false,
 		],
 
+		// 0 - unpublished, 1 - published, 2 - published but stale
+		'state'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 0,
+			'date'		=> false,
+		],
+
 		'include_all' => [
 			'type'		=> 'i',
 			'required'	=> false,
