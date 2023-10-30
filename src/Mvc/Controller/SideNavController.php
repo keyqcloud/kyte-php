@@ -32,7 +32,7 @@ class SideNavController extends ModelController
                 $s3 = new \Kyte\Aws\S3($credential, $nav['site']['s3BucketName']);
 
                 $pages = new \Kyte\Core\Model(Page);
-                $pages->retrieve("side_navigation", $nav['id']);
+                $pages->retrieve("side_navigation", $nav['id'], false, [['field' => 'state', 'value' => 1]]);
 
                 // iterate through each page
                 foreach($pages->objects as $page) {
