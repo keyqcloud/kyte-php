@@ -1,3 +1,7 @@
+## 3.0.80
+
+* Support website endpoint for different regions https://docs.aws.amazon.com/general/latest/gr/s3.html#s3_website_region_endpoints
+
 ## 3.0.79
 
 * Remove editor.js dependence in page generator

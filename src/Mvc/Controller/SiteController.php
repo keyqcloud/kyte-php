@@ -130,8 +130,9 @@ class SiteController extends ModelController
                 $cf = new \Kyte\Aws\CloudFront($credentials);
                 // TODO: endpoint url changes based on region!
                 // see: https://docs.aws.amazon.com/general/latest/gr/s3.html#s3_website_region_endpoints
+                $websiteOrigin = self::getWebsiteEndpoint($bucketName, $region);
                 $cf->addOrigin(
-                    $bucketName.'.s3-website-'.$region.'.amazonaws.com',
+                    $websiteOrigin,
                     $bucketName
                 );
                 $cf->create();
@@ -187,4 +188,72 @@ class SiteController extends ModelController
     }
 
     // public function hook_process_get_response(&$r) {}
+
+    public static function getWebsiteEndpoint($bucketName, $region) {
+        switch ($region) {
+            case 'us-east-1':
+                return $bucketName . ".s3-website-us-east-1.amazonaws.com";
+            case 'us-east-2':
+                return $bucketName . ".s3-website.us-east-2.amazonaws.com";
+            case 'us-west-1':
+                return $bucketName . ".s3-website-us-west-1.amazonaws.com";
+            case 'us-west-2':
+                return $bucketName . ".s3-website-us-west-2.amazonaws.com";
+            case 'af-south-1':
+                return $bucketName . ".s3-website.af-south-1.amazonaws.com";
+            case 'ap-east-1':
+                return $bucketName . ".s3-website.ap-east-1.amazonaws.com";
+            case 'ap-south-1':
+                return $bucketName . ".s3-website.ap-south-1.amazonaws.com";
+            case 'ap-southeast-1':
+                return $bucketName . ".s3-website-ap-southeast-1.amazonaws.com";
+            case 'ap-southeast-2':
+                return $bucketName . ".s3-website-ap-southeast-2.amazonaws.com";
+            case 'ap-southeast-3':
+                return $bucketName . ".s3-website.ap-southeast-3.amazonaws.com";
+            case 'ap-southeast-4':
+                return $bucketName . ".s3-website.ap-southeast-4.amazonaws.com";
+            case 'ap-northeast-1':
+                return $bucketName . ".s3-website-ap-northeast-1.amazonaws.com";
+            case 'ap-northeast-2':
+                return $bucketName . ".s3-website.ap-northeast-2.amazonaws.com";
+            case 'ap-northeast-3':
+                return $bucketName . ".s3-website.ap-northeast-3.amazonaws.com";
+            case 'ca-central-1':
+                return $bucketName . ".s3-website.ca-central-1.amazonaws.com";
+            case 'cn-north-1':
+                return $bucketName . ".s3-website.cn-north-1.amazonaws.com.cn";
+            case 'cn-northwest-1':
+                return $bucketName . ".s3-website.cn-northwest-1.amazonaws.com.cn";
+            case 'eu-central-1':
+                return $bucketName . ".s3-website.eu-central-1.amazonaws.com";
+            case 'eu-west-1':
+                return $bucketName . ".s3-website-eu-west-1.amazonaws.com";
+            case 'eu-west-2':
+                return $bucketName . ".s3-website.eu-west-2.amazonaws.com";
+            case 'eu-west-3':
+                return $bucketName . ".s3-website.eu-west-3.amazonaws.com";
+            case 'eu-north-1':
+                return $bucketName . ".s3-website.eu-north-1.amazonaws.com";
+            case 'eu-south-1':
+                return $bucketName . ".s3-website.eu-south-1.amazonaws.com";
+            case 'eu-south-2':
+                return $bucketName . ".s3-website.eu-south-2.amazonaws.com";
+            case 'me-south-1':
+                return $bucketName . ".s3-website.me-south-1.amazonaws.com";
+            case 'me-central-1':
+                return $bucketName . ".s3-website.me-central-1.amazonaws.com";
+            case 'il-central-1':
+                return $bucketName . ".s3-website.il-central-1.amazonaws.com";
+            case 'sa-east-1':
+                return $bucketName . ".s3-website-sa-east-1.amazonaws.com";
+            case 'us-gov-east-1':
+                return $bucketName . ".s3-website.us-gov-east-1.amazonaws.com";
+            case 'us-gov-west-1':
+                return $bucketName . ".s3-website-us-gov-west-1.amazonaws.com";
+            default:
+                throw new \Exception("Region not found or not supported.");
+        }
+    }
+    
 }
