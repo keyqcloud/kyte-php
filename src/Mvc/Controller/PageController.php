@@ -14,7 +14,7 @@ class PageController extends ModelController
     public function hook_preprocess($method, &$r, &$o = null) {
         switch ($method) {
             case 'new':
-                $r['s3key'] = $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_.-\/]/', '-', $r['s3key']));
+                $r['s3key'] = strtolower(preg_replace('/[^A-Za-z0-9_.-\/]/', '-', $r['s3key']));
                 break;
 
             default:

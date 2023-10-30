@@ -1,5 +1,6 @@
 ## 3.0.80
 
+* Remove unecessary assignment of variables in PageController (begin bug)
 * Support website endpoint for different regions https://docs.aws.amazon.com/general/latest/gr/s3.html#s3_website_region_endpoints
 
 ## 3.0.79
