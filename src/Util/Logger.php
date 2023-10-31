@@ -44,7 +44,7 @@ class Logger {
         $logData = [
             date('Y-m-d H:i:s'),    // time stamp
             "[$level] $message",    // level and message
-            "File: {$caller['file']} (line {$caller['line']})".(isset($caller['class']) ? " Class: {$caller['class']}" : '').(isset($caller['function']) ? " Function: {$caller['function']}" : ''),    // details
+            "File: {$caller['file']} (line {$caller['line']})".(isset($caller['class']) ? " Class: {$caller['class']}" : ''),    // details
         ];
         $logString = implode("\t", $logData) . "\n";
 
