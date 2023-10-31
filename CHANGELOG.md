@@ -1,3 +1,7 @@
+## 3.0.86
+
+* Fix s3 object in logger
+
 ## 3.0.85
 
 * Fix app object for logger
