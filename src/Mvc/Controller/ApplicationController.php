@@ -45,6 +45,23 @@ class ApplicationController extends ModelController
                 // TODO: create db in different cluster
                 // $r['db_host'] = '';
 
+                // create a bucket for storing logs
+                // get AWS credential - default to us-east-1
+                $region = 'us-east-1';
+                $credentials = new \Kyte\Aws\Credentials($region, $aws->aws_public_key, $aws->aws_private_key);
+
+                // create s3 bucket for site data
+                $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-'.$r['identifier'].'-'.time());
+                $r['s3LogBucketName'] = $bucketName;
+                $r['s3LogBucketRegion'] = $region;
+
+                $s3 = new \Kyte\Aws\S3($credentials, $bucketName);
+                try {
+                    $s3->createBucket();
+                } catch(\Exception $e) {
+                    throw new \Exception("Unable to create new bucket for logs.");
+                }
+
                 // create database
                 \Kyte\Core\DBI::createDatabase($r['db_name'], $r['db_username'], $r['db_password']);
 
