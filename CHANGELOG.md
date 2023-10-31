@@ -1,3 +1,7 @@
+## 3.0.88
+
+* Add log handler for php
+
 ## 3.0.87
 
 * Add wrapper function for SES logging
