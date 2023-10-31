@@ -1,3 +1,8 @@
+## 3.0.90
+
+* Add global to check if s3 debug output handler should be enabled
+* Only output relevant errors to s3
+
 ## 3.0.89
 
 * Remove system error handler for s3

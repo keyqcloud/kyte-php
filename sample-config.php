@@ -21,6 +21,7 @@
 
     /* KYTE FRAMEWORK SPECIFIC SETTINGS */
     define('DEBUG', false);
+    define('S3_DEBUG', false);
     define('ALLOW_ENC_HANDOFF', true);
     define('ALLOW_MULTILOGON', false);
     define('ALLOW_SAME_TXTOKEN', false);

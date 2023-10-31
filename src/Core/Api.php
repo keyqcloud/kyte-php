@@ -170,6 +170,10 @@ class Api
 			define('DEBUG', false);
 			error_log('DEBUG constant not defined...using defaults');
 		}
+		if (!defined('S3_DEBUG')) {
+			define('S3_DEBUG', false);
+			error_log('S3_DEBUG constant not defined...using defaults');
+		}
 		// check if cdn is define...if not default to current stable
 		if (!defined('KYTE_JS_CDN')) {
 			define('KYTE_JS_CDN', 'https://cdn.keyqcloud.com/kyte/js/stable/kyte.js');
@@ -502,7 +506,21 @@ class Api
 
 				// setup logger for app level
 				$this->logger = new \Kyte\Util\Logger($this->app);
-				// set_error_handler([$this->logger, 'systemErrorHandler']);
+				if (S3_DEBUG) {
+					$relevantErrors = [
+						E_ERROR,
+						E_WARNING,
+						E_PARSE,
+						E_NOTICE,
+						E_USER_ERROR,
+						E_USER_WARNING,
+						E_USER_NOTICE,
+						E_STRICT
+					];
+					foreach($relevantErrors as $errorLevel) {
+						// set_error_handler([$this->logger, 'systemErrorHandler'], $errorLevel);
+					}
+				}
 			} else {
 				// TODO: setup logger for framework level
 				// $this->system_logger = new \Kyte\Util\Logger(null, KYTE_S3_LOG_BUCKET, KYTE_LOGGER_REGION, ACCESS_KEY, SECRET_KEY);
