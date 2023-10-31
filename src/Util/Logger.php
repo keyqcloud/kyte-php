@@ -49,7 +49,7 @@ class Logger {
         $logString = implode("\t", $logData) . "\n";
 
         // output to s3
-        $s3->append(date('Y-m-d').'.log', $logString);
+        $this->s3->append(date('Y-m-d').'.log', $logString);
 
         // TODO: integrate sns topic
     }
