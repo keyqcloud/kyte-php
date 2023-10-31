@@ -159,7 +159,7 @@ class PageController extends ModelController
         
         // retrieve libraries
         $libraries = new \Kyte\Core\Model(KyteLibrary);
-        $libraries->retrieve('include_all', 1, false, [['field' => 'site', 'value' => $page['site']['id']]], [['field' => 'id', 'direction' => 'desc']]);
+        $libraries->retrieve('include_all', 1, false, [['field' => 'site', 'value' => $page['site']['id']]], [['field' => 'id', 'direction' => 'asc']]);
         foreach($libraries->objects as $library) {
             switch ($library->script_type) {
                 case 'js':
@@ -175,7 +175,7 @@ class PageController extends ModelController
 
         // retrieve custom scripts
         $scripts = new \Kyte\Core\Model(KyteScript);
-        $scripts->retrieve('include_all', 1, false, [['field' => 'state', 'value' => 1],['field' => 'site', 'value' => $page['site']['id']]], [['field' => 'id', 'direction' => 'desc']]);
+        $scripts->retrieve('include_all', 1, false, [['field' => 'state', 'value' => 1],['field' => 'site', 'value' => $page['site']['id']]], [['field' => 'id', 'direction' => 'asc']]);
         foreach($scripts->objects as $script) {
             switch ($script->script_type) {
                 case 'js':
