@@ -1,3 +1,8 @@
+## 3.0.81
+
+* Move custom scripts to end of body
+* Add support for headers in page creation
+
 ## 3.0.80
 
 * Update fontawesome CDN to version 6.4.2

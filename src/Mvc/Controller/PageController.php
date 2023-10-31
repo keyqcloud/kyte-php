@@ -173,22 +173,6 @@ class PageController extends ModelController
             }
         }
 
-        // retrieve custom scripts
-        $scripts = new \Kyte\Core\Model(KyteScript);
-        $scripts->retrieve('include_all', 1, false, [['field' => 'state', 'value' => 1],['field' => 'site', 'value' => $page['site']['id']]], false, [['field' => 'id', 'direction' => 'asc']]);
-        foreach($scripts->objects as $script) {
-            switch ($script->script_type) {
-                case 'js':
-                    $code .= '<script src="/'.$script->s3key.'"></script>';
-                    break;
-                case 'css':
-                    $code .= '<link rel="stylesheet" href="/'.$script->s3key.'">';
-                    break;
-                default:
-                    error_log("Unknown custom script type {$script->script_type} for script name {$script->name} located {$script->s3key}");
-            }
-        }
-
         // KyteJS
         $code .= '<script src="'.KYTE_JS_CDN.'" crossorigin="anonymous"></script>';
 
@@ -219,6 +203,9 @@ class PageController extends ModelController
             $code .= '#sidenav .nav-pills .nav-link.active { background-color: '.$page['side_navigation']['bgActiveColor'].' !important; color: '.$page['side_navigation']['fgActiveColor'].' !important; }';
             $code .='</style>';
         }
+        if ($page['header']) {
+            $code .='<style>.custom-page-header { color: '.$page['header']['fgColor'].' !important; width:100%; background-color: '.$page['header']['bgColor'].' !important; }'.$page['header']['stylesheet'].'</style>';
+        }
         if ($page['footer']) {
             $code .='<style>footer { color: '.$page['footer']['fgColor'].' !important; position:fixed; bottom:0; width:100%; background-color: '.$page['footer']['bgColor'].' !important; }'.$page['footer']['stylesheet'].'</style>';
         }
@@ -239,6 +226,13 @@ class PageController extends ModelController
 
         // wrapper
         $code .= '<div id="wrapper">';
+
+        // header
+        if ($page['header']) {
+            $code .= '<div class="custom-page-header">';
+            $code .= $page['header']['html'];
+            $code .= '</div>';
+        }
 
         // main navigation and header
         if ($page['main_navigation']) {
@@ -266,6 +260,22 @@ class PageController extends ModelController
             $code .= '<footer>';
             $code .= $page['footer']['html'];
             $code .= '</footer>';
+        }
+
+        // retrieve custom scripts
+        $scripts = new \Kyte\Core\Model(KyteScript);
+        $scripts->retrieve('include_all', 1, false, [['field' => 'state', 'value' => 1],['field' => 'site', 'value' => $page['site']['id']]], false, [['field' => 'id', 'direction' => 'asc']]);
+        foreach($scripts->objects as $script) {
+            switch ($script->script_type) {
+                case 'js':
+                    $code .= '<script src="/'.$script->s3key.'"></script>';
+                    break;
+                case 'css':
+                    $code .= '<link rel="stylesheet" href="/'.$script->s3key.'">';
+                    break;
+                default:
+                    error_log("Unknown custom script type {$script->script_type} for script name {$script->name} located {$script->s3key}");
+            }
         }
 
         // begin javascript
@@ -372,6 +382,14 @@ class PageController extends ModelController
             //
             $code .= 'let sidenavdef = ['.implode($side_menu_items).'];';
             $code .= 'let sidenav = new KyteSidenav("#sidenav", sidenavdef, "'.$default_sidenav.'");sidenav.create();sidenav.bind();';
+        }
+
+        if ($page['header']) {
+            if ($page['header']['obfuscate_js'] == 1) {
+                $code .= $page['header']['javascript_obfuscated']."\n";
+            } else {
+                $code .= $page['header']['javascript']."\n";
+            }
         }
 
         if ($page['footer']) {
