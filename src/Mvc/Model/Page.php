@@ -71,6 +71,18 @@ $Page = [
 			'date'		=> false,
 		],
 
+		'header'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 11,
+			'unsigned'	=> true,
+			'date'		=> false,
+			'fk'		=> [
+				'model'	=> 'SectionTemplate',
+				'field'	=> 'id',
+			],
+		],
+
 		'footer'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
