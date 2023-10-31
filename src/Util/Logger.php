@@ -77,4 +77,8 @@ class Logger {
     public function alert($message) {
         $this->log('ALERT', $message);
     }
+
+    public function ses($message) {
+        $this->log('SES', $message);
+    }
 }

@@ -1,5 +1,6 @@
 ## 3.0.87
 
+* Add wrapper function for SES logging
 * Remove function from detail as content will always be logger
 
 ## 3.0.86
