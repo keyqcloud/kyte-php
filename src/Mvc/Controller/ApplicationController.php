@@ -51,7 +51,7 @@ class ApplicationController extends ModelController
                 $credentials = new \Kyte\Aws\Credentials($region, $aws->aws_public_key, $aws->aws_private_key);
 
                 // create s3 bucket for site data
-                $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-'.$r['identifier'].'-'.time());
+                $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-logs-'.$r['identifier'].'-'.time());
                 $r['s3LogBucketName'] = $bucketName;
                 $r['s3LogBucketRegion'] = $region;
 
