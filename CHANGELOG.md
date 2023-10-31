@@ -1,3 +1,7 @@
+## 3.0.82
+
+* Add missing header attribute
+
 ## 3.0.81
 
 * Move custom scripts to end of body
