@@ -1,3 +1,7 @@
+## 3.0.89
+
+* Remove system error handler for s3
+
 ## 3.0.88
 
 * Add log handler for php
