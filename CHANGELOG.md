@@ -1,3 +1,7 @@
+## 3.0.87
+
+* Remove function from detail as content will always be logger
+
 ## 3.0.86
 
 * Fix s3 object in logger
