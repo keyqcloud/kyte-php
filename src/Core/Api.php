@@ -518,7 +518,7 @@ class Api
 						E_STRICT
 					];
 					foreach($relevantErrors as $errorLevel) {
-						// set_error_handler([$this->logger, 'systemErrorHandler'], $errorLevel);
+						set_error_handler([$this->logger, 'systemErrorHandler'], $errorLevel);
 					}
 				}
 			} else {
