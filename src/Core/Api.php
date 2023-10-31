@@ -502,7 +502,7 @@ class Api
 
 				// setup logger for app level
 				$this->logger = new \Kyte\Util\Logger($this->app);
-				set_error_handler([$this->logger, 'systemErrorHandler']);
+				// set_error_handler([$this->logger, 'systemErrorHandler']);
 			} else {
 				// TODO: setup logger for framework level
 				// $this->system_logger = new \Kyte\Util\Logger(null, KYTE_S3_LOG_BUCKET, KYTE_LOGGER_REGION, ACCESS_KEY, SECRET_KEY);
