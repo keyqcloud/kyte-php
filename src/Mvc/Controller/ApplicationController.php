@@ -62,6 +62,8 @@ class ApplicationController extends ModelController
                     throw new \Exception("Unable to create new bucket for logs.");
                 }
 
+                // TODO: create SNS topics for logger and each log type - provide option for subscribing to different log events
+
                 // create database
                 \Kyte\Core\DBI::createDatabase($r['db_name'], $r['db_username'], $r['db_password']);
 

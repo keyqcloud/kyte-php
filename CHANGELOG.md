@@ -1,5 +1,6 @@
 ## 3.0.83
 
+* Add utility class for logging to s3
 * Add feature to create new bucket for logs when application is created - default to us-east-1 for logs
 * Add attribute for storing bucket information for logs at Application level
 
