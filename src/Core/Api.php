@@ -502,9 +502,11 @@ class Api
 
 				// setup logger for app level
 				$this->logger = new \Kyte\Util\Logger($this->app);
+				set_error_handler([$this->logger, 'systemErrorHandler']);
 			} else {
 				// TODO: setup logger for framework level
-				// $this->logger = new \Kyte\Util\Logger(null, KYTE_S3_LOG_BUCKET, KYTE_LOGGER_REGION, ACCESS_KEY, SECRET_KEY);
+				// $this->system_logger = new \Kyte\Util\Logger(null, KYTE_S3_LOG_BUCKET, KYTE_LOGGER_REGION, ACCESS_KEY, SECRET_KEY);
+				// $this->logger = $this->system_logger;
 			}
 			
 			// next determine session by checking if app requires app-level user table

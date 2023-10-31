@@ -81,4 +81,37 @@ class Logger {
     public function ses($message) {
         $this->log('SES', $message);
     }
+
+    function systemErrorHandler($errno, $errstr, $errfile, $errline) {
+        try {
+            $this->log($this->mapErrorCode($errno), "$errstr in $errfile at line $errline");
+        } catch (\Exception $e) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function mapErrorCode($errno)
+    {
+        $errorMap = [
+            E_ERROR             => 'PHP Error',
+            E_WARNING           => 'PHP Warning',
+            E_PARSE             => 'PHP Parse Error',
+            E_NOTICE            => 'PHP Notice',
+            E_CORE_ERROR        => 'PHP Core Error',
+            E_CORE_WARNING      => 'PHP Core Warning',
+            E_COMPILE_ERROR     => 'PHP Compile Error',
+            E_COMPILE_WARNING   => 'PHP Compile Warning',
+            E_USER_ERROR        => 'PHP User Error',
+            E_USER_WARNING      => 'PHP User Warning',
+            E_USER_NOTICE       => 'PHP User Notice',
+            E_STRICT            => 'PHP Runtime Notice',
+            E_RECOVERABLE_ERROR => 'PHP Catchable Fatal Error',
+            E_DEPRECATED        => 'PHP Deprecated Warning',
+            E_USER_DEPRECATED   => 'PHP User Deprecated Warning',
+        ];
+
+        return isset($errorMap[$errno]) ? $errorMap[$errno] : "PHP Unknown error ({$errno})";
+    }
 }
