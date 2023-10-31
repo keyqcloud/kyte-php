@@ -1,6 +1,10 @@
+## 3.0.83
+
+* Add attribute for storing bucket information for logs at Application level
+
 ## 3.0.82
 
-* Add missing header attribute
+* Add missing header attribute for Page model
 
 ## 3.0.81
 

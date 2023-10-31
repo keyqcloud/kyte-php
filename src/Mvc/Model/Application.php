@@ -17,6 +17,23 @@ $Application = [
 			'date'		=> false,
 		],
 
+		// log bucket name
+		's3LogBucketName'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+			'protected'	=> true,
+		],
+
+		's3LogBucketRegion'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+			'protected'	=> true,
+		],
+
 		// database field
 
 		'db_name'		=> [
