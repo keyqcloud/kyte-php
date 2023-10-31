@@ -87,7 +87,7 @@ class SessionController extends ModelController
             $this->response['session'] = $session['sessionToken'];
             $this->response['data'] = $response;
         } catch (\Exception $e) {
-            $this->api->logger->security($e->getMessage());
+            // $this->api->logger->security($e->getMessage());
             throw $e;
         }
     }
