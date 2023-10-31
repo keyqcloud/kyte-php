@@ -9,7 +9,7 @@ class Logger {
     private $s3;
     private $app;
 
-    public function __construct($app = null, $region, $accessKey = null, $secretKey = null) {
+    public function __construct($app = null, $bucket = null, $region = 'us-east-1', $accessKey = null, $secretKey = null) {
         try {
             // check to make sure valid sender information is provided, either as a paramter or in the configs
             if ($app == null && $accessKey == null && $secretKey == null) {
@@ -22,7 +22,7 @@ class Logger {
             $this->app = $app;
             $this->accessKey = $accessKey;
             $this->secretKey = $secretKey;
-            $this->bucket = KYTE_S3_LOG_BUCKET;
+            $this->bucket = $bucket;
             $this->region = $region;
             if ($this->app !== null) {
                 $this->accessKey = $app->aws_public_key;

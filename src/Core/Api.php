@@ -42,6 +42,11 @@ class Api
      * @var \Kyte\Core\ModelObject The Application model object.
      */
     public $app = null;
+
+	/**
+     * @var \Kyte\Util\Logger The Application model object.
+     */
+    public $logger = null;
     
     /**
      * The API signature.
@@ -494,6 +499,12 @@ class Api
 				}
 				
 				self::dbappconnect($this->app->db_name, $this->app->db_username, $this->app->db_password);
+
+				// setup logger for app level
+				$this->logger = new \Kyte\Util\Logger($app);
+			} else {
+				// TODO: setup logger for framework level
+				// $this->logger = new \Kyte\Util\Logger(null, KYTE_S3_LOG_BUCKET, KYTE_LOGGER_REGION, ACCESS_KEY, SECRET_KEY);
 			}
 			
 			// next determine session by checking if app requires app-level user table
