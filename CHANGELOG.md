@@ -1,3 +1,7 @@
+## 3.0.85
+
+* Fix app object for logger
+
 ## 3.0.84
 
 * temporarily revert session exception logging until framework logging mechanism is finalized
