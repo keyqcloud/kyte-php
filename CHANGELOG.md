@@ -1,3 +1,7 @@
+## 3.0.84
+
+* temporarily revert session exception logging until framework logging mechanism is finalized
+
 ## 3.0.83
 
 * Add utility class for logging to s3
