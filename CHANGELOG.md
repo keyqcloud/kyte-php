@@ -1,3 +1,10 @@
+## 3.0.91
+
+* Update Page model name to KytePage
+* Stage KytePageData to hold compressed page data
+* Add comment that page data inside KytePage will be removed and moved to KytePageData
+* Renamed controller PageController to KytePageController
+
 ## 3.0.90
 
 * Add global to check if s3 debug output handler should be enabled
