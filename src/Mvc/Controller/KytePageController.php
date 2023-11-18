@@ -2,7 +2,7 @@
 
 namespace Kyte\Mvc\Controller;
 
-class PageController extends ModelController
+class KytePageController extends ModelController
 {
     public function hook_init() {
         $this->dateformat = 'm/d/Y H:i:s';
@@ -318,7 +318,7 @@ class PageController extends ModelController
                 $link = $m->link;
                 // if page is set, get page
                 if ($m->page) {
-                    $linked_page = new \Kyte\Core\ModelObject(Page);
+                    $linked_page = new \Kyte\Core\ModelObject(KytePage);
                     if (!$linked_page->retrieve('id', $m->page)) {
                         throw new \Exception("Unable to find page");
                     }
@@ -346,7 +346,7 @@ class PageController extends ModelController
             }
             $nav_link = $page['main_navigation']['link'] ? $page['main_navigation']['link'] : '/';
             if ($page['main_navigation']['page']) {
-                $linked_page = new \Kyte\Core\ModelObject(Page);
+                $linked_page = new \Kyte\Core\ModelObject(KytePage);
                 if ($linked_page->retrieve('id', $page['main_navigation']['page'])) {
                     $nav_link = '/'.$linked_page->s3key;
                 }
@@ -366,7 +366,7 @@ class PageController extends ModelController
             foreach($items->objects as $m) {
                 $link = $m->link;
                 if ($m->page) {
-                    $linked_page = new \Kyte\Core\ModelObject(Page);
+                    $linked_page = new \Kyte\Core\ModelObject(KytePage);
                     if (!$linked_page->retrieve('id', $m->page)) {
                         throw new \Exception("Unable to find page");
                     }
@@ -422,7 +422,7 @@ class PageController extends ModelController
     }
 
     public static function updateSitemap($siteIdx, $siteDomain) {
-        $pages = new \Kyte\Core\Model(Page);
+        $pages = new \Kyte\Core\Model(KytePage);
         $pages->retrieve('state', '1', false, [['field' => 'protected', 'value' => '0'],['field' => 'sitemap_include', 'value' => '1'],['field' => 'site', 'value' => $siteIdx]], false, [['field' => 'date_modified', 'direction' => 'desc']]);
         $urlset = self::generateSitemapUrlSet();
         $sitemap = $urlset[0];

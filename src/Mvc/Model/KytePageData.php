@@ -1,26 +1,43 @@
 <?php
 
-$SideNavItem = [
-	'name' => 'SideNavItem',
+$KytePageData = [
+	'name' => 'KytePageData',
 	'struct' => [
-		'title'		=> [
-			'type'		=> 's',
-			'required'	=> true,
-			'size'		=> 255,
+		// json definition of page layout defined by wizard
+		// 'layout'	=> [
+		// 	'type'		=> 't',
+		// 	'required'	=> false,
+		// 	'date'		=> false,
+		// ],
+
+		// json definition of page layout defined by block editor
+		'block_layout'	=> [
+			'type'		=> 't',
+			'required'	=> false,
 			'date'		=> false,
 		],
 
-		'faicon'		=> [
-			'type'		=> 's',
+		'html'		=> [
+			'type'		=> 't',
 			'required'	=> false,
-			'size'		=> 255,
 			'date'		=> false,
 		],
 
-		'link'		=> [
-			'type'		=> 's',
+		'javascript'		=> [
+			'type'		=> 't',
 			'required'	=> false,
-			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'javascript_obfuscated'		=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
+		'stylesheet'	=> [
+			'type'		=> 't',
+			'required'	=> false,
 			'date'		=> false,
 		],
 
@@ -34,38 +51,6 @@ $SideNavItem = [
 				'model'	=> 'KytePage',
 				'field'	=> 'id',
 			],
-		],
-
-		'sidenav'	=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 11,
-			'unsigned'	=> true,
-			'date'		=> false,
-			'fk'		=> [
-				'model'	=> 'SideNav',
-				'field'	=> 'id',
-			],
-		],
-
-		'site'	=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 11,
-			'unsigned'	=> true,
-			'date'		=> false,
-			'fk'		=> [
-				'model'	=> 'Site',
-				'field'	=> 'id',
-			],
-		],
-
-		'itemOrder' => [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 11,
-			'unsigned' 	=> true,
-			'date'		=> false,
 		],
 
 		// framework attributes

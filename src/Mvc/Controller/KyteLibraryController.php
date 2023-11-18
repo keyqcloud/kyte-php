@@ -28,14 +28,14 @@ class KyteLibraryController extends ModelController
                 $credential = new \Kyte\Aws\Credentials($r['site']['region'], $app->aws_public_key, $app->aws_private_key);
                 $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
-                $pages = new \Kyte\Core\Model(Page);
+                $pages = new \Kyte\Core\Model(KytePage);
                 $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $r['site']['id']]]);
 
                 // iterate through each page
                 foreach($pages->objects as $page) {
                     $p = $this->getObject($page);
                     // compile html file
-                    $data = \Kyte\Mvc\Controller\PageController::createHtml($p);
+                    $data = \Kyte\Mvc\Controller\KytePageController::createHtml($p);
                     // write to file
                     $s3->write($page->s3key, $data);
                 }
@@ -58,14 +58,14 @@ class KyteLibraryController extends ModelController
                 $credential = new \Kyte\Aws\Credentials($d['site']['region'], $app->aws_public_key, $app->aws_private_key);
                 $s3 = new \Kyte\Aws\S3($credential, $d['site']['s3BucketName']);
                 
-                $pages = new \Kyte\Core\Model(Page);
+                $pages = new \Kyte\Core\Model(KytePage);
                 $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $r['site']['id']]]);
                 
                 // iterate through each page
                 foreach($pages->objects as $page) {
                     $p = $this->getObject($page);
                     // compile html file
-                    $data = \Kyte\Mvc\Controller\PageController::createHtml($p);
+                    $data = \Kyte\Mvc\Controller\KytePageController::createHtml($p);
                     // write to file
                     $s3->write($page->s3key, $data);
                 }

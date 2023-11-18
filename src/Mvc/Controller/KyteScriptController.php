@@ -50,14 +50,14 @@ class KyteScriptController extends ModelController
                     // write script to file
                     $s3->write($o->s3key, $o->obfuscate_js ? $o->content_js_obfuscated : $o->content);
 
-                    $pages = new \Kyte\Core\Model(Page);
+                    $pages = new \Kyte\Core\Model(KytePage);
                     $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $r['site']['id']]]);
 
                     // iterate through each page
                     foreach($pages->objects as $page) {
                         $p = $this->getObject($page);
                         // compile html file
-                        $data = \Kyte\Mvc\Controller\PageController::createHtml($p);
+                        $data = \Kyte\Mvc\Controller\KytePageController::createHtml($p);
                         // write to file
                         $s3->write($page->s3key, $data);
                     }
@@ -85,14 +85,14 @@ class KyteScriptController extends ModelController
                         // delete s3 file
                         $s3->unlink($o->s3key);
 
-                        $pages = new \Kyte\Core\Model(Page);
+                        $pages = new \Kyte\Core\Model(KytePage);
                         $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $r['site']['id']]]);
 
                         // iterate through each page
                         foreach($pages->objects as $page) {
                             $p = $this->getObject($page);
                             // compile html file
-                            $data = \Kyte\Mvc\Controller\PageController::createHtml($p);
+                            $data = \Kyte\Mvc\Controller\KytePageController::createHtml($p);
                             // write to file
                             $s3->write($page->s3key, $data);
                         }

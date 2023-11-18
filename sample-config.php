@@ -11,7 +11,7 @@
 
     define('KYTE_JS_CDN', 'https://cdn.keyqcloud.com/kyte/js/stable/kyte.js');
     
-    /* BASE PATH for API - for example /var/www/html/ */
+    /* BASE PATH for API - for example /var/www/html */
     define('APP_DIR', '');
 
 	/* AWS INTEGRATION */

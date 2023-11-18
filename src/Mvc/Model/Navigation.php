@@ -31,7 +31,7 @@ $Navigation = [
 			'unsigned'	=> true,
 			'date'		=> false,
 			// 'fk'		=> [
-			// 	'model'	=> 'Page',
+			// 	'model'	=> 'KytePage',
 			// 	'field'	=> 'id',
 			// ],
 		],

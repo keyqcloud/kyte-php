@@ -31,20 +31,20 @@ class NavigationController extends ModelController
                 $credential = new \Kyte\Aws\Credentials($nav['site']['region'], $app->aws_public_key, $app->aws_private_key);
                 $s3 = new \Kyte\Aws\S3($credential, $nav['site']['s3BucketName']);
 
-                $pages = new \Kyte\Core\Model(Page);
+                $pages = new \Kyte\Core\Model(KytePage);
                 $pages->retrieve("main_navigation", $nav['id'], false, [['field' => 'state', 'value' => 1],['field' => 'site', 'value' => $r['site']['id']]]);
 
                 // iterate through each page
                 foreach($pages->objects as $page) {
                     $p = $this->getObject($page);
                     // compile html file
-                    $data = \Kyte\Mvc\Controller\PageController::createHtml($p);
+                    $data = \Kyte\Mvc\Controller\KytePageController::createHtml($p);
                     // write to file
                     $s3->write($page->s3key, $data);
                 }
 
                 // create or update sitemap
-                $sitemap = \Kyte\Mvc\Controller\PageController::updateSitemap($nav['site']['id'], $nav['site']['aliasDomain'] ? $nav['site']['aliasDomain'] : $nav['site']['cfDomain']);
+                $sitemap = \Kyte\Mvc\Controller\KytePageController::updateSitemap($nav['site']['id'], $nav['site']['aliasDomain'] ? $nav['site']['aliasDomain'] : $nav['site']['cfDomain']);
                 $s3->write('sitemap.xml', $sitemap);
 
                 // invalidate CF

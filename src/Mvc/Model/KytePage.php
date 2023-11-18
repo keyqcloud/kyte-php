@@ -1,7 +1,7 @@
 <?php
 
-$Page = [
-	'name' => 'Page',
+$KytePage = [
+	'name' => 'KytePage',
 	'struct' => [
 		'title'		=> [
 			'type'		=> 's',
@@ -33,6 +33,7 @@ $Page = [
 			'default'	=> 'custom',
 		],
 
+		// *** TO BE DEPRECATED AND MOVED TO KytePageData
 		// json definition of page layout defined by wizard
 		'layout'	=> [
 			'type'		=> 't',
@@ -40,6 +41,7 @@ $Page = [
 			'date'		=> false,
 		],
 
+		// *** TO BE DEPRECATED AND MOVED TO KytePageData
 		// json definition of page layout defined by block editor
 		'block_layout'	=> [
 			'type'		=> 't',
@@ -47,24 +49,28 @@ $Page = [
 			'date'		=> false,
 		],
 
+		// *** TO BE DEPRECATED AND MOVED TO KytePageData
 		'html'		=> [
 			'type'		=> 't',
 			'required'	=> false,
 			'date'		=> false,
 		],
 
+		// *** TO BE DEPRECATED AND MOVED TO KytePageData
 		'javascript'		=> [
 			'type'		=> 't',
 			'required'	=> false,
 			'date'		=> false,
 		],
 
+		// *** TO BE DEPRECATED AND MOVED TO KytePageData
 		'javascript_obfuscated'		=> [
 			'type'		=> 't',
 			'required'	=> false,
 			'date'		=> false,
 		],
 
+		// *** TO BE DEPRECATED AND MOVED TO KytePageData
 		'stylesheet'	=> [
 			'type'		=> 't',
 			'required'	=> false,
