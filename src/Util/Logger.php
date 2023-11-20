@@ -33,7 +33,7 @@ class Logger {
             $this->credentials = new \Kyte\Aws\Credentials($this->region, $this->accessKey, $this->secretKey);
             $this->s3 = new \Kyte\Aws\S3($this->credentials, $this->bucket);
         } catch (\Exception $e) {
-			throw "Unable to create credential for ".$this->$accessKey.'. [ERROR] '.$e;
+			throw "Unable to create credential for ".$this->accessKey.'. [ERROR] '.$e;
 		}
     }
 

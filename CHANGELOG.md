@@ -4,6 +4,7 @@
 * Stage KytePageData to hold compressed page data
 * Add comment that page data inside KytePage will be removed and moved to KytePageData
 * Renamed controller PageController to KytePageController
+* Fix issue with $ in property name
 
 ## 3.0.90
 
