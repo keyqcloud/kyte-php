@@ -56,15 +56,24 @@ class KytePageController extends ModelController
                     $sitemap = self::updateSitemap($r['site']['id'], $r['site']['aliasDomain'] ? $r['site']['aliasDomain'] : $r['site']['cfDomain']);
                     $s3->write('sitemap.xml', $sitemap);
 
-                    // invalidate CF
-                    $cf = new \Kyte\Aws\CloudFront($credential);
+                    // create cf invalidation paths
                     $invalidationPaths = ['/sitemap.xml'];
-                    if (strpos($o->s3key, "index.html") !== false) {
-                        $invalidationPaths[] = '/'.str_replace("index.html", "*", $o->s3key);
+                    $invalidationPaths[] = strpos($o->s3key, "index.html") !== false ? '/'.str_replace("index.html", "*", $o->s3key) : '/'.$o->s3key;
+                    // invalidate CF
+                    if (KYTE_USE_SQS) {
+                        $credential = new \Kyte\Aws\Credentials(SQS_REGION);
+                        $sqs = new \Kyte\Aws\Sqs($credential, SQS_QUEUE_SITE_MANAGEMENT);
+                        $sqs->send([
+                            'action' => 'cf_invalidate',
+                            'site_id' => $r['site']['id'],
+                            'cf_id' => $r['site']['cfDistributionId'],
+                            'cf_invalidation_paths' => $invalidationPaths,
+                        ], $r['site']['id']);
                     } else {
-                        $invalidationPaths[] = '/'.$o->s3key;
+                        // invalidate CF
+                        $cf = new \Kyte\Aws\CloudFront($credential);
+                        $cf->createInvalidation($r['site']['cfDistributionId'], $invalidationPaths);
                     }
-                    $cf->createInvalidation($r['site']['cfDistributionId'], $invalidationPaths);
                 }
                 break;
 
@@ -89,8 +98,21 @@ class KytePageController extends ModelController
                         $s3->write('sitemap.xml', $sitemap);
 
                         // invalidate CF
-                        $cf = new \Kyte\Aws\CloudFront($credential);
-                        $cf->createInvalidation($d['site']['cfDistributionId'], ['/*']);
+                        $invalidationPaths = ['/*'];
+                        if (KYTE_USE_SQS) {
+                            $credential = new \Kyte\Aws\Credentials(SQS_REGION);
+                            $sqs = new \Kyte\Aws\Sqs($credential, SQS_QUEUE_SITE_MANAGEMENT);
+                            $sqs->send([
+                                'action' => 'cf_invalidate',
+                                'site_id' => $d['site']['id'],
+                                'cf_id' => $d['site']['cfDistributionId'],
+                                'cf_invalidation_paths' => $invalidationPaths,
+                            ], $d['site']['id']);
+                        } else {
+                            // invalidate CF
+                            $cf = new \Kyte\Aws\CloudFront($credential);
+                            $cf->createInvalidation($d['site']['cfDistributionId'], $invalidationPaths);
+                        }
                     }
                 }
 

@@ -48,9 +48,21 @@ class NavigationController extends ModelController
                 $s3->write('sitemap.xml', $sitemap);
 
                 // invalidate CF
-                $cf = new \Kyte\Aws\CloudFront($credential);
                 $invalidationPaths = ['/*'];
-                $cf->createInvalidation($nav['site']['cfDistributionId'], $invalidationPaths);
+                if (KYTE_USE_SQS) {
+                    $credential = new \Kyte\Aws\Credentials(SQS_REGION);
+                    $sqs = new \Kyte\Aws\Sqs($credential, SQS_QUEUE_SITE_MANAGEMENT);
+                    $sqs->send([
+                        'action' => 'cf_invalidate',
+                        'site_id' => $nav['site']['id'],
+                        'cf_id' => $nav['site']['cfDistributionId'],
+                        'cf_invalidation_paths' => $invalidationPaths,
+                    ], $nav['site']['id']);
+                } else {
+                    // invalidate CF
+                    $cf = new \Kyte\Aws\CloudFront($credential);
+                    $cf->createInvalidation($nav['site']['cfDistributionId'], $invalidationPaths);
+                }
                 break;
             
             default:
