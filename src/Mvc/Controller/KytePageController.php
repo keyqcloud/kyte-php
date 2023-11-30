@@ -34,7 +34,7 @@ class KytePageController extends ModelController
                 $r['download_link'] = $s3->getObject($o->s3key);
                 break;
             case 'new':
-                $pd = new \Kyte\Core\ModelObject(PageData);
+                $pd = new \Kyte\Core\ModelObject(KytePageData);
                 $bz_html = isset($d['html']) ? bzcompress($d['html'], 9) : '';
                 $bz_stylesheet = isset($d['stylesheet']) ? bzcompress($d['stylesheet'], 9) : '';
                 $bz_javascript = isset($d['javascript']) ? bzcompress($d['javascript'], 9) : '';
@@ -68,7 +68,7 @@ class KytePageController extends ModelController
                     $bz_javascript_obfuscated = bzcompress($d['javascript_obfuscated'], 9);
                     $bz_block_layout = bzcompress($d['block_layout'], 9);
                     //
-                    $pd = new \Kyte\Core\ModelObject(PageData);
+                    $pd = new \Kyte\Core\ModelObject(KytePageData);
                     if($pd->retrieve('page', $o->id)) {
                         $pd->save([
                             'html' => $bz_html,
@@ -128,7 +128,7 @@ class KytePageController extends ModelController
 
             case 'delete':
                 $d = $this->getObject($o);
-                
+
                 $app = new \Kyte\Core\ModelObject(Application);
                 if (!$app->retrieve('id', $d['site']['application']['id'])) {
                     throw new \Exception("CRITICAL ERROR: Unable to find application.");
