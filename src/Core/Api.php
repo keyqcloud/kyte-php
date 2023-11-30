@@ -145,8 +145,34 @@ class Api
      * @var array<string,mixed>
      */
     public $response = [];
-	
 
+	/**
+     * The default environment constants if not defined already in config.
+     *
+     * @var array<string,mixed>
+     */
+    public $defaultEnvironmentConstants = [
+		'DEBUG' => false,
+		'S3_DEBUG' => false,
+		'KYTE_JS_CDN' => 'https://cdn.keyqcloud.com/kyte/js/stable/kyte.js',
+		'ALLOW_ENC_HANDOFF' => true,
+		'ALLOW_MULTILOGON' => false,
+		'ALLOW_SAME_TXTOKEN' => false,
+		'SESSION_TIMEOUT' => 3600,
+		'SIGNATURE_TIMEOUT' => 3600,
+		'USERNAME_FIELD' => 'email',
+		'PASSWORD_FIELD' => 'password',
+		'VERBOSE_LOG' => false,
+		'IS_PRIVATE' => true,
+		'RETURN_NO_MODEL' => true,
+		'SESSION_RETURN_FK' => true,
+		'PAGE_SIZE' => 50,
+		'USE_SESSION_MAP' => false,
+		'CHECK_SYNTAX_ON_IMPORT' => false,
+		'STRICT_TYPING' => true,
+		'KYTE_USE_SQS' => false,
+	];
+	
 	/**
      * Api constructor.
      *
@@ -166,81 +192,14 @@ class Api
      * This method defines various constants required by the API if they are not already defined.
      */
 	private function defineEnvironmentConstants() {
-		if (!defined('DEBUG')) {
-			define('DEBUG', false);
-			error_log('DEBUG constant not defined...using defaults');
+		foreach ($this->defaultEnvironmentConstants as $key => $value) {
+			// check if each key is defined, and if not define key as value
+			if (!defined($key)) {
+				define($key, $value);
+				error_log("$key constant not defined...using defaults ($value)");
+			}
 		}
-		if (!defined('S3_DEBUG')) {
-			define('S3_DEBUG', false);
-			error_log('S3_DEBUG constant not defined...using defaults');
-		}
-		// check if cdn is define...if not default to current stable
-		if (!defined('KYTE_JS_CDN')) {
-			define('KYTE_JS_CDN', 'https://cdn.keyqcloud.com/kyte/js/stable/kyte.js');
-			error_log('KYTE_JS_CDN constant not defined...using defaults');
-		}
-		// compatibility for older config files
-		if (!defined('ALLOW_ENC_HANDOFF')) {
-			define('ALLOW_ENC_HANDOFF', true);
-			error_log('ALLOW_ENC_HANDOFF constant not defined...using defaults');
-		}
-		if (!defined('ALLOW_MULTILOGON')) {
-			define('ALLOW_MULTILOGON', false);
-			error_log('ALLOW_MULTILOGON constant not defined...using defaults');
-		}
-		if (!defined('ALLOW_SAME_TXTOKEN')) {
-			define('ALLOW_SAME_TXTOKEN', false);
-			error_log('ALLOW_SAME_TXTOKEN constant not defined...using defaults');
-		}
-		if (!defined('SESSION_TIMEOUT')) {
-			define('SESSION_TIMEOUT', 3600);
-			error_log('SESSION_TIMEOUT constant not defined...using defaults');
-		}
-		if (!defined('SIGNATURE_TIMEOUT')) {
-			define('SIGNATURE_TIMEOUT', 600);
-			error_log('SIGNATURE_TIMEOUT constant not defined...using defaults');
-		}
-		if (!defined('USERNAME_FIELD')) {
-			define('USERNAME_FIELD', 'email');
-			error_log('USERNAME_FIELD constant not defined...using defaults');
-		}
-		if (!defined('PASSWORD_FIELD')) {
-			define('PASSWORD_FIELD', 'password');
-			error_log('PASSWORD_FIELD constant not defined...using defaults');
-		}
-		if (!defined('VERBOSE_LOG')) {
-			define('VERBOSE_LOG', false);
-			error_log('VERBOSE_LOG constant not defined...using defaults');
-		}
-		if (!defined('IS_PRIVATE')) {
-			define('IS_PRIVATE', true);
-			error_log('IS_PRIVATE constant not defined...using defaults');
-		}
-		if (!defined('RETURN_NO_MODEL')) {
-			define('RETURN_NO_MODEL', true);
-			error_log('RETURN_NO_MODEL constant not defined...using defaults');
-		}
-		if (!defined('SESSION_RETURN_FK')) {
-			define('SESSION_RETURN_FK', true);
-			error_log('SESSION_RETURN_FK constant not defined...using defaults');
-		}
-		if (!defined('PAGE_SIZE')) {
-			define('PAGE_SIZE', 50);
-			error_log('PAGE_SIZE constant not defined...using defaults');
-		}
-		if (!defined('USE_SESSION_MAP')) {
-			define('USE_SESSION_MAP', false);
-			error_log('USE_SESSION_MAP constant not defined...using defaults');
-		}
-		if (!defined('CHECK_SYNTAX_ON_IMPORT')) {
-			define('CHECK_SYNTAX_ON_IMPORT', false);
-			error_log('CHECK_SYNTAX_ON_IMPORT constant not defined...using defaults');
-		}
-		if (!defined('STRICT_TYPING')) {
-			define('STRICT_TYPING', true);
-			error_log('STRICT_TYPING constant not defined...using defaults');
-		}
-
+		
 		// determine localizations for non-cli requests
 		if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 			/* LOCALIZATION SUPPORT */
