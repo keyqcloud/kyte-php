@@ -47,10 +47,11 @@ class KytePageController extends ModelController
                     'javascript' => $bz_javascript,
                     'javascript_obfuscated' => $bz_javascript_obfuscated,
                     'block_layout' => $bz_block_layout,
-                    'kyte_account' => $this->user->account->id,
+                    'kyte_account' => $this->account->id,
                     'created_by' => $this->user->id,
                     'date_created' => time(),
                 ])) {
+                    $o->purge();
                     throw new \Exception("CRITICAL ERROR: Unable to find page data.");
                 }
                 break;
