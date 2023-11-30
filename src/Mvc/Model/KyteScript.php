@@ -51,7 +51,7 @@ $KyteScript = [
 			'unsigned'	=> true,
 			'date'		=> false,
 			'fk'		=> [
-				'model'	=> 'Site',
+				'model'	=> 'KyteSite',
 				'field'	=> 'id',
 			],
 		],
