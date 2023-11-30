@@ -166,7 +166,7 @@ class SiteController extends ModelController
     }
 
     public function delete($field, $value) {
-        $o = new \Kyte\Core\ModelObject(Site);
+        $o = new \Kyte\Core\ModelObject(KyteSite);
         if ($o->retrieve($field, $value)) {
             $o->save(['status' => 'deleting']);
         } else {
