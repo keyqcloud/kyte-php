@@ -1,5 +1,10 @@
-## 3.0.91
+## 3.1.0
 
+* Roll back logger while determining best implementation
+* Add SQS wrapper
+* Move page invalidation code to use SQS
+* Add site deletion using SQS
+* Move page creation to use SQS
 * Update Page model name to KytePage
 * Stage KytePageData to hold compressed page data
 * Add comment that page data inside KytePage will be removed and moved to KytePageData
