@@ -86,7 +86,18 @@ class KytePageController extends ModelController
                 if ($o->state == 1 && !isset($d['state'])) {
                     $o->save(['state' => 2]);
                 }
-                if (isset($d['state']) && $d['state'] == 1 && isset($d['html'], $d['stylesheet'], $d['javascript'], $d['javascript_obfuscated'])) {
+                if (isset($d['state']) && $d['state'] == 1) {
+                    // if these fields are not set then retrieve them from source
+                    if (!isset($d['html'], $d['stylesheet'], $d['javascript'], $d['javascript_obfuscated'])) {
+                        $pd = new \Kyte\Core\ModelObject(KytePageData);
+                        if (!$pd->retrieve('page', $o->id)) {
+                            throw new \Exception("CRITICAL ERROR: Unable to find page data.");
+                        }
+                        $params['html'] = bzdecompress($pd->html);
+                        $params['stylesheet'] = bzdecompress($pd->stylesheet);
+                        $params['javascript'] = bzdecompress($pd->javascript);
+                        $params['javascript_obfuscated'] = bzdecompress($pd->javascript_obfuscated);
+                    }
                     $app = new \Kyte\Core\ModelObject(Application);
                     if (!$app->retrieve('id', $r['site']['application']['id'])) {
                         throw new \Exception("CRITICAL ERROR: Unable to find application.");
