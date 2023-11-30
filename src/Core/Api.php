@@ -504,23 +504,24 @@ class Api
 				
 				self::dbappconnect($this->app->db_name, $this->app->db_username, $this->app->db_password);
 
+				// TODO: Determine best practice for logging and implement new stack/adapter
 				// setup logger for app level
-				$this->logger = new \Kyte\Util\Logger($this->app);
-				if (S3_DEBUG) {
-					$relevantErrors = [
-						E_ERROR,
-						E_WARNING,
-						E_PARSE,
-						E_NOTICE,
-						E_USER_ERROR,
-						E_USER_WARNING,
-						E_USER_NOTICE,
-						E_STRICT
-					];
-					foreach($relevantErrors as $errorLevel) {
-						set_error_handler([$this->logger, 'systemErrorHandler'], $errorLevel);
-					}
-				}
+				// $this->logger = new \Kyte\Util\Logger($this->app);
+				// if (S3_DEBUG) {
+				// 	$relevantErrors = [
+				// 		E_ERROR,
+				// 		E_WARNING,
+				// 		E_PARSE,
+				// 		E_NOTICE,
+				// 		E_USER_ERROR,
+				// 		E_USER_WARNING,
+				// 		E_USER_NOTICE,
+				// 		E_STRICT
+				// 	];
+				// 	foreach($relevantErrors as $errorLevel) {
+				// 		set_error_handler([$this->logger, 'systemErrorHandler'], $errorLevel);
+				// 	}
+				// }
 			} else {
 				// TODO: setup logger for framework level
 				// $this->system_logger = new \Kyte\Util\Logger(null, KYTE_S3_LOG_BUCKET, KYTE_LOGGER_REGION, ACCESS_KEY, SECRET_KEY);
