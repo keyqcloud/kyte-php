@@ -167,12 +167,120 @@ class SiteController extends ModelController
 
     public function delete($field, $value) {
         $o = new \Kyte\Core\ModelObject(KyteSite);
-        if ($o->retrieve($field, $value)) {
-            $o->save(['status' => 'deleting']);
-        } else {
+        if (!$o->retrieve($field, $value)) {
             throw new \Exception("Site not found.");
         }
-    
+        
+        // begin the deletion process
+        $o->save([
+            'status' => 'deleting',
+            'deleted_by' => $this->user->id,    // store the user id of who initiated the delete, will add time after via lambda fx
+            'date_modified' => time(),
+        ]);
+
+        // add s3 static content bucket to deletion queue
+        $credential = new \Kyte\Aws\Credentials(SQS_REGION);
+        $sqs = new \Kyte\Aws\Sqs($credential, SQS_QUEUE_SITE_MANAGEMENT);
+        $sqs->send([
+            'action' => 's3_delete',
+            'region_name' => $o->region,
+            'bucket_name' => $o->s3MediaBucketName,
+            'site_id' => $o->id,
+            'cf_id' => $o->cfMediaDistributionId,
+        ], $o->id);
+
+        // add s3 web app bucket to deletion queue
+        $params = [
+            'action' => 's3_delete',
+            'region_name' => $o->region,
+            'bucket_name' => $o->s3BucketName,
+            'site_id' => $o->id,
+            'cf_id' => $o->cfDistributionId,
+        ];
+        $sqs->send($params, $o->id);
+        
+        // delete KytePage
+        $objs = new \Kyte\Core\Model(KytePage);
+        $objs->retrieve('site', $o->id);
+        foreach ($objs->objects as $obj) {
+            // delete KytePageData
+            $pd = new \Kyte\Core\Model(KytePageData);
+            $pd->retrieve('page', $obj->id);
+            foreach ($pd->objects as $p) {
+                $p->delete();
+            }
+            $obj->delete();
+        }
+
+        // delete Media
+        $objs = new \Kyte\Core\Model(Media);
+        $objs->retrieve('site', $o->id);
+        foreach ($objs->objects as $obj) {
+            $obj->delete();
+        }
+
+        // delete Navigations
+        $objs = new \Kyte\Core\Model(Navigation);
+        $objs->retrieve('site', $o->id);
+        foreach ($objs->objects as $obj) {
+            $obj->delete();
+        }
+        // delete NavigationItems
+        $objs = new \Kyte\Core\Model(NavigationItem);
+        $objs->retrieve('site', $o->id);
+        foreach ($objs->objects as $obj) {
+            $obj->delete();
+        }
+
+        // delete Side Navigation
+        $objs = new \Kyte\Core\Model(SideNav);
+        $objs->retrieve('site', $o->id);
+        foreach ($objs->objects as $obj) {
+            $obj->delete();
+        }
+        // delete Side Nav Items
+        $objs = new \Kyte\Core\Model(SideNavItem);
+        $objs->retrieve('site', $o->id);
+        foreach ($objs->objects as $obj) {
+            $obj->delete();
+        }
+
+        // delete SectionTemplate
+        $objs = new \Kyte\Core\Model(SectionTemplate);
+        $objs->retrieve('site', $o->id);
+        foreach ($objs->objects as $obj) {
+            $obj->delete();
+        }
+
+        // delete KyteLibrary
+        $objs = new \Kyte\Core\Model(KyteLibrary);
+        $objs->retrieve('site', $o->id);
+        foreach ($objs->objects as $obj) {
+            $obj->delete();
+        }
+
+        // delete KyteScript
+        $objs = new \Kyte\Core\Model(KyteScript);
+        $objs->retrieve('site', $o->id);
+        foreach ($objs->objects as $obj) {
+            $obj->delete();
+        }
+
+        // delete Domain and SAN
+        $objs = new \Kyte\Core\Model(Domain);
+        $objs->retrieve('site', $o->id);
+        foreach ($objs->objects as $obj) {
+            $sans = new \Kyte\Core\Model(SubjectAlternativeName);
+            $sans->retrieve('domain', $obj->id);
+            foreach ($sans->objects as $san) {
+                $san->delete();
+            }
+            $params = [
+                'action' => 'acm_delete',
+                'acm_arn' => $obj->certificateArn,
+            ];
+            $sqs->send($params, $o->id);
+        }
     }
 
     // public function hook_process_get_response(&$r) {}
