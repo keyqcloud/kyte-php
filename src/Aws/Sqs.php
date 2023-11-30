@@ -22,6 +22,10 @@ class Sqs extends Client
     }
 
     public function send($message, $messageGroupId = null) {
+        if (!is_string($message)) {
+            $message = json_encode($message); // Convert to JSON string
+        }
+        
         $param = [
             'QueueUrl' => $this->queueUrl,
             'MessageBody' => $message
