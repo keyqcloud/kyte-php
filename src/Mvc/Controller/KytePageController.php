@@ -33,11 +33,60 @@ class KytePageController extends ModelController
                 $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
                 $r['download_link'] = $s3->getObject($o->s3key);
                 break;
+            case 'new':
+                $pd = new \Kyte\Core\ModelObject(PageData);
+                $bz_html = isset($d['html']) ? bzcompress($d['html'], 9) : '';
+                $bz_stylesheet = isset($d['stylesheet']) ? bzcompress($d['stylesheet'], 9) : '';
+                $bz_javascript = isset($d['javascript']) ? bzcompress($d['javascript'], 9) : '';
+                $bz_javascript_obfuscated = isset($d['javascript_obfuscated']) ? bzcompress($d['javascript_obfuscated'], 9) : '';
+                $bz_block_layout = isset($d['block_layout']) ? bzcompress($d['block_layout'], 9) : '';
+                if(!$pd->create([
+                    'page' => $o->id,
+                    'html' => $bz_html,
+                    'stylesheet' => $bz_stylesheet,
+                    'javascript' => $bz_javascript,
+                    'javascript_obfuscated' => $bz_javascript_obfuscated,
+                    'block_layout' => $bz_block_layout,
+                    'kyte_account' => $this->user->account->id,
+                    'created_by' => $this->user->id,
+                    'date_created' => time(),
+                ])) {
+                    throw new \Exception("CRITICAL ERROR: Unable to find page data.");
+                }
+                break;
             case 'update':
+                $params = $r;
+                if (isset($d['html'], $d['stylesheet'], $d['javascript'], $d['javascript_obfuscated'])) {
+                    $params['html'] = $d['html'];
+                    $params['stylesheet'] = $d['stylesheet'];
+                    $params['javascript'] = $d['javascript'];
+                    $params['javascript_obfuscated'] = $d['javascript_obfuscated'];
+                    //
+                    $bz_html = bzcompress($d['html'], 9);
+                    $bz_stylesheet = bzcompress($d['stylesheet'], 9);
+                    $bz_javascript = bzcompress($d['javascript'], 9);
+                    $bz_javascript_obfuscated = bzcompress($d['javascript_obfuscated'], 9);
+                    $bz_block_layout = bzcompress($d['block_layout'], 9);
+                    //
+                    $pd = new \Kyte\Core\ModelObject(PageData);
+                    if($pd->retrieve('page', $o->id)) {
+                        $pd->save([
+                            'html' => $bz_html,
+                            'stylesheet' => $bz_stylesheet,
+                            'javascript' => $bz_javascript,
+                            'javascript_obfuscated' => $bz_javascript_obfuscated,
+                            'block_layout' => $bz_block_layout,
+                            'modified_by' => $this->user->id,
+                            'date_modified' => time(),
+                        ]);
+                    } else {
+                        throw new \Exception("CRITICAL ERROR: Unable to find page data.");
+                    }
+                }
                 if ($o->state == 1 && !isset($d['state'])) {
                     $o->save(['state' => 2]);
                 }
-                if (isset($d['state']) && $d['state'] == 1) {
+                if (isset($d['state']) && $d['state'] == 1 && isset($d['html'], $d['stylesheet'], $d['javascript'], $d['javascript_obfuscated'])) {
                     $app = new \Kyte\Core\ModelObject(Application);
                     if (!$app->retrieve('id', $r['site']['application']['id'])) {
                         throw new \Exception("CRITICAL ERROR: Unable to find application.");
@@ -48,7 +97,7 @@ class KytePageController extends ModelController
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
                     // compile html file
-                    $data = self::createHtml($r);
+                    $data = self::createHtml($params);
                     // write to file
                     $s3->write($o->s3key, $data);
 
