@@ -158,33 +158,21 @@ class SiteController extends ModelController
                 $r['s3BucketName'] = $bucketName;
                 $r['cfDistributionId'] = $cf->Id;
                 $r['cfDomain'] = $cf->domainName;
-
-                break;
-            case 'delete':
-                // // get AWS credentials
-                // $credentials = new \Kyte\Aws\Credentials('us-east-1');
-
-                // // disable distribution
-                // $cf = new \Kyte\Aws\CloudFront($credentials, $o->cfDistribution);
-                // $cf->disable();
-
-                // delete distribution
-                // $cf->delete();
-
-                // // delete acm certificate
-                // $acm = new \Kyte\Aws\Acm($credentials, $o->AcmArn);
-                // $acm->delete();
-
-                // delete s3 bucket
-                // $s3 = new \Kyte\Aws\S3($credentials, $o->s3bucket, 'public');
-                // $s3->emptyBucket(); <- create method
-                // $s3->deleteBucket();
-
                 break;
             
             default:
                 break;
         }
+    }
+
+    public function delete($field, $value) {
+        $o = new \Kyte\Core\ModelObject(Site);
+        if ($o->retrieve($field, $value)) {
+            $o->save(['status' => 'deleting']);
+        } else {
+            throw new \Exception("Site not found.");
+        }
+    
     }
 
     // public function hook_process_get_response(&$r) {}

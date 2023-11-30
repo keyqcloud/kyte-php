@@ -11,6 +11,8 @@
 * Renamed controller PageController to KytePageController
 * Fix issue with $ in property name
 * Refactor function that checks for default constant values
+* Change Site to KyteSite
+* Update controller for site to use KyteSite
 
 ## 3.0.90
 

@@ -1,7 +1,7 @@
 <?php
 
-$Site = [
-	'name' => 'Site',
+$KyteSite = [
+	'name' => 'KyteSite',
 	'struct' => [
 		'name'		=> [
 			'type'		=> 's',
@@ -13,6 +13,13 @@ $Site = [
 		'region'		=> [
 			'type'		=> 's',
 			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'status'		=> [
+			'type'		=> 's',
+			'required'	=> true,
 			'size'		=> 255,
 			'date'		=> false,
 		],
