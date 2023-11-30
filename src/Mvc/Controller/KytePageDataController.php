@@ -36,33 +36,64 @@ class KytePageDataController extends ModelController
                 $r['javascript'] = bzdecompress($r['javascript']);
                 $r['javascript_obfuscated'] = bzdecompress($r['javascript_obfuscated']);
                 $r['block_layout'] = bzdecompress($r['block_layout']);
+                // get download link if available
+                if (isset($r['page']['s3key'], $r['page']['site']['application']['id'], $r['page']['site']['s3BucketName'])) {
+                    $app = new \Kyte\Core\ModelObject(Application);
+                    if (!$app->retrieve('id', $r['page']['site']['application'])) {
+                        throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                    }
+                    $credential = new \Kyte\Aws\Credentials($r['page']['site']['region'], $app->aws_public_key, $app->aws_private_key);
+                    $s3 = new \Kyte\Aws\S3($credential, $r['page']['site']['s3BucketName']);
+                    $r['download_link'] = $s3->getObject($r['page']['s3key']);
+                } else {
+                    $r['download_link'] = null;
+                }
                 break;
 
             case 'delete':
-                // check if s3 file exists and delete
-                // if ($o->state > 0) {
-                //     $app = new \Kyte\Core\ModelObject(Application);
-                //     if (!$app->retrieve('id', $d['site']['application']['id'])) {
-                //         throw new \Exception("CRITICAL ERROR: Unable to find application.");
-                //     }
+                $page = new \Kyte\Core\ModelObject(KytePage);
+                if (!$page->retrieve('id', $o->page)) {
+                    throw new \Exception("CRITICAL ERROR: Unable to find page.");
+                }
 
-                //     // delete file
-                //     $d = $this->getObject($o);
-                //     $credential = new \Kyte\Aws\Credentials($d['site']['region'], $app->aws_public_key, $app->aws_private_key);
-                //     $s3 = new \Kyte\Aws\S3($credential, $d['site']['s3BucketName']);
-                //     if (!empty($o->s3key)) {
-                //         // delete s3 file
-                //         $s3->unlink($o->s3key);
+                $d = $this->getObject($page);
 
-                //         // create or update sitemap
-                //         $sitemap = self::updateSitemap($d['site']['id'], $d['site']['aliasDomain'] ? $d['site']['aliasDomain'] : $d['site']['cfDomain']);
-                //         $s3->write('sitemap.xml', $sitemap);
+                $app = new \Kyte\Core\ModelObject(Application);
+                if (!$app->retrieve('id', $d['site']['application']['id'])) {
+                    throw new \Exception("CRITICAL ERROR: Unable to find application.");
+                }
 
-                //         // invalidate CF
-                //         $cf = new \Kyte\Aws\CloudFront($credential);
-                //         $cf->createInvalidation($d['site']['cfDistributionId'], ['/*']);
-                //     }
-                // }
+                // check if s3 key exists
+                if (!empty($d['s3key'])) {
+                    $credential = new \Kyte\Aws\Credentials($d['site']['region'], $app->aws_public_key, $app->aws_private_key);
+                    $s3 = new \Kyte\Aws\S3($credential, $d['site']['s3BucketName']);
+
+                    // delete s3 file
+                    $s3->unlink($d['s3key']);
+
+                    // create or update sitemap
+                    $sitemap = self::updateSitemap($d['site']['id'], $d['site']['aliasDomain'] ? $d['site']['aliasDomain'] : $d['site']['cfDomain']);
+                    $s3->write('sitemap.xml', $sitemap);
+
+                    // invalidate CF
+                    $invalidationPaths = ['/*'];
+                    if (KYTE_USE_SQS) {
+                        $credential = new \Kyte\Aws\Credentials(SQS_REGION);
+                        $sqs = new \Kyte\Aws\Sqs($credential, SQS_QUEUE_SITE_MANAGEMENT);
+                        $sqs->send([
+                            'action' => 'cf_invalidate',
+                            'site_id' => $d['site']['id'],
+                            'cf_id' => $d['site']['cfDistributionId'],
+                            'cf_invalidation_paths' => $invalidationPaths,
+                        ], $d['site']['id']);
+                    } else {
+                        // invalidate CF
+                        $cf = new \Kyte\Aws\CloudFront($credential);
+                        $cf->createInvalidation($d['site']['cfDistributionId'], $invalidationPaths);
+                    }
+                }
+
+                $page->delete();
                 break;
             
             default:
