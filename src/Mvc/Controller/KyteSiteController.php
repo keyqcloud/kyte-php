@@ -2,7 +2,7 @@
 
 namespace Kyte\Mvc\Controller;
 
-class SiteController extends ModelController
+class KyteSiteController extends ModelController
 {
     // public function hook_init() {}
     // public function hook_auth() {}
