@@ -10,6 +10,7 @@
 * Add comment that page data inside KytePage will be removed and moved to KytePageData
 * Renamed controller PageController to KytePageController
 * Fix issue with $ in property name
+* Refactor function that checks for default constant values
 
 ## 3.0.90
 
