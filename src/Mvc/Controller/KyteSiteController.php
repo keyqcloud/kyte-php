@@ -169,6 +169,8 @@ class SiteController extends ModelController
         $o = new \Kyte\Core\ModelObject(KyteSite);
         if (!$o->retrieve($field, $value)) {
             throw new \Exception("Site not found.");
+        } else {
+            error_log('Site found...deleting...');
         }
         
         // begin the deletion process
