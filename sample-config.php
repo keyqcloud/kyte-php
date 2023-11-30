@@ -19,7 +19,12 @@
 	define('AWS_SECRET_KEY', '');
 	define('AWS_KMS_KEYID', '');
 
+    /* AWS SQS QUEUES */
+    define('SQS_REGION', 'us-east-1');
+    define('SQS_QUEUE_SITE_MANAGEMENT', '');
+
     /* KYTE FRAMEWORK SPECIFIC SETTINGS */
+    define('KYTE_USE_SQS', true);
     define('DEBUG', false);
     define('S3_DEBUG', false);
     define('ALLOW_ENC_HANDOFF', true);
