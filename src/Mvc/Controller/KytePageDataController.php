@@ -39,7 +39,7 @@ class KytePageDataController extends ModelController
                 // get download link if available
                 if (isset($r['page']['s3key'], $r['page']['site']['application']['id'], $r['page']['site']['s3BucketName'])) {
                     $app = new \Kyte\Core\ModelObject(Application);
-                    if (!$app->retrieve('id', $r['page']['site']['application'])) {
+                    if (!$app->retrieve('id', $r['page']['site']['application']['id'])) {
                         throw new \Exception("CRITICAL ERROR: Unable to find application.");
                     }
                     $credential = new \Kyte\Aws\Credentials($r['page']['site']['region'], $app->aws_public_key, $app->aws_private_key);
