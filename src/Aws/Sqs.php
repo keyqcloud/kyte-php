@@ -25,13 +25,13 @@ class Sqs extends Client
         if (!is_string($message)) {
             $message = json_encode($message); // Convert to JSON string
         }
-        
+
         $param = [
             'QueueUrl' => $this->queueUrl,
             'MessageBody' => $message
         ];
         if ($this->isFifo) {
-            $param['MessageGroupId'] = $messageGroupId;
+            $param['MessageGroupId'] = strval($messageGroupId);
         }
         $result = $this->client->sendMessage($param);
 
