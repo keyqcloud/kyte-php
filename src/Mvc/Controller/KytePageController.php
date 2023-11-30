@@ -62,11 +62,11 @@ class KytePageController extends ModelController
                     $params['javascript'] = $d['javascript'];
                     $params['javascript_obfuscated'] = $d['javascript_obfuscated'];
                     //
-                    $bz_html = bzcompress($d['html'], 9);
-                    $bz_stylesheet = bzcompress($d['stylesheet'], 9);
-                    $bz_javascript = bzcompress($d['javascript'], 9);
-                    $bz_javascript_obfuscated = bzcompress($d['javascript_obfuscated'], 9);
-                    $bz_block_layout = bzcompress($d['block_layout'], 9);
+                    $bz_html = isset($d['html']) ? bzcompress($d['html'], 9) : '';
+                    $bz_stylesheet = isset($d['stylesheet']) ? bzcompress($d['stylesheet'], 9) : '';
+                    $bz_javascript = isset($d['javascript']) ? bzcompress($d['javascript'], 9) : '';
+                    $bz_javascript_obfuscated = isset($d['javascript_obfuscated']) ? bzcompress($d['javascript_obfuscated'], 9) : '';
+                    $bz_block_layout = isset($d['block_layout']) ? bzcompress($d['block_layout'], 9) : '';
                     //
                     $pd = new \Kyte\Core\ModelObject(KytePageData);
                     if($pd->retrieve('page', $o->id)) {
