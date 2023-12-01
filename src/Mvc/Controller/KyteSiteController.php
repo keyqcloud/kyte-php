@@ -85,8 +85,9 @@ class KyteSiteController extends ModelController
                 }
 
                 // create unique names for s3 buckets
-                $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-'.$app->identifier.'-'.time());
-                $s3MediaBucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-static-assets-'.$app->identifier.'-'.time());
+                $timestamp = time();
+                $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-'.$timestamp);
+                $s3MediaBucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-static-assets-'.$timestamp);
 
                 // TODO: endpoint url changes based on region!
                 // see: https://docs.aws.amazon.com/general/latest/gr/s3.html#s3_website_region_endpoints
