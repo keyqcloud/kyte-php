@@ -93,7 +93,7 @@ class KyteSiteController extends ModelController
                 // see: https://docs.aws.amazon.com/general/latest/gr/s3.html#s3_website_region_endpoints
                 $websiteOrigin = self::getWebsiteEndpoint($bucketName, $region);
                 // static content origin url
-                $staticContentOrigin = $mediaBucketName.'.s3.amazonaws.com';
+                $staticContentOrigin = $s3MediaBucketName.'.s3.amazonaws.com';
 
                 $credential = new \Kyte\Aws\Credentials(SQS_REGION);
                 $sqs = new \Kyte\Aws\Sqs($credential, SQS_QUEUE_SITE_MANAGEMENT);
