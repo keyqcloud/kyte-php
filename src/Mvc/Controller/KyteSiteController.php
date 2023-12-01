@@ -11,6 +11,10 @@ class KyteSiteController extends ModelController
 
     public function hook_preprocess($method, &$r, &$o = null) {
         switch ($method) {
+            case 'new':
+                $r['status'] = 'pending';
+                break;
+
             case 'update':
                 if (strlen($r['aliasDomain']) > 0) {
                     $domains = [];
@@ -72,6 +76,7 @@ class KyteSiteController extends ModelController
                 ];
                 
                 $region = $r['region'];
+                $o->save(['region' => $region]);
                 
                 // if user provided region string is not valid then throw an exception
                 if (!in_array($region, $validS3Regions)) {
@@ -79,85 +84,40 @@ class KyteSiteController extends ModelController
                     throw new \Exception("Unknown region $region. Please check to make sure you specified a valid region for AWS S3.");
                 }
 
-                // get AWS credential
-                $credentials = new \Kyte\Aws\Credentials($region, $app->aws_public_key, $app->aws_private_key);
-
-                // create s3 bucket for site data
+                // create unique names for s3 buckets
                 $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-'.$app->identifier.'-'.time());
-                $mediaBucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-static-assets-'.$app->identifier.'-'.time());
-                $o->save([
-                    'region'        => $region,
-                    's3BucketName'  => $bucketName,
-                    's3MediaBucketName'  => $mediaBucketName,
-                ]);
-                $s3 = new \Kyte\Aws\S3($credentials, $bucketName);
-                $medias3 = new \Kyte\Aws\S3($credentials, $mediaBucketName);
-                try {
-                    $medias3->createBucket();
-                    usleep(100000);
-                    // remove public access block
-                    $medias3->deletePublicAccessBlock();
-                    usleep(100000);
-                    // enable public access policy (GET)
-                    $medias3->enablePublicAccess();
-                    usleep(100000);
+                $s3MediaBucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-static-assets-'.$app->identifier.'-'.time());
 
-                    // setup web
-                    $s3->createBucket();
-                    usleep(100000);
-                    $s3->deletePublicAccessBlock();
-                    usleep(100000);
-                    $s3->enablePublicAccess();
-                    usleep(100000);
-                    $s3->createWebsite();
-
-                    usleep(15000000); // wait 15 sec before attempting cors
-
-                    // enable cors for upload
-                    $medias3->enableCors([
-                        [
-                            'AllowedHeaders'    =>  ['*'],
-                            'AllowedMethods'    =>  ['GET','POST'],
-                            'AllowedOrigins'    =>  ['*'],
-                        ]
-                    ]);
-                } catch(\Exception $e) {
-                    $o->delete();
-                    throw $e;
-                }
-
-                // create distribution for website
-                $cf = new \Kyte\Aws\CloudFront($credentials);
                 // TODO: endpoint url changes based on region!
                 // see: https://docs.aws.amazon.com/general/latest/gr/s3.html#s3_website_region_endpoints
                 $websiteOrigin = self::getWebsiteEndpoint($bucketName, $region);
-                $cf->addOrigin(
-                    $websiteOrigin,
-                    $bucketName
-                );
-                $cf->create();
-                $o->save([
-                    'cfDistributionId'        => $cf->Id,
-                    'cfDomain'                => $cf->domainName,
-                ]);
+                // static content origin url
+                $staticContentOrigin = $mediaBucketName.'.s3.amazonaws.com';
 
-                // create distribution for static assets
-                $cf = new \Kyte\Aws\CloudFront($credentials);
-                $cf->addOrigin(
-                    $mediaBucketName.'.s3.amazonaws.com',
-                    $mediaBucketName
-                );
-                $cf->create();
-                $o->save([
-                    'cfMediaDistributionId'        => $cf->Id,
-                    'cfMediaDomain'                => $cf->domainName,
-                ]);
+                $credential = new \Kyte\Aws\Credentials(SQS_REGION);
+                $sqs = new \Kyte\Aws\Sqs($credential, SQS_QUEUE_SITE_MANAGEMENT);
 
-                // update return data
-                $r['region'] = $region;
-                $r['s3BucketName'] = $bucketName;
-                $r['cfDistributionId'] = $cf->Id;
-                $r['cfDomain'] = $cf->domainName;
+                // queue creation of s3 bucket for static web app
+                $sqs->send([
+                    'action' => 's3_create',
+                    'region_name' => $region,
+                    'bucket_name' => $bucketName,
+                    'cf_origin' => $websiteOrigin,
+                    'site_id' => $o->id,
+                    'is_website' => true,
+                    'is_media' => false,
+                ], $o->id);
+
+                // queue creation of s3 bucket for static content
+                $sqs->send([
+                    'action' => 's3_create',
+                    'region_name' => $region,
+                    'bucket_name' => $s3MediaBucketName,
+                    'cf_origin' => $staticContentOrigin,
+                    'site_id' => $o->id,
+                    'is_website' => false,
+                    'is_media' => true,
+                ], $o->id);
                 break;
             
             default:
