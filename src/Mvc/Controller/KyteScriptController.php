@@ -72,6 +72,7 @@ class KyteScriptController extends ModelController
                             'site_id' => $r['site']['id'],
                             'cf_id' => $r['site']['cfDistributionId'],
                             'cf_invalidation_paths' => $invalidationPaths,
+                            'caller_id' => time(),
                         ], $r['site']['id']);
                     } else {
                         // invalidate CF
@@ -119,6 +120,7 @@ class KyteScriptController extends ModelController
                                 'site_id' => $d['site']['id'],
                                 'cf_id' => $d['site']['cfDistributionId'],
                                 'cf_invalidation_paths' => $invalidationPaths,
+                                'caller_id' => time(),
                             ], $d['site']['id']);
                         } else {
                             // invalidate CF

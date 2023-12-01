@@ -85,6 +85,7 @@ class KytePageDataController extends ModelController
                             'site_id' => $d['site']['id'],
                             'cf_id' => $d['site']['cfDistributionId'],
                             'cf_invalidation_paths' => $invalidationPaths,
+                            'caller_id' => time(),
                         ], $d['site']['id']);
                     } else {
                         // invalidate CF

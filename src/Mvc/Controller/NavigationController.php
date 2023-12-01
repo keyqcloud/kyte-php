@@ -57,6 +57,7 @@ class NavigationController extends ModelController
                         'site_id' => $nav['site']['id'],
                         'cf_id' => $nav['site']['cfDistributionId'],
                         'cf_invalidation_paths' => $invalidationPaths,
+                        'caller_id' => time(),
                     ], $nav['site']['id']);
                 } else {
                     // invalidate CF
