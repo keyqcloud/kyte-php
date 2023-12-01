@@ -12,7 +12,7 @@ class KyteSiteController extends ModelController
     public function hook_preprocess($method, &$r, &$o = null) {
         switch ($method) {
             case 'new':
-                $r['status'] = 'pending';
+                $r['status'] = 'creating';
                 break;
 
             case 'update':
