@@ -1,3 +1,9 @@
+## 3.2.0
+
+* Removed deprecated values
+
+Migration must be performed with version 3.1.1 prior to upgrade.
+
 ## 3.1.1
 
 * Add back deprecated attributes until next minor version update to ensure smooth migration
