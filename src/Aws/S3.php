@@ -17,7 +17,7 @@ class S3 extends Client
         $this->client = new S3Client([
             'credentials'	=> $this->credentials->getCredentials(),
             'region'		=> $this->credentials->getRegion(),
-            'version'		=> '2006-03-01'
+            'version'		=> 'latest'
         ]);
     }
 

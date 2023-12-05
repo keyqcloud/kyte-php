@@ -1,3 +1,7 @@
+## 3.1.1
+
+* Add back deprecated attributes until next minor version update to ensure smooth migration
+
 ## 3.1.0
 
 * Roll back logger while determining best implementation
