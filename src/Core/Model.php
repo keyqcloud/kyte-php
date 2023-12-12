@@ -259,6 +259,65 @@ class Model
 		}
 	}
 
+	public function delete($field = null, $value = null, $isLike = false, $conditions = null, $all = false)
+	{
+		try {
+			$dataObjects = array();
+			$data = array();
+
+			$main_tbl = $this->kyte_model['name'];
+
+			if (isset($field, $value)) {
+				$escaped_value = \Kyte\Core\DBI::escape_string($value);
+				if ($isLike) {
+					$escaped_value = addcslashes($escaped_value, '%_');
+					$sql = "WHERE `$main_tbl`.`$field` LIKE '%$escaped_value%'";
+				} else {
+					$sql = "WHERE `$main_tbl`.`$field` = '$escaped_value'";
+				}
+
+				if (!$all) {
+					$sql .= " AND `$main_tbl`.`deleted` = '0'";
+				}
+			} else {
+				$sql = '';
+				if (!$all) {
+					$sql .= " WHERE `$main_tbl`.`deleted` = '0'";
+				}
+			}
+
+			if(isset($conditions)) {
+				if (!empty($conditions)) {
+					// iterate through each condition
+					foreach($conditions as $condition) {
+						$escaped_value = \Kyte\Core\DBI::escape_string($condition['value']);
+						// check if an evaluation operator is set
+						if (isset($condition['operator'])) {
+							if ($sql != '') {
+								$sql .= " AND ";
+							}
+							$sql .= "`$main_tbl`.`{$condition['field']}` {$condition['operator']} '{$escaped_value}'";
+						}
+						// default to equal
+						else {
+							if ($sql != '') {
+								$sql .= " AND ";
+							}
+							$sql .= "`$main_tbl`.`{$condition['field']}` = '{$escaped_value}'";
+						}
+					}
+				}
+			}
+
+			// $data = \Kyte\Core\DBI::delete($this->kyte_model['name'], null, $sql, $join);
+
+			return true;
+		} catch (\Exception $e) {
+			throw $e;
+			return false;
+		}
+	}
+
 	public function groupBy($field = null, $conditions = null, $all = false)
 	{
 		try {
