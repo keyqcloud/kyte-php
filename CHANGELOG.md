@@ -1,3 +1,7 @@
+## 3.2.1
+
+* Add constant for default Kyte models
+
 ## 3.2.0
 
 * Removed deprecated values
