@@ -16,6 +16,78 @@ $DataModel = [
 			'date'		=> false,
 		],
 
+		// 'get_request'	=> [
+		// 	'type'		=> 'i',
+		// 	'required'	=> false,
+		// 	'size'		=> 11,
+		// 	'unsigned'	=> true,
+		// 	'date'		=> false,
+		// 	'default'	=> 1,
+		// ],
+
+		// 'get_request_require_auth'	=> [
+		// 	'type'		=> 'i',
+		// 	'required'	=> false,
+		// 	'size'		=> 11,
+		// 	'unsigned'	=> true,
+		// 	'date'		=> false,
+		// 	'default'	=> 1,
+		// ],
+
+		// 'post_request'	=> [
+		// 	'type'		=> 'i',
+		// 	'required'	=> false,
+		// 	'size'		=> 11,
+		// 	'unsigned'	=> true,
+		// 	'date'		=> false,
+		// 	'default'	=> 1,
+		// ],
+
+		// 'post_request_require_auth'	=> [
+		// 	'type'		=> 'i',
+		// 	'required'	=> false,
+		// 	'size'		=> 11,
+		// 	'unsigned'	=> true,
+		// 	'date'		=> false,
+		// 	'default'	=> 1,
+		// ],
+
+		// 'put_request'	=> [
+		// 	'type'		=> 'i',
+		// 	'required'	=> false,
+		// 	'size'		=> 11,
+		// 	'unsigned'	=> true,
+		// 	'date'		=> false,
+		// 	'default'	=> 1,
+		// ],
+
+		// 'put_request_require_auth'	=> [
+		// 	'type'		=> 'i',
+		// 	'required'	=> false,
+		// 	'size'		=> 11,
+		// 	'unsigned'	=> true,
+		// 	'date'		=> false,
+		// 	'default'	=> 1,
+		// ],
+
+		// 'delete_request'	=> [
+		// 	'type'		=> 'i',
+		// 	'required'	=> false,
+		// 	'size'		=> 11,
+		// 	'unsigned'	=> true,
+		// 	'date'		=> false,
+		// 	'default'	=> 1,
+		// ],
+
+		// 'delete_request_require_auth'	=> [
+		// 	'type'		=> 'i',
+		// 	'required'	=> false,
+		// 	'size'		=> 11,
+		// 	'unsigned'	=> true,
+		// 	'date'		=> false,
+		// 	'default'	=> 1,
+		// ],
+
 		'application'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
