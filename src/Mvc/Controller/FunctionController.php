@@ -96,7 +96,10 @@ class FunctionController extends ModelController
                     $code = "public function delete(\$field, \$value) {\r\n\r\n}\r\n";
                 }
                 $r['code'] = bzcompress($code, 9);
-                break;         
+                break;
+            case 'update':
+                $r['code'] = bzcompress($r['code'], 9);
+                break;
 
             default:
                 break;
