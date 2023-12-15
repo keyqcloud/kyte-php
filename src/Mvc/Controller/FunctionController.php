@@ -108,6 +108,7 @@ class FunctionController extends ModelController
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
+            case 'new':
             case 'get':
                 $r['code'] = bzdecompress($r['code']);
                 break;
@@ -125,9 +126,6 @@ class FunctionController extends ModelController
 
                 // update code base and save to file
                 ControllerController::generateCodeBase($ctrl);
-
-                $r['code'] = '';
-                break;
             
             default:
                 break;
