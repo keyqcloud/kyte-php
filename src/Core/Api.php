@@ -353,40 +353,26 @@ class Api
 	 *
 	 * @return void
 	 */
-	public static function loadAppModelsAndControllers($appId) {
-		// Next load user defined models and controllers (allow override of builtin)
-		if (file_exists(APP_DIR . "/app/") && is_dir(APP_DIR . "/app/")) {
-			/* USER DEFINED MODELS */
-			// Load user defined models
-			$userModelsPath = APP_DIR . "/app/models/{$appId}/";
-			if (file_exists($userModelsPath) && is_dir($userModelsPath)) {
-				foreach (glob($userModelsPath . "*.php") as $filename) {
-					$model_name = basename($filename, '.php');
-					// import controller
-					require_once($filename);
-					if (VERBOSE_LOG) {
-						error_log("Importing user defined model $model_name...");
-					}
-					self::addPrimaryKey($$model_name);
-					self::addKyteAttributes($$model_name);
-					// Add app id
-					$$model_name['appId'] = $appId;
-					// define model constanct
-					define($model_name, $$model_name);
-				}
-			}
+	public static function loadAppModelsAndControllers($app) {
+		$models = new \Kyte\Core\Model(DataModel);
+		$models->retrieve('application', $app->id);
+		foreach($models->objects as $object) {
+			$model_definition = json_decode($object->model_definition, true);
+			$model_definition['appId'] = $app->identifier;
+			define($model_definition['name'], $model_definition);
+		}
 
-			/* USER DEFINED CONTROLLER */
-			// Load user-defined controllers
-			$userControllersPath = APP_DIR . "/app/controllers/{$appId}/";
-			if (file_exists($userControllersPath) && is_dir($userControllersPath)) {
-				foreach (glob($userControllersPath . "*.php") as $filename) {
-					$controller_name = basename($filename, '.php');
-					// import controller
-					require_once($filename);
-					if (VERBOSE_LOG) {
-						error_log("Checking if user defined controller has been defined..." . (class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
-					}
+
+		/* USER DEFINED CONTROLLER */
+		// Load user-defined controllers
+		$userControllersPath = APP_DIR . "/app/controllers/{$app->identifier}/";
+		if (file_exists($userControllersPath) && is_dir($userControllersPath)) {
+			foreach (glob($userControllersPath . "*.php") as $filename) {
+				$controller_name = basename($filename, '.php');
+				// import controller
+				require_once($filename);
+				if (VERBOSE_LOG) {
+					error_log("Checking if user defined controller has been defined..." . (class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
 				}
 			}
 		}
@@ -417,12 +403,6 @@ class Api
 			// define model constanct
 			define($model_name, $$model_name);
 		}
-
-		if (defined('APP_DIR') && isset($_SERVER['HTTP_X_KYTE_APPID'])) {
-			$this->appId = $_SERVER['HTTP_X_KYTE_APPID'];
-			// import app specific models and controllers
-			self::loadAppModelsAndControllers($this->appId);
-		}
 	}
 
 	/**
@@ -432,6 +412,10 @@ class Api
      */
 	public function route() {
 		try {
+			if (isset($_SERVER['HTTP_X_KYTE_APPID'])) {
+				$this->appId = $_SERVER['HTTP_X_KYTE_APPID'];
+			}
+
 			// instantiate an API key object
 			$this->key = new \Kyte\Core\ModelObject(KyteAPIKey);
 
@@ -460,6 +444,9 @@ class Api
 				if (!$this->app->retrieve('identifier', $this->appId)) {
 					throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch for app ID {$this->appId}.");
 				}
+
+				// load app specific models and controllers				
+				self::loadAppModelsAndControllers($this->app);
 				
 				self::dbappconnect($this->app->db_name, $this->app->db_username, $this->app->db_password);
 
