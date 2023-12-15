@@ -365,16 +365,11 @@ class Api
 
 		/* USER DEFINED CONTROLLER */
 		// Load user-defined controllers
-		$userControllersPath = APP_DIR . "/app/controllers/{$app->identifier}/";
-		if (file_exists($userControllersPath) && is_dir($userControllersPath)) {
-			foreach (glob($userControllersPath . "*.php") as $filename) {
-				$controller_name = basename($filename, '.php');
-				// import controller
-				require_once($filename);
-				if (VERBOSE_LOG) {
-					error_log("Checking if user defined controller has been defined..." . (class_exists($controller_name) ? 'defined!' : 'UNDEFINED!'));
-				}
-			}
+		$controllers = new \Kyte\Core\Model(constant("Controller"));
+		$controllers->retrieve("application", $app->id);
+		foreach($controllers->objects as $object) {
+			$code = bzdecompress($object->code);
+			eval($code);
 		}
 	}
 
@@ -406,12 +401,6 @@ class Api
 			$kyte_models[] = $$model_name;
 		}
 		define('KYTE_MODELS', $kyte_models);
-
-		if (defined('APP_DIR') && isset($_SERVER['HTTP_X_KYTE_APPID'])) {
-			$this->appId = $_SERVER['HTTP_X_KYTE_APPID'];
-			// import app specific models and controllers
-			self::loadAppModelsAndControllers($this->appId);
-		}
 	}
 
 	/**
