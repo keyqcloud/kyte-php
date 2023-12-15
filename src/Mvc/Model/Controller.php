@@ -25,6 +25,13 @@ $Controller = [
 			],
 		],
 
+		'code'		=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+			'protected' => true,
+		],
+
 		// optional description
 		'description'		=> [
 			'type'		=> 't',

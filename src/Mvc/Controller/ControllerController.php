@@ -53,52 +53,15 @@ class ControllerController extends ModelController
         switch ($method) {
             case 'new':
             case 'update':
-                $path = APP_DIR . "/app/controllers/" . $r['application']['identifier'];
-
-                if ($o->name != $d['name']) {
-                    // remove old definition
-                    if (!unlink($path."/{$o->name}Controller.php")) {
-                        error_log("Failed to clean up old model {$path}/{$o->name}Controller.php");
-                    }
-                }
-
-                $functions = [];
-
-                // check if model is specified
-                if (!empty($o->dataModel)) {
-                    $functions[] = self::generateShipyardInit($o->dataModel);
-                }
-
-                // regenerate code base with new name and/or model
-                self::prepareFunctionStatements($o->id, $functions);
-
                 // update code base and save to file
-                self::generateCodeBase($r['application']['identifier'], $o->name.'Controller', $functions);
+                self::generateCodeBase($o);
                 break;
             case 'delete':
-                $app = new \Kyte\Core\ModelObject(Application);
-                if (!$app->retrieve('id', $o->application)) {
-                    throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
-                }
-
-                $path = APP_DIR . "/app/controllers/" . $app->identifier;
-
                 // delete corresponding function association
                 $fs = new \Kyte\Core\Model(constant("Function"));
                 $fs->retrieve("controller", $o->id);
                 foreach($fs->objects as $f) {
                     $f->delete();
-                }
-
-                if (!unlink("{$path}/{$o->name}Controller.php")) {
-                    error_log("Failed to clean up old model {$path}/{$o->name}Controller.php");
-                }
-
-                // delete associated settings
-                $settings = new \Kyte\Core\Model(ControllerSetting);
-                $settings->retrieve("controller", $o->id);
-                foreach($settings->objects as $setting) {
-                    $setting->delete();
                 }
                 break;
             
@@ -109,45 +72,25 @@ class ControllerController extends ModelController
 
     // public function hook_process_get_response(&$r) {}
 
-    public static function generateShipyardInit($model_idx) {
-        if (empty($model_idx)) {
-            throw new \Exception("Model id cannot be empty.");
-        }
-        $model = new \Kyte\Core\ModelObject(DataModel);
-        if (!$model->retrieve("id", $model_idx)) {
-            throw new \Exception("Unable to find specified data model.");
-        }
+    public static function generateCodeBase($controller) {
+        $functions = [];
 
-        return "\tpublic function shipyard_init() {\r\n\t\t\$this->model = {$model->name};\r\n\t}\r\n";
-    }
-
-    public static function prepareFunctionStatements($controller_idx, &$functions) {
-        if (empty($controller_idx)) {
-            throw new \Exception("Controller id cannot be empty.");
+        // check if model is specified, if so generate shipyard_init()
+        if (!empty($controller->dataModel)) {
+            $model = new \Kyte\Core\ModelObject(DataModel);
+            if (!$model->retrieve("id", $controller->dataModel)) {
+                throw new \Exception("Unable to find specified data model.");
+            }
+            $functions[] = "\tpublic function shipyard_init() {\r\n\t\t\$this->model = {$model->name};\r\n\t}\r\n";
         }
 
         $fs = new \Kyte\Core\Model(constant("Function"));
-        $fs->retrieve("controller", $controller_idx);
+        $fs->retrieve("controller", $controller->id);
         foreach($fs->objects as $f) {
             $functions[] = $f->code;
         }
-    }
 
-    public static function generateCodeBase($appId, $controller_name, $functions = null) {
-        if (empty($controller_name)) {
-            throw new \Exception("Controller name cannot be empty.");
-        }
-
-        $path = APP_DIR . "/app/controllers/" . $appId;
-        if (!is_dir($path)) {
-            $ret = mkdir($path);
-
-            if ($ret !== true || !is_dir($path)) {
-                throw new \Exception("Unable to create model files for app");
-            }
-        }
-
-        $code = "<?php\r\n\r\nclass $controller_name extends \Kyte\Mvc\Controller\ModelController\r\n{\r\n";
+        $code = "class {$controller->name}Controller extends \Kyte\Mvc\Controller\ModelController\r\n{\r\n";
 
         if (is_array($functions)) {
             foreach($functions as $function) {
@@ -157,8 +100,8 @@ class ControllerController extends ModelController
 
         $code .= "}\r\n";
 
-        if (file_put_contents($path."/$controller_name.php", $code) === false) {
-            throw new \Exception("Unable to write controller files!");
-        }
+        $controller->save([
+            'code' => bzcompress($code, 9),
+        ]);
     }
 }
