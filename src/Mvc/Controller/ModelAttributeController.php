@@ -36,6 +36,7 @@ class ModelAttributeController extends ModelController
                 // get table
                 $tbl = new \Kyte\Core\ModelObject(DataModel);
                 if (!$tbl->retrieve('id', $r['dataModel'])) {
+                    $o->delete();
                     throw new \Exception("Unable to find associated data model.");
                 }
 
@@ -67,6 +68,7 @@ class ModelAttributeController extends ModelController
             case 'update':
                 $tbl = new \Kyte\Core\ModelObject(DataModel);
                 if (!$tbl->retrieve('id', $o->dataModel)) {
+                    $o->delete();
                     throw new \Exception("Unable to find associated data model.");
                 }
 
