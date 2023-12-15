@@ -393,6 +393,7 @@ class Api
 	{
 		/* BUILTIN DEFINED MODELS */
 		// Import builtin models first, but don't define them yet in case there are user overrides and changes
+		$kyte_models = [];
 		foreach (glob(__DIR__ . "/../Mvc/Model/*.php") as $filename) {
 			$model_name = basename($filename, '.php');
 			require_once($filename);
@@ -402,6 +403,14 @@ class Api
 			self::addPrimaryKey($$model_name);
 			// define model constanct
 			define($model_name, $$model_name);
+			$kyte_models[] = $$model_name;
+		}
+		define('KYTE_MODELS', $kyte_models);
+
+		if (defined('APP_DIR') && isset($_SERVER['HTTP_X_KYTE_APPID'])) {
+			$this->appId = $_SERVER['HTTP_X_KYTE_APPID'];
+			// import app specific models and controllers
+			self::loadAppModelsAndControllers($this->appId);
 		}
 	}
 
