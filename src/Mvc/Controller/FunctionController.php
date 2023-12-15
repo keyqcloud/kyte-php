@@ -124,7 +124,9 @@ class FunctionController extends ModelController
                 }
 
                 // update code base and save to file
-                ControllerController::generateCodeBase($ctrl);                
+                ControllerController::generateCodeBase($ctrl);
+
+                $r['code'] = '';
                 break;
             
             default:
