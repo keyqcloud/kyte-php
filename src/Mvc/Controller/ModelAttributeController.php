@@ -82,7 +82,7 @@ class ModelAttributeController extends ModelController
                 \Kyte\Core\Api::dbswitch(true);
 
                 // create new table with basic kyte info
-                if (!\Kyte\Core\DBI::changeColumn($tbl->name, $o->name, $r['new_col_name'], $attrs)) {
+                if (!\Kyte\Core\DBI::changeColumn($tbl->name, $o->name, $d['new_col_name'], $attrs)) {
                     throw new \Exception("Failed to change column {$o->name} to {$r['name']} in table {$tbl->name}...");
                 }
                 // return to kyte db
