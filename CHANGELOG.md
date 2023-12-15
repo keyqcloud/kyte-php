@@ -1,3 +1,11 @@
+## 3.2.2
+
+* Store model def as json string in db
+* No longer read/write model def in file
+* Load model def from json string
+* Add default path for sample config
+* Check AWS keys within account scope
+
 ## 3.2.1
 
 * Add constant for default Kyte models
