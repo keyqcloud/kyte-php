@@ -55,9 +55,17 @@ class KyteScriptController extends ModelController
 
                     // iterate through each page
                     foreach($pages->objects as $page) {
-                        $p = $this->getObject($page);
+                        $params = $this->getObject($page);
+                        $pd = new \Kyte\Core\ModelObject(KytePageData);
+                        if (!$pd->retrieve('page', $page->id)) {
+                            throw new \Exception("CRITICAL ERROR: Unable to find page data.");
+                        }
+                        $params['html'] = bzdecompress($pd->html);
+                        $params['stylesheet'] = bzdecompress($pd->stylesheet);
+                        $params['javascript'] = bzdecompress($pd->javascript);
+                        $params['javascript_obfuscated'] = bzdecompress($pd->javascript_obfuscated);
                         // compile html file
-                        $data = \Kyte\Mvc\Controller\KytePageController::createHtml($p);
+                        $data = \Kyte\Mvc\Controller\KytePageController::createHtml($params);
                         // write to file
                         $s3->write($page->s3key, $data);
                     }
@@ -103,9 +111,17 @@ class KyteScriptController extends ModelController
 
                         // iterate through each page
                         foreach($pages->objects as $page) {
-                            $p = $this->getObject($page);
+                            $params = $this->getObject($page);
+                            $pd = new \Kyte\Core\ModelObject(KytePageData);
+                            if (!$pd->retrieve('page', $page->id)) {
+                                throw new \Exception("CRITICAL ERROR: Unable to find page data.");
+                            }
+                            $params['html'] = bzdecompress($pd->html);
+                            $params['stylesheet'] = bzdecompress($pd->stylesheet);
+                            $params['javascript'] = bzdecompress($pd->javascript);
+                            $params['javascript_obfuscated'] = bzdecompress($pd->javascript_obfuscated);
                             // compile html file
-                            $data = \Kyte\Mvc\Controller\KytePageController::createHtml($p);
+                            $data = \Kyte\Mvc\Controller\KytePageController::createHtml($params);
                             // write to file
                             $s3->write($page->s3key, $data);
                         }
