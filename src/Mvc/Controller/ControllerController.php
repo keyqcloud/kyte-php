@@ -87,7 +87,7 @@ class ControllerController extends ModelController
         $fs = new \Kyte\Core\Model(constant("Function"));
         $fs->retrieve("controller", $controller->id);
         foreach($fs->objects as $f) {
-            $functions[] = $f->code;
+            $functions[] = bzdecompress($f->code);
         }
 
         $code = "class {$controller->name}Controller extends \Kyte\Mvc\Controller\ModelController\r\n{\r\n";

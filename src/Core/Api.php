@@ -369,8 +369,6 @@ class Api
 		$controllers->retrieve("application", $app->id);
 		foreach($controllers->objects as $object) {
 			$code = bzdecompress($object->code);
-			error_log($object->name.' =======> ');
-			error_log($code);
 			eval($code);
 		}
 	}
