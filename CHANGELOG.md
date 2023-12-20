@@ -1,3 +1,7 @@
+## 3.2.6
+
+* Fix issue where controller object could be null
+
 ## 3.2.5
 
 * Do not through exception if controller is not found in application scope

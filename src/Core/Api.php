@@ -368,7 +368,7 @@ class Api
 		// Load user-defined controllers
 		$controller = new \Kyte\Core\ModelObject(constant("Controller"));
 		if ($controller->retrieve("name", $controller_name, [["field" => "application", "value" => $app->id]])) {
-			$code = bzdecompress($object->code);
+			$code = bzdecompress($controller->code);
 			eval($code);
 		}
 	}
