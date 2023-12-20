@@ -1,3 +1,7 @@
+## 3.2.5
+
+* Do not through exception if controller is not found in application scope
+
 ## 3.2.4
 
 * Check if app id is present before loading application level controllers

@@ -370,8 +370,6 @@ class Api
 		if ($controller->retrieve("name", $controller_name, [["field" => "application", "value" => $app->id]])) {
 			$code = bzdecompress($object->code);
 			eval($code);
-		} else {
-			throw new \Exception("Controller $controller_name not found");
 		}
 	}
 
