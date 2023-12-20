@@ -1,3 +1,7 @@
+## 3.2.3
+
+* Only load relevant controllers through app
+
 ## 3.2.2
 
 * Store model def as json string in db

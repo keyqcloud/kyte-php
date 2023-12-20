@@ -353,7 +353,7 @@ class Api
 	 *
 	 * @return void
 	 */
-	public static function loadAppModelsAndControllers($app) {
+	public static function loadAppModels($app) {
 		$models = new \Kyte\Core\Model(DataModel);
 		$models->retrieve('application', $app->id);
 		foreach($models->objects as $object) {
@@ -361,8 +361,21 @@ class Api
 			$model_definition['appId'] = $app->identifier;
 			define($model_definition['name'], $model_definition);
 		}
+	}
 
+	public static function loadAppController($app, $controller_name) {
+		/* USER DEFINED CONTROLLER */
+		// Load user-defined controllers
+		$controller = new \Kyte\Core\ModelObject(constant("Controller"));
+		if ($controller->retrieve("name", $controller_name, [["field" => "application", "value" => $app->id]])) {
+			$code = bzdecompress($object->code);
+			eval($code);
+		} else {
+			throw new \Exception("Controller $controller_name not found");
+		}
+	}
 
+	public static function loadAppControllers($app) {
 		/* USER DEFINED CONTROLLER */
 		// Load user-defined controllers
 		$controllers = new \Kyte\Core\Model(constant("Controller"));
@@ -444,7 +457,7 @@ class Api
 				}
 
 				// load app specific models and controllers				
-				self::loadAppModelsAndControllers($this->app);
+				self::loadAppModels($this->app);
 				
 				self::dbappconnect($this->app->db_name, $this->app->db_username, $this->app->db_password);
 
@@ -488,6 +501,8 @@ class Api
 
 			// if minimum count of elements exist, then process api request based on request type
 			if ($this->validateRequest()) {
+				self::loadAppController($this->app, $this->model);
+
 				if (class_exists('\\Kyte\Mvc\\Controller\\'.$this->model.'Controller')) {
 					$controllerClass = '\\Kyte\Mvc\\Controller\\'.$this->model.'Controller';
 				} else {
