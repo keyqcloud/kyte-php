@@ -501,7 +501,9 @@ class Api
 
 			// if minimum count of elements exist, then process api request based on request type
 			if ($this->validateRequest()) {
-				self::loadAppController($this->app, $this->model);
+				if ($this->appId != null) {
+					self::loadAppController($this->app, $this->model);
+				}
 
 				if (class_exists('\\Kyte\Mvc\\Controller\\'.$this->model.'Controller')) {
 					$controllerClass = '\\Kyte\Mvc\\Controller\\'.$this->model.'Controller';

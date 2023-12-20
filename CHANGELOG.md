@@ -1,3 +1,7 @@
+## 3.2.4
+
+* Check if app id is present before loading application level controllers
+
 ## 3.2.3
 
 * Only load relevant controllers through app
