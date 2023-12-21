@@ -104,6 +104,7 @@ class Model
 					
 					foreach($search_fields as $sf) {
 						if (!array_key_exists($sf, $this->kyte_model['struct'])) {
+							$i++;
 							continue;
 						}
 						$f = explode(".", $sf);

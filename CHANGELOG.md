@@ -1,3 +1,7 @@
+## 3.2.9
+
+* Increment counter for generating search query
+
 ## 3.2.8
 
 * Update version number in class
