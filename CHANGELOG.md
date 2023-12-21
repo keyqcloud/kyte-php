@@ -1,3 +1,7 @@
+## 3.2.7
+
+* Check if search field is a member attribute before querying
+
 ## 3.2.6
 
 * Fix issue where controller object could be null

@@ -103,6 +103,9 @@ class Model
 					$i = 1;
 					
 					foreach($search_fields as $sf) {
+						if (!array_key_exists($sf, $this->kyte_model['struct'])) {
+							continue;
+						}
 						$f = explode(".", $sf);
 						if (count($f) == 1) {
 							if ($i < $c) {
