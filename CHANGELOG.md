@@ -1,3 +1,7 @@
+## 3.2.8
+
+* Update version number in class
+
 ## 3.2.7
 
 * Check if search field is a member attribute before querying
