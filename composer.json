@@ -11,7 +11,6 @@
         "ext-mbstring": "*",
         "aws/aws-sdk-php": "^3.101",
         "stripe/stripe-php": "^7.2",
-        "amphp/amp": "*"
     },
     "require-dev": {
         "phpunit/phpunit": "*"
