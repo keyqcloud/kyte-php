@@ -2,7 +2,7 @@
 namespace Kyte\Aws;
 
 use Aws\Exception\AwsException;
-use Aws\Sns\SqsClient;
+use Aws\Sns\SnsClient;
 
 class Sns extends Client
 {
