@@ -1,3 +1,7 @@
+## 3.3.1
+
+* Fix bug that caused SQS to be used instead of SNS
+
 ## 3.3.0
 
 * This version migrates away from SQS to SNS
