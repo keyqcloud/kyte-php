@@ -160,7 +160,7 @@ class KyteSiteController extends ModelController
             'site_id' => $o->id,
             'cf_id' => $o->cfDistributionId,
         ];
-        $sqs->send($params, $o->id);
+        $sns->send($params, $o->id);
         
         // delete KytePage
         $objs = new \Kyte\Core\Model(KytePage);
@@ -242,7 +242,7 @@ class KyteSiteController extends ModelController
                 'action' => 'acm_delete',
                 'acm_arn' => $obj->certificateArn,
             ];
-            $sqs->send($params, $o->id);
+            $sns->send($params, $o->id);
         }
     }
 

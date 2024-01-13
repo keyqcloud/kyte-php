@@ -1,3 +1,7 @@
+## 3.3.2
+
+* Resolve issue where main site management was being sent to sqs
+
 ## 3.3.1
 
 * Fix bug that caused SQS to be used instead of SNS
