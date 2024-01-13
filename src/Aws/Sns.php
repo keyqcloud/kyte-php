@@ -12,7 +12,7 @@ class Sns extends Client
         $this->credentials = $credentials;
         $this->topicArn = $topicArn;
 
-        $this->client = new SqsClient([
+        $this->client = new SnsClient([
             'credentials' => $this->credentials->getCredentials(),
             'version' => '2010-03-31',
             'region'	=> $this->credentials->getRegion()
