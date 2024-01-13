@@ -1,9 +1,7 @@
 {
     "name": "keyqcloud/kyte-php",
     "description": "Light-weight framework for developing versatile PHP applications.",
-    {
-        "license": "MIT"
-    },
+    "license": "MIT",
     "require": {
         "php": ">=7.2",
         "ext-curl": "*",
