@@ -58,15 +58,15 @@ class NavigationController extends ModelController
                 // invalidate CF
                 $invalidationPaths = ['/*'];
                 if (KYTE_USE_SNS) {
-                    $credential = new \Kyte\Aws\Credentials(SQS_REGION);
-                    $sqs = new \Kyte\Aws\Sqs($credential, SQS_QUEUE_SITE_MANAGEMENT);
-                    $sqs->send([
+                    $credential = new \Kyte\Aws\Credentials(SNS_REGION);
+                    $sns = new \Kyte\Aws\Sqs($credential, SNS_QUEUE_SITE_MANAGEMENT);
+                    $sns->publish([
                         'action' => 'cf_invalidate',
                         'site_id' => $nav['site']['id'],
                         'cf_id' => $nav['site']['cfDistributionId'],
                         'cf_invalidation_paths' => $invalidationPaths,
                         'caller_id' => time(),
-                    ], $nav['site']['id']);
+                    ]);
                 } else {
                     // invalidate CF
                     $cf = new \Kyte\Aws\CloudFront($credential);

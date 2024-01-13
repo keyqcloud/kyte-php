@@ -95,11 +95,11 @@ class KyteSiteController extends ModelController
                 // static content origin url
                 $staticContentOrigin = $s3MediaBucketName.'.s3.amazonaws.com';
 
-                $credential = new \Kyte\Aws\Credentials(SQS_REGION);
-                $sqs = new \Kyte\Aws\Sqs($credential, SQS_QUEUE_SITE_MANAGEMENT);
+                $credential = new \Kyte\Aws\Credentials(SNS_REGION);
+                $sns = new \Kyte\Aws\Sqs($credential, SNS_QUEUE_SITE_MANAGEMENT);
 
                 // queue creation of s3 bucket for static web app
-                $sqs->send([
+                $sns->publish([
                     'action' => 's3_create',
                     'region_name' => $region,
                     'bucket_name' => $bucketName,
@@ -107,10 +107,10 @@ class KyteSiteController extends ModelController
                     'site_id' => $o->id,
                     'is_website' => true,
                     'is_media' => false,
-                ], $o->id);
+                ]);
 
                 // queue creation of s3 bucket for static content
-                $sqs->send([
+                $sns->publish([
                     'action' => 's3_create',
                     'region_name' => $region,
                     'bucket_name' => $s3MediaBucketName,
@@ -118,7 +118,7 @@ class KyteSiteController extends ModelController
                     'site_id' => $o->id,
                     'is_website' => false,
                     'is_media' => true,
-                ], $o->id);
+                ]);
                 break;
             
             default:
@@ -142,15 +142,15 @@ class KyteSiteController extends ModelController
         ]);
 
         // add s3 static content bucket to deletion queue
-        $credential = new \Kyte\Aws\Credentials(SQS_REGION);
-        $sqs = new \Kyte\Aws\Sqs($credential, SQS_QUEUE_SITE_MANAGEMENT);
-        $sqs->send([
+        $credential = new \Kyte\Aws\Credentials(SNS_REGION);
+        $sns = new \Kyte\Aws\Sqs($credential, SNS_QUEUE_SITE_MANAGEMENT);
+        $sns->publish([
             'action' => 's3_delete',
             'region_name' => $o->region,
             'bucket_name' => $o->s3MediaBucketName,
             'site_id' => $o->id,
             'cf_id' => $o->cfMediaDistributionId,
-        ], $o->id);
+        ]);
 
         // add s3 web app bucket to deletion queue
         $params = [
