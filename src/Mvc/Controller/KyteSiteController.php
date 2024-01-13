@@ -96,7 +96,7 @@ class KyteSiteController extends ModelController
                 $staticContentOrigin = $s3MediaBucketName.'.s3.amazonaws.com';
 
                 $credential = new \Kyte\Aws\Credentials(SNS_REGION);
-                $sns = new \Kyte\Aws\Sqs($credential, SNS_QUEUE_SITE_MANAGEMENT);
+                $sns = new \Kyte\Aws\Sns($credential, SNS_QUEUE_SITE_MANAGEMENT);
 
                 // queue creation of s3 bucket for static web app
                 $sns->publish([
@@ -143,7 +143,7 @@ class KyteSiteController extends ModelController
 
         // add s3 static content bucket to deletion queue
         $credential = new \Kyte\Aws\Credentials(SNS_REGION);
-        $sns = new \Kyte\Aws\Sqs($credential, SNS_QUEUE_SITE_MANAGEMENT);
+        $sns = new \Kyte\Aws\Sns($credential, SNS_QUEUE_SITE_MANAGEMENT);
         $sns->publish([
             'action' => 's3_delete',
             'region_name' => $o->region,

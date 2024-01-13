@@ -123,7 +123,7 @@ class KytePageController extends ModelController
                     // invalidate CF
                     if (KYTE_USE_SNS) {
                         $credential = new \Kyte\Aws\Credentials(SNS_REGION);
-                        $sns = new \Kyte\Aws\Sqs($credential, SNS_QUEUE_SITE_MANAGEMENT);
+                        $sns = new \Kyte\Aws\Sns($credential, SNS_QUEUE_SITE_MANAGEMENT);
                         $sns->publish([
                             'action' => 'cf_invalidate',
                             'site_id' => $r['site']['id'],
@@ -163,7 +163,7 @@ class KytePageController extends ModelController
                     $invalidationPaths = ['/*'];
                     if (KYTE_USE_SNS) {
                         $credential = new \Kyte\Aws\Credentials(SNS_REGION);
-                        $sns = new \Kyte\Aws\Sqs($credential, SNS_QUEUE_SITE_MANAGEMENT);
+                        $sns = new \Kyte\Aws\Sns($credential, SNS_QUEUE_SITE_MANAGEMENT);
                         $sns->publish([
                             'action' => 'cf_invalidate',
                             'site_id' => $d['site']['id'],
