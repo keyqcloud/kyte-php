@@ -170,7 +170,7 @@ class Api
 		'USE_SESSION_MAP' => false,
 		'CHECK_SYNTAX_ON_IMPORT' => false,
 		'STRICT_TYPING' => true,
-		'KYTE_USE_SQS' => false,
+		'KYTE_USE_SNS' => false,
 	];
 	
 	/**

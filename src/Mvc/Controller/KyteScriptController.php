@@ -72,7 +72,7 @@ class KyteScriptController extends ModelController
 
                     // invalidate CF
                     $invalidationPaths = ['/*'];
-                    if (KYTE_USE_SQS) {
+                    if (KYTE_USE_SNS) {
                         $credential = new \Kyte\Aws\Credentials(SQS_REGION);
                         $sqs = new \Kyte\Aws\Sqs($credential, SQS_QUEUE_SITE_MANAGEMENT);
                         $sqs->send([
@@ -128,7 +128,7 @@ class KyteScriptController extends ModelController
 
                         // invalidate CF
                         $invalidationPaths = ['/*'];
-                        if (KYTE_USE_SQS) {
+                        if (KYTE_USE_SNS) {
                             $credential = new \Kyte\Aws\Credentials(SQS_REGION);
                             $sqs = new \Kyte\Aws\Sqs($credential, SQS_QUEUE_SITE_MANAGEMENT);
                             $sqs->send([

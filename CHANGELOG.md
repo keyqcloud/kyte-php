@@ -1,3 +1,8 @@
+## 3.3.0
+
+* This version migrates away from SQS to SNS
+* MAY BREAK if using SQS - Switch to SNS before upgrading
+
 ## 3.2.9
 
 * Increment counter for generating search query
