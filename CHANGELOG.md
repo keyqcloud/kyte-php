@@ -2,6 +2,9 @@
 
 * Move db column creation and update from `hook_response_data` to `hook_preprocess` to better handle exceptions
 * Cast array param as object
+* Add new Environment Variable model
+* Add support to create new constants from application-level environment variables
+* Application-level environment variables are scoped within the application at runtime
 
 ## 3.3.4
 

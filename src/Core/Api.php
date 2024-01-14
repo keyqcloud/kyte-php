@@ -217,6 +217,19 @@ class Api
 	}
 
 	/**
+     * Defines the environment constants for an application.
+     *
+     * This method defines various constants required by an application.
+     */
+	private function defineAppEnvironmentConstants($app) {
+		$models = new \Kyte\Core\Model(KyteEnvironmentVariable);
+		$models->retrieve('application', $app->id);
+		foreach($models->objects as $object) {
+			define($object->name, $object->value);
+		}
+	}
+
+	/**
      * Adds a primary key to the model definition.
      *
      * @param array $modeldef The model definition to add the primary key to.
@@ -343,13 +356,9 @@ class Api
 	}
 
 	/**
-	 * Load app specific models and controllers.
+	 * Load app specific models.
 	 *
-	 * This method loads both app specific user-defined models and controllers.
-	 * It imports the model files and adds them to the list of models.
-	 * User overrides and changes are supported for both models and controllers.
-	 *
-	 * @throws \Exception If API key is not found or required.
+	 * This method loads app specific models.
 	 *
 	 * @return void
 	 */
@@ -363,6 +372,13 @@ class Api
 		}
 	}
 
+	/**
+	 * Load an app specific controller.
+	 *
+	 * This method loads an app specific controller.
+	 *
+	 * @return void
+	 */
 	public static function loadAppController($app, $controller_name) {
 		/* USER DEFINED CONTROLLER */
 		// Load user-defined controllers
@@ -373,6 +389,13 @@ class Api
 		}
 	}
 
+	/**
+	 * Load all app specific controllers.
+	 *
+	 * This method loads all app specific controllers.
+	 *
+	 * @return void
+	 */
 	public static function loadAppControllers($app) {
 		/* USER DEFINED CONTROLLER */
 		// Load user-defined controllers
@@ -387,11 +410,8 @@ class Api
 	/**
 	 * Load models and controllers.
 	 *
-	 * This method loads both built-in and user-defined models and controllers.
+	 * This method loads built-in models and controllers.
 	 * It imports the model files and adds them to the list of models.
-	 * User overrides and changes are supported for both models and controllers.
-	 *
-	 * @throws \Exception If API key is not found or required.
 	 *
 	 * @return void
 	 */
