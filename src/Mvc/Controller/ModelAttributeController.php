@@ -21,47 +21,29 @@ class ModelAttributeController extends ModelController
 
     public function hook_preprocess($method, &$r, &$o = null) {
         switch ($method) {
-            case 'update':
-                $r['new_col_name'] = $r['name'];
-                break;
-            
-            default:
-                break;
-        }
-    }
-
-    public function hook_response_data($method, $o, &$r = null, &$d = null) {
-        switch ($method) {
             case 'new':
                 // get table
                 $tbl = new \Kyte\Core\ModelObject(DataModel);
                 if (!$tbl->retrieve('id', $r['dataModel'])) {
-                    $o->delete();
                     throw new \Exception("Unable to find associated data model.");
                 }
 
-                $attrs = \Kyte\Mvc\Controller\DataModelController::prepareModelDef($o);
+                $attrs = \Kyte\Mvc\Controller\DataModelController::prepareModelDef((object)$r);
 
                 // switch dbs
                 $app = new \Kyte\Core\ModelObject(Application);
                 if (!$app->retrieve('id', $tbl->application)) {
-                    $o->delete();
                     throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
                 }
                 
                 \Kyte\Core\Api::dbappconnect($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
                 \Kyte\Core\Api::dbswitch(true);
 
-                try {
-                    // create new table with basic kyte info
-                    if (!\Kyte\Core\DBI::addColumn($tbl->name, $r['name'], $attrs)) {
-                        $o->delete();
-                        throw new \Exception("Failed to create column {$r['name']} in table {$tbl->name}...");
-                    }
-                } catch (\Exception $e) {
-                    $o->delete();
-                    throw $e;
+                // create new table with basic kyte info
+                if (!\Kyte\Core\DBI::addColumn($tbl->name, $r['name'], $attrs)) {
+                    throw new \Exception("Failed to create column {$r['name']} in table {$tbl->name}...");
                 }
+
                 // return to kyte db
                 \Kyte\Core\Api::dbswitch();
 
@@ -78,7 +60,7 @@ class ModelAttributeController extends ModelController
                     throw new \Exception("Unable to find associated data model.");
                 }
 
-                $attrs = \Kyte\Mvc\Controller\DataModelController::prepareModelDef($o);
+                $attrs = \Kyte\Mvc\Controller\DataModelController::prepareModelDef((object)$r);
                 
                 // switch dbs
                 $app = new \Kyte\Core\ModelObject(Application);
@@ -90,7 +72,7 @@ class ModelAttributeController extends ModelController
                 \Kyte\Core\Api::dbswitch(true);
 
                 // create new table with basic kyte info
-                if (!\Kyte\Core\DBI::changeColumn($tbl->name, $o->name, $d['new_col_name'], $attrs)) {
+                if (!\Kyte\Core\DBI::changeColumn($tbl->name, $o->name, $r['name'], $attrs)) {
                     throw new \Exception("Failed to change column {$o->name} to {$r['name']} in table {$tbl->name}...");
                 }
                 // return to kyte db
@@ -100,9 +82,15 @@ class ModelAttributeController extends ModelController
                 $tbl->save([
                     'model_definition' => json_encode($model_definition)
                 ]);
-
                 break;
+            
+            default:
+                break;
+        }
+    }
 
+    public function hook_response_data($method, $o, &$r = null, &$d = null) {
+        switch ($method) {
             case 'delete':
                 // TODO: consider situation where there are external tables and foreign keys
 

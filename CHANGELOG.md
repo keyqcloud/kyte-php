@@ -1,3 +1,8 @@
+## 3.3.5
+
+* Move db column creation and update from `hook_response_data` to `hook_preprocess` to better handle exceptions
+* Cast array param as object
+
 ## 3.3.4
 
 * Wrap db column manipulation inside try-catch
