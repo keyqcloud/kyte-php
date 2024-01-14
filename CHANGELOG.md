@@ -1,3 +1,7 @@
+## 3.3.3
+
+* Delete failed attribute creations
+
 ## 3.3.2
 
 * Resolve issue where main site management was being sent to sqs

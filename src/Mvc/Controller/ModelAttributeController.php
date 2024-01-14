@@ -45,6 +45,7 @@ class ModelAttributeController extends ModelController
                 // switch dbs
                 $app = new \Kyte\Core\ModelObject(Application);
                 if (!$app->retrieve('id', $tbl->application)) {
+                    $o->delete();
                     throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
                 }
                 
@@ -53,6 +54,7 @@ class ModelAttributeController extends ModelController
 
                 // create new table with basic kyte info
                 if (!\Kyte\Core\DBI::addColumn($tbl->name, $r['name'], $attrs)) {
+                    $o->delete();
                     throw new \Exception("Failed to create column {$r['name']} in table {$tbl->name}...");
                 }
                 // return to kyte db
@@ -68,7 +70,6 @@ class ModelAttributeController extends ModelController
             case 'update':
                 $tbl = new \Kyte\Core\ModelObject(DataModel);
                 if (!$tbl->retrieve('id', $o->dataModel)) {
-                    $o->delete();
                     throw new \Exception("Unable to find associated data model.");
                 }
 
