@@ -1,3 +1,7 @@
+## 3.3.4
+
+* Wrap db column manipulation inside try-catch
+
 ## 3.3.3
 
 * Delete failed attribute creations

@@ -52,10 +52,15 @@ class ModelAttributeController extends ModelController
                 \Kyte\Core\Api::dbappconnect($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
                 \Kyte\Core\Api::dbswitch(true);
 
-                // create new table with basic kyte info
-                if (!\Kyte\Core\DBI::addColumn($tbl->name, $r['name'], $attrs)) {
+                try {
+                    // create new table with basic kyte info
+                    if (!\Kyte\Core\DBI::addColumn($tbl->name, $r['name'], $attrs)) {
+                        $o->delete();
+                        throw new \Exception("Failed to create column {$r['name']} in table {$tbl->name}...");
+                    }
+                } catch (\Exception $e) {
                     $o->delete();
-                    throw new \Exception("Failed to create column {$r['name']} in table {$tbl->name}...");
+                    throw $e;
                 }
                 // return to kyte db
                 \Kyte\Core\Api::dbswitch();
