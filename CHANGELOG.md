@@ -5,6 +5,7 @@
 * Add new Environment Variable model
 * Add support to create new constants from application-level environment variables
 * Application-level environment variables are scoped within the application at runtime
+* Add controller for triggering update of Kyte Shipyard(tm)
 
 ## 3.3.4
 
