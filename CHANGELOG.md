@@ -1,3 +1,7 @@
+## 3.4.1
+
+* Update value of environment variable to type text
+
 ## 3.4.0
 
 * Add environemental variable setup at API init()
