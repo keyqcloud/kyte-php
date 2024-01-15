@@ -225,7 +225,7 @@ class Api
 		$models = new \Kyte\Core\Model(KyteEnvironmentVariable);
 		$models->retrieve('application', $app->id);
 		foreach($models->objects as $object) {
-			define($object->name, $object->value);
+			define($object->key, $object->value);
 		}
 	}
 

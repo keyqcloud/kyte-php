@@ -3,7 +3,7 @@
 $KyteEnvironmentVariable = [
 	'name' => 'KyteEnvironmentVariable',
 	'struct' => [
-		'name'		=> [
+		'key'		=> [
 			'type'		=> 's',
 			'required'	=> false,
 			'size'		=> 255,
