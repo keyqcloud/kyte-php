@@ -1,10 +1,14 @@
+## 3.4.2
+
+* Add environment variable specific for data stores (s3 bucket name and region)
+
 ## 3.4.1
 
 * Update value of environment variable to type text
 
 ## 3.4.0
 
-* Add environemental variable setup at API init()
+* Add environment variable setup at API init()
 * May break functionality if environment variable model isn't configured in database prior to update
 * Move db column creation and update from `hook_response_data` to `hook_preprocess` to better handle exceptions
 * Cast array param as object

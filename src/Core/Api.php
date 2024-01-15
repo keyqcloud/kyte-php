@@ -232,6 +232,24 @@ class Api
 	}
 
 	/**
+     * Defines the datastore environment constants for an application.
+     *
+     * This method defines various constants required by an application.
+     */
+	private function defineAppDataStore($app) {
+		$models = new \Kyte\Core\Model(DataStore);
+		$models->retrieve('application', $app->id);
+		$envVars = [];
+		foreach($models->objects as $object) {
+			$envVars[$object->name] = [
+				"bucket" => $object->bucketname,
+				"region" => $object->region,
+			];
+		}
+		define("KYTE_APP_DATASTORE", $envVars);
+	}
+
+	/**
      * Adds a primary key to the model definition.
      *
      * @param array $modeldef The model definition to add the primary key to.
@@ -478,6 +496,9 @@ class Api
 
 				// load app sepcific env vars
 				self::defineAppEnvironmentConstants($this->app);
+
+				// load app specific data stores
+				self::defineAppDataStore($this->app);
 
 				// load app specific models
 				self::loadAppModels($this->app);
