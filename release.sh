@@ -13,6 +13,21 @@ if [ "$#" -eq 1 ]; then
         exit 1
     fi
 
+    # Define the path to the Version.php file
+    php_version_file_path="src/Core/Version.php"
+
+    # Extract the version from the PHP file
+    php_version=$(awk -F '=' '/const MAJOR/{major=$2} /const MINOR/{minor=$2} /const PATCH/{patch=$2} END{print major"."minor"."patch}' "$php_version_file_path")
+
+    # Remove semicolons using tr
+    php_version=$(echo "$php_version" | tr -d ';')
+
+    # Compare the desired version with the PHP version
+    if [ "$1" != "$php_version" ]; then
+        print_error "Version mismatch: Desired version $1, Version.php is $php_version"
+        exit 1
+    fi
+
     echo "Creating tag for release version $1"
 
     git tag "v$1"
