@@ -1,5 +1,7 @@
-## 3.3.5
+## 3.4.0
 
+* Add environemental variable setup at API init()
+* May break functionality if environment variable model isn't configured in database prior to update
 * Move db column creation and update from `hook_response_data` to `hook_preprocess` to better handle exceptions
 * Cast array param as object
 * Add new Environment Variable model

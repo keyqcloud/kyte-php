@@ -224,9 +224,11 @@ class Api
 	private function defineAppEnvironmentConstants($app) {
 		$models = new \Kyte\Core\Model(KyteEnvironmentVariable);
 		$models->retrieve('application', $app->id);
+		$envVars = [];
 		foreach($models->objects as $object) {
-			define($object->key, $object->value);
+			$envVars[$object->key] = $object->value;
 		}
+		define("KYTE_APP_ENV", $envVars);
 	}
 
 	/**
@@ -474,7 +476,10 @@ class Api
 					throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch for app ID {$this->appId}.");
 				}
 
-				// load app specific models and controllers				
+				// load app sepcific env vars
+				self::defineAppEnvironmentConstants($this->app);
+
+				// load app specific models
 				self::loadAppModels($this->app);
 				
 				self::dbappconnect($this->app->db_name, $this->app->db_username, $this->app->db_password);
