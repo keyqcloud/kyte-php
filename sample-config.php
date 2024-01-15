@@ -22,6 +22,7 @@
     /* AWS SNS QUEUES */
     define('SNS_REGION', 'us-east-1');
     define('SNS_QUEUE_SITE_MANAGEMENT', '');
+    define('SNS_KYTE_SHIPYARD_UPDATE', '');
 
     /* KYTE FRAMEWORK SPECIFIC SETTINGS */
     define('KYTE_USE_SNS', true);
