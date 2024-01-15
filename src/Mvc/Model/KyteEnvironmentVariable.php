@@ -11,7 +11,7 @@ $KyteEnvironmentVariable = [
 		],
 
 		'value'		=> [
-			'type'		=> 's',
+			'type'		=> 't',
 			'required'	=> false,
 			'size'		=> 512,
 			'date'		=> false,
