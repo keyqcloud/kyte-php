@@ -13,10 +13,6 @@ class KyteShipyardUpdateController extends ModelController
         if (!in_array('new', $this->allowableActions)) {
             return;
         }
-
-        if (!$this->checkPermissions('new')) {
-            throw new \Exception('Permission Denied');
-        }
     
         if (!isset($data['current_version'])) {
             throw new \Exception('Missing current_version');
