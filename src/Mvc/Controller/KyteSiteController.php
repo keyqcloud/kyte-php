@@ -208,8 +208,8 @@ class KyteSiteController extends ModelController
             $obj->delete();
         }
 
-        // delete SectionTemplate
-        $objs = new \Kyte\Core\Model(SectionTemplate);
+        // delete KyteSectionTemplate
+        $objs = new \Kyte\Core\Model(KyteSectionTemplate);
         $objs->retrieve('site', $o->id);
         foreach ($objs->objects as $obj) {
             $obj->delete();
