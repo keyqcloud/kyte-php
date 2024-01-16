@@ -48,7 +48,7 @@ $KytePage = [
 			'unsigned'	=> true,
 			'date'		=> false,
 			'fk'		=> [
-				'model'	=> 'SectionTemplate',
+				'model'	=> 'KyteSectionTemplate',
 				'field'	=> 'id',
 			],
 		],
@@ -60,7 +60,7 @@ $KytePage = [
 			'unsigned'	=> true,
 			'date'		=> false,
 			'fk'		=> [
-				'model'	=> 'SectionTemplate',
+				'model'	=> 'KyteSectionTemplate',
 				'field'	=> 'id',
 			],
 		],
