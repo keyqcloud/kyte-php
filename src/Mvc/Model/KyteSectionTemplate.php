@@ -1,7 +1,7 @@
 <?php
 
-$SectionTemplate = [
-	'name' => 'SectionTemplate',
+$KyteSectionTemplate = [
+	'name' => 'KyteSectionTemplate',
 	'struct' => [
 		'title'		=> [
 			'type'		=> 's',
@@ -18,6 +18,13 @@ $SectionTemplate = [
 		],
 
 		'description'		=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
+		// json definition of page layout defined by block editor
+		'block_layout'	=> [
 			'type'		=> 't',
 			'required'	=> false,
 			'date'		=> false,
