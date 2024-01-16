@@ -11,6 +11,7 @@ class KyteSectionTemplateController extends ModelController
     public function hook_preprocess($method, &$r, &$o = null) {
         switch ($method) {
             case 'new':
+            case 'update':
                 $r['html'] = bzcompress($r['html'], 9);
                 $r['stylesheet'] = bzcompress($r['stylesheet'], 9);
                 $r['javascript'] = bzcompress($r['javascript'], 9);
