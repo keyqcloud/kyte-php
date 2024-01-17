@@ -2,6 +2,7 @@
 
 * Add `KyteScriptAssignment` model for tracking what scripts are going to be included in which `KytePage`s
 * Remove `include_all` attribute from `KyteScript` model as all assignments will be tracked by `KyteScriptAssignment`
+* Remove duplicate code for page creation out of `KytePageDataController`
 
 ## 3.4.4
 
