@@ -12,6 +12,7 @@ class KyteScriptController extends ModelController
         switch ($method) {
             case 'new':
                 $r['s3key'] = 'assets/'.$r['script_type'].'/'.strtolower(preg_replace('/[^A-Za-z0-9_.-\/]/', '-', $r['s3key']));
+                break;
             case 'update':
                 $r['content'] = bzcompress($r['content'], 9);
                 $r['content_js_obfuscated'] = bzcompress($r['content_js_obfuscated'], 9);
