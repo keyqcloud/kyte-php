@@ -31,6 +31,20 @@ class KytePageDataController extends ModelController
             case 'new':
             case 'get':
             case 'update':
+                if ($r['page']['footer'] && isset($r['page']['footer']['html'], $r['page']['footer']['stylesheet'], $r['page']['footer']['javascript'], $r['page']['footer']['javascript_obfuscated'], $r['page']['footer']['block_layout'])) {
+                    $r['page']['footer']['html'] = bzdecompress($r['page']['footer']['html']);
+                    $r['page']['footer']['stylesheet'] = bzdecompress($r['page']['footer']['stylesheet']);
+                    $r['page']['footer']['javascript'] = bzdecompress($r['page']['footer']['javascript']);
+                    $r['page']['footer']['javascript_obfuscated'] = bzdecompress($r['page']['footer']['javascript_obfuscated']);
+                    $r['page']['footer']['block_layout'] = bzdecompress($r['page']['footer']['block_layout']);
+                }
+                if ($r['page']['header'] && isset($r['page']['header']['html'], $r['page']['header']['stylesheet'], $r['page']['header']['javascript'], $r['page']['header']['javascript_obfuscated'], $r['page']['header']['block_layout'])) {
+                    $r['page']['header']['html'] = bzdecompress($r['page']['header']['html']);
+                    $r['page']['header']['stylesheet'] = bzdecompress($r['page']['header']['stylesheet']);
+                    $r['page']['header']['javascript'] = bzdecompress($r['page']['header']['javascript']);
+                    $r['page']['header']['javascript_obfuscated'] = bzdecompress($r['page']['header']['javascript_obfuscated']);
+                    $r['page']['header']['block_layout'] = bzdecompress($r['page']['header']['block_layout']);
+                }
                 $r['html'] = bzdecompress($r['html']);
                 $r['stylesheet'] = bzdecompress($r['stylesheet']);
                 $r['javascript'] = bzdecompress($r['javascript']);

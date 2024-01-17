@@ -1,3 +1,7 @@
+## 3.4.4
+
+* Decompress section template fk data for `KytePageDataController`
+
 ## 3.4.3
 
 * Decompress section template fk data for `KytePage`
