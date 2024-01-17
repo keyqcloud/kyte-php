@@ -75,15 +75,6 @@ $KyteScript = [
 			'date'		=> false,
 		],
 
-		'include_all' => [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 1,
-			'unsigned'	=> true,
-			'default'	=> 1,
-			'date'		=> false,
-		],
-
 		// framework attributes
 
 		'kyte_account'	=> [
