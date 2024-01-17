@@ -11,7 +11,6 @@ class KyteScriptController extends ModelController
     public function hook_preprocess($method, &$r, &$o = null) {
         switch ($method) {
             case 'new':
-                case 'new':
                 $r['s3key'] = 'assets/'.$r['script_type'].'/'.strtolower(preg_replace('/[^A-Za-z0-9_.-\/]/', '-', $r['s3key']));
             case 'update':
                 $r['content'] = bzcompress($r['content'], 9);
