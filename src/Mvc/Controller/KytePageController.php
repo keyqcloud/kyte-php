@@ -147,6 +147,11 @@ class KytePageController extends ModelController
                     throw new \Exception("CRITICAL ERROR: Unable to find application.");
                 }
 
+                $pd = new \Kyte\Core\ModelObject(KytePageData);
+                if ($pd->retrieve('page', $o->id)) {
+                    $pd->delete();
+                }
+
                 // check if s3 key exists
                 if (!empty($o->s3key)) {
                     $credential = new \Kyte\Aws\Credentials($d['site']['region'], $app->aws_public_key, $app->aws_private_key);
