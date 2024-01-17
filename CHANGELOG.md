@@ -1,5 +1,6 @@
 ## 3.4.2
 
+* Delete page data when page is deleted
 * Add environment variable specific for data stores (s3 bucket name and region)
 * Fix release script to check for Version.php as too many version mismatches have occurred
 * Compress section templates
