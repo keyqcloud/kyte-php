@@ -365,19 +365,22 @@ class KytePageController extends ModelController
             $code .= '</footer>';
         }
 
-        // retrieve custom scripts
-        $scripts = new \Kyte\Core\Model(KyteScript);
-        $scripts->retrieve('include_all', 1, false, [['field' => 'state', 'value' => 1],['field' => 'site', 'value' => $page['site']['id']]], false, [['field' => 'id', 'direction' => 'asc']]);
-        foreach($scripts->objects as $script) {
-            switch ($script->script_type) {
-                case 'js':
-                    $code .= '<script src="/'.$script->s3key.'"></script>';
-                    break;
-                case 'css':
-                    $code .= '<link rel="stylesheet" href="/'.$script->s3key.'">';
-                    break;
-                default:
-                    error_log("Unknown custom script type {$script->script_type} for script name {$script->name} located {$script->s3key}");
+        // retrieve custom javascripts scripts
+        $includes = new \Kyte\Core\Model(KyteScriptAssignment);
+        $includes->retrieve('page', $page['id'], false, [['field' => 'site', 'value' => $page['site']['id']]], false, [['field' => 'id', 'direction' => 'asc']]);
+        foreach($includes->objects as $include) {
+            $script = new \Kyte\Core\Model(KyteScript);
+            if ($script->retrieve('id', $include->script, [['field' => 'state', 'value' => 1]])) {
+                switch ($script->script_type) {
+                    case 'js':
+                        $code .= '<script src="/'.$script->s3key.'"></script>';
+                        break;
+                    case 'css':
+                        $code .= '<link rel="stylesheet" href="/'.$script->s3key.'">';
+                        break;
+                    default:
+                        error_log("Unknown custom script type {$script->script_type} for script name {$script->name} located {$script->s3key}");
+                }
             }
         }
 
