@@ -7,14 +7,15 @@ class KyteScriptController extends ModelController
     public function hook_init() {
         $this->dateformat = 'm/d/Y H:i:s';
     }
-    // public function hook_auth() {}
-
-    // public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
-
+    
     public function hook_preprocess($method, &$r, &$o = null) {
         switch ($method) {
             case 'new':
+                case 'new':
                 $r['s3key'] = 'assets/'.$r['script_type'].'/'.strtolower(preg_replace('/[^A-Za-z0-9_.-\/]/', '-', $r['s3key']));
+            case 'update':
+                $r['content'] = bzcompress($r['content'], 9);
+                $r['content_js_obfuscated'] = bzcompress($r['content_js_obfuscated'], 9);
                 break;
 
             default:
@@ -32,6 +33,9 @@ class KyteScriptController extends ModelController
                 $credential = new \Kyte\Aws\Credentials($r['site']['region'], $app->aws_public_key, $app->aws_private_key);
                 $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
                 $r['download_link'] = $s3->getObject($o->s3key);
+                // decompress content
+                $r['content'] = bzdecompress($r['content']);
+                $r['content_js_obfuscated'] = bzdecompress($r['content_js_obfuscated']);
                 break;
             case 'update':
                 if ($o->state == 1 && !isset($d['state'])) {
@@ -88,6 +92,9 @@ class KyteScriptController extends ModelController
                         $cf->createInvalidation($r['site']['cfDistributionId'], $invalidationPaths);
                     }
                 }
+                // decompress content
+                $r['content'] = bzdecompress($r['content']);
+                $r['content_js_obfuscated'] = bzdecompress($r['content_js_obfuscated']);
                 break;
 
             case 'delete':

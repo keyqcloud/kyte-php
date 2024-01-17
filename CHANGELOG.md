@@ -3,6 +3,7 @@
 * Delete page data when page is deleted
 * Add environment variable specific for data stores (s3 bucket name and region)
 * Fix release script to check for Version.php as too many version mismatches have occurred
+* Compress KyteScript for custom script data
 * Compress section templates
 * Add attribute for storing block layout information in `KyteSectionTemplate`
 * Rename section templates as `KyteSectionTemplate`
