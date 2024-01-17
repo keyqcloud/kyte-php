@@ -1,3 +1,7 @@
+## 3.4.3
+
+* Decompress section template fk data for `KytePage`
+
 ## 3.4.2
 
 * Delete page data when page is deleted

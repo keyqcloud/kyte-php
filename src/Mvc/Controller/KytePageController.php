@@ -23,6 +23,20 @@ class KytePageController extends ModelController
     }
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
+        if ($r['footer'] && isset($r['footer']['html'], $r['footer']['stylesheet'], $r['footer']['javascript'], $r['footer']['javascript_obfuscated'], $r['footer']['block_layout'])) {
+            $r['footer']['html'] = bzdecompress($r['footer']['html']);
+            $r['footer']['stylesheet'] = bzdecompress($r['footer']['stylesheet']);
+            $r['footer']['javascript'] = bzdecompress($r['footer']['javascript']);
+            $r['footer']['javascript_obfuscated'] = bzdecompress($r['footer']['javascript_obfuscated']);
+            $r['footer']['block_layout'] = bzdecompress($r['footer']['block_layout']);
+        }
+        if ($r['header'] && isset($r['header']['html'], $r['header']['stylesheet'], $r['header']['javascript'], $r['header']['javascript_obfuscated'], $r['header']['block_layout'])) {
+            $r['header']['html'] = bzdecompress($r['header']['html']);
+            $r['header']['stylesheet'] = bzdecompress($r['header']['stylesheet']);
+            $r['header']['javascript'] = bzdecompress($r['header']['javascript']);
+            $r['header']['javascript_obfuscated'] = bzdecompress($r['header']['javascript_obfuscated']);
+            $r['header']['block_layout'] = bzdecompress($r['header']['block_layout']);
+        }
         switch ($method) {
             case 'get':
                 $app = new \Kyte\Core\ModelObject(Application);
