@@ -1,7 +1,7 @@
 <?php
 
 $KyteScriptAssignment = [
-	'name' => 'KyteScript',
+	'name' => 'KyteScriptAssignment',
 	'struct' => [
 		'script'	=> [
 			'type'		=> 'i',
