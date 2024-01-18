@@ -369,7 +369,7 @@ class KytePageController extends ModelController
         $includes = new \Kyte\Core\Model(KyteScriptAssignment);
         $includes->retrieve('page', $page['id'], false, [['field' => 'site', 'value' => $page['site']['id']]], false, [['field' => 'id', 'direction' => 'asc']]);
         foreach($includes->objects as $include) {
-            $script = new \Kyte\Core\Model(KyteScript);
+            $script = new \Kyte\Core\ModelObject(KyteScript);
             if ($script->retrieve('id', $include->script, [['field' => 'state', 'value' => 1]])) {
                 switch ($script->script_type) {
                     case 'js':
