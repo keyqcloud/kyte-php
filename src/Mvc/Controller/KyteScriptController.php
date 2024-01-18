@@ -38,6 +38,9 @@ class KyteScriptController extends ModelController
                 $r['content_js_obfuscated'] = bzdecompress($r['content_js_obfuscated']);
                 break;
             case 'update':
+                // decompress content
+                $r['content'] = bzdecompress($r['content']);
+                $r['content_js_obfuscated'] = bzdecompress($r['content_js_obfuscated']);
                 if ($o->state == 1 && !isset($d['state'])) {
                     $o->save(['state' => 2]);
                 }
@@ -52,7 +55,7 @@ class KyteScriptController extends ModelController
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
                     // write script to file
-                    $s3->write($o->s3key, $o->obfuscate_js ? $o->content_js_obfuscated : $o->content);
+                    $s3->write($o->s3key, $o->obfuscate_js ? $r['content_js_obfuscated'] : $r['content']);
 
                     $pages = new \Kyte\Core\Model(KytePage);
                     $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $r['site']['id']]]);
@@ -92,9 +95,6 @@ class KyteScriptController extends ModelController
                         $cf->createInvalidation($r['site']['cfDistributionId'], $invalidationPaths);
                     }
                 }
-                // decompress content
-                $r['content'] = bzdecompress($r['content']);
-                $r['content_js_obfuscated'] = bzdecompress($r['content_js_obfuscated']);
                 break;
 
             case 'delete':
