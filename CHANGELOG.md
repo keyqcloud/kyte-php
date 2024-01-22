@@ -1,3 +1,7 @@
+## 3.4.6
+
+* Fix navigation item to return empty string for html data
+
 ## 3.4.5
 
 * Add `KyteScriptAssignment` model for tracking what scripts are going to be included in which `KytePage`s

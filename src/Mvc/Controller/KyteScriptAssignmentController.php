@@ -9,13 +9,9 @@ class KyteScriptAssignmentController extends ModelController
             $r['script']['content'] = '';
             $r['script']['content_js_obfuscated'] = '';
         }
-        if (isset($r['page'])) {
-            $r['page']['html'] = '';
-            $r['page']['javascript'] = '';
-            $r['page']['javascript_obfuscated'] = '';
-            $r['page']['stylesheet'] = '';
-            $r['page']['footer'] = null;
+        if (isset($r['page'], $r['page']['header'], $r['page']['footer'])) {
             $r['page']['header'] = null;
+            $r['page']['footer'] = null;
         }
     }
 }
