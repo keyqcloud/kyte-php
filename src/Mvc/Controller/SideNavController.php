@@ -45,6 +45,21 @@ class SideNavController extends ModelController
                     $params['stylesheet'] = bzdecompress($pd->stylesheet);
                     $params['javascript'] = bzdecompress($pd->javascript);
                     $params['javascript_obfuscated'] = bzdecompress($pd->javascript_obfuscated);
+                    // footers and headers
+                    if ($params['footer'] && isset($params['footer']['html'], $params['footer']['stylesheet'], $params['footer']['javascript'], $params['footer']['javascript_obfuscated'], $params['footer']['block_layout'])) {
+                        $params['footer']['html'] = bzdecompress($params['footer']['html']);
+                        $params['footer']['stylesheet'] = bzdecompress($params['footer']['stylesheet']);
+                        $params['footer']['javascript'] = bzdecompress($params['footer']['javascript']);
+                        $params['footer']['javascript_obfuscated'] = bzdecompress($params['footer']['javascript_obfuscated']);
+                        $params['footer']['block_layout'] = bzdecompress($params['footer']['block_layout']);
+                    }
+                    if ($params['header'] && isset($params['header']['html'], $params['header']['stylesheet'], $params['header']['javascript'], $params['header']['javascript_obfuscated'], $params['header']['block_layout'])) {
+                        $params['header']['html'] = bzdecompress($params['header']['html']);
+                        $params['header']['stylesheet'] = bzdecompress($params['header']['stylesheet']);
+                        $params['header']['javascript'] = bzdecompress($params['header']['javascript']);
+                        $params['header']['javascript_obfuscated'] = bzdecompress($params['header']['javascript_obfuscated']);
+                        $params['header']['block_layout'] = bzdecompress($params['header']['block_layout']);
+                    }
                     // compile html file
                     $data = \Kyte\Mvc\Controller\KytePageController::createHtml($params);
                     // write to file
