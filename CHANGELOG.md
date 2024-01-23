@@ -1,3 +1,7 @@
+## 3.4.7
+
+* Fix bug where footer and header where not decompressed for nav/sidenav, scripts, and libraries.
+
 ## 3.4.6
 
 * Fix navigation item to return empty string for html data
