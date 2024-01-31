@@ -1,3 +1,7 @@
+## 3.5.2
+
+* Fix problem where compressed binary data was being returned as part of foreign key for SideNavItem
+
 ## 3.5.1
 
 * Allow for user defined variable name for Kyte Web Component
