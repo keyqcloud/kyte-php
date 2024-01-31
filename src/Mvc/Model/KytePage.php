@@ -148,6 +148,13 @@ $KytePage = [
 			'date'		=> false,
 		],
 
+		'webcomponent_obj_name'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
 		// framework attributes
 
 		'kyte_account'	=> [

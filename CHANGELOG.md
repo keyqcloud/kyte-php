@@ -1,3 +1,7 @@
+## 3.5.0
+
+* Add models and attributes for web component.
+
 ## 3.4.7
 
 * Fix bug where footer and header where not decompressed for nav/sidenav, scripts, and libraries.
