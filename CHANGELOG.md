@@ -1,7 +1,9 @@
 ## 3.5.0
 
-* Add models and attributes for web component.
-* Add controller for compressing/decompressing web component data.
+* Enhanced PHP backend integration for dynamic web component rendering.
+* Implemented functionality to output HTML templates in an object format compatible with KyteWebComponent, enabling seamless integration with frontend JavaScript.
+* Added robust server-side handling for web component data, including secure compression and decompression functionalities.
+* Improved codebase to support efficient loading and rendering of web components, optimizing both frontend and backend performance.
 
 ## 3.4.7
 

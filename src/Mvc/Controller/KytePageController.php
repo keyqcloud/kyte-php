@@ -313,6 +313,18 @@ class KytePageController extends ModelController
             $code .='<style>footer { color: '.$page['footer']['fgColor'].' !important; position:fixed; bottom:0; width:100%; background-color: '.$page['footer']['bgColor'].' !important; }'.$page['footer']['stylesheet'].'</style>';
         }
 
+        // styles for any web components
+        // retrieve libraries
+        $webComponents = new \Kyte\Core\Model(KytePageWebComponent);
+        $webComponents->retrieve('page', $page['id'], false, [['field' => 'site', 'value' => $page['site']['id']]]);
+        if ($webComponents->count() > 0) {
+            $code .= '<style>';
+            foreach($webComponents->objects as $component) {
+                $code .= bzdecompress($component->stylesheet);
+            }
+            $code .= '</style>';
+        }
+
         // close head
         $code .= '</head>';
 
@@ -504,6 +516,21 @@ class KytePageController extends ModelController
             } else {
                 $code .= $page['footer']['javascript']."\n";
             }
+        }
+
+        if ($webComponents->count() > 0) {
+            $code .= 'const templates = {';
+            foreach($webComponents->objects as $component) {
+                $template = bzdecompress($component->html);
+                // Ensure the component identifier and template are properly escaped for JavaScript
+                $identifier = addslashes($component->identifier);
+                $templateJs = addslashes($template);
+    
+                // Construct the object key-value pair
+                $code .= "'$identifier': `$templateJs`,";
+            }
+            $code = rtrim($code, ','); // Remove the last comma
+            $code .= '};'; // Close the templates object
         }
 
         $code .= ' });</script>';
