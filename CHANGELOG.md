@@ -1,6 +1,7 @@
 ## 3.5.0
 
 * Add models and attributes for web component.
+* Add controller for compressing/decompressing web component data.
 
 ## 3.4.7
 
