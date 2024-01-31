@@ -406,6 +406,22 @@ class KytePageController extends ModelController
             $code .= $page['site']['application']['kyte_connect']."\n\n";
         }
 
+        if ($webComponents->count() > 0) {
+            $code .= 'const templates = {';
+            foreach($webComponents->objects as $component) {
+                $template = bzdecompress($component->html);
+                // Ensure the component identifier and template are properly escaped for JavaScript
+                $identifier = addslashes($component->identifier);
+                $templateJs = addslashes($template);
+    
+                // Construct the object key-value pair
+                $code .= "'$identifier': `$templateJs`,";
+            }
+            $code = rtrim($code, ','); // Remove the last comma
+            $code .= '};'; // Close the templates object
+            $code .= 'const '.$page['webcomponent_obj_name'].' = new KyteWebComponent(templates);';
+        }
+
         // custom js
         $code .= '$(document).ready(function() { ';
         if ($page['protected'] == 1) {
@@ -516,21 +532,6 @@ class KytePageController extends ModelController
             } else {
                 $code .= $page['footer']['javascript']."\n";
             }
-        }
-
-        if ($webComponents->count() > 0) {
-            $code .= 'const templates = {';
-            foreach($webComponents->objects as $component) {
-                $template = bzdecompress($component->html);
-                // Ensure the component identifier and template are properly escaped for JavaScript
-                $identifier = addslashes($component->identifier);
-                $templateJs = addslashes($template);
-    
-                // Construct the object key-value pair
-                $code .= "'$identifier': `$templateJs`,";
-            }
-            $code = rtrim($code, ','); // Remove the last comma
-            $code .= '};'; // Close the templates object
         }
 
         $code .= ' });</script>';
