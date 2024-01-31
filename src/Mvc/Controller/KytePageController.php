@@ -316,7 +316,7 @@ class KytePageController extends ModelController
         // styles for any web components
         // retrieve libraries
         $webComponents = new \Kyte\Core\Model(KytePageWebComponent);
-        $webComponents->retrieve('page', $page['id'], false, [['field' => 'site', 'value' => $page['site']['id']]]);
+        $webComponents->retrieve('page', $page['id']);
         if ($webComponents->count() > 0) {
             $code .= '<style>';
             foreach($webComponents->objects as $component) {
