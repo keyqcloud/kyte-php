@@ -1,3 +1,7 @@
+## 3.5.1
+
+* Allow for user defined variable name for Kyte Web Component
+
 ## 3.5.0
 
 * Enhanced PHP backend integration for dynamic web component rendering.
