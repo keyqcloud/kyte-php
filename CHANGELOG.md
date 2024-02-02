@@ -1,3 +1,7 @@
+## 3.5.4
+
+* Fix issue where KyteWebComponent was returning empty data
+
 ## 3.5.3
 
 * Fix problem where assinged Kyte Web Components were returning compressed binary data.

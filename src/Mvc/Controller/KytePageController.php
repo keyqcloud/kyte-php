@@ -320,7 +320,10 @@ class KytePageController extends ModelController
         if ($webComponents->count() > 0) {
             $code .= '<style>';
             foreach($webComponents->objects as $component) {
-                $code .= bzdecompress($component->stylesheet);
+                $template = new \Kyte\Core\ModelObject(KyteWebComponent);
+                if ($template->retrieve('id', $component->component)) {
+                    $code .= bzdecompress($template->stylesheet);
+                }
             }
             $code .= '</style>';
         }
@@ -409,13 +412,16 @@ class KytePageController extends ModelController
         if ($webComponents->count() > 0) {
             $code .= 'const templates = {';
             foreach($webComponents->objects as $component) {
-                $template = bzdecompress($component->html);
-                // Ensure the component identifier and template are properly escaped for JavaScript
-                $identifier = addslashes($component->identifier);
-                $templateJs = addslashes($template);
-    
-                // Construct the object key-value pair
-                $code .= "'$identifier': `$templateJs`,";
+                $template = new \Kyte\Core\ModelObject(KyteWebComponent);
+                if ($template->retrieve('id', $component->component)) {
+                    $templateHtml = bzdecompress($template->html);
+                    // Ensure the component identifier and template are properly escaped for JavaScript
+                    $identifier = addslashes($template->identifier);
+                    $templateHtml = addslashes($templateHtml);
+        
+                    // Construct the object key-value pair
+                    $code .= "'$identifier': `$templateHtml`,";
+                }
             }
             $code = rtrim($code, ','); // Remove the last comma
             $code .= '};'; // Close the templates object
