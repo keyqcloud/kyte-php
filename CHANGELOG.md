@@ -1,3 +1,7 @@
+## 3.5.3
+
+* Fix problem where assinged Kyte Web Components were returning compressed binary data.
+
 ## 3.5.2
 
 * Fix problem where compressed binary data was being returned as part of foreign key for SideNavItem
