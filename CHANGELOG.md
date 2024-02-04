@@ -1,3 +1,7 @@
+## 3.5.5
+
+* Simplify version response and exclude git hashes etc.
+
 ## 3.5.4
 
 * Fix issue where KyteWebComponent was returning empty data
