@@ -3,6 +3,7 @@
 * Simplify version response and exclude git hashes etc.
 * Change logout handler to use element class instead of id so multiple logout handlers can be configured.
 * Add flag for logout option for side nav
+* Add attribute for making side nav lable centered and icon block
 
 ## 3.5.4
 

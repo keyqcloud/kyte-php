@@ -52,6 +52,13 @@ $SideNav = [
 			'default'	=> 0,
 			'date'		=> false,
 		],
+		'labelCenterBlock'		=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'default'	=> 0,
+			'date'		=> false,
+		],
 
 		'site'	=> [
 			'type'		=> 'i',
