@@ -431,7 +431,7 @@ class KytePageController extends ModelController
         // custom js
         $code .= '$(document).ready(function() { ';
         if ($page['protected'] == 1) {
-            $code .= 'k.addLogoutHandler("#logout");'."\n";
+            $code .= 'k.addLogoutHandler(".logout");'."\n";
             $code .= 'if (k.isSession()) { '."\n";
         }
         if ($page['obfuscate_js'] == 1) {
@@ -512,7 +512,7 @@ class KytePageController extends ModelController
                     }
                     $link = '/'.$linked_page->s3key;
                 }
-                $side_menu_items[] = '{faicon:"'.$m->faicon.'",label:"'.$m->title.'",'.(isset($link[0]) && $link[0] == '#' ? 'selector:"'.$link.'"' : 'href:"'.$link.'"').'},';
+                $side_menu_items[] = '{faicon:"'.$m->faicon.'",label:"'.$m->title.'",'.($m->isLogout == 1 ? 'logout:true,':'').(isset($link[0]) && $link[0] == '#' ? 'selector:"'.$link.'"' : 'href:"'.$link.'"').'},';
             }
             if (count($items->objects) > 0) {
                 if (isset($items->objects[0]->link) && $items->objects[0]->link[0] == '#') {
