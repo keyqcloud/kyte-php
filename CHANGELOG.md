@@ -1,6 +1,8 @@
 ## 3.5.5
 
 * Simplify version response and exclude git hashes etc.
+* Change logout handler to use element class instead of id so multiple logout handlers can be configured.
+* Add flag for logout option for side nav
 
 ## 3.5.4
 
