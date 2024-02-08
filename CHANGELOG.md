@@ -1,3 +1,7 @@
+## 3.5.7
+
+* Fix issue with wrong navigation's custom nav item style
+
 ## 3.5.6
 
 * Fix issue with custom nav item style not propagating
