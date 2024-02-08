@@ -1,3 +1,7 @@
+## 3.5.6
+
+* Fix issue with custom nav item style not propagating
+
 ## 3.5.5
 
 * Simplify version response and exclude git hashes etc.
