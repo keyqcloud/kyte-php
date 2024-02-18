@@ -822,9 +822,6 @@ class Api
 			$this->response['uid'] = $this->user->id;
 			$this->response['name'] = $this->user->name;
 			$this->response['email'] = $this->user->email;
-			if (isset($this->user->role)) {
-				$this->response['role'] = $this->user->role;
-			}
 
 			// Check if the user has a different account
 			// Get user account

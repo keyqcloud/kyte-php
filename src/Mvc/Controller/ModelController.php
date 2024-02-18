@@ -99,7 +99,6 @@ class ModelController
     protected $getFKTables;
     protected $getExternalTables;
     protected $requireAuth;
-    protected $requireRoles;
     protected $requireAccount;
     protected $failOnNull;
     protected $checkExisting;
@@ -139,7 +138,6 @@ class ModelController
             $this->getFKTables = true;
             $this->getExternalTables = false;
             $this->requireAuth = true;
-            $this->requireRoles = true;
             $this->requireAccount = true;
             $this->checkExisting = null;
             $this->existingThrowException = true;
@@ -194,41 +192,6 @@ class ModelController
         $this->hook_auth();
     }
 
-    protected function checkPermissions($requestType, $modelName = null) {
-        // check if user id, account id is set, and whether the flag to check roles is also set to true
-        // also check to make sure this isn't a service controller by checking the model
-        if (!isset($this->user->id, $this->account->id) || !$this->requireRoles || $this->model === null) {
-            return true; // Skip permission check if conditions are not met
-        }
-    
-        $modelName = $modelName ?? $this->model['name'];
-    
-        // check if this requested model is at the app level
-        if (isset($this->model['appId'])) {
-            return true; // Skip permission check if it's a app level model
-        }
-    
-        $role = new \Kyte\Core\ModelObject(Role);
-
-        $cond = $this->requireAccount ? [['field' => 'kyte_account', 'value' => $this->account->id]] : null;
-    
-        if (!$role->retrieve('id', $this->user->role, $cond)) {
-            error_log('['.$modelName.'] => ['.$requestType.'] unable to find role for '.$this->user->role.' and '.$this->account->id);
-            return false;
-        }
-    
-        $cond[] = ['field' => 'model', 'value' => $modelName];
-        $cond[] = ['field' => 'action', 'value' => $requestType];
-    
-        $permission = new \Kyte\Core\ModelObject(Permission);
-        if (!$permission->retrieve('role', $role->id, $cond)) {
-            error_log('unable to find permission ['.$modelName.'] for role id '.$role->id.' for account '.$this->account->id.' and user '.$this->user->id);
-            return false;
-        }
-    
-        return true;
-    }
-
     protected function getObject($obj) {
         try {
             $response = $obj->getAllParams();
@@ -256,7 +219,7 @@ class ModelController
                 if ($this->getFKTables && isset($struct['fk'], $value) && !empty($value)) {
                     $fk = $struct['fk'];
     
-                    if (isset($fk['model'], $fk['field']) && $this->checkPermissions('get', $fk['model'])) {
+                    if (isset($fk['model'], $fk['field'])) {
                         $fk_model = constant($fk['model']);
                         $fk_obj = new \Kyte\Core\ModelObject($fk_model);
 
@@ -280,7 +243,7 @@ class ModelController
                 $response['ExternalTables'] = [];
     
                 foreach ($obj->kyte_model['externalTables'] as $et) {
-                    if (isset($et['model'], $et['field']) && $this->checkPermissions('get', $et['model'])) {
+                    if (isset($et['model'], $et['field'])) {
                         $et_model = constant($et['model']);
                         $et_objs = new \Kyte\Core\Model($et_model);
                         
@@ -453,10 +416,6 @@ class ModelController
                 return;
             }
     
-            if (!$this->checkPermissions('new')) {
-                throw new \Exception('Permission Denied');
-            }
-    
             if ($this->model !== null) {
                 if (!isset($this->model['appId']) && $this->requireAccount) {
                     // add account information
@@ -530,10 +489,6 @@ class ModelController
         try {
             if (!in_array('update', $this->allowableActions)) {
                 return;
-            }
-    
-            if (!$this->checkPermissions('update')) {
-                throw new \Exception('Permission Denied');
             }
 
             $conditions = null;
@@ -615,10 +570,6 @@ class ModelController
         try {
             if (!in_array('get', $this->allowableActions)) {
                 return;
-            }
-    
-            if (!$this->checkPermissions('get')) {
-                throw new \Exception('Permission Denied');
             }
 
             $conditions = null;
@@ -742,10 +693,6 @@ class ModelController
         try {
             if (!in_array('delete', $this->allowableActions)) {
                 return;
-            }
-    
-            if (!$this->checkPermissions('delete')) {
-                throw new \Exception('Permission Denied');
             }
     
             if ($field === null || $value === null) throw new \Exception("Field ($field) and Value ($value) params not set");

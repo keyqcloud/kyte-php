@@ -33,16 +33,10 @@ $KyteUser = [
 			'password'	=> true,
 		],
 
-		'role'	=> [
+		'lastLogin'	=> [
 			'type'		=> 'i',
-			'required'	=> true,
-			'size'		=> 11,
-			'unsigned'	=> true,
-			'date'		=> false,
-			'fk'		=> [
-				'model'	=> 'Role',
-				'field'	=> 'id',
-			],
+			'required'	=> false,
+			'date'		=> true,
 		],
 
 		// framework attributes

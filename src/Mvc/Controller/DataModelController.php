@@ -102,23 +102,6 @@ class DataModelController extends ModelController
                 $model_definition = self::generateModelDef($r['name']);
                 $r['model_definition'] = json_encode($model_definition);
 
-                // create new roles
-                $roles = new \Kyte\Core\Model(Role);
-                $roles->retrieve();
-                foreach ($roles->objects as $role) {
-                    foreach (['new', 'update', 'get', 'delete'] as $actionType) {
-                        $permission = new \Kyte\Core\ModelObject(Permission);
-                        if (!$permission->create([
-                            'role'  => $role->id,
-                            'model' => $r['name'],
-                            'action' => $actionType,
-                            'kyte_account' => $role->kyte_account,
-                        ])) {
-                            throw new \Exception("Failed to create permissions for new model! Squawk 7700!");
-                        }
-                    }
-                }
-
                 // switch dbs
                 $app = new \Kyte\Core\ModelObject(Application);
                 if (!$app->retrieve('id', $r['application'])) {

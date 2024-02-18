@@ -1,3 +1,9 @@
+## 3.6.0
+
+* Remove model based roles and permissions in preparations for a more streamlined RBAC
+* Add last login to user model
+* Store last login when session is created
+
 ## 3.5.7
 
 * Fix issue with wrong navigation's custom nav item style

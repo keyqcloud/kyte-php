@@ -84,7 +84,6 @@ Available controller attributes and flags to modify behaviour. Some a auto popul
 `getFKTables`
 `getExternalTables`
 `requireAuth`
-`requireRoles`
 `requireAccount`
 `failOnNull`
 `allowableActions`

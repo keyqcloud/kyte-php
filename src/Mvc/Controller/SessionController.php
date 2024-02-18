@@ -28,9 +28,19 @@ class SessionController extends ModelController
                 // create session for user and obtain user information
                 $session = $this->session->create($data[$this->api->app->username_colname], $data[$this->api->app->password_colname]);
 
-                $user = new \Kyte\Core\ModelObject(constant($this->api->app->user_model));
+                $KYTE_APP_USER_MODEL = constant($this->api->app->user_model);
+
+                $user = new \Kyte\Core\ModelObject($KYTE_APP_USER_MODEL);
                 if (!$user->retrieve('id', $session['uid'])) {
                     throw new \Exception("Unable to find user information");    
+                }
+
+                // check if lastLogin array key exists
+                if (array_key_exists('lastLogin', $KYTE_APP_USER_MODEL['struct'])) {
+                    // update last login
+                    $user->save([
+                        'lastLogin' => $session['date_created'],
+                    ]);
                 }
 
                 $this->user = $user;
@@ -60,6 +70,11 @@ class SessionController extends ModelController
                     throw new \Exception("Unable to find account associated with user");
                 }
 
+                // update last login
+                $user->save([
+                    'lastLogin' => $session['date_created'],
+                ]);
+
                 // set user and account in class
                 $this->user = $user;
                 $this->account = $account;
@@ -81,10 +96,10 @@ class SessionController extends ModelController
             $this->response['kyte_pub'] = $account_api->public_key;
             $this->response['kyte_num'] = $this->account->number;
             $this->response['kyte_iden'] = $account_api->identifier;
-            // $this->response['role'] = $response[0]['role'];
             $this->response['token'] = $session['txToken'];
             $this->response['account_id'] = $this->account->id;
             $this->response['session'] = $session['sessionToken'];
+            $this->response['session_created'] = $session['date_created'];
             $this->response['data'] = $response;
         } catch (\Exception $e) {
             // $this->api->logger->security($e->getMessage());
