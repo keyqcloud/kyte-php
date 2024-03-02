@@ -23,6 +23,13 @@ $KytePage = [
 			'date'		=> false,
 		],
 
+		'lang' => [
+			'type'		=> 's',
+			'required'	=> true,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
 		// the type of editor the user selected during creation
 		// block editor, login, table, form, custom
 		'page_type'		=> [

@@ -24,6 +24,14 @@ $KyteSite = [
 			'date'		=> false,
 		],
 
+		'default_lang' => [
+			'type'		=> 's',
+			'required'	=> true,
+			'size'		=> 255,
+			'date'		=> false,
+			'default'	=> 'en',
+		],
+
 		// site data
 		's3BucketName'		=> [
 			'type'		=> 's',
