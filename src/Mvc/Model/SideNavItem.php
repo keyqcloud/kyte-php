@@ -10,6 +10,20 @@ $SideNavItem = [
 			'date'		=> false,
 		],
 
+		'element_id'		=> [
+			'type'		=> 's',
+			'required'	=> true,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'element_class'		=> [
+			'type'		=> 's',
+			'required'	=> true,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
 		'isLogout' => [
 			'type'		=> 'i',
 			'required'	=> false,

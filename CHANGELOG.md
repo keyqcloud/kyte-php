@@ -1,6 +1,7 @@
 ## 3.6.1 (draft)
 
 * Add support for marking scripts as JavaScript modules
+* Add support for assigning element ID and/or class
 * Add support for default site langauge, and page specific languages
 
 ## 3.6.0
