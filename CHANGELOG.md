@@ -1,3 +1,7 @@
+## 3.6.1 (draft)
+
+* Add support for marking scripts as JavaScript modules
+
 ## 3.6.0
 
 * Remove model based roles and permissions in preparations for a more streamlined RBAC
