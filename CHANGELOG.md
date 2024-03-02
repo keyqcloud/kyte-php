@@ -4,6 +4,7 @@
 * Add support for assigning element ID and/or class
 * Add support for default site langauge, and page specific languages
 * Bug fix to remove calls to deprecated Permission model
+* Add support for additional MySQL types
 
 ## 3.6.0
 
