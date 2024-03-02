@@ -58,16 +58,37 @@ class ModelObject
 		$types = '';
 		foreach ($params as $key => $value) {
 			if (array_key_exists($key, $this->kyte_model['struct'])) {
-				// check if type is t, in which case return 's'
-				// otherwise return type as is
-				$types .= $this->kyte_model['struct'][$key]['type'] == 't' ? 's' : $this->kyte_model['struct'][$key]['type'];
+				// Determine the type based on the custom type mappings
+				$type = $this->kyte_model['struct'][$key]['type'];
+				switch ($type) {
+					case 's':   // String
+					case 't':   // Text
+					case 'tt':  // TinyText
+					case 'mt':  // MediumText
+					case 'lt':  // LongText
+					case 'date':// Date
+						$types .= 's';
+						break;
+					case 'b':   // Blob
+					case 'tb':  // TinyBlob
+					case 'mb':  // MediumBlob
+					case 'lb':  // LongBlob
+						$types .= 'b';
+						break;
+					case 'i':   // Integer
+					case 'bi':  // BigInt
+						$types .= 'i';
+						break;
+					default:
+						$types .= 's'; // Default to string if type is unknown
+				}
 			} else {
 				unset($params[$key]);
 			}
 		}
-
+	
 		return $types;
-	}
+	}	
 
 	/**
      * Check if the minimum required params for SQL insert query are met.
