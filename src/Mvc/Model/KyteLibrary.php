@@ -31,6 +31,15 @@ $KyteLibrary = [
 			'date'		=> false,
 		],
 
+		'is_js_module' => [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 0,
+			'date'		=> false,
+		],
+
 		'site'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
