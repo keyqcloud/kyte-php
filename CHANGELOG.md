@@ -1,6 +1,7 @@
 ## 3.6.1 (draft)
 
 * Add support for marking scripts as JavaScript modules
+* Add support for assigning element ID and/or classes
 
 ## 3.6.0
 
