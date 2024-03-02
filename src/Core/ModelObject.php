@@ -411,23 +411,36 @@ class ModelObject
 				// check if type is t, in which case return 's'
 				// otherwise return type as is
 				switch ($this->kyte_model['struct'][$key]['type']) {
-					case 's':
-					case 't':
+					case 's':   // String
+					case 't':   // Text
+					case 'tt':  // TinyText
+					case 'mt':  // MediumText
+					case 'lt':  // LongText
 						$this->{$key} = strval($value);
 						break;
-
-					case 'i':
+				
+					case 'i':   // Integer
+					case 'bi':  // BigInt
 						$this->{$key} = intval($value);
 						break;
-
-					case 'd':
+				
+					case 'd':   // Double or Decimal
 						$this->{$key} = floatval($value);
 						break;
-						
+				
+					case 'b':   // Blob
+					case 'tb':  // TinyBlob
+					case 'mb':  // MediumBlob
+					case 'lb':  // LongBlob
+						// Return blob as is for now...but this will need to be handled by each app specific controller
+						$this->{$key} = $value;
+						break;
+				
 					default:
 						$this->{$key} = $value;
 						break;
 				}
+				
 			} else {
 				$this->{$key} = strval($value);
 			}

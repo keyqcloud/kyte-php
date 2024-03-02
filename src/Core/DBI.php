@@ -351,30 +351,64 @@ class DBI {
 			if ($attrs['date']) {
 				$field .= ' bigint unsigned';
 			} else {
-
-				if ($attrs['type'] == 'i') {
-					$field .= ' int';
-					if (array_key_exists('size', $attrs)) {
-						$field .= '('.$attrs['size'].')';
-					}
-					if (array_key_exists('unsigned', $attrs)) {
-						$field .= ' unsigned';
-					}
-				} elseif ($attrs['type'] == 's') {
-					$field .= ' varchar';
-					if (array_key_exists('size', $attrs)) {
-						$field .= '('.$attrs['size'].')';
-					} else {
-						throw new \Exception("varchar requires size to be declared for column $name of table $tbl_name.");
-						return false;
-					}
-				} elseif ($attrs['type'] == 'd' && array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
-					$field .= ' decimal('.$attrs['precision'].','.$attrs['scale'].')';
-				} elseif ($attrs['type'] == 't') {
-					$field .= ' text';
-				} else {
-					throw new \Exception("Unknown type ".$attrs['type']." for column $name of table $tbl_name.");
-					return false;
+				switch ($attrs['type']) {
+					case 'i':
+						$field .= ' int';
+						if (array_key_exists('size', $attrs)) {
+							$field .= '(' . $attrs['size'] . ')';
+						}
+						if (array_key_exists('unsigned', $attrs)) {
+							$field .= ' unsigned';
+						}
+						break;
+					case 'bi':
+							$field .= ' bigint';
+							if (array_key_exists('size', $attrs)) {
+								$field .= '(' . $attrs['size'] . ')';
+							}
+							if (array_key_exists('unsigned', $attrs)) {
+								$field .= ' unsigned';
+							}
+							break;
+					case 's':
+						$field .= ' varchar';
+						if (array_key_exists('size', $attrs)) {
+							$field .= '(' . $attrs['size'] . ')';
+						} else {
+							throw new \Exception("varchar requires size to be declared for column $name of table $tbl_name.");
+						}
+						break;
+					case 'd':
+						if (array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
+							$field .= ' decimal(' . $attrs['precision'] . ',' . $attrs['scale'] . ')';
+						}
+						break;
+					case 't':
+						$field .= ' text';
+						break;
+					case 'tt':
+						$field .= ' tinytext';
+						break;
+					case 'mt':
+						$field .= ' mediumtext';
+						break;
+					case 'lt':
+						$field .= ' longtext';
+						break;
+					case 'b':
+						$field .= ' blob';
+						break;
+					case 'tb':
+						$field .= ' tinyblob';
+						break;
+					case 'mb':
+						$field .= ' mediumblob';
+						break;
+					case 'lb':
+						$field .= ' longblob';
+						break;
+					default:
+						throw new \Exception("Unknown type " . $attrs['type'] . " for column $name of table $tbl_name.");
 				}
 			}
 			if (array_key_exists('default', $attrs)) {
@@ -537,30 +571,64 @@ class DBI {
 		if ($attrs['date']) {
 			$field .= ' bigint unsigned';
 		} else {
-
-			if ($attrs['type'] == 'i') {
-				$field .= ' int';
-				if (array_key_exists('size', $attrs)) {
-					$field .= '('.$attrs['size'].')';
-				}
-				if (array_key_exists('unsigned', $attrs)) {
-					$field .= ' unsigned';
-				}
-			} elseif ($attrs['type'] == 's') {
-				$field .= ' varchar';
-				if (array_key_exists('size', $attrs)) {
-					$field .= '('.$attrs['size'].')';
-				} else {
-					throw new \Exception("varchar requires size to be declared for column $name of table $tbl_name.");
-					return false;
-				}
-			} elseif ($attrs['type'] == 'd' && array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
-				$field .= ' decimal('.$attrs['precision'].','.$attrs['scale'].')';
-			} elseif ($attrs['type'] == 't') {
-				$field .= ' text';
-			} else {
-				throw new \Exception("Unknown type ".$attrs['type']." for column $name of table $tbl_name.");
-				return false;
+			switch ($attrs['type']) {
+				case 'i':
+					$field .= ' int';
+					if (array_key_exists('size', $attrs)) {
+						$field .= '(' . $attrs['size'] . ')';
+					}
+					if (array_key_exists('unsigned', $attrs)) {
+						$field .= ' unsigned';
+					}
+					break;
+				case 'bi':
+						$field .= ' bigint';
+						if (array_key_exists('size', $attrs)) {
+							$field .= '(' . $attrs['size'] . ')';
+						}
+						if (array_key_exists('unsigned', $attrs)) {
+							$field .= ' unsigned';
+						}
+						break;
+				case 's':
+					$field .= ' varchar';
+					if (array_key_exists('size', $attrs)) {
+						$field .= '(' . $attrs['size'] . ')';
+					} else {
+						throw new \Exception("varchar requires size to be declared for column $name of table $tbl_name.");
+					}
+					break;
+				case 'd':
+					if (array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
+						$field .= ' decimal(' . $attrs['precision'] . ',' . $attrs['scale'] . ')';
+					}
+					break;
+				case 't':
+					$field .= ' text';
+					break;
+				case 'tt':
+					$field .= ' tinytext';
+					break;
+				case 'mt':
+					$field .= ' mediumtext';
+					break;
+				case 'lt':
+					$field .= ' longtext';
+					break;
+				case 'b':
+					$field .= ' blob';
+					break;
+				case 'tb':
+					$field .= ' tinyblob';
+					break;
+				case 'mb':
+					$field .= ' mediumblob';
+					break;
+				case 'lb':
+					$field .= ' longblob';
+					break;
+				default:
+					throw new \Exception("Unknown type " . $attrs['type'] . " for column $name of table $tbl_name.");
 			}
 		}
 		if (array_key_exists('default', $attrs)) {
@@ -637,30 +705,64 @@ class DBI {
 		if ($attrs['date']) {
 			$field .= ' bigint unsigned';
 		} else {
-
-			if ($attrs['type'] == 'i') {
-				$field .= ' int';
-				if (array_key_exists('size', $attrs)) {
-					$field .= '('.$attrs['size'].')';
-				}
-				if (array_key_exists('unsigned', $attrs)) {
-					$field .= ' unsigned';
-				}
-			} elseif ($attrs['type'] == 's') {
-				$field .= ' varchar';
-				if (array_key_exists('size', $attrs)) {
-					$field .= '('.$attrs['size'].')';
-				} else {
-					throw new \Exception("varchar requires size to be declared for column $column_name_new of table $tbl_name.");
-					return false;
-				}
-			} elseif ($attrs['type'] == 'd' && array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
-				$field .= ' decimal('.$attrs['precision'].','.$attrs['scale'].')';
-			} elseif ($attrs['type'] == 't') {
-				$field .= ' text';
-			} else {
-				throw new \Exception("Unknown type ".$attrs['type']." for column $column_name_new of table $tbl_name.");
-				return false;
+			switch ($attrs['type']) {
+				case 'i':
+					$field .= ' int';
+					if (array_key_exists('size', $attrs)) {
+						$field .= '(' . $attrs['size'] . ')';
+					}
+					if (array_key_exists('unsigned', $attrs)) {
+						$field .= ' unsigned';
+					}
+					break;
+				case 'bi':
+						$field .= ' bigint';
+						if (array_key_exists('size', $attrs)) {
+							$field .= '(' . $attrs['size'] . ')';
+						}
+						if (array_key_exists('unsigned', $attrs)) {
+							$field .= ' unsigned';
+						}
+						break;
+				case 's':
+					$field .= ' varchar';
+					if (array_key_exists('size', $attrs)) {
+						$field .= '(' . $attrs['size'] . ')';
+					} else {
+						throw new \Exception("varchar requires size to be declared for column $name of table $tbl_name.");
+					}
+					break;
+				case 'd':
+					if (array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
+						$field .= ' decimal(' . $attrs['precision'] . ',' . $attrs['scale'] . ')';
+					}
+					break;
+				case 't':
+					$field .= ' text';
+					break;
+				case 'tt':
+					$field .= ' tinytext';
+					break;
+				case 'mt':
+					$field .= ' mediumtext';
+					break;
+				case 'lt':
+					$field .= ' longtext';
+					break;
+				case 'b':
+					$field .= ' blob';
+					break;
+				case 'tb':
+					$field .= ' tinyblob';
+					break;
+				case 'mb':
+					$field .= ' mediumblob';
+					break;
+				case 'lb':
+					$field .= ' longblob';
+					break;
+				default:
+					throw new \Exception("Unknown type " . $attrs['type'] . " for column $name of table $tbl_name.");
 			}
 		}
 		if (array_key_exists('default', $attrs)) {
