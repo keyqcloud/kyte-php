@@ -10,6 +10,20 @@ $NavigationItem = [
 			'date'		=> false,
 		],
 
+		'element_id'		=> [
+			'type'		=> 's',
+			'required'	=> true,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'element_classes'		=> [
+			'type'		=> 's',
+			'required'	=> true,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
 		'isLogout' => [
 			'type'		=> 'i',
 			'required'	=> false,
