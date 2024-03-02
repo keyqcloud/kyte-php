@@ -136,13 +136,6 @@ class DataModelController extends ModelController
                         throw new \Exception("New model name is already in use.");
                     }
 
-                    // update permissions
-                    $perms = new \Kyte\Core\Model(Permission);
-                    $perms->retrieve("model", $o->name);
-                    foreach($perms->objects as $perm) {
-                        $perm->save([ "model" => $r['name'] ]);
-                    }
-
                     // switch dbs
                     $app = new \Kyte\Core\ModelObject(Application);
                     if (!$app->retrieve('id', $o->application)) {
@@ -176,13 +169,6 @@ class DataModelController extends ModelController
                 $attrs->retrieve("dataModel", $o->id);
                 foreach($attrs->objects as $attr) {
                     $attr->delete();
-                }
-
-                // delete perms
-                $perms = new \Kyte\Core\Model(Permission);
-                $perms->retrieve("model", $o->name);
-                foreach($perms->objects as $perm) {
-                    $perm->delete();
                 }
 
                 // delete controllers and remove function association
