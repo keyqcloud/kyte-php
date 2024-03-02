@@ -474,23 +474,23 @@ class KytePageController extends ModelController
                 }
                 if ($m->center == 1) {
                     if ($m->parentItem) {
-                        $menu_items_center_sub[$m->parentItem][] = '{'.($m->isLogout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",class:"me-2 text-dark",label:"'.$m->title.'",href:"'.$link.'"},';
+                        $menu_items_center_sub[$m->parentItem][] = '{'.($m->isLogout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",id:"'.$m->element_id.'",class:"me-2 text-dark'.(strlen($m->element_class) > 0 ? ' '.$m->element_class : '').'",label:"'.$m->title.'",href:"'.$link.'"},';
                     } else {
-                        $menu_items_center[$m->id] = '{'.($m->isLogout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",class:"me-2 text-light",label:"'.$m->title.'",href:"'.$link.'"},';
+                        $menu_items_center[$m->id] = '{'.($m->isLogout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",id:"'.$m->element_id.'",class:"me-2 text-light'.(strlen($m->element_class) > 0 ? ' '.$m->element_class : '').'",label:"'.$m->title.'",href:"'.$link.'"},';
                     }
                 } else {
                     if ($m->parentItem) {
-                        $menu_items_right_sub[$m->parentItem][] = '{'.($m->isLogout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",class:"me-2 text-dark",label:"'.$m->title.'",href:"'.$link.'"},';
+                        $menu_items_right_sub[$m->parentItem][] = '{'.($m->isLogout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",id:"'.$m->element_id.'",class:"me-2 text-dark'.(strlen($m->element_class) > 0 ? ' '.$m->element_class : '').'",label:"'.$m->title.'",href:"'.$link.'"},';
                     } else {
-                        $menu_items_right[$m->id] = '{'.($m->isLogout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",class:"me-2 text-light",label:"'.$m->title.'",href:"'.$link.'"},';
+                        $menu_items_right[$m->id] = '{'.($m->isLogout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",id:"'.$m->element_id.'",class:"me-2 text-light'.(strlen($m->element_class) > 0 ? ' '.$m->element_class : '').'",label:"'.$m->title.'",href:"'.$link.'"},';
                     }
                 }
             }
             foreach(array_keys($menu_items_center_sub) as $key) {
-                $menu_items_center[$key] = '{dropdown:true,class:"me-2 text-light",label:"'.$menu_items[$key]->title.'",items:['.implode($menu_items_center_sub[$key]).']},';
+                $menu_items_center[$key] = '{dropdown:true,id:"'.$menu_items[$key]->element_id.'",class:"me-2 text-light'.(strlen($menu_items[$key]->element_class) > 0 ? ' '.$menu_items[$key]->element_class : '').'",label:"'.$menu_items[$key]->title.'",items:['.implode($menu_items_center_sub[$key]).']},';
             }
             foreach(array_keys($menu_items_right_sub) as $key) {
-                $menu_items_right[$key] = '{dropdown:true,class:"me-2 text-light",label:"'.$menu_items[$key]->title.'",items:['.implode($menu_items_right_sub[$key]).']},';
+                $menu_items_right[$key] = '{dropdown:true,id:"'.$menu_items[$key]->element_id.'",class:"me-2 text-light'.(strlen($menu_items[$key]->element_class) > 0 ? ' '.$menu_items[$key]->element_class : '').'",label:"'.$menu_items[$key]->title.'",items:['.implode($menu_items_right_sub[$key]).']},';
             }
             $nav_link = $page['main_navigation']['link'] ? $page['main_navigation']['link'] : '/';
             if ($page['main_navigation']['page']) {
