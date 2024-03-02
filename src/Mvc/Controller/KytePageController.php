@@ -520,7 +520,7 @@ class KytePageController extends ModelController
                     }
                     $link = '/'.$linked_page->s3key;
                 }
-                $side_menu_items[] = '{faicon:"'.$m->faicon.'",label:"'.$m->title.'",'.(isset($link[0]) && $link[0] == '#' ? '' : 'id:"'.$m->element_id.'",').'classes:"'.$m->element_classes.'",'.($m->isLogout == 1 ? 'logout:true,':'').($page['side_navigation']['labelCenterBlock'] == 1 ? 'labelCenterBlock:true,':'').(isset($link[0]) && $link[0] == '#' ? 'selector:"'.$link.'"' : 'href:"'.$link.'"').'},';
+                $side_menu_items[] = '{faicon:"'.$m->faicon.'",label:"'.$m->title.'",'.(isset($link[0]) && $link[0] == '#' ? '' : 'id:"'.$m->element_id.'",').'class:"'.$m->element_class.'",'.($m->isLogout == 1 ? 'logout:true,':'').($page['side_navigation']['labelCenterBlock'] == 1 ? 'labelCenterBlock:true,':'').(isset($link[0]) && $link[0] == '#' ? 'selector:"'.$link.'"' : 'href:"'.$link.'"').'},';
             }
             if (count($items->objects) > 0) {
                 if (isset($items->objects[0]->link) && $items->objects[0]->link[0] == '#') {

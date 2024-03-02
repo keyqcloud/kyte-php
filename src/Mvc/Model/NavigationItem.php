@@ -17,7 +17,7 @@ $NavigationItem = [
 			'date'		=> false,
 		],
 
-		'element_classes'		=> [
+		'element_class'		=> [
 			'type'		=> 's',
 			'required'	=> true,
 			'size'		=> 255,
