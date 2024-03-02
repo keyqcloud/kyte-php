@@ -72,10 +72,6 @@ class DomainController extends ModelController
             if (!in_array('update', $this->allowableActions)) {
                 return;
             }
-    
-            if (!$this->checkPermissions('update')) {
-                throw new \Exception('Permission Denied');
-            }
 
             if ($field === null || $value === null) throw new \Exception("Field and Values params not set");
 

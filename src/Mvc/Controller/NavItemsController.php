@@ -38,10 +38,6 @@ class NavItemsController extends ModelController
             if (!in_array('update', $this->allowableActions)) {
                 return;
             }
-    
-            if (!$this->checkPermissions('update')) {
-                throw new \Exception('Permission Denied');
-            }
 
             $conditions = null;
             if ($this->model !== null) {
