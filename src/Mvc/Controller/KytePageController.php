@@ -230,7 +230,15 @@ class KytePageController extends ModelController
     public static function createHtml($page) {
         $gtm_body_script = '';  // empty gtm body script...if gtm code is present, will be populates with gtm script
 
-        $code = '<!DOCTYPE html><html><head>';
+        $lang = '';
+        if (strlen($page['site']['default_lang'] > 0)) {
+            $lang = ' lang="'.$page['site']['default_lang'].'"';
+        }
+        // if page lang is set, override site lang
+        if (strlen($page['lang']) > 0) {
+            $lang = ' lang="'.$page['lang'].'"';
+        }
+        $code = '<!DOCTYPE html><html'.$lang.'><head>';
         
         // Google Analytics
         if (strlen($page['site']['ga_code']) > 0) {
