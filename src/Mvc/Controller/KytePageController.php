@@ -274,7 +274,7 @@ class KytePageController extends ModelController
         foreach($libraries->objects as $library) {
             switch ($library->script_type) {
                 case 'js':
-                    $code .= '<script src="'.$library->link.'"'.($library->is_js_library == 1 ? ' type="module"' : '').'></script>';
+                    $code .= '<script src="'.$library->link.'"'.($library->is_js_module == 1 ? ' type="module"' : '').'></script>';
                     break;
                 case 'css':
                     $code .= '<link rel="stylesheet" href="'.$library->link.'">';
@@ -396,7 +396,7 @@ class KytePageController extends ModelController
             if ($script->retrieve('id', $include->script, [['field' => 'state', 'value' => 1]])) {
                 switch ($script->script_type) {
                     case 'js':
-                        $code .= '<script src="/'.$script->s3key.'"'.($script->is_js_library == 1 ? ' type="module"' : '').'></script>';
+                        $code .= '<script src="/'.$script->s3key.'"'.($script->is_js_module == 1 ? ' type="module"' : '').'></script>';
                         break;
                     case 'css':
                         $code .= '<link rel="stylesheet" href="/'.$script->s3key.'">';
