@@ -5,6 +5,7 @@
 * Add support for default site langauge, and page specific languages
 * Bug fix to remove calls to deprecated Permission model
 * Add support for additional MySQL types
+* Add URL decode for field name when parsing URL paths
 
 ## 3.6.0
 
