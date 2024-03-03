@@ -25,13 +25,13 @@ $KyteWebComponent = [
 		],
 
 		'html'		=> [
-			'type'		=> 't',
+			'type'		=> 'lb',
 			'required'	=> false,
 			'date'		=> false,
 		],
 
 		'stylesheet'	=> [
-			'type'		=> 't',
+			'type'		=> 'lb',
 			'required'	=> false,
 			'date'		=> false,
 		],

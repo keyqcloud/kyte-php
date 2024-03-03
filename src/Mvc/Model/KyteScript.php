@@ -41,14 +41,14 @@ $KyteScript = [
 		],
 
 		'content'		=> [
-			'type'		=> 't',
+			'type'		=> 'lb',
 			'required'	=> false,
 			'date'		=> false,
 		],
 
 		// if js, then obfuscated version
 		'content_js_obfuscated'		=> [
-			'type'		=> 't',
+			'type'		=> 'lb',
 			'required'	=> false,
 			'date'		=> false,
 		],
