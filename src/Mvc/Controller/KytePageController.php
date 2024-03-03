@@ -396,7 +396,7 @@ class KytePageController extends ModelController
             if ($script->retrieve('id', $include->script, [['field' => 'state', 'value' => 1]])) {
                 switch ($script->script_type) {
                     case 'js':
-                        $code .= '<script src="/'.$script->s3key.'"'.($library->is_js_library == 1 ? ' type="module"' : '').'></script>';
+                        $code .= '<script src="/'.$script->s3key.'"'.($script->is_js_library == 1 ? ' type="module"' : '').'></script>';
                         break;
                     case 'css':
                         $code .= '<link rel="stylesheet" href="/'.$script->s3key.'">';
