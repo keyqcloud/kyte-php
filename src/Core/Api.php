@@ -735,7 +735,7 @@ class Api
 
 		if (count($elements) >= 1) {
 			$this->model = $elements[0];
-			$this->field = isset($elements[1]) ? $elements[1] : null;
+			$this->field = isset($elements[1]) ? urldecode($elements[1]) : null;
 			$this->value = isset($elements[2]) ? urldecode($elements[2]) : null;
 
 			$this->response['model'] = $this->model;
