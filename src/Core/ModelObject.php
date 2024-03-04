@@ -73,7 +73,7 @@ class ModelObject
 					case 'tb':  // TinyBlob
 					case 'mb':  // MediumBlob
 					case 'lb':  // LongBlob
-						$types .= 'b';
+						$types .= 's';
 						break;
 					case 'i':   // Integer
 					case 'bi':  // BigInt
