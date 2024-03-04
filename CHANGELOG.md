@@ -1,4 +1,4 @@
-## 3.6.1 (draft)
+## 3.6.1
 
 * Add support for marking scripts as JavaScript modules
 * Add support for assigning element ID and/or class
