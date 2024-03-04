@@ -1,3 +1,7 @@
+## 3.6.2
+
+* Fix issue where blob data was not being stored in DB
+
 ## 3.6.1
 
 * Add support for marking scripts as JavaScript modules
