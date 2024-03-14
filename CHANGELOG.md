@@ -1,3 +1,7 @@
+## 3.6.4
+
+* Fix issue #36 where user object being access for application was not at the application scope level
+
 ## 3.6.3
 
 * Fix issue #34 where controller function couldn't be deleted
