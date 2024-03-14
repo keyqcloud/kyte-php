@@ -1,3 +1,7 @@
+## 3.6.3
+
+* Fix issue #34 where controller function couldn't be deleted
+
 ## 3.6.2
 
 * Fix issue where blob data was not being stored in DB

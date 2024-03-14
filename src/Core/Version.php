@@ -5,7 +5,7 @@ class Version
 {
     const MAJOR=3;
     const MINOR=6;
-    const PATCH=2;
+    const PATCH=3;
 
     public static function get()
     {
