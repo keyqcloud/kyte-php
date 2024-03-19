@@ -6,6 +6,7 @@ class KyteErrorController extends ModelController
 {
     public function hook_init() {
         $this->requireAccount = false;
+        $this->dateformat = 'm/d/Y H:i:s';
     }
     // public function hook_auth() {}
     // public function hook_response_data($method, $o, &$r = null, &$d = null) {}
