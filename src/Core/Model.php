@@ -259,7 +259,6 @@ class Model
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -318,7 +317,6 @@ class Model
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -358,7 +356,6 @@ class Model
 
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -371,7 +368,6 @@ class Model
 
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -420,7 +416,6 @@ class Model
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -452,7 +447,6 @@ class Model
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 

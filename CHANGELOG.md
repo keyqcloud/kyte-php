@@ -1,3 +1,7 @@
+## 3.6.5
+
+* Refactor code and remove unreachable statements following a throw.
+
 ## 3.6.4
 
 * Fix issue #36 where user object being access for application was not at the application scope level

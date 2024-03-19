@@ -253,28 +253,24 @@ class DBI {
 		$result = $con->query("CREATE DATABASE IF NOT EXISTS `{$name}`;");
 		if($result === false) {
   			throw new \Exception("Unable to create database. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		// create user
 		$result = $con->query("CREATE USER '{$username}'@'%' IDENTIFIED BY '{$password}';");
 		if($result === false) {
   			throw new \Exception("Unable to create user. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		// set privs
 		$result = $con->query("GRANT ALL PRIVILEGES ON `{$name}`.* TO '{$username}'@'%';");
 		if($result === false) {
   			throw new \Exception("Unable to grant privileges. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		// flush privileges
 		$result = $con->query("FLUSH PRIVILEGES;");
 		if($result === false) {
   			throw new \Exception("Unable to flush privileges. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		// if use is true, then switch db
@@ -282,7 +278,6 @@ class DBI {
 			$result = $con->query("USE `{$name}`;");
 			if($result === false) {
 				throw new \Exception("Unable to switch databases. [Error]:  ".htmlspecialchars($con->error));
-				return false;
 			}
 		}
 
@@ -321,7 +316,6 @@ class DBI {
 		$result = $con->query("DROP TABLE IF EXISTS `$tbl_name`;");
 		if($result === false) {
 			throw new \Exception("Unable to drop tables.");
-			return false;
 		}
 
 		$tbl_sql = "CREATE TABLE `$tbl_name` (";
@@ -332,17 +326,14 @@ class DBI {
 			// check if required attrs are set
 			if (!isset($attrs['date'])) {
 				throw new \Exception("date attribute must be declared for column $name of table $tbl_name.");
-				return false;
 			}
 
 			if (!isset($attrs['required'])) {
 				throw new \Exception("required attribute must be declared for column $name of table $tbl_name.");
-				return false;
 			}
 
 			if (!isset($attrs['type'])) {
 				throw new \Exception("type attribute must be declared for column $name of table $tbl_name.");
-				return false;
 			}
 
 			$field = "`$name`";	// column name
@@ -439,7 +430,6 @@ class DBI {
 		$result = $con->query($tbl_sql);
 		if($result === false) {
 			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
-			return false;
 		}
 
 		return true;
@@ -451,7 +441,6 @@ class DBI {
 	public static function dropTable($tbl_name) {
 		if (!$tbl_name) {
 			throw new \Exception("Table name cannot be empty.");
-			return false;
 		}
 
 		// db connection
@@ -474,7 +463,6 @@ class DBI {
 		$result = $con->query($tbl_sql);
 		if($result === false) {
 			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
-			return false;
 		}
 
 		return true;
@@ -486,12 +474,10 @@ class DBI {
 	public static function renameTable($tbl_name_old, $tbl_name_new) {
 		if (!$tbl_name_old) {
 			throw new \Exception("Current table name cannot be empty.");
-			return false;
 		}
 		
 		if (!$tbl_name_new) {
 			throw new \Exception("New table name cannot be empty.");
-			return false;
 		}
 
 		// db connection
@@ -514,7 +500,6 @@ class DBI {
 		$result = $con->query($tbl_sql);
 		if($result === false) {
 			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
-			return false;
 		}
 
 		return true;
@@ -526,12 +511,10 @@ class DBI {
 	public static function addColumn($tbl_name, $column, $attrs) {
 		if (!$tbl_name) {
 			throw new \Exception("Table name cannot be empty.");
-			return false;
 		}
 
 		if (!$column) {
 			throw new \Exception("Column name cannot be empty.");
-			return false;
 		}
 
 		// db connection
@@ -552,17 +535,14 @@ class DBI {
 		// check if required attrs are set
 		if (!isset($attrs['date'])) {
 			throw new \Exception("date attribute must be declared for column $column of table $tbl_name.");
-			return false;
 		}
 
 		if (!isset($attrs['required'])) {
 			throw new \Exception("required attribute must be declared for column $column of table $tbl_name.");
-			return false;
 		}
 
 		if (!isset($attrs['type'])) {
 			throw new \Exception("type attribute must be declared for column $column of table $tbl_name.");
-			return false;
 		}
 
 		$field = "`$column`";	// column name
@@ -643,7 +623,6 @@ class DBI {
 		$result = $con->query($tbl_sql);
 		if($result === false) {
 			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
-			return false;
 		}
 
 		return true;
@@ -655,17 +634,14 @@ class DBI {
 	public static function changeColumn($tbl_name, $column_name_old, $column_name_new, $attrs) {
 		if (!$tbl_name) {
 			throw new \Exception("Table name cannot be empty.");
-			return false;
 		}
 
 		if (!$column_name_old) {
 			throw new \Exception("Current column name cannot be empty.");
-			return false;
 		}
 
 		if (!$column_name_new) {
 			throw new \Exception("New column name cannot be empty.");
-			return false;
 		}
 
 		// db connection
@@ -686,17 +662,14 @@ class DBI {
 		// check if required attrs are set
 		if (!isset($attrs['date'])) {
 			throw new \Exception("date attribute must be declared for column $column_name_new of table $tbl_name.");
-			return false;
 		}
 
 		if (!isset($attrs['required'])) {
 			throw new \Exception("required attribute must be declared for column $column_name_new of table $tbl_name.");
-			return false;
 		}
 
 		if (!isset($attrs['type'])) {
 			throw new \Exception("type attribute must be declared for column $column_name_new of table $tbl_name.");
-			return false;
 		}
 
 		$field = "`$column_name_new`";	// column name
@@ -777,7 +750,6 @@ class DBI {
 		$result = $con->query($tbl_sql);
 		if($result === false) {
 			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
-			return false;
 		}
 
 		return true;
@@ -789,12 +761,10 @@ class DBI {
 	public static function dropColumn($tbl_name, $column_name) {
 		if (!$tbl_name) {
 			throw new \Exception("Table name cannot be empty.");
-			return false;
 		}
 
 		if (!$column_name) {
 			throw new \Exception("Column name cannot be empty.");
-			return false;
 		}
 
 		// db connection
@@ -817,7 +787,6 @@ class DBI {
 		$result = $con->query($tbl_sql);
 		if($result === false) {
 			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
-			return false;
 		}
 
 		return true;
@@ -849,7 +818,6 @@ class DBI {
 			}
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 
 		// DEBUG
@@ -879,16 +847,14 @@ class DBI {
 		$stmt = $con->prepare($query);
 		if($stmt === false) {
   			throw new \Exception("Error preparing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
-  			return false;
 		}
  
  		$stmt->bind_param($types, ...$bindParams);
 		// call_user_func_array(array($stmt, 'bind_param'), $bindParams);
 
 		if (!$stmt->execute()) {
-			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
 			$stmt->close();
-			return false;
+			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
 		}
 
 		$insertId = $stmt->insert_id;
@@ -953,7 +919,6 @@ class DBI {
 		$stmt = $con->prepare($query);
 		if($stmt === false) {
   			throw new \Exception("Error preparing mysql statement '$query'; ".htmlspecialchars(self::$dbConn->error), 1);
-  			return false;
 		}
  
  		$stmt->bind_param($types, ...$bindParams);
@@ -961,9 +926,8 @@ class DBI {
 
 		if (!$stmt->execute()) {
 			error_log("Error executing mysql statement '$query'; ".htmlspecialchars($con->error));
-			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
 			$stmt->close();
-			return false;
+			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
 		}
 
 		$stmt->close();
@@ -1004,15 +968,13 @@ class DBI {
 		$stmt = $con->prepare($query);
 		if($stmt === false) {
   			throw new \Exception("Error preparing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
-  			return false;
 		}
  
 		$stmt->bind_param('i', $id);
 
 		if (!$stmt->execute()) {
-			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
 			$stmt->close();
-			return false;
+			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
 		}
 
 		$stmt->close();
@@ -1094,7 +1056,6 @@ class DBI {
 		$result = $con->query($query);
 		if($result === false) {
   			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		$data = array();
@@ -1183,7 +1144,6 @@ class DBI {
 		$result = $con->query($query);
 		if($result === false) {
   			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		$data = array();
@@ -1235,7 +1195,6 @@ class DBI {
 		$result = $con->query($query);
 		if($result === false) {
   			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		$data = array();
@@ -1278,7 +1237,6 @@ class DBI {
 		$result = $con->query($query);
 		if($result === false) {
   			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		if (is_bool($result)) {
@@ -1337,7 +1295,6 @@ class DBI {
 		$result = $con->query($query);
 		if($result === false) {
   			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		$data = array();
