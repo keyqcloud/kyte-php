@@ -101,12 +101,10 @@ class ModelObject
 	protected function validateRequiredParams($params) {
 		if (count($params) == 0) {
 			throw new \Exception("Unable to create new entry without valid parameters.");
-			return false;
 		} else {
 			foreach ($this->kyte_model['struct'] as $key => $value) {
 				if ($value['required'] && !isset($value['pk']) && !isset($params[$key])) {
 					throw new \Exception("Column $key cannot be null.");
-					return false;
 				}
 			}
 		}
@@ -145,7 +143,6 @@ class ModelObject
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -214,7 +211,6 @@ class ModelObject
 			}
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -231,7 +227,6 @@ class ModelObject
 		$id = $this->id;
 		if (!isset($id)) {
 			throw new \Exception("No retrieved data to update.  Please try retrieving information with retrieve() first.");
-			return false;
 		}
 
 		// audit attributes - set date modified
@@ -255,7 +250,6 @@ class ModelObject
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -271,7 +265,6 @@ class ModelObject
 		try {
 			if (!isset($o)) {
 				throw new \Exception("No object id was found to retrieve data.");
-				return false;
 			}
 
 			if (is_array($o)) {
@@ -286,7 +279,6 @@ class ModelObject
 				// if $id is null from parameter, set it to the object's id value
 				if (!is_int($o)) {
 					throw new \Exception("A non-integer was passed for ID.");
-					return false;
 				}
 
 				$data = \Kyte\Core\DBI::select($this->kyte_model['name'], $o);
@@ -301,7 +293,6 @@ class ModelObject
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -332,7 +323,6 @@ class ModelObject
 			// last check to make sure id is set
 			if (!isset($id)) {
 				throw new \Exception("ID is null.");
-				return false;
 			}
 
 			// check db context
@@ -347,7 +337,6 @@ class ModelObject
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -375,7 +364,6 @@ class ModelObject
 			// last check to make sure id is set
 			if (!isset($id)) {
 				throw new \Exception("No condition or prior entry information was provided for data to be deleted.");
-				return false;
 			}
 
 			// check db context
@@ -391,7 +379,6 @@ class ModelObject
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
