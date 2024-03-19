@@ -1,6 +1,7 @@
 ## 3.6.5
 
 * Refactor code and remove unreachable statements following a throw.
+* Add member methods for deleting or purging retrieved objects.
 
 ## 3.6.4
 
