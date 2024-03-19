@@ -107,6 +107,16 @@ $KyteError = [
 			'date'		=> false,
 		],
 
+		// framework attributes
+
+		'kyte_account'	=> [
+			'type'		=> 'i',
+			'required'	=> true,
+			'size'		=> 11,
+			'unsigned'	=> true,
+			'date'		=> false,
+		],
+
 		// audit attributes
 
 		'created_by'		=> [
