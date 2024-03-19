@@ -42,6 +42,11 @@ class Api
      * @var \Kyte\Core\ModelObject The Application model object.
      */
     public $app = null;
+
+	/**
+     * * @var \Kyte\Exception\ErrorHandler Error handler singleton.
+     */
+    public $errorHandler = null;
     
     /**
      * The API signature.
@@ -179,6 +184,10 @@ class Api
 	
 		// initialize base framework
 		self::dbconnect();
+
+		// register error handler
+		$this->errorHandler = \Kyte\Exception\ErrorHandler::getInstance($this);
+		$this->errorHandler->register();
 	}
 
 	/**
