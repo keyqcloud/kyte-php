@@ -323,13 +323,15 @@ class ModelObject
 				} else {
 					throw new \Exception("No entry found for provided condition");
 				}
-			} else if (!isset($field, $value, $id)) {
+			} else if (!isset($field, $value) && isset($this->id)) {
 				$id = $this->id;
+			} else {
+				throw new \Exception("No condition or prior entry information was provided for data to be deleted.");
 			}
 				
 			// last check to make sure id is set
 			if (!isset($id)) {
-				throw new \Exception("No condition or prior entry information was provided for data to be deleted.");
+				throw new \Exception("ID is null.");
 				return false;
 			}
 
