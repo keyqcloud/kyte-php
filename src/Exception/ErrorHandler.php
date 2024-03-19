@@ -50,7 +50,7 @@ class ErrorHandler
     }
 
     public function handleError($errno, $errstr, $errfile, $errline) {
-        $exception = new ErrorException($errstr, $errno, 0, $errfile, $errline);
+        $exception = new \ErrorException($errstr, $errno, 0, $errfile, $errline);
         $this->handleException($exception);
     }
 
