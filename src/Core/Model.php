@@ -259,7 +259,6 @@ class Model
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -318,7 +317,6 @@ class Model
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -358,7 +356,6 @@ class Model
 
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -371,7 +368,6 @@ class Model
 
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -420,7 +416,6 @@ class Model
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -452,7 +447,6 @@ class Model
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -478,5 +472,51 @@ class Model
 			return null;
 		}
 		return $this->objects[$this->count()];
+	}
+
+	/**
+	 * Marks a entries as deleted in the database.
+	 *
+	 * This method marks items as deleted in the object array
+	 * and clears the array.
+	 * Requires that a retrieve is performed prior to calling.
+	 *
+	 * @return boolean
+	 */
+	public function deleteObjects() {
+		try {
+			foreach ($this->objects as $key => $obj) {
+				$obj->delete();
+				unset($this->objects[$key]);
+			}
+        
+			return true;
+
+		} catch (\Exception $e) {
+			throw $e;
+		}
+	}
+
+	/**
+	 * Permanently deletes database entries.
+	 *
+	 * This method purges items in the object array to
+	 * permanently delete items from database, and clears the array.
+	 * Requires that a retrieve is performed prior to calling.
+	 *
+	 * @return boolean
+	 */
+	public function purgeObjects() {
+		try {
+			foreach ($this->objects as $key => $obj) {
+				$obj->purge();
+				unset($this->objects[$key]);
+			}
+        
+			return true;
+
+		} catch (\Exception $e) {
+			throw $e;
+		}
 	}
 }

@@ -1,3 +1,16 @@
+## 3.6.5
+
+* Refactor code and remove unreachable statements following a throw.
+* Add member methods for deleting or purging retrieved objects.
+
+## 3.6.4
+
+* Fix issue #36 where user object being access for application was not at the application scope level
+
+## 3.6.3
+
+* Fix issue #34 where controller function couldn't be deleted
+
 ## 3.6.2
 
 * Fix issue where blob data was not being stored in DB
