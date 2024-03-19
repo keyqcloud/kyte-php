@@ -186,8 +186,10 @@ class Api
 		self::dbconnect();
 
 		// register error handler
-		$this->errorHandler = \Kyte\Exception\ErrorHandler::getInstance($this);
-		$this->errorHandler->register();
+		if (php_sapi_name() !== 'cli') {
+			$this->errorHandler = \Kyte\Exception\ErrorHandler::getInstance($this);
+			$this->errorHandler->register();
+		}
 	}
 
 	/**
