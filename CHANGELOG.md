@@ -3,6 +3,7 @@
 * Refactor code and remove unreachable statements following a throw.
 * Add member methods for deleting or purging retrieved objects.
 * Add ability to mark JS code in a page as a module.
+* Support for logging exceptions and errors at application level
 
 ## 3.6.4
 
