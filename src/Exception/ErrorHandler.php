@@ -24,7 +24,7 @@ class ErrorHandler
     }
 
     public function handleException($exception) {
-        $error = new \Kyte\Core\Model(KyteErrorLog);
+        $error = new \Kyte\Core\Model(KyteError);
         $log_detail = [
             'account_id' => isset($this->apiContext->account->id) ? $this->apiContext->account->id : null,
             'user_id' => isset($this->apiContext->user->id) ? $this->apiContext->user->id : null,
