@@ -102,7 +102,6 @@ class SessionController extends ModelController
             $this->response['session_created'] = $session['date_created'];
             $this->response['data'] = $response;
         } catch (\Exception $e) {
-            // $this->api->logger->security($e->getMessage());
             throw $e;
         }
     }
