@@ -408,7 +408,7 @@ class KytePageController extends ModelController
         }
 
         // begin javascript
-        $code .= '<script>';
+        $code .= $page['is_js_module'] == 1 ? '<script type="module">' : '<script>';
 
         // add kyte connect
         if ($page['site']['application']['obfuscate_kyte_connect'] == 1) {
