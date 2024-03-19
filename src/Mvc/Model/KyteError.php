@@ -1,7 +1,7 @@
 <?php
 
-$KyteErrorLog = [
-	'name' => 'KyteErrorLog',
+$KyteError = [
+	'name' => 'KyteError',
 	'struct' => [
 		'account_id'		=> [
 			'type'		=> 'i',
