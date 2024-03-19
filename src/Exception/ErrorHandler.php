@@ -50,6 +50,12 @@ class ErrorHandler
     }
 
     public function handleError($errno, $errstr, $errfile, $errline) {
+        // skip warnings, notices, deprecations for now
+        if ($errno == E_WARNING || $errno == E_NOTICE || $errno == E_USER_WARNING || $errno == E_USER_NOTICE || $errno == E_DEPRECATED || $errno == E_USER_DEPRECATED) {
+            // Just return false to continue with the normal error handler for warnings and notices
+            return false;
+        }
+
         $exception = new \ErrorException($errstr, $errno, 0, $errfile, $errline);
         $this->handleException($exception);
     }
