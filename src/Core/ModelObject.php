@@ -9,6 +9,7 @@ namespace Kyte\Core;
  *
  * @package Kyte\Core
  */
+#[\AllowDynamicProperties]
 class ModelObject
 {
 	/**
