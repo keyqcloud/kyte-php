@@ -13,6 +13,14 @@ class KyteErrorController extends ModelController
     public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {
         switch ($method) {
             case 'get':
+                if ($field == 'app_idx') {
+                    $app = new \Kyte\Core\ModelObject(Application);
+                    if (!$app->retrieve('id', $value)) {
+                        throw new \Exception("Failed to retrieve application id.");
+                    }
+                    $field = 'app_id';
+                    $value = $app->id;
+                }
                 $query = [];
                 if (isset($this->api->appId) && strlen($this->api->appId) > 0) {
                     $query[] = ['field'=>'app_id', 'value'=>$this->api->appId];
