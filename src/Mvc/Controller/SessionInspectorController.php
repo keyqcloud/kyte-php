@@ -23,6 +23,9 @@ class SessionInspectorController extends ModelController
                     }
                     $field = 'appIdentifier';
                     $value = $app->identifier;
+
+                    // load app models
+                    \Kyte\Core\Api::loadAppModels($app);
                 }
                 $query = [];
                 if (isset($this->api->appId) && strlen($this->api->appId) > 0) {
