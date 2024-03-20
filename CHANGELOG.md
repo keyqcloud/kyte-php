@@ -1,3 +1,7 @@
+## 3.6.7
+
+* Add `SessionInspector` controller
+
 ## 3.6.6
 
 * Move `is_js_module` from `KytePageData` to `KytePage`
