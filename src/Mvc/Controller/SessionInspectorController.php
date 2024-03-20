@@ -17,7 +17,7 @@ class SessionInspectorController extends ModelController
         switch ($method) {
             case 'get':
                 if ($field == 'app_idx') {
-                    $app = new \Kyte\Core\ModelObject(Application);
+                    $this->api->app = new \Kyte\Core\ModelObject(Application);
                     if (!$app->retrieve('id', $value)) {
                         throw new \Exception("Failed to retrieve application id.");
                     }
@@ -49,30 +49,27 @@ class SessionInspectorController extends ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'get':
-                if (strlen($o->appIdentifier) > 0) {
-                    $app = new \Kyte\Core\ModelObject(Application);
-                    if ($app->retrieve('identifier', $o->appIdentifier)) {
-                        if (defined($app->user_model)) {
-                            $user = new \Kyte\Core\ModelObject(constant($app->user_model));
-                            if ($user->retrieve('id', $o->uid)) {
-                                $r['user_email'] = $user->{$app->username_colname};
-                            } else {
-                                $r['user_email'] = '[failed to retrieve user]';
-                            }
+                if (strlen($o->appIdentifier) > 0 && $this->api->app !== null) {
+                    if (defined($this->api->app->user_model)) {
+                        $user = new \Kyte\Core\ModelObject(constant($this->api->app->user_model));
+                        if ($user->retrieve('id', $o->uid)) {
+                            $r['user_email'] = $user->{$this->api->app->username_colname};
                         } else {
-                            // skip this since we are not going to resolve app-space user model
-                            $r['user_email'] = '';
+                            $r['user_email'] = '[failed to retrieve user]';
                         }
                     } else {
-                        $r['user_email'] = '[failed to retrieve app]';
+                        // skip this since we are not going to resolve app-space user model
+                        $r['user_email'] = '';
                     }
-                } else {
+                } else if (strlen($o->appIdentifier) == 0) {
                     $user = new \Kyte\Core\ModelObject(KyteUser);
                     if ($user->retrieve('id', $o->uid)) {
                         $r['user_email'] = $user->email;
                     } else {
                         $r['user_email'] = '[failed to retrieve]';
                     }
+                } else {
+                    $r['user_email'] = '';
                 }
                 break;
             
