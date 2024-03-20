@@ -1,3 +1,7 @@
+## 3.6.6
+
+* Move `is_js_module` from `KytePageData` to `KytePage`
+
 ## 3.6.5
 
 * Refactor code and remove unreachable statements following a throw.

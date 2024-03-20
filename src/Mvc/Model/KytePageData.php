@@ -35,15 +35,6 @@ $KytePageData = [
 			'date'		=> false,
 		],
 
-		'is_js_module' => [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 1,
-			'unsigned'	=> true,
-			'default'	=> 0,
-			'date'		=> false,
-		],
-
 		'stylesheet'	=> [
 			'type'		=> 'lb',
 			'required'	=> false,
