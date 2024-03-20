@@ -10,7 +10,6 @@ class SessionInspectorController extends ModelController
         $this->model = Session;
     }
     // public function hook_auth() {}
-    // public function hook_response_data($method, $o, &$r = null, &$d = null) {}
     // public function hook_process_get_response(&$r) {}
     // public function hook_preprocess($method, &$r, &$o = null) {}
 
@@ -34,6 +33,32 @@ class SessionInspectorController extends ModelController
                         $conditions = array_merge($conditions, $query); // Add $query to $conditions array
                     } else {
                         $conditions = $query; // Set $conditions to an array containing $query
+                    }
+                }
+                break;
+            
+            default:
+                throw new \Exception("Unauthorized request method made.");
+                break;
+        }
+    }
+
+    public function hook_response_data($method, $o, &$r = null, &$d = null) {
+        switch ($method) {
+            case 'get':
+                if (strlen($o->appIdentifier) > 0) {
+                    $user = new \Kyte\Core\ModelObject(constant($this->api->app->user_model));
+                    if ($user->retrieve('id', $o->uid)) {
+                        $r['user_email'] = $user->{$this->api->app->username_colname};
+                    } else {
+                        $r['user_email'] = '<failed to retrieve>';
+                    }
+                } else {
+                    $user = new \Kyte\Core\ModelObject(KyteUser);
+                    if ($user->retrieve('id', $o->uid)) {
+                        $r['user_email'] = $user->email;
+                    } else {
+                        $r['user_email'] = '<failed to retrieve>';
                     }
                 }
                 break;
