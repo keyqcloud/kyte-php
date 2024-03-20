@@ -47,11 +47,17 @@ class SessionInspectorController extends ModelController
         switch ($method) {
             case 'get':
                 if (strlen($o->appIdentifier) > 0) {
-                    $user = new \Kyte\Core\ModelObject(constant($this->api->app->user_model));
-                    if ($user->retrieve('id', $o->uid)) {
-                        $r['user_email'] = $user->{$this->api->app->username_colname};
+                    $app = new \Kyte\Core\ModelObject(Application);
+                    if ($app->retrieve('id', $o->appIdentifier)) {
+                        throw new \Exception("Failed to retrieve application id.");
+                        $user = new \Kyte\Core\ModelObject(constant($app->user_model));
+                        if ($user->retrieve('id', $o->uid)) {
+                            $r['user_email'] = $user->{$app->username_colname};
+                        } else {
+                            $r['user_email'] = '<failed to retrieve user>';
+                        }
                     } else {
-                        $r['user_email'] = '<failed to retrieve>';
+                        $r['user_email'] = '<failed to retrieve app>';
                     }
                 } else {
                     $user = new \Kyte\Core\ModelObject(KyteUser);
