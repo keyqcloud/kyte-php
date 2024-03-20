@@ -18,7 +18,7 @@ class SessionInspectorController extends ModelController
             case 'get':
                 if ($field == 'app_idx') {
                     $this->api->app = new \Kyte\Core\ModelObject(Application);
-                    if (!$app->retrieve('id', $value)) {
+                    if (!$this->api->app->retrieve('id', $value)) {
                         throw new \Exception("Failed to retrieve application id.");
                     }
                     $field = 'appIdentifier';
