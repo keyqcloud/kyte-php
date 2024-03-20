@@ -48,7 +48,7 @@ class SessionInspectorController extends ModelController
             case 'get':
                 if (strlen($o->appIdentifier) > 0) {
                     $app = new \Kyte\Core\ModelObject(Application);
-                    if ($app->retrieve('id', $o->appIdentifier)) {
+                    if ($app->retrieve('identifier', $o->appIdentifier)) {
                         throw new \Exception("Failed to retrieve application id.");
                         $user = new \Kyte\Core\ModelObject(constant($app->user_model));
                         if ($user->retrieve('id', $o->uid)) {
