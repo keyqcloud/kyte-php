@@ -51,6 +51,7 @@ class SessionInspectorController extends ModelController
             case 'get':
                 if (strlen($o->appIdentifier) > 0 && $this->api->app !== null) {
                     if (defined($this->api->app->user_model)) {
+                        \Kyte\Core\Api::dbappconnect($this->api->app->db_name, $this->api->app->db_username, $this->api->app->db_password);
                         $user = new \Kyte\Core\ModelObject(constant($this->api->app->user_model));
                         if ($user->retrieve('id', $o->uid)) {
                             $r['user_email'] = $user->{$this->api->app->username_colname};
