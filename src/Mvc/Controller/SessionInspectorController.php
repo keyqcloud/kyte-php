@@ -22,10 +22,10 @@ class SessionInspectorController extends ModelController
                         throw new \Exception("Failed to retrieve application id.");
                     }
                     $field = 'appIdentifier';
-                    $value = $app->identifier;
+                    $value = $this->api->app->identifier;
 
                     // load app models
-                    \Kyte\Core\Api::loadAppModels($app);
+                    \Kyte\Core\Api::loadAppModels($this->api->app);
                 }
                 $query = [];
                 if (isset($this->api->appId) && strlen($this->api->appId) > 0) {
