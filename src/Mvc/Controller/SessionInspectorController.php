@@ -54,17 +54,17 @@ class SessionInspectorController extends ModelController
                         if ($user->retrieve('id', $o->uid)) {
                             $r['user_email'] = $user->{$app->username_colname};
                         } else {
-                            $r['user_email'] = '<failed to retrieve user>';
+                            $r['user_email'] = '[failed to retrieve user]';
                         }
                     } else {
-                        $r['user_email'] = '<failed to retrieve app>';
+                        $r['user_email'] = '[failed to retrieve app]';
                     }
                 } else {
                     $user = new \Kyte\Core\ModelObject(KyteUser);
                     if ($user->retrieve('id', $o->uid)) {
                         $r['user_email'] = $user->email;
                     } else {
-                        $r['user_email'] = '<failed to retrieve>';
+                        $r['user_email'] = '[failed to retrieve]';
                     }
                 }
                 break;
