@@ -244,6 +244,18 @@ class ModelController
                     $dateFormat = isset($struct['dateformat']) ? $struct['dateformat'] : $this->dateformat;
                     $value = !empty($value) ? date($dateFormat, $value) : ''; // Format date value
                 }
+
+                if (isset($struct['encrypt']) && $struct['encrypt']) {
+                    $value = base64_decode($value);
+                    $nonce = substr($value, 0, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+                    $cipher = substr($value, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+                    $key = base64_decode($this->api->app->cipher_key);
+                    $value = sodium_crypto_secretbox_open($cipher, $nonce, $key);
+
+                    if ($value === false) {
+                        $value = "Decryption failed";
+                    }
+                }
     
                 if ($this->getFKTables && isset($struct['fk'], $value) && !empty($value)) {
                     $fk = $struct['fk'];
@@ -407,6 +419,13 @@ class ModelController
                 if ($requiresPasswordHashing) {
                     $data[$key] = password_hash($value, PASSWORD_DEFAULT);
                 }
+                $requiresDataEncryption = isset($this->model['struct'][$key]['encrypt']) ? $this->model['struct'][$key]['encrypt'] : false;
+                if ($requiresDataEncryption) {
+                    $nonce = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+                    $key = base64_decode($this->api->app->cipher_key);
+                    $cipher = sodium_crypto_secretbox($data[$key], $nonce, $key);
+                    $data[$key] = base64_encode($nonce . $encryptedMessage);
+                }
             } else {
                 // see if data is in dot-notation i.e. <model>.<attribute>
                 $p = explode('.', $key);
@@ -479,7 +498,6 @@ class ModelController
                     }
                 }
             }
-            
 
             // add user info
             if (isset($this->api->user->id)) {
