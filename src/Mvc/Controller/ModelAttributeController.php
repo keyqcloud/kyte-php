@@ -93,7 +93,7 @@ class ModelAttributeController extends ModelController
 
                     error_log("retrieving all data for {$tbl->name}");
                     // grab all entries including deleted ones
-                    $appModel->retrieve(null, null, false, null, true);
+                    $appModel->retrieve();//null, null, false, null, true);
 
                     if ($r['encrypt']) {
                         error_log("Encrypting.....");
