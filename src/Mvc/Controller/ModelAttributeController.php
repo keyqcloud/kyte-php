@@ -78,9 +78,11 @@ class ModelAttributeController extends ModelController
 
                 // check if encryption property changed
                 if ($o->encrypt != $r['encrypt']) {
+                    error_log("loading app models....");
                     // load app specific models
                     \Kyte\Core\Api::loadAppModels($app);
 
+                    error_log("creating model instance for {$tbl->name}");
                     // specify model of this wrapper controller
                     $appModel = \Kyte\Core\Model(constant($tbl->name));
                     // grab all entries including deleted ones
