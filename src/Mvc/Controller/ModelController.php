@@ -424,7 +424,7 @@ class ModelController
                     $nonce = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
                     $key = base64_decode($this->api->app->cipher_key);
                     $cipher = sodium_crypto_secretbox($data[$key], $nonce, $key);
-                    $data[$key] = base64_encode($nonce . $encryptedMessage);
+                    $data[$key] = base64_encode($nonce . $cipher);
                 }
             } else {
                 // see if data is in dot-notation i.e. <model>.<attribute>
