@@ -55,6 +55,15 @@ $ModelAttribute = [
 			'date'		=> false,
 		],
 
+		'encrypt'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 0,		// 0 - return value, 1 - omit value
+			'date'		=> false,
+		],
+
 		// optional description
 		'description'		=> [
 			'type'		=> 't',

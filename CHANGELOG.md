@@ -1,3 +1,7 @@
+## 3.7.1
+
+* Add enrcyption/decription wrapper for application
+
 ## 3.6.7
 
 * Add `SessionInspector` controller
