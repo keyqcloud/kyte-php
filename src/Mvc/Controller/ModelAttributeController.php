@@ -85,7 +85,7 @@ class ModelAttributeController extends ModelController
                     error_log("creating model instance for {$tbl->name}");
                     // specify model of this wrapper controller
                     if (defined($tbl->name)) {
-                        $appModel = \Kyte\Core\Model(constant($tbl->name));
+                        $appModel = new \Kyte\Core\Model(constant($tbl->name));
                     } else {
                         error_log("Model definition not defined for {$tbl->name}");
                         throw new \Exception("Model definition not defined for {$tbl->name}");
