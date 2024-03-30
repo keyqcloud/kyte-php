@@ -17,6 +17,13 @@ $Application = [
 			'date'		=> false,
 		],
 
+		'cipher_key'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 512,
+			'date'		=> false,
+		],
+
 		// log bucket name
 		's3LogBucketName'	=> [
 			'type'		=> 's',
