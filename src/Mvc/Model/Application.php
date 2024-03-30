@@ -22,6 +22,7 @@ $Application = [
 			'required'	=> false,
 			'size'		=> 512,
 			'date'		=> false,
+			'protected'	=> true,
 		],
 
 		// log bucket name
