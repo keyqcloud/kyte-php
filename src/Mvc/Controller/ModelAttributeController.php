@@ -85,6 +85,8 @@ class ModelAttributeController extends ModelController
                     error_log("creating model instance for {$tbl->name}");
                     // specify model of this wrapper controller
                     $appModel = \Kyte\Core\Model(constant($tbl->name));
+
+                    error_log("retrieving all data for {$tbl->name}");
                     // grab all entries including deleted ones
                     $appModel->retrieve(null, null, false, null, true);
 
