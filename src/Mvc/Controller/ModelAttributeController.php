@@ -75,6 +75,46 @@ class ModelAttributeController extends ModelController
                 if (!\Kyte\Core\DBI::changeColumn($tbl->name, $o->name, $r['name'], $attrs)) {
                     throw new \Exception("Failed to change column {$o->name} to {$r['name']} in table {$tbl->name}...");
                 }
+
+                // check if encryption property changed
+                if ($o->encrypt != $r['encrypt']) {
+                    // load app specific models
+                    \Kyte\Core\Api::loadAppModels($app);
+
+                    // specify model of this wrapper controller
+                    $appModel = \Kyte\Core\Model(constant($tbl->name));
+                    // grab all entries including deleted ones
+                    $appModel->retrieve(null, null, false, null, true);
+
+                    if ($r['encrypt']) {
+                        // encrypt column
+                        foreach($appModel->objects as $item) {
+                            $value = $item->{$r['name']};
+                            $nonce = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+                            $key = base64_decode($app->cipher_key);
+                            $cipher = sodium_crypto_secretbox($value, $nonce, $key);
+                            $item->save([
+                                $r['name'] => base64_encode($nonce . $cipher),
+                            ]);
+                        }
+                    } else {
+                        // decrypt column
+                        foreach($appModel->objects as $item) {
+                            $value = base64_decode($item->{$r['name']});
+                            $nonce = substr($value, 0, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+                            $cipher = substr($value, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+                            $key = base64_decode($app->cipher_key);
+                            $value = sodium_crypto_secretbox_open($cipher, $nonce, $key);
+                            if ($value !== false) {
+                                $item->save([
+                                    $r['name'] => $value,
+                                ]);
+                            } else {
+                                error_log("Failed to decrypt value for {$item->id} in table {$tbl->name}");
+                            }
+                        }
+                    }
+                }
                 // return to kyte db
                 \Kyte\Core\Api::dbswitch();
 
