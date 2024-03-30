@@ -35,6 +35,10 @@ class ApplicationController extends ModelController
 
                 // create new application identifier
                 $r['identifier'] = uniqid();
+
+                // create the cipher key
+                $r['cipher_key'] = sodium_crypto_secretbox_keygen();
+
                 // create db name
                 $r['db_name'] = $r['identifier'].'_'.$this->account->number;
 
