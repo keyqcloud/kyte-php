@@ -87,6 +87,7 @@ class ModelAttributeController extends ModelController
                     $appModel->retrieve(null, null, false, null, true);
 
                     if ($r['encrypt']) {
+                        error_log("Encrypting.....");
                         // encrypt column
                         foreach($appModel->objects as $item) {
                             $value = $item->{$r['name']};
@@ -96,8 +97,11 @@ class ModelAttributeController extends ModelController
                             $item->save([
                                 $r['name'] => base64_encode($nonce . $cipher),
                             ]);
+                            // log what is being encrypted
+                            error_log("Encrypted value for {$item->id} in table {$tbl->name}");
                         }
                     } else {
+                        error_log("Decrypting.....");
                         // decrypt column
                         foreach($appModel->objects as $item) {
                             $value = base64_decode($item->{$r['name']});
@@ -109,6 +113,8 @@ class ModelAttributeController extends ModelController
                                 $item->save([
                                     $r['name'] => $value,
                                 ]);
+                                // log what is being decrypted
+                                error_log("Decrypted value for {$item->id} in table {$tbl->name}");
                             } else {
                                 error_log("Failed to decrypt value for {$item->id} in table {$tbl->name}");
                             }
