@@ -37,7 +37,7 @@ class ApplicationController extends ModelController
                 $r['identifier'] = uniqid();
 
                 // create the cipher key
-                $r['cipher_key'] = bin2hex(sodium_crypto_secretbox_keygen());
+                $r['cipher_key'] = base64_encode(sodium_crypto_secretbox_keygen());
 
                 // create db name
                 $r['db_name'] = $r['identifier'].'_'.$this->account->number;
