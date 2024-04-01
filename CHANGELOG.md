@@ -1,3 +1,7 @@
+## 3.6.8
+
+* Add support for sending slack notifications for errors
+
 ## 3.6.7
 
 * Add `SessionInspector` controller

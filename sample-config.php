@@ -51,6 +51,9 @@
     define('KYTE_DB_DATABASE', '');
     define('KYTE_DB_CHARSET', 'utf8mb4');
 
+    /* Optional Slack Integration for APM */
+    // define('SLACK_ERROR_WEBHOOK', '<YOUR SlACK WEBHOOK>');
+
 	/* APP TIMEZONE */
 	date_default_timezone_set("Asia/Tokyo");
 	/* LIST OF AVAILABLE TIMEZONES */
