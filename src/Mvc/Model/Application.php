@@ -17,6 +17,15 @@ $Application = [
 			'date'		=> false,
 		],
 
+		// slack notifications
+		'slack_error_webhook'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 512,
+			'date'		=> false,
+			'protected'	=> true,
+		],
+
 		// log bucket name
 		's3LogBucketName'	=> [
 			'type'		=> 's',
