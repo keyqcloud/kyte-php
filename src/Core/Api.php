@@ -185,8 +185,14 @@ class Api
 		// initialize base framework
 		self::dbconnect();
 
-		// register error handler
+		// if not cli, register error handler and attempt IMDS/IMDSv2 retrieval
 		if (php_sapi_name() !== 'cli') {
+			// retrieve IMDS data
+			$imdsData = \Kyte\Util\IMDS::fetchMetadata();
+
+			$this->response['imds'] = $imdsData;
+
+			// register error handler
 			$this->errorHandler = \Kyte\Exception\ErrorHandler::getInstance($this);
 			$this->errorHandler->register();
 		}
