@@ -1,3 +1,8 @@
+## 3.6.9
+
+* Add support for retrieving IMDS/IDMSv2 data
+* Update error handling to include IMDS/IMDSv2 data if available
+
 ## 3.6.8
 
 * Add support for sending slack notifications for errors
