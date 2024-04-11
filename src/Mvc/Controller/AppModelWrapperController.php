@@ -24,6 +24,8 @@ class AppModelWrapperController extends ModelController
             throw new \Exception('Unable to find model for specified application.');
         }
 
+        $this->requireAccount = false;
+
         // load app specific models
         \Kyte\Core\Api::loadAppModels($this->api->app);
 
