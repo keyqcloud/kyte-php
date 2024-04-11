@@ -1,3 +1,7 @@
+## 3.6.10
+
+* Adds support to edit and delete application level model data
+
 ## 3.6.9
 
 * Add support for retrieving IMDS/IDMSv2 data
