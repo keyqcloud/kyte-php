@@ -4,9 +4,8 @@ namespace Kyte\Mvc\Controller;
 
 class AppModelWrapperController extends ModelController
 {
-    // public function hook_auth() {}
-
-    public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {
+    public function hook_init()
+    {
         if (!isset($_SERVER['HTTP_X_KYTE_APP_ID'])) {
             throw new \Exception('Application ID must be provided.');
         }
@@ -33,6 +32,10 @@ class AppModelWrapperController extends ModelController
 
         \Kyte\Core\Api::dbappconnect($this->api->app->db_name, $this->api->app->db_username, $this->api->app->db_password);
     }
+    
+    // public function hook_auth() {}
+
+    // public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
 
     // public function hook_preprocess($method, &$r, &$o = null) {}
 
