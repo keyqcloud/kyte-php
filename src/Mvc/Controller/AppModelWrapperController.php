@@ -32,10 +32,6 @@ class AppModelWrapperController extends ModelController
         $this->model = constant($appModel->name);
 
         \Kyte\Core\Api::dbappconnect($this->api->app->db_name, $this->api->app->db_username, $this->api->app->db_password);
-
-        $field = null;
-        $value = null;
-        $conditions = [];
     }
 
     // public function hook_preprocess($method, &$r, &$o = null) {}
