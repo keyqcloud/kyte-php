@@ -55,7 +55,7 @@ class ErrorHandler
             $this->sendSlackNotification(SLACK_ERROR_WEBHOOK, $slackMessage);
         }
         // Application level notification
-        if ($this->apiContext->appId && $this->apiContext->app->slack_error_webhook) {
+        if ($this->apiContext->appId && $this->apiContext->app && $this->apiContext->slack_error_webhook) {
             $this->sendSlackNotification($this->apiContext->app->slack_error_webhook, $slackMessage);
         }
     }
