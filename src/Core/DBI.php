@@ -480,14 +480,16 @@ class DBI {
 		if (self::$redis) {
 			try {
 				$pattern = self::generateCacheKey("select:$table", "*");
-				error_log("************{$pattern}");
 				$iterator = null;
 				do {
 					$keys = self::$redis->scan($iterator, $pattern);
 					if ($keys !== false) {
+						error_log("************{$pattern}=======".print_r($key, true));
 						foreach ($keys as $key) {
 							self::$redis->del($key);
 						}
+					} else {
+						error_log("************{$pattern}+++++++NO MATCH");
 					}
 				} while ($iterator > 0);
 			} catch (\Exception $e) {
