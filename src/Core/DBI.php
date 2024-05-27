@@ -64,8 +64,8 @@ class DBI {
         self::$redisTTL = $ttl;
         self::$redis = new \Redis();
         self::$redis->connect(self::$redisHost, self::$redisPort);
-		self::$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
-		self::$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NOPREFIX);
+		self::$redis->setOption(\Redis::OPT_SCAN, \Redis::SCAN_RETRY);
+		self::$redis->setOption(\Redis::OPT_SCAN, \Redis::SCAN_NOPREFIX);
     }
 
 	/*
