@@ -1,3 +1,7 @@
+## 3.7.2
+
+* Add support for Redis caching
+
 ## 3.7.1
 
 * Improve DB fallback if SSL is not available
