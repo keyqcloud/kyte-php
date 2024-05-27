@@ -484,7 +484,7 @@ class DBI {
 				do {
 					$keys = self::$redis->scan($iterator, $pattern);
 					if ($keys !== false) {
-						error_log("************{$pattern}=======".print_r($key, true));
+						error_log("************{$pattern}=======".print_r($keys, true));
 						foreach ($keys as $key) {
 							self::$redis->del($key);
 						}
