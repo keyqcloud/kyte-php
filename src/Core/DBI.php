@@ -479,7 +479,8 @@ class DBI {
     private static function invalidateCache($table) {
 		if (self::$redis) {
 			try {
-				$pattern = self::generateCacheKey("select:$table", "*");
+				// $pattern = self::generateCacheKey("select:$table", "*");
+				$pattern = "default_kyte_salt*";
 				error_log("Generated pattern: $pattern");
 				$iterator = null;
 				$totalKeys = [];
