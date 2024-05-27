@@ -480,6 +480,7 @@ class DBI {
 		if (self::$redis) {
 			try {
 				$pattern = self::generateCacheKey("select:$table", "*");
+				error_log("************{$pattern}");
 				$iterator = null;
 				do {
 					$keys = self::$redis->scan($iterator, $pattern);
