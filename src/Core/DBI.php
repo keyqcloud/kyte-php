@@ -298,20 +298,6 @@ class DBI {
 	 * @param string $condition
 	 */
 	public static function select($table, $id = null, $condition = null, $join = null) {
-		if (self::$redis) {
-			try {
-				if (self::$redis->ping()) {
-					error_log("Redis is available and alive.");
-				} else {
-					error_log("Redis is not responding.");
-				}
-			} catch (\Exception $e) {
-				error_log("Redis connection error: " . $e->getMessage());
-			}
-		} else {
-			// error_log("Redis is not configured.");
-		}
-
         $cacheKey = self::generateCacheKey("select:$table", md5("$id:$condition:" . json_encode($join)));
         $cachedResult = self::$redis ? self::$redis->get($cacheKey) : null;
 
