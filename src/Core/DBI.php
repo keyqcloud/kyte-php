@@ -309,9 +309,9 @@ class DBI {
 				error_log("Redis connection error: " . $e->getMessage());
 			}
 		} else {
-			error_log("Redis is not configured.");
+			// error_log("Redis is not configured.");
 		}
-		
+
         $cacheKey = self::generateCacheKey("select:$table", md5("$id:$condition:" . json_encode($join)));
         $cachedResult = self::$redis ? self::$redis->get($cacheKey) : null;
 
