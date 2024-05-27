@@ -44,6 +44,12 @@
     define('CHECK_SYNTAX_ON_IMPORT', false); // Check syntax on import
     define('STRICT_TYPING', true); // Enable/Disable strict typing
 
+    /* Redis Integrations */
+    // define('KYTE_REDIS_ENDPOINT', '');
+    // define('KYTE_REDIS_PORT', 6379);
+    // define('KYTE_REDIS_TTL', 0);
+
+
     /* Database Integration */
     define('KYTE_DB_USERNAME', ''); // Database username
     define('KYTE_DB_PASSWORD', ''); // Database password
