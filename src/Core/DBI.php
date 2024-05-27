@@ -158,7 +158,7 @@ class DBI {
 			try {
 				// Check if KYTE_DB_CA_BUNDLE is defined and set SSL options
 				if (defined('KYTE_DB_CA_BUNDLE')) {
-					self::$dbConn = new \mysqli(self::$dbHost, self::$dbUser, self::$dbPassword, self::$dbName);
+					self::$dbConn = new \mysqli();
 					self::$dbConn->ssl_set(null, null, KYTE_DB_CA_BUNDLE, null, null);
 
 					// Try to establish an SSL connection
