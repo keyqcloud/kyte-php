@@ -64,6 +64,8 @@ class DBI {
         self::$redisTTL = $ttl;
         self::$redis = new \Redis();
         self::$redis->connect(self::$redisHost, self::$redisPort);
+		self::$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+		self::$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NOPREFIX);
     }
 
 	/*
@@ -479,8 +481,7 @@ class DBI {
     private static function invalidateCache($table) {
 		if (self::$redis) {
 			try {
-				// $pattern = self::generateCacheKey("select:$table", "*");
-				$pattern = "default_kyte_salt*";
+				$pattern = self::generateCacheKey("select:$table", "*");
 				error_log("Generated pattern: $pattern");
 				$iterator = null;
 				$totalKeys = [];
