@@ -156,17 +156,42 @@ class DBI {
 	{
 		if (!self::$dbConn) {
 			try {
-				self::$dbConn = new \mysqli(self::$dbHost, self::$dbUser, self::$dbPassword, self::$dbName);
-				// set charset to utf8mb4
-				if ( TRUE !== self::$dbConn->set_charset( self::$charset ) )
-					throw new \Exception( self::$dbConn->error, self::$dbConn->errno );
+				// Check if KYTE_DB_CA_BUNDLE is defined and set SSL options
+				if (defined('KYTE_DB_CA_BUNDLE')) {
+					self::$dbConn = new \mysqli(self::$dbHost, self::$dbUser, self::$dbPassword, self::$dbName);
+					self::$dbConn->ssl_set(null, null, KYTE_DB_CA_BUNDLE, null, null);
+
+					// Try to establish an SSL connection
+					if (!self::$dbConn->real_connect(self::$dbHost, self::$dbUser, self::$dbPassword, self::$dbName, null, null, MYSQLI_CLIENT_SSL)) {
+						// If SSL connection fails, throw an exception to fall back
+						throw new \Exception('SSL connection failed: ' . self::$dbConn->connect_error, self::$dbConn->connect_errno);
+					}
+				} else {
+					// Establish a non-SSL connection
+					self::$dbConn = new \mysqli(self::$dbHost, self::$dbUser, self::$dbPassword, self::$dbName);
+				}
+
+				// Set charset to utf8mb4
+				if (TRUE !== self::$dbConn->set_charset(self::$charset)) {
+					throw new \Exception(self::$dbConn->error, self::$dbConn->errno);
+				}
 			} catch (mysqli_sql_exception $e) {
-				throw $e;
+				// If SSL connection fails, fall back to non-SSL connection
+				if (defined('KYTE_DB_CA_BUNDLE') && self::$dbConn->connect_errno) {
+					self::$dbConn = new \mysqli(self::$dbHost, self::$dbUser, self::$dbPassword, self::$dbName);
+					// Set charset to utf8mb4
+					if (TRUE !== self::$dbConn->set_charset(self::$charset)) {
+						throw new \Exception(self::$dbConn->error, self::$dbConn->errno);
+					}
+				} else {
+					throw $e;
+				}
 			}
 		}
 
 		return self::$dbConn;
 	}
+
 
 	/*
 	 * Connect to database for App
