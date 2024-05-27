@@ -480,24 +480,29 @@ class DBI {
 		if (self::$redis) {
 			try {
 				$pattern = self::generateCacheKey("select:$table", "*");
+				error_log("Generated pattern: $pattern");
 				$iterator = null;
+				$totalKeys = [];
 				do {
 					$keys = self::$redis->scan($iterator, $pattern);
 					if ($keys !== false) {
-						error_log("************{$pattern}=======".print_r($keys, true));
+						error_log("Keys found for pattern {$pattern}: " . print_r($keys, true));
 						foreach ($keys as $key) {
 							self::$redis->del($key);
+							$totalKeys[] = $key; // Collect all deleted keys for debugging
 						}
 					} else {
-						error_log("************{$pattern}+++++++NO MATCH");
+						error_log("No keys matched the pattern {$pattern}");
 					}
 				} while ($iterator > 0);
+				error_log("Total keys deleted: " . print_r($totalKeys, true));
 			} catch (\Exception $e) {
 				error_log("Redis error while invalidating cache for table $table: " . $e->getMessage());
 			}
+		} else {
+			error_log("Redis is not initialized.");
 		}
-	}
-	
+	}	
 
 	/*
 	 * Return table count
