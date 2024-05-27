@@ -477,13 +477,24 @@ class DBI {
     }
 
     private static function invalidateCache($table) {
-        if (self::$redis) {
-            $keys = self::$redis->keys(self::generateCacheKey("select:$table", "*"));
-            foreach ($keys as $key) {
-                self::$redis->del($key);
-            }
-        }
-    }
+		if (self::$redis) {
+			try {
+				$pattern = self::generateCacheKey("select:$table", "*");
+				$iterator = null;
+				do {
+					$keys = self::$redis->scan($iterator, $pattern);
+					if ($keys !== false) {
+						foreach ($keys as $key) {
+							self::$redis->del($key);
+						}
+					}
+				} while ($iterator > 0);
+			} catch (\Exception $e) {
+				error_log("Redis error while invalidating cache for table $table: " . $e->getMessage());
+			}
+		}
+	}
+	
 
 	/*
 	 * Return table count
