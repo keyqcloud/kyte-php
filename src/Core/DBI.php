@@ -281,7 +281,7 @@ class DBI {
 
 	private static function generateCacheKey($prefix, $identifier = null) {
         $dbName = self::$dbName;
-		$appDbName = self::$useAppDB ? self::dbNameApp : 'ks';
+		$appDbName = self::$useAppDB ? self::$dbNameApp : 'ks';
         $deploymentSalt = defined('KYTE_DEPLOYMENT_SALT') ? KYTE_DEPLOYMENT_SALT : 'default_kyte_salt';
         $key = "{$deploymentSalt}:{$dbName}:{$appDbName}:{$prefix}";
         if ($identifier) {
