@@ -1,3 +1,7 @@
+## 3.7.1
+
+* Improve DB fallback if SSL is not available
+
 ## 3.7.0
 
 * Adds support for SSL/TLS connection to database
