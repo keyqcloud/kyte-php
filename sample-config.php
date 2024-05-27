@@ -51,7 +51,7 @@
     define('KYTE_DB_DATABASE', ''); // Database name
     define('KYTE_DB_CHARSET', 'utf8mb4'); // Database charset
     // Uncomment and specify CA cert bundle path if you wish to use SSL
-    // define('KYTE_DB_CA_BUNDLE', '/etc/ssl/certs/ca-bundle.cert');
+    // define('KYTE_DB_CA_BUNDLE', '/etc/ssl/certs/global-bundle.cert');
 
     /* Optional Slack Integration for APM */
     // define('SLACK_ERROR_WEBHOOK', '<YOUR SLACK WEBHOOK>');
