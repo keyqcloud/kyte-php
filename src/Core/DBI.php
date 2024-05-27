@@ -490,7 +490,7 @@ class DBI {
 				}
 	
 				// $pattern = self::generateCacheKey("select:$table", "*");
-				$patter = "default_kyte_salt*";
+				$pattern = "default_kyte_salt*";
 				error_log("Generated pattern: $pattern");
 	
 				// Fetch all matching keys using KEYS command
