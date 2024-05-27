@@ -290,6 +290,13 @@ class DBI {
         return $key;
     }
 
+	public static function setCache($key, $value, $ttl = 0) {
+		if (self::$redis) {
+			self::$redis->set($key, $value, $ttl > 0 ? ['ex' => $ttl] : []);
+			self::$redis->sAdd('kyte_cache_keys', $key);
+		}
+	}	
+
 	/*
 	 * Select from table in database and returns the first row only
 	 *
@@ -299,66 +306,62 @@ class DBI {
 	 */
 	public static function select($table, $id = null, $condition = null, $join = null) {
         $cacheKey = self::generateCacheKey("select:$table", md5("$id:$condition:" . json_encode($join)));
-        $cachedResult = self::$redis ? self::$redis->get($cacheKey) : null;
+		$cachedResult = self::$redis ? self::$redis->get($cacheKey) : null;
 
-        if ($cachedResult) {
-            return json_decode($cachedResult, true);
-        }
+		if ($cachedResult) {
+			return json_decode($cachedResult, true);
+		}
 
-        $con = self::$useAppDB ? self::connectApp() : self::connect();
+		$con = self::$useAppDB ? self::connectApp() : self::connect();
 
-        $query = "SELECT `$table`.* FROM `$table`";
-        $join_query = "";
-        $empty_cond = false;
-        $first = true;
+		$query = "SELECT `$table`.* FROM `$table`";
+		$join_query = "";
+		$empty_cond = false;
+		$first = true;
 
-        if (is_array($join)) {
-            foreach($join as $j) {
-                $tbl = $j['table'];
-                $query .= ", `{$j['table']}`";
-                if (isset($j['table_alias'])) {
-                    $query .= " `{$j['table_alias']}`";
-                    $tbl = $j['table_alias'];
-                }
-                if (empty($condition)) {
-                    $condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$tbl}`.`{$j['table_idx']}`";
-                    $empty_cond = true;
-                } else {
-                    $join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$tbl}`.`{$j['table_idx']}`";
-                    $first = false;
-                }
-            }
-            if (!$empty_cond) {
-                $condition = str_replace("WHERE", "AND", $condition);
-            }
-        }
+		if (is_array($join)) {
+			foreach($join as $j) {
+				$tbl = $j['table'];
+				$query .= ", `{$j['table']}`";
+				if (isset($j['table_alias'])) {
+					$query .= " `{$j['table_alias']}`";
+					$tbl = $j['table_alias'];
+				}
+				if (empty($condition)) {
+					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$tbl}`.`{$j['table_idx']}`";
+					$empty_cond = true;
+				} else {
+					$join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$tbl}`.`{$j['table_idx']}`";
+					$first = false;
+				}
+			}
+			if (!$empty_cond) {
+				$condition = str_replace("WHERE", "AND", $condition);
+			}
+		}
 
-        if(isset($id)) {
-            $query .= " WHERE id = $id";
-        } else {
-            $query .= "$join_query $condition";
-        }
+		if(isset($id)) {
+			$query .= " WHERE id = $id";
+		} else {
+			$query .= "$join_query $condition";
+		}
 
-        $result = $con->query($query);
-        if($result === false) {
-            throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
-        }
+		$result = $con->query($query);
+		if($result === false) {
+			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
+		}
 
-        $data = array();
-        while ($row = $result->fetch_assoc()) {
-            $data[] = $row;
-        }
-        $result->free();
+		$data = array();
+		while ($row = $result->fetch_assoc()) {
+			$data[] = $row;
+		}
+		$result->free();
 
-        if (self::$redis) {
-            if (self::$redisTTL > 0) {
-                self::$redis->set($cacheKey, json_encode($data), self::$redisTTL);
-            } else {
-                self::$redis->set($cacheKey, json_encode($data));
-            }
-        }
+		if (self::$redis) {
+			self::setCache($cacheKey, json_encode($data), self::$redisTTL);
+		}
 
-        return $data;
+		return $data;
     }
 
 	/*
@@ -479,24 +482,21 @@ class DBI {
     private static function invalidateCache($table) {
 		if (self::$redis) {
 			try {
-				// Check Redis connection
-				if (self::$redis->ping()) {
-					error_log("Redis server is alive.");
-				} else {
-					error_log("Unable to connect to Redis server.");
-					return;
-				}
-	
-				// $pattern = self::generateCacheKey("select:$table", "*");
-				$pattern = "default_kyte_salt*";
+				$pattern = self::generateCacheKey("select:$table", "*");
 				error_log("Generated pattern: $pattern");
 	
-				// Fetch all matching keys using KEYS command
-				$keys = self::$redis->keys($pattern);
-				if ($keys !== false && count($keys) > 0) {
-					error_log("Keys found for pattern {$pattern}: " . print_r($keys, true));
-					foreach ($keys as $key) {
+				// Fetch all matching keys from the Redis set
+				$allKeys = self::$redis->sMembers('kyte_cache_keys');
+				$keysToDelete = array_filter($allKeys, function($key) use ($pattern) {
+					return fnmatch($pattern, $key);
+				});
+				error_log("Keys to delete: " . print_r($keysToDelete, true));
+	
+				if (!empty($keysToDelete)) {
+					foreach ($keysToDelete as $key) {
 						self::$redis->del($key);
+						self::$redis->sRem('kyte_cache_keys', $key);
+						error_log("Deleted key: $key");
 					}
 				} else {
 					error_log("No keys matched the pattern {$pattern}");
@@ -508,6 +508,18 @@ class DBI {
 			error_log("Redis is not initialized.");
 		}
 	}	
+
+	public static function cleanupCacheKeys() {
+		if (self::$redis) {
+			$allKeys = self::$redis->sMembers('kyte_cache_keys');
+			foreach ($allKeys as $key) {
+				if (!self::$redis->exists($key)) {
+					self::$redis->sRem('kyte_cache_keys', $key);
+					error_log("Removed stale cache key from set: $key");
+				}
+			}
+		}
+	}
 
 	/*
 	 * Return table count
