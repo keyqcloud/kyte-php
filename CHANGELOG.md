@@ -1,3 +1,7 @@
+## 3.7.0
+
+* Adds support for SSL/TLS connection to database
+
 ## 3.6.10
 
 * Adds support to edit and delete application level model data
