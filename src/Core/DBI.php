@@ -481,12 +481,20 @@ class DBI {
     private static function invalidateCache($table) {
 		if (self::$redis) {
 			try {
+				// Check Redis connection
+				if (self::$redis->ping()) {
+					error_log("Redis server is alive.");
+				} else {
+					error_log("Unable to connect to Redis server.");
+					return;
+				}
+	
 				$pattern = self::generateCacheKey("select:$table", "*");
 				error_log("Generated pattern: $pattern");
 	
 				// Fetch all matching keys using KEYS command
 				$keys = self::$redis->keys($pattern);
-				if (!empty($keys)) {
+				if ($keys !== false && count($keys) > 0) {
 					error_log("Keys found for pattern {$pattern}: " . print_r($keys, true));
 					foreach ($keys as $key) {
 						self::$redis->del($key);
