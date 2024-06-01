@@ -62,7 +62,8 @@ class IMDS {
                 'instance-type',
                 'ami-id',
                 'local-ipv4',
-                'placement/availability-zone'
+                'placement/availability-zone',
+                'placement/region',
             ];
         }
 
