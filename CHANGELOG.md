@@ -1,3 +1,7 @@
+## 3.7.2
+
+* Enable foreign table attribute searches.
+
 ## 3.7.1
 
 * Improve DB fallback if SSL is not available
