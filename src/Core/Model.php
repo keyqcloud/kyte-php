@@ -103,12 +103,12 @@ class Model
 					$i = 1;
 					
 					foreach($search_fields as $sf) {
-						if (!array_key_exists($sf, $this->kyte_model['struct'])) {
-							$i++;
-							continue;
-						}
 						$f = explode(".", $sf);
 						if (count($f) == 1) {
+							if (!array_key_exists($sf, $this->kyte_model['struct'])) {
+								$i++;
+								continue;
+							}
 							if ($i < $c) {
 								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$escaped_value}%' OR";
 								$i++;
@@ -116,6 +116,10 @@ class Model
 								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$escaped_value}%' ";
 							}
 						} else if (count($f) == 2) {
+							if (!array_key_exists($f[0], $this->kyte_model['struct'])) {
+								$i++;
+								continue;
+							}
 							// initialize alias name as null
 							$tbl_alias = null;
 
