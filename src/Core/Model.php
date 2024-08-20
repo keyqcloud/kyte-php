@@ -63,20 +63,13 @@ class Model
 					$sql .= " WHERE `$main_tbl`.`deleted` = '0'";
 				}
 			}
-
-			// Log header values for debugging
-			error_log("Header x-kyte-range-field-name: " . (isset($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']) ? $_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME'] : 'Not set'));
-			error_log("Header x-kyte-range-field-start: " . (isset($_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']) ? $_SERVER['HTTP_X_KYTE_RANGE_FIELD_START'] : 'Not set'));
-			error_log("Header x-kyte-range-field-end: " . (isset($_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']) ? $_SERVER['HTTP_X_KYTE_RANGE_FIELD_END'] : 'Not set'));
-
 			
-			// check is header fields for range is set and add to sql query
-			if (isset($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME'], $_SERVER['HTTP_X_KYTE_RANGE_FIELD_START'], $_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']) && strlen($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']) > 0 && (is_int($_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']) || is_double($_SERVER['HTTP_X_KYTE_RANGE_FIELD_START'])) && (is_int($_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']) || is_double($_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']))) {
+			// Check if header fields for range are set and add to SQL query
+			if (isset($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME'], $_SERVER['HTTP_X_KYTE_RANGE_FIELD_START'], $_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']) && strlen($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']) > 0 && is_numeric($_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']) && is_numeric($_SERVER['HTTP_X_KYTE_RANGE_FIELD_END'])) {
 				if ($sql != '') {
 					$sql .= " AND ";
 				}
-				$sql .= "`$main_tbl`.`{$_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']}` >= {$_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']} AND `$main_tbl`.`{$_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']}` <= {$_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']}";
-				error_log($sql);
+				$sql .= "`$main_tbl`.`{$_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']}` >= {$_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']} AND `$main_tbl`.`{$_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']}` <= {$_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']}";
 			}
 
 			if(isset($conditions)) {
