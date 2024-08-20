@@ -1,3 +1,7 @@
+## 3.7.3
+
+* Ability to search by field range (int or double).
+
 ## 3.7.2
 
 * Enable foreign table attribute searches.
