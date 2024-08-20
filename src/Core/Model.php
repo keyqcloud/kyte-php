@@ -64,6 +64,12 @@ class Model
 				}
 			}
 
+			// Log header values for debugging
+			error_log("Header x-kyte-range-field-name: " . (isset($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']) ? $_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME'] : 'Not set'));
+			error_log("Header x-kyte-range-field-start: " . (isset($_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']) ? $_SERVER['HTTP_X_KYTE_RANGE_FIELD_START'] : 'Not set'));
+			error_log("Header x-kyte-range-field-end: " . (isset($_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']) ? $_SERVER['HTTP_X_KYTE_RANGE_FIELD_END'] : 'Not set'));
+
+			
 			// check is header fields for range is set and add to sql query
 			if (isset($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME'], $_SERVER['HTTP_X_KYTE_RANGE_FIELD_START'], $_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']) && strlen($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']) > 0 && (is_int($_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']) || is_double($_SERVER['HTTP_X_KYTE_RANGE_FIELD_START'])) && (is_int($_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']) || is_double($_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']))) {
 				if ($sql != '') {
