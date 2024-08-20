@@ -64,6 +64,14 @@ class Model
 				}
 			}
 
+			// check is header fields for range is set and add to sql query
+			if (isset($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME'], $_SERVER['HTTP_X_KYTE_RANGE_FIELD_START'], $_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']) && strlen($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']) > 0 && (is_int($_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']) || is_double($_SERVER['HTTP_X_KYTE_RANGE_FIELD_START'])) && (is_int($_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']) || is_double($_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']))) {
+				if ($sql != '') {
+					$sql .= " AND ";
+				}
+				$sql .= "`$main_tbl`.`{$_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']}` >= {$_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']} AND `$main_tbl`.`{$_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']}` <= {$_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']}";
+			}
+
 			if(isset($conditions)) {
 				if (!empty($conditions)) {
 					// iterate through each condition
