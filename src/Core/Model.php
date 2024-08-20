@@ -63,8 +63,6 @@ class Model
 					$sql .= " WHERE `$main_tbl`.`deleted` = '0'";
 				}
 			}
-
-			error_log($main_tbl);
 			
 			// Check if header fields for range are set and add to SQL query
 			if (isset($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME'], $_SERVER['HTTP_X_KYTE_RANGE_FIELD_START'], $_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']) && array_key_exists($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME'], $this->kyte_model['struct']) && strlen($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']) > 0 && is_numeric($_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']) && is_numeric($_SERVER['HTTP_X_KYTE_RANGE_FIELD_END'])) {
@@ -72,7 +70,6 @@ class Model
 					$sql .= " AND ";
 				}
 				$sql .= "`$main_tbl`.`{$_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']}` >= {$_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']} AND `$main_tbl`.`{$_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']}` <= {$_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']}";
-				error_log($sql);
 			}
 
 			if(isset($conditions)) {
