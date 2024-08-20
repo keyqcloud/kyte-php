@@ -76,6 +76,7 @@ class Model
 					$sql .= " AND ";
 				}
 				$sql .= "`$main_tbl`.`{$_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']}` >= {$_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']} AND `$main_tbl`.`{$_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']}` <= {$_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']}";
+				error_log($sql);
 			}
 
 			if(isset($conditions)) {
