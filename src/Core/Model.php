@@ -67,7 +67,7 @@ class Model
 			error_log($main_tbl);
 			
 			// Check if header fields for range are set and add to SQL query
-			if (isset($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME'], $_SERVER['HTTP_X_KYTE_RANGE_FIELD_START'], $_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']) && strlen($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']) > 0 && is_numeric($_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']) && is_numeric($_SERVER['HTTP_X_KYTE_RANGE_FIELD_END'])) {
+			if (isset($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME'], $_SERVER['HTTP_X_KYTE_RANGE_FIELD_START'], $_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']) && array_key_exists($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME'], $this->kyte_model['struct']) && strlen($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']) > 0 && is_numeric($_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']) && is_numeric($_SERVER['HTTP_X_KYTE_RANGE_FIELD_END'])) {
 				if ($sql != '') {
 					$sql .= " AND ";
 				}
