@@ -1129,25 +1129,20 @@ class DBI {
 		$first = true;
 
 		if (is_array($join)) {
-			foreach($join as $j) {
+			foreach ($join as $j) {
 				$tbl = $j['table'];
-				$query .= ", `{$j['table']}`";
+				$tbl_alias = isset($j['table_alias']) ? $j['table_alias'] : $tbl;
+				$join_type = isset($j['join_type']) && strtoupper($j['join_type']) === 'LEFT' ? 'LEFT JOIN' : 'JOIN';
 
-				// if an alias is set (i.e. same table is being queried), update from clause, and table name
+				$query .= " $join_type `{$j['table']}`";
+
 				if (isset($j['table_alias'])) {
-					$query .= " `{$j['table_alias']}`";
-					$tbl = $j['table_alias'];
+					$query .= " AS `$tbl_alias`";
 				}
 
-				// prepare conditions, or just the join clause
-				if (empty($condition)) {
-					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$tbl}`.`{$j['table_idx']}`";
-					$empty_cond = true;
-				} else {
-					$join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$tbl}`.`{$j['table_idx']}`";
-					$first = false;
-				}
+				$query .= " ON `$table`.`{$j['main_table_idx']}` = `$tbl_alias`.`{$j['table_idx']}`";
 			}
+
 			// if condition was originally not empty
 			if (!$empty_cond) {
 				// remove where from $condition and replace it with AND
