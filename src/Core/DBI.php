@@ -1123,11 +1123,6 @@ class DBI {
 
 		$query = "SELECT `$table`.* FROM `$table`";
 
-		$join_query = "";
-
-		$empty_cond = false;
-		$first = true;
-
 		if (is_array($join)) {
 			foreach ($join as $j) {
 				$tbl = $j['table'];
@@ -1142,18 +1137,12 @@ class DBI {
 
 				$query .= " ON `$table`.`{$j['main_table_idx']}` = `$tbl_alias`.`{$j['table_idx']}`";
 			}
-
-			// if condition was originally not empty
-			if (!$empty_cond) {
-				// remove where from $condition and replace it with AND
-				$condition = str_replace("WHERE", "AND", $condition);
-			}
 		}
 
 		if(isset($id)) {
 			$query .= " WHERE id = $id";
 		} else {
-			$query .= "$join_query $condition";
+			$query .= $condition;
 		}
 
 		// DEBUG
