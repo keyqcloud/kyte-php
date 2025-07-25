@@ -37,6 +37,35 @@ class Model
 		}
 	}
 
+	private function addJoin(&$join, $table, $main_table_idx, $table_idx, $table_alias = null, $join_type = 'LEFT') {
+		foreach ($join as $j) {
+			if (
+				$j['table'] === $table &&
+				$j['main_table_idx'] === $main_table_idx &&
+				$j['table_idx'] === $table_idx &&
+				$j['table_alias'] === $table_alias
+			) {
+				return; // already exists
+			}
+		}
+		$join[] = [
+			'table' => $table,
+			'main_table_idx' => $main_table_idx,
+			'table_idx' => $table_idx,
+			'table_alias' => $table_alias,
+			'join_type' => $join_type
+		];
+	}
+
+	private function getUniqueAlias($tableName, &$fk_tables) {
+		if (in_array($tableName, $fk_tables)) {
+			return $tableName . bin2hex(random_bytes(4));
+		}
+		$fk_tables[] = $tableName;
+		return null;
+	}
+
+
 	public function retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null, $limit = null)
 	{
 		try {
@@ -96,6 +125,7 @@ class Model
 			}
 
 			$join = null;
+			$fk_tables = [];
 			$page_sql = "";
 
 			if (isset($this->search_fields, $this->search_value)) {
@@ -104,7 +134,6 @@ class Model
 				$c = count($search_fields);
 
 				// foreign key tables - track tables and if same tables are identified, create an alias
-				$fk_tables = [];
 				if ($c > 0 && !empty($this->search_value)) {
 					$page_sql .= " AND (";
 
@@ -128,21 +157,13 @@ class Model
 								$i++;
 								continue;
 							}
-							// initialize alias name as null
-							$tbl_alias = null;
 
 							// get struct for FK
 							$fk_attr = $this->kyte_model['struct'][$f[0]];
 							// capitalize the first letter for table name
 							$tblName = $fk_attr['fk']['model'];
-							$tbl = $tblName;
-							if (in_array($tblName, $fk_tables)) {
-								// generate alias
-								$tbl_alias = $tblName.bin2hex(random_bytes(5));
-								$tbl = $tbl_alias;
-							} else {
-								$fk_tables[] = $tblName;
-							}
+							$tbl_alias = $this->getUniqueAlias($tblName, $fk_tables);
+							$tbl = $tbl_alias ?: $tblName;
 
 							if ($i < $c) {
 								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%{$escaped_value}%' OR";
@@ -151,19 +172,10 @@ class Model
 								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%{$escaped_value}%' ";
 							}
 
-							// prepare join statement
-
 							// if join is null, initialize with empty array
-							if (!$join) {
-								$join = [];
-							}
+							if (!isset($join)) $join = [];
+							$this->addJoin($join, $tblName, $f[0], $fk_attr['fk']['field'], $tbl_alias, 'LEFT');
 
-							$join[] = [
-								'table' => $tblName,
-								'main_table_idx' => $f[0],
-								'table_idx' => $fk_attr['fk']['field'],
-								'table_alias' => $tbl_alias,
-							];
 						} else {
 							throw new \Exception("Unsupported field depth $sf");
 						}
@@ -201,29 +213,13 @@ class Model
 
                                 // capitalize the first letter for table name
                                 $tblName = $fk_attr['fk']['model'];
-                                $order_sql .= " `$tblName`.`{$f[1]}` {$direction}";
-
-                                // prepare join statement
+								$tbl_alias = $this->getUniqueAlias($tblName, $fk_tables);
+								$tbl = $tbl_alias ?: $tblName;
+                                $order_sql .= " `$tbl`.`{$f[1]}` {$direction}";
 
                                 // if join is null, initialize with empty array
-                                if (!$join) {
-                                    $join = [];
-                                }
-
-                                $found = false;
-                                foreach($join as $j) {
-                                    if ($j['table'] == $tblName) {
-                                        $found = true;
-                                        break;
-                                    }
-                                }
-                                if (!$found) {
-                                    $join[] = [
-                                        'table' => $tblName,
-                                        'main_table_idx' => $f[0],
-                                        'table_idx' => $fk_attr['fk']['field'],
-                                    ];
-                                }
+                                if (!isset($join)) $join = [];
+								$this->addJoin($join, $tblName, $f[0], $fk_attr['fk']['field'], $tbl_alias, 'LEFT');
                             } else {
                                 throw new \Exception("Unsupported field depth {$order[$i]['field']}");
                             }

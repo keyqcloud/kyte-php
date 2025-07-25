@@ -1,3 +1,9 @@
+## 3.7.4
+
+* Adds LEFT and INNER JOIN SQL support.
+* Fixes issue when searching fields within a model that has foregin keys the join only returns if a fk exists.
+* Fix database field length issue with `code` in controller (`text` to `longblob`)
+
 ## 3.7.3
 
 * Ability to search by field range (int or double).
