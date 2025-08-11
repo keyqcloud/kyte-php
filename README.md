@@ -73,12 +73,15 @@ $api->route();
 
 Kyte-PHP uses HMAC-SHA256 signatures for secure API access. Signature are automatically generate or can be requested using platform specific libraries. Kyte currently supports vanilla JS, Dart/Flutter, C/C++, Java, and Python. Below is a list of platform specific libraries:
 
-* [Vanilla JavaScript](https://github.com/keyqcloud/kyte-api-js)
+* [JavaScript](https://github.com/keyqcloud/kyte-api-js)
 * [Python](https://github.com/keyqcloud/kyte-api-python)
 * [Swift](https://github.com/keyqcloud/KyteSwift)
 * [Dart/Flutter](https://github.com/keyqcloud/kyte_dart)
 * [Java](https://github.com/keyqcloud/kyte-api-java)
 * [C++](https://github.com/keyqcloud/kyte-cpp)
+* C (Pending QA)
+* Node.js (Pending QA)
+* Go (Pending QA)
 * [PHP](https://github.com/keyqcloud/kyte-api-php)
 
 ### Making API Calls
