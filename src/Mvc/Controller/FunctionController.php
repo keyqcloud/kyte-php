@@ -113,22 +113,25 @@ class FunctionController extends ModelController
                 $r['code'] = bzdecompress($r['code']);
                 break;
             case 'update':
+                $ctrl = new \Kyte\Core\ModelObject(constant("Controller"));
+                if (!$ctrl->retrieve("id", $o->controller)) {
+                    throw new \Exception("Unable to find specified controller.");
+                }
+
+                // update code base and save to file
+                ControllerController::generateCodeBase($ctrl);
+
+                $r['code'] = bzdecompress($r['code']);
+                break;
             case 'delete':                
                 $ctrl = new \Kyte\Core\ModelObject(constant("Controller"));
                 if (!$ctrl->retrieve("id", $o->controller)) {
                     throw new \Exception("Unable to find specified controller.");
                 }
 
-                $app = new \Kyte\Core\ModelObject(Application);
-                if (!$app->retrieve('id', $ctrl->application)) {
-                    throw new \Exception("CRITICAL ERROR: Unable to find application.");
-                }
-
                 // update code base and save to file
                 ControllerController::generateCodeBase($ctrl);
-
-                $r['code'] = '';
-            
+                break;            
             default:
                 break;
         }

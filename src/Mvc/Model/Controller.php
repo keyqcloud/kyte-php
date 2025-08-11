@@ -26,7 +26,7 @@ $Controller = [
 		],
 
 		'code'		=> [
-			'type'		=> 't',
+			'type'		=> 'lb',
 			'required'	=> false,
 			'date'		=> false,
 			'protected' => true,

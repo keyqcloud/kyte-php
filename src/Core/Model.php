@@ -37,6 +37,35 @@ class Model
 		}
 	}
 
+	private function addJoin(&$join, $table, $main_table_idx, $table_idx, $table_alias = null, $join_type = 'LEFT') {
+		foreach ($join as $j) {
+			if (
+				$j['table'] === $table &&
+				$j['main_table_idx'] === $main_table_idx &&
+				$j['table_idx'] === $table_idx &&
+				$j['table_alias'] === $table_alias
+			) {
+				return; // already exists
+			}
+		}
+		$join[] = [
+			'table' => $table,
+			'main_table_idx' => $main_table_idx,
+			'table_idx' => $table_idx,
+			'table_alias' => $table_alias,
+			'join_type' => $join_type
+		];
+	}
+
+	private function getUniqueAlias($tableName, &$fk_tables) {
+		if (in_array($tableName, $fk_tables)) {
+			return $tableName . bin2hex(random_bytes(4));
+		}
+		$fk_tables[] = $tableName;
+		return null;
+	}
+
+
 	public function retrieve($field = null, $value = null, $isLike = false, $conditions = null, $all = false, $order = null, $limit = null)
 	{
 		try {
@@ -63,6 +92,14 @@ class Model
 					$sql .= " WHERE `$main_tbl`.`deleted` = '0'";
 				}
 			}
+			
+			// Check if header fields for range are set and add to SQL query
+			if (isset($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME'], $_SERVER['HTTP_X_KYTE_RANGE_FIELD_START'], $_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']) && array_key_exists($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME'], $this->kyte_model['struct']) && strlen($_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']) > 0 && is_numeric($_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']) && is_numeric($_SERVER['HTTP_X_KYTE_RANGE_FIELD_END'])) {
+				if ($sql != '') {
+					$sql .= " AND ";
+				}
+				$sql .= "`$main_tbl`.`{$_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']}` >= {$_SERVER['HTTP_X_KYTE_RANGE_FIELD_START']} AND `$main_tbl`.`{$_SERVER['HTTP_X_KYTE_RANGE_FIELD_NAME']}` <= {$_SERVER['HTTP_X_KYTE_RANGE_FIELD_END']}";
+			}
 
 			if(isset($conditions)) {
 				if (!empty($conditions)) {
@@ -88,6 +125,7 @@ class Model
 			}
 
 			$join = null;
+			$fk_tables = [];
 			$page_sql = "";
 
 			if (isset($this->search_fields, $this->search_value)) {
@@ -96,19 +134,18 @@ class Model
 				$c = count($search_fields);
 
 				// foreign key tables - track tables and if same tables are identified, create an alias
-				$fk_tables = [];
 				if ($c > 0 && !empty($this->search_value)) {
 					$page_sql .= " AND (";
 
 					$i = 1;
 					
 					foreach($search_fields as $sf) {
-						if (!array_key_exists($sf, $this->kyte_model['struct'])) {
-							$i++;
-							continue;
-						}
 						$f = explode(".", $sf);
 						if (count($f) == 1) {
+							if (!array_key_exists($sf, $this->kyte_model['struct'])) {
+								$i++;
+								continue;
+							}
 							if ($i < $c) {
 								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$escaped_value}%' OR";
 								$i++;
@@ -116,21 +153,17 @@ class Model
 								$page_sql .= " `$main_tbl`.`$sf` LIKE '%{$escaped_value}%' ";
 							}
 						} else if (count($f) == 2) {
-							// initialize alias name as null
-							$tbl_alias = null;
+							if (!array_key_exists($f[0], $this->kyte_model['struct'])) {
+								$i++;
+								continue;
+							}
 
 							// get struct for FK
 							$fk_attr = $this->kyte_model['struct'][$f[0]];
 							// capitalize the first letter for table name
 							$tblName = $fk_attr['fk']['model'];
-							$tbl = $tblName;
-							if (in_array($tblName, $fk_tables)) {
-								// generate alias
-								$tbl_alias = $tblName.bin2hex(random_bytes(5));
-								$tbl = $tbl_alias;
-							} else {
-								$fk_tables[] = $tblName;
-							}
+							$tbl_alias = $this->getUniqueAlias($tblName, $fk_tables);
+							$tbl = $tbl_alias ?: $tblName;
 
 							if ($i < $c) {
 								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%{$escaped_value}%' OR";
@@ -139,19 +172,10 @@ class Model
 								$page_sql .= " `$tbl`.`{$f[1]}` LIKE '%{$escaped_value}%' ";
 							}
 
-							// prepare join statement
-
 							// if join is null, initialize with empty array
-							if (!$join) {
-								$join = [];
-							}
+							if (!isset($join)) $join = [];
+							$this->addJoin($join, $tblName, $f[0], $fk_attr['fk']['field'], $tbl_alias, 'LEFT');
 
-							$join[] = [
-								'table' => $tblName,
-								'main_table_idx' => $f[0],
-								'table_idx' => $fk_attr['fk']['field'],
-								'table_alias' => $tbl_alias,
-							];
 						} else {
 							throw new \Exception("Unsupported field depth $sf");
 						}
@@ -189,29 +213,13 @@ class Model
 
                                 // capitalize the first letter for table name
                                 $tblName = $fk_attr['fk']['model'];
-                                $order_sql .= " `$tblName`.`{$f[1]}` {$direction}";
-
-                                // prepare join statement
+								$tbl_alias = $this->getUniqueAlias($tblName, $fk_tables);
+								$tbl = $tbl_alias ?: $tblName;
+                                $order_sql .= " `$tbl`.`{$f[1]}` {$direction}";
 
                                 // if join is null, initialize with empty array
-                                if (!$join) {
-                                    $join = [];
-                                }
-
-                                $found = false;
-                                foreach($join as $j) {
-                                    if ($j['table'] == $tblName) {
-                                        $found = true;
-                                        break;
-                                    }
-                                }
-                                if (!$found) {
-                                    $join[] = [
-                                        'table' => $tblName,
-                                        'main_table_idx' => $f[0],
-                                        'table_idx' => $fk_attr['fk']['field'],
-                                    ];
-                                }
+                                if (!isset($join)) $join = [];
+								$this->addJoin($join, $tblName, $f[0], $fk_attr['fk']['field'], $tbl_alias, 'LEFT');
                             } else {
                                 throw new \Exception("Unsupported field depth {$order[$i]['field']}");
                             }
@@ -259,7 +267,6 @@ class Model
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -318,7 +325,6 @@ class Model
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -358,7 +364,6 @@ class Model
 
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -371,7 +376,6 @@ class Model
 
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -420,7 +424,6 @@ class Model
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -452,7 +455,6 @@ class Model
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -478,5 +480,51 @@ class Model
 			return null;
 		}
 		return $this->objects[$this->count()];
+	}
+
+	/**
+	 * Marks a entries as deleted in the database.
+	 *
+	 * This method marks items as deleted in the object array
+	 * and clears the array.
+	 * Requires that a retrieve is performed prior to calling.
+	 *
+	 * @return boolean
+	 */
+	public function deleteObjects() {
+		try {
+			foreach ($this->objects as $key => $obj) {
+				$obj->delete();
+				unset($this->objects[$key]);
+			}
+        
+			return true;
+
+		} catch (\Exception $e) {
+			throw $e;
+		}
+	}
+
+	/**
+	 * Permanently deletes database entries.
+	 *
+	 * This method purges items in the object array to
+	 * permanently delete items from database, and clears the array.
+	 * Requires that a retrieve is performed prior to calling.
+	 *
+	 * @return boolean
+	 */
+	public function purgeObjects() {
+		try {
+			foreach ($this->objects as $key => $obj) {
+				$obj->purge();
+				unset($this->objects[$key]);
+			}
+        
+			return true;
+
+		} catch (\Exception $e) {
+			throw $e;
+		}
 	}
 }

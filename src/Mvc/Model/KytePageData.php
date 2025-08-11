@@ -12,31 +12,31 @@ $KytePageData = [
 
 		// json definition of page layout defined by block editor
 		'block_layout'	=> [
-			'type'		=> 't',
+			'type'		=> 'lb',
 			'required'	=> false,
 			'date'		=> false,
 		],
 
 		'html'		=> [
-			'type'		=> 't',
+			'type'		=> 'lb',
 			'required'	=> false,
 			'date'		=> false,
 		],
 
 		'javascript'		=> [
-			'type'		=> 't',
+			'type'		=> 'lb',
 			'required'	=> false,
 			'date'		=> false,
 		],
 
 		'javascript_obfuscated'		=> [
-			'type'		=> 't',
+			'type'		=> 'lb',
 			'required'	=> false,
 			'date'		=> false,
 		],
 
 		'stylesheet'	=> [
-			'type'		=> 't',
+			'type'		=> 'lb',
 			'required'	=> false,
 			'date'		=> false,
 		],

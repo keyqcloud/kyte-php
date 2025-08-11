@@ -1,114 +1,112 @@
 <?php
 
-$KyteCodeAsset = [
-	'name' => 'KyteCodeAsset',
+$KyteError = [
+	'name' => 'KyteError',
 	'struct' => [
-		'name'		=> [
-			'type'		=> 's',
-			'required'	=> true,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		// can be S3 key or url of script/sytlesheet
-		'path'		=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'description'		=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
-		// javascript or css
-		'asset_type'		=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-			'default'	=> 'custom',
-		],
-
-		'code'		=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
-		'obfuscated'		=> [
-			'type'		=> 't',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
-		'site'	=> [
+		'account_id'		=> [
 			'type'		=> 'i',
 			'required'	=> false,
 			'size'		=> 11,
 			'unsigned'	=> true,
 			'date'		=> false,
-			'fk'		=> [
-				'model'	=> 'KyteSite',
-				'field'	=> 'id',
-			],
 		],
 
-		// 0 - unpublished, 1 - published, 2 - published but stale
-		'state'	=> [
+		'user_id'		=> [
 			'type'		=> 'i',
 			'required'	=> false,
-			'size'		=> 1,
-			'unsigned'	=> true,
-			'default'	=> 0,
-			'date'		=> false,
-		],
-
-		'include_global'	=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 1,
-			'unsigned'	=> true,
-			'default'	=> 0,
-			'date'		=> false,
-		],
-
-		'is_url'	=> [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 1,
-			'unsigned'	=> true,
-			'default'	=> 0,
-			'date'		=> false,
-		],
-
-		'integrity'		=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		'crossorigin'		=> [
-			'type'		=> 's',
-			'required'	=> false,
-			'size'		=> 255,
-			'date'		=> false,
-		],
-
-		// framework attributes
-
-		'kyte_account'	=> [
-			'type'		=> 'i',
-			'required'	=> true,
 			'size'		=> 11,
 			'unsigned'	=> true,
 			'date'		=> false,
 		],
 
+		'api_key'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'app_id'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'model'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'request'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'field'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'value'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'signature'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'contentType'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'data'		=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
+		'message'		=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
+		'file'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'line'		=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 255,
+			'date'		=> false,
+		],
+
+		'response'		=> [
+			'type'		=> 'lt',
+			'required'	=> false,
+			'date'		=> false,
+		],
+		
 		// audit attributes
 
 		'created_by'		=> [

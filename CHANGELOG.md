@@ -1,9 +1,86 @@
-## 3.6.1 (draft)
+## 3.7.6
+
+* Fix issue where model definition did not update correctly after creating, updating, or deleting a new column.
+
+## 3.7.5
+
+* Add support for global includes for custom scripts. Requires a table change in the database (see below)
+
+**Database Changes**
+```sql
+ALTER TABLE KyteScript ADD include_all TINYINT(1) unsigned DEFAULT 0 AFTER obfuscate_js;
+```
+
+## 3.7.4
+
+* Adds LEFT and INNER JOIN SQL support.
+* Fixes issue when searching fields within a model that has foregin keys the join only returns if a fk exists.
+* Fix database field length issue with `code` in controller (`text` to `longblob`)
+
+## 3.7.3
+
+* Ability to search by field range (int or double).
+
+## 3.7.2
+
+* Enable foreign table attribute searches.
+
+## 3.7.1
+
+* Improve DB fallback if SSL is not available
+
+## 3.7.0
+
+* Adds support for SSL/TLS connection to database
+
+## 3.6.10
+
+* Adds support to edit and delete application level model data
+
+## 3.6.9
+
+* Add support for retrieving IMDS/IDMSv2 data
+* Update error handling to include IMDS/IMDSv2 data if available
+
+## 3.6.8
+
+* Add support for sending slack notifications for errors
+
+## 3.6.7
+
+* Add `SessionInspector` controller
+
+## 3.6.6
+
+* Move `is_js_module` from `KytePageData` to `KytePage`
+
+## 3.6.5
+
+* Refactor code and remove unreachable statements following a throw.
+* Add member methods for deleting or purging retrieved objects.
+* Add ability to mark JS code in a page as a module.
+* Support for logging exceptions and errors at application level
+
+## 3.6.4
+
+* Fix issue #36 where user object being access for application was not at the application scope level
+
+## 3.6.3
+
+* Fix issue #34 where controller function couldn't be deleted
+
+## 3.6.2
+
+* Fix issue where blob data was not being stored in DB
+
+## 3.6.1
 
 * Add support for marking scripts as JavaScript modules
 * Add support for assigning element ID and/or class
 * Add support for default site langauge, and page specific languages
 * Bug fix to remove calls to deprecated Permission model
+* Add support for additional MySQL types
+* Add URL decode for field name when parsing URL paths
 
 ## 3.6.0
 

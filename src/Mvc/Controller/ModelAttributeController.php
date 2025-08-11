@@ -47,11 +47,6 @@ class ModelAttributeController extends ModelController
                 // return to kyte db
                 \Kyte\Core\Api::dbswitch();
 
-                $model_definition = \Kyte\Mvc\Controller\DataModelController::generateModelDef($tbl->name, $tbl->id);;
-                $tbl->save([
-                    'model_definition' => json_encode($model_definition)
-                ]);
-
                 break;
 
             case 'update':
@@ -77,11 +72,6 @@ class ModelAttributeController extends ModelController
                 }
                 // return to kyte db
                 \Kyte\Core\Api::dbswitch();
-
-                $model_definition = \Kyte\Mvc\Controller\DataModelController::generateModelDef($tbl->name, $tbl->id);;
-                $tbl->save([
-                    'model_definition' => json_encode($model_definition)
-                ]);
                 break;
             
             default:
@@ -90,15 +80,15 @@ class ModelAttributeController extends ModelController
     }
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
+        $tbl = new \Kyte\Core\ModelObject(DataModel);
+        if (!$tbl->retrieve('id', $o->dataModel)) {
+            throw new \Exception("Unable to find associated data model.");
+        }
+
         switch ($method) {
             case 'delete':
                 // TODO: consider situation where there are external tables and foreign keys
-
-                $tbl = new \Kyte\Core\ModelObject(DataModel);
-                if (!$tbl->retrieve('id', $o->dataModel)) {
-                    throw new \Exception("Unable to find associated data model.");
-                }
-
+                $d = false; // set auto delete external tables to false since there are none.
                 // switch dbs
                 $app = new \Kyte\Core\ModelObject(Application);
                 if (!$app->retrieve('id', $tbl->application)) {
@@ -115,7 +105,12 @@ class ModelAttributeController extends ModelController
                 // return to kyte db
                 \Kyte\Core\Api::dbswitch();
 
-                $model_definition = \Kyte\Mvc\Controller\DataModelController::generateModelDef($tbl->name, $tbl->id);;
+                $o->delete(); // redundant but required to ensure generateModelDef updates the definition correctly
+                // TODO: consider finding a way to optimize this so that delete is naturally called by delete()
+
+            case 'new':
+            case 'update':
+                $model_definition = \Kyte\Mvc\Controller\DataModelController::generateModelDef($tbl->name, $tbl->id);
                 $tbl->save([
                     'model_definition' => json_encode($model_definition)
                 ]);
