@@ -658,6 +658,33 @@ class Api
 	}
 
 	/**
+	* Safely decodes a URL-encoded string, handling cases of multiple encoding.
+	*
+	* This method repeatedly applies urldecode() until no further changes occur,
+	* which handles browser double-encoding issues (e.g., kenneth%2540getpage.co -> kenneth@getpage.co).
+	* Limited to 3 iterations to prevent infinite loops and performance issues.
+	*
+	* @param string|null $str The URL-encoded string to decode
+	* @return string|null The fully decoded string, or null if input was null
+	*/
+	private function safeUrlDecode($str) {
+		if (!$str) return $str;
+		
+		$previous = '';
+		$current = $str;
+		$maxIterations = 3; // Safety limit
+		$iterations = 0;
+		
+		while ($previous !== $current && $iterations < $maxIterations) {
+			$previous = $current;
+			$current = urldecode($current);
+			$iterations++;
+		}
+		
+		return $current;
+	}
+
+	/**
 	 * Validates the request, handles CORS, and parses the request data.
 	 *
 	 * @return bool True if the request is valid, false otherwise.
@@ -724,8 +751,8 @@ class Api
 
 		if (count($elements) >= 1) {
 			$this->model = $elements[0];
-			$this->field = isset($elements[1]) ? urldecode($elements[1]) : null;
-			$this->value = isset($elements[2]) ? urldecode($elements[2]) : null;
+			$this->field = isset($elements[1]) ? $this->safeUrlDecode($elements[1]) : null;
+			$this->value = isset($elements[2]) ? $this->safeUrlDecode($elements[2]) : null;
 
 			// Debug logging
 			if (VERBOSE_LOG) {
