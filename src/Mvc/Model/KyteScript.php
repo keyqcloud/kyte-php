@@ -74,7 +74,7 @@ $KyteScript = [
 			'date'		=> false,
 		],
 
-		'include_global' => [
+		'include_all' => [
 			'type'		=> 'i',
 			'required'	=> false,
 			'size'		=> 1,
