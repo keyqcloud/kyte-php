@@ -388,7 +388,7 @@ class KytePageController extends ModelController
             $code .= '</footer>';
         }
 
-        // retrieve custom javascripts scripts
+        // retrieve custom javascripts and stylesheets
         $includes = new \Kyte\Core\Model(KyteScriptAssignment);
         $includes->retrieve('page', $page['id'], false, [['field' => 'site', 'value' => $page['site']['id']]], false, [['field' => 'id', 'direction' => 'asc']]);
         foreach($includes->objects as $include) {
