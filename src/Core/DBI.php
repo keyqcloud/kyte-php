@@ -156,17 +156,42 @@ class DBI {
 	{
 		if (!self::$dbConn) {
 			try {
-				self::$dbConn = new \mysqli(self::$dbHost, self::$dbUser, self::$dbPassword, self::$dbName);
-				// set charset to utf8mb4
-				if ( TRUE !== self::$dbConn->set_charset( self::$charset ) )
-					throw new \Exception( self::$dbConn->error, self::$dbConn->errno );
+				// Check if KYTE_DB_CA_BUNDLE is defined and set SSL options
+				if (defined('KYTE_DB_CA_BUNDLE')) {
+					self::$dbConn = new \mysqli();
+					self::$dbConn->ssl_set(null, null, KYTE_DB_CA_BUNDLE, null, null);
+
+					// Try to establish an SSL connection
+					if (!self::$dbConn->real_connect(self::$dbHost, self::$dbUser, self::$dbPassword, self::$dbName, null, null, MYSQLI_CLIENT_SSL)) {
+						// If SSL connection fails, throw an exception to fall back
+						throw new \Exception('SSL connection failed: ' . self::$dbConn->connect_error, self::$dbConn->connect_errno);
+					}
+				} else {
+					// Establish a non-SSL connection
+					self::$dbConn = new \mysqli(self::$dbHost, self::$dbUser, self::$dbPassword, self::$dbName);
+				}
+
+				// Set charset to utf8mb4
+				if (TRUE !== self::$dbConn->set_charset(self::$charset)) {
+					throw new \Exception(self::$dbConn->error, self::$dbConn->errno);
+				}
 			} catch (mysqli_sql_exception $e) {
-				throw $e;
+				// If SSL connection fails, fall back to non-SSL connection
+				if (defined('KYTE_DB_CA_BUNDLE') && self::$dbConn->connect_errno) {
+					self::$dbConn = new \mysqli(self::$dbHost, self::$dbUser, self::$dbPassword, self::$dbName);
+					// Set charset to utf8mb4
+					if (TRUE !== self::$dbConn->set_charset(self::$charset)) {
+						throw new \Exception(self::$dbConn->error, self::$dbConn->errno);
+					}
+				} else {
+					throw $e;
+				}
 			}
 		}
 
 		return self::$dbConn;
 	}
+
 
 	/*
 	 * Connect to database for App
@@ -253,28 +278,24 @@ class DBI {
 		$result = $con->query("CREATE DATABASE IF NOT EXISTS `{$name}`;");
 		if($result === false) {
   			throw new \Exception("Unable to create database. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		// create user
 		$result = $con->query("CREATE USER '{$username}'@'%' IDENTIFIED BY '{$password}';");
 		if($result === false) {
   			throw new \Exception("Unable to create user. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		// set privs
 		$result = $con->query("GRANT ALL PRIVILEGES ON `{$name}`.* TO '{$username}'@'%';");
 		if($result === false) {
   			throw new \Exception("Unable to grant privileges. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		// flush privileges
 		$result = $con->query("FLUSH PRIVILEGES;");
 		if($result === false) {
   			throw new \Exception("Unable to flush privileges. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		// if use is true, then switch db
@@ -282,7 +303,6 @@ class DBI {
 			$result = $con->query("USE `{$name}`;");
 			if($result === false) {
 				throw new \Exception("Unable to switch databases. [Error]:  ".htmlspecialchars($con->error));
-				return false;
 			}
 		}
 
@@ -321,7 +341,6 @@ class DBI {
 		$result = $con->query("DROP TABLE IF EXISTS `$tbl_name`;");
 		if($result === false) {
 			throw new \Exception("Unable to drop tables.");
-			return false;
 		}
 
 		$tbl_sql = "CREATE TABLE `$tbl_name` (";
@@ -332,17 +351,14 @@ class DBI {
 			// check if required attrs are set
 			if (!isset($attrs['date'])) {
 				throw new \Exception("date attribute must be declared for column $name of table $tbl_name.");
-				return false;
 			}
 
 			if (!isset($attrs['required'])) {
 				throw new \Exception("required attribute must be declared for column $name of table $tbl_name.");
-				return false;
 			}
 
 			if (!isset($attrs['type'])) {
 				throw new \Exception("type attribute must be declared for column $name of table $tbl_name.");
-				return false;
 			}
 
 			$field = "`$name`";	// column name
@@ -351,30 +367,64 @@ class DBI {
 			if ($attrs['date']) {
 				$field .= ' bigint unsigned';
 			} else {
-
-				if ($attrs['type'] == 'i') {
-					$field .= ' int';
-					if (array_key_exists('size', $attrs)) {
-						$field .= '('.$attrs['size'].')';
-					}
-					if (array_key_exists('unsigned', $attrs)) {
-						$field .= ' unsigned';
-					}
-				} elseif ($attrs['type'] == 's') {
-					$field .= ' varchar';
-					if (array_key_exists('size', $attrs)) {
-						$field .= '('.$attrs['size'].')';
-					} else {
-						throw new \Exception("varchar requires size to be declared for column $name of table $tbl_name.");
-						return false;
-					}
-				} elseif ($attrs['type'] == 'd' && array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
-					$field .= ' decimal('.$attrs['precision'].','.$attrs['scale'].')';
-				} elseif ($attrs['type'] == 't') {
-					$field .= ' text';
-				} else {
-					throw new \Exception("Unknown type ".$attrs['type']." for column $name of table $tbl_name.");
-					return false;
+				switch ($attrs['type']) {
+					case 'i':
+						$field .= ' int';
+						if (array_key_exists('size', $attrs)) {
+							$field .= '(' . $attrs['size'] . ')';
+						}
+						if (array_key_exists('unsigned', $attrs)) {
+							$field .= ' unsigned';
+						}
+						break;
+					case 'bi':
+							$field .= ' bigint';
+							if (array_key_exists('size', $attrs)) {
+								$field .= '(' . $attrs['size'] . ')';
+							}
+							if (array_key_exists('unsigned', $attrs)) {
+								$field .= ' unsigned';
+							}
+							break;
+					case 's':
+						$field .= ' varchar';
+						if (array_key_exists('size', $attrs)) {
+							$field .= '(' . $attrs['size'] . ')';
+						} else {
+							throw new \Exception("varchar requires size to be declared for column $name of table $tbl_name.");
+						}
+						break;
+					case 'd':
+						if (array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
+							$field .= ' decimal(' . $attrs['precision'] . ',' . $attrs['scale'] . ')';
+						}
+						break;
+					case 't':
+						$field .= ' text';
+						break;
+					case 'tt':
+						$field .= ' tinytext';
+						break;
+					case 'mt':
+						$field .= ' mediumtext';
+						break;
+					case 'lt':
+						$field .= ' longtext';
+						break;
+					case 'b':
+						$field .= ' blob';
+						break;
+					case 'tb':
+						$field .= ' tinyblob';
+						break;
+					case 'mb':
+						$field .= ' mediumblob';
+						break;
+					case 'lb':
+						$field .= ' longblob';
+						break;
+					default:
+						throw new \Exception("Unknown type " . $attrs['type'] . " for column $name of table $tbl_name.");
 				}
 			}
 			if (array_key_exists('default', $attrs)) {
@@ -405,7 +455,6 @@ class DBI {
 		$result = $con->query($tbl_sql);
 		if($result === false) {
 			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
-			return false;
 		}
 
 		return true;
@@ -417,7 +466,6 @@ class DBI {
 	public static function dropTable($tbl_name) {
 		if (!$tbl_name) {
 			throw new \Exception("Table name cannot be empty.");
-			return false;
 		}
 
 		// db connection
@@ -440,7 +488,6 @@ class DBI {
 		$result = $con->query($tbl_sql);
 		if($result === false) {
 			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
-			return false;
 		}
 
 		return true;
@@ -452,12 +499,10 @@ class DBI {
 	public static function renameTable($tbl_name_old, $tbl_name_new) {
 		if (!$tbl_name_old) {
 			throw new \Exception("Current table name cannot be empty.");
-			return false;
 		}
 		
 		if (!$tbl_name_new) {
 			throw new \Exception("New table name cannot be empty.");
-			return false;
 		}
 
 		// db connection
@@ -480,7 +525,6 @@ class DBI {
 		$result = $con->query($tbl_sql);
 		if($result === false) {
 			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
-			return false;
 		}
 
 		return true;
@@ -492,12 +536,10 @@ class DBI {
 	public static function addColumn($tbl_name, $column, $attrs) {
 		if (!$tbl_name) {
 			throw new \Exception("Table name cannot be empty.");
-			return false;
 		}
 
 		if (!$column) {
 			throw new \Exception("Column name cannot be empty.");
-			return false;
 		}
 
 		// db connection
@@ -518,17 +560,14 @@ class DBI {
 		// check if required attrs are set
 		if (!isset($attrs['date'])) {
 			throw new \Exception("date attribute must be declared for column $column of table $tbl_name.");
-			return false;
 		}
 
 		if (!isset($attrs['required'])) {
 			throw new \Exception("required attribute must be declared for column $column of table $tbl_name.");
-			return false;
 		}
 
 		if (!isset($attrs['type'])) {
 			throw new \Exception("type attribute must be declared for column $column of table $tbl_name.");
-			return false;
 		}
 
 		$field = "`$column`";	// column name
@@ -537,30 +576,64 @@ class DBI {
 		if ($attrs['date']) {
 			$field .= ' bigint unsigned';
 		} else {
-
-			if ($attrs['type'] == 'i') {
-				$field .= ' int';
-				if (array_key_exists('size', $attrs)) {
-					$field .= '('.$attrs['size'].')';
-				}
-				if (array_key_exists('unsigned', $attrs)) {
-					$field .= ' unsigned';
-				}
-			} elseif ($attrs['type'] == 's') {
-				$field .= ' varchar';
-				if (array_key_exists('size', $attrs)) {
-					$field .= '('.$attrs['size'].')';
-				} else {
-					throw new \Exception("varchar requires size to be declared for column $name of table $tbl_name.");
-					return false;
-				}
-			} elseif ($attrs['type'] == 'd' && array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
-				$field .= ' decimal('.$attrs['precision'].','.$attrs['scale'].')';
-			} elseif ($attrs['type'] == 't') {
-				$field .= ' text';
-			} else {
-				throw new \Exception("Unknown type ".$attrs['type']." for column $name of table $tbl_name.");
-				return false;
+			switch ($attrs['type']) {
+				case 'i':
+					$field .= ' int';
+					if (array_key_exists('size', $attrs)) {
+						$field .= '(' . $attrs['size'] . ')';
+					}
+					if (array_key_exists('unsigned', $attrs)) {
+						$field .= ' unsigned';
+					}
+					break;
+				case 'bi':
+						$field .= ' bigint';
+						if (array_key_exists('size', $attrs)) {
+							$field .= '(' . $attrs['size'] . ')';
+						}
+						if (array_key_exists('unsigned', $attrs)) {
+							$field .= ' unsigned';
+						}
+						break;
+				case 's':
+					$field .= ' varchar';
+					if (array_key_exists('size', $attrs)) {
+						$field .= '(' . $attrs['size'] . ')';
+					} else {
+						throw new \Exception("varchar requires size to be declared for column $name of table $tbl_name.");
+					}
+					break;
+				case 'd':
+					if (array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
+						$field .= ' decimal(' . $attrs['precision'] . ',' . $attrs['scale'] . ')';
+					}
+					break;
+				case 't':
+					$field .= ' text';
+					break;
+				case 'tt':
+					$field .= ' tinytext';
+					break;
+				case 'mt':
+					$field .= ' mediumtext';
+					break;
+				case 'lt':
+					$field .= ' longtext';
+					break;
+				case 'b':
+					$field .= ' blob';
+					break;
+				case 'tb':
+					$field .= ' tinyblob';
+					break;
+				case 'mb':
+					$field .= ' mediumblob';
+					break;
+				case 'lb':
+					$field .= ' longblob';
+					break;
+				default:
+					throw new \Exception("Unknown type " . $attrs['type'] . " for column $name of table $tbl_name.");
 			}
 		}
 		if (array_key_exists('default', $attrs)) {
@@ -575,7 +648,6 @@ class DBI {
 		$result = $con->query($tbl_sql);
 		if($result === false) {
 			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
-			return false;
 		}
 
 		return true;
@@ -587,17 +659,14 @@ class DBI {
 	public static function changeColumn($tbl_name, $column_name_old, $column_name_new, $attrs) {
 		if (!$tbl_name) {
 			throw new \Exception("Table name cannot be empty.");
-			return false;
 		}
 
 		if (!$column_name_old) {
 			throw new \Exception("Current column name cannot be empty.");
-			return false;
 		}
 
 		if (!$column_name_new) {
 			throw new \Exception("New column name cannot be empty.");
-			return false;
 		}
 
 		// db connection
@@ -618,17 +687,14 @@ class DBI {
 		// check if required attrs are set
 		if (!isset($attrs['date'])) {
 			throw new \Exception("date attribute must be declared for column $column_name_new of table $tbl_name.");
-			return false;
 		}
 
 		if (!isset($attrs['required'])) {
 			throw new \Exception("required attribute must be declared for column $column_name_new of table $tbl_name.");
-			return false;
 		}
 
 		if (!isset($attrs['type'])) {
 			throw new \Exception("type attribute must be declared for column $column_name_new of table $tbl_name.");
-			return false;
 		}
 
 		$field = "`$column_name_new`";	// column name
@@ -637,30 +703,64 @@ class DBI {
 		if ($attrs['date']) {
 			$field .= ' bigint unsigned';
 		} else {
-
-			if ($attrs['type'] == 'i') {
-				$field .= ' int';
-				if (array_key_exists('size', $attrs)) {
-					$field .= '('.$attrs['size'].')';
-				}
-				if (array_key_exists('unsigned', $attrs)) {
-					$field .= ' unsigned';
-				}
-			} elseif ($attrs['type'] == 's') {
-				$field .= ' varchar';
-				if (array_key_exists('size', $attrs)) {
-					$field .= '('.$attrs['size'].')';
-				} else {
-					throw new \Exception("varchar requires size to be declared for column $column_name_new of table $tbl_name.");
-					return false;
-				}
-			} elseif ($attrs['type'] == 'd' && array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
-				$field .= ' decimal('.$attrs['precision'].','.$attrs['scale'].')';
-			} elseif ($attrs['type'] == 't') {
-				$field .= ' text';
-			} else {
-				throw new \Exception("Unknown type ".$attrs['type']." for column $column_name_new of table $tbl_name.");
-				return false;
+			switch ($attrs['type']) {
+				case 'i':
+					$field .= ' int';
+					if (array_key_exists('size', $attrs)) {
+						$field .= '(' . $attrs['size'] . ')';
+					}
+					if (array_key_exists('unsigned', $attrs)) {
+						$field .= ' unsigned';
+					}
+					break;
+				case 'bi':
+						$field .= ' bigint';
+						if (array_key_exists('size', $attrs)) {
+							$field .= '(' . $attrs['size'] . ')';
+						}
+						if (array_key_exists('unsigned', $attrs)) {
+							$field .= ' unsigned';
+						}
+						break;
+				case 's':
+					$field .= ' varchar';
+					if (array_key_exists('size', $attrs)) {
+						$field .= '(' . $attrs['size'] . ')';
+					} else {
+						throw new \Exception("varchar requires size to be declared for column $name of table $tbl_name.");
+					}
+					break;
+				case 'd':
+					if (array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
+						$field .= ' decimal(' . $attrs['precision'] . ',' . $attrs['scale'] . ')';
+					}
+					break;
+				case 't':
+					$field .= ' text';
+					break;
+				case 'tt':
+					$field .= ' tinytext';
+					break;
+				case 'mt':
+					$field .= ' mediumtext';
+					break;
+				case 'lt':
+					$field .= ' longtext';
+					break;
+				case 'b':
+					$field .= ' blob';
+					break;
+				case 'tb':
+					$field .= ' tinyblob';
+					break;
+				case 'mb':
+					$field .= ' mediumblob';
+					break;
+				case 'lb':
+					$field .= ' longblob';
+					break;
+				default:
+					throw new \Exception("Unknown type " . $attrs['type'] . " for column $name of table $tbl_name.");
 			}
 		}
 		if (array_key_exists('default', $attrs)) {
@@ -675,7 +775,6 @@ class DBI {
 		$result = $con->query($tbl_sql);
 		if($result === false) {
 			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
-			return false;
 		}
 
 		return true;
@@ -687,12 +786,10 @@ class DBI {
 	public static function dropColumn($tbl_name, $column_name) {
 		if (!$tbl_name) {
 			throw new \Exception("Table name cannot be empty.");
-			return false;
 		}
 
 		if (!$column_name) {
 			throw new \Exception("Column name cannot be empty.");
-			return false;
 		}
 
 		// db connection
@@ -715,7 +812,6 @@ class DBI {
 		$result = $con->query($tbl_sql);
 		if($result === false) {
 			throw new \Exception("Error with mysql query '$tbl_sql'. [Error]:  ".htmlspecialchars($con->error));
-			return false;
 		}
 
 		return true;
@@ -747,7 +843,6 @@ class DBI {
 			}
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 
 		// DEBUG
@@ -777,16 +872,14 @@ class DBI {
 		$stmt = $con->prepare($query);
 		if($stmt === false) {
   			throw new \Exception("Error preparing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
-  			return false;
 		}
  
  		$stmt->bind_param($types, ...$bindParams);
 		// call_user_func_array(array($stmt, 'bind_param'), $bindParams);
 
 		if (!$stmt->execute()) {
-			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
 			$stmt->close();
-			return false;
+			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
 		}
 
 		$insertId = $stmt->insert_id;
@@ -851,7 +944,6 @@ class DBI {
 		$stmt = $con->prepare($query);
 		if($stmt === false) {
   			throw new \Exception("Error preparing mysql statement '$query'; ".htmlspecialchars(self::$dbConn->error), 1);
-  			return false;
 		}
  
  		$stmt->bind_param($types, ...$bindParams);
@@ -859,9 +951,8 @@ class DBI {
 
 		if (!$stmt->execute()) {
 			error_log("Error executing mysql statement '$query'; ".htmlspecialchars($con->error));
-			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
 			$stmt->close();
-			return false;
+			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
 		}
 
 		$stmt->close();
@@ -902,15 +993,13 @@ class DBI {
 		$stmt = $con->prepare($query);
 		if($stmt === false) {
   			throw new \Exception("Error preparing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
-  			return false;
 		}
  
 		$stmt->bind_param('i', $id);
 
 		if (!$stmt->execute()) {
-			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
 			$stmt->close();
-			return false;
+			throw new \Exception("Error executing mysql statement '$query'; ".htmlspecialchars($con->error), 1);
 		}
 
 		$stmt->close();
@@ -943,46 +1032,23 @@ class DBI {
 
 		$query = "SELECT count(`$table`.`id`) as count FROM `$table`";
 
-		$join_query = "";
-
-		$empty_cond = false;
-		$first = true;
-
 		if (is_array($join)) {
-			foreach($join as $j) {
+			foreach ($join as $j) {
 				$tbl = $j['table'];
-				$query .= ", `{$j['table']}`";
+				$tbl_alias = isset($j['table_alias']) ? $j['table_alias'] : $tbl;
+				$join_type = isset($j['join_type']) && strtoupper($j['join_type']) === 'LEFT' ? 'LEFT JOIN' : 'JOIN';
 
-				// if an alias is set (i.e. same table is being queried), update from clause, and table name
+				$query .= " $join_type `{$j['table']}`";
+
 				if (isset($j['table_alias'])) {
-					$query .= " `{$j['table_alias']}`";
-					$tbl = $j['table_alias'];
+					$query .= " AS `$tbl_alias`";
 				}
 
-				// prepare conditions, or just the join clause
-				if (empty($condition)) {
-					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$tbl}`.`{$j['table_idx']}`";
-					$empty_cond = true;
-				} else {
-					$join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$tbl}`.`{$j['table_idx']}`";
-					$first = false;
-				}
-			}
-
-			// if condition was originally not empty
-			if (!$empty_cond) {
-				// remove where from $condition and replace it with AND
-				$condition = str_replace("WHERE", "AND", $condition);
+				$query .= " ON `$table`.`{$j['main_table_idx']}` = `$tbl_alias`.`{$j['table_idx']}`";
 			}
 		}
 
-		if(isset($id)) {
-			$query .= " WHERE id = $id";
-		} else {
-			
-		}
-		
-		$query .= "$join_query $condition";
+		$query .= $condition;
 
 		// DEBUG
 		if (defined('DEBUG_SQL')) {
@@ -992,7 +1058,6 @@ class DBI {
 		$result = $con->query($query);
 		if($result === false) {
   			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		$data = array();
@@ -1035,42 +1100,26 @@ class DBI {
 
 		$query = "SELECT `$table`.* FROM `$table`";
 
-		$join_query = "";
-
-		$empty_cond = false;
-		$first = true;
-
 		if (is_array($join)) {
-			foreach($join as $j) {
+			foreach ($join as $j) {
 				$tbl = $j['table'];
-				$query .= ", `{$j['table']}`";
+				$tbl_alias = isset($j['table_alias']) ? $j['table_alias'] : $tbl;
+				$join_type = isset($j['join_type']) && strtoupper($j['join_type']) === 'LEFT' ? 'LEFT JOIN' : 'JOIN';
 
-				// if an alias is set (i.e. same table is being queried), update from clause, and table name
+				$query .= " $join_type `{$j['table']}`";
+
 				if (isset($j['table_alias'])) {
-					$query .= " `{$j['table_alias']}`";
-					$tbl = $j['table_alias'];
+					$query .= " AS `$tbl_alias`";
 				}
 
-				// prepare conditions, or just the join clause
-				if (empty($condition)) {
-					$condition = " WHERE `$table`.`{$j['main_table_idx']}` = `{$tbl}`.`{$j['table_idx']}`";
-					$empty_cond = true;
-				} else {
-					$join_query .= (($first && !$empty_cond) ? " WHERE " : " AND ")."`$table`.`{$j['main_table_idx']}` = `{$tbl}`.`{$j['table_idx']}`";
-					$first = false;
-				}
-			}
-			// if condition was originally not empty
-			if (!$empty_cond) {
-				// remove where from $condition and replace it with AND
-				$condition = str_replace("WHERE", "AND", $condition);
+				$query .= " ON `$table`.`{$j['main_table_idx']}` = `$tbl_alias`.`{$j['table_idx']}`";
 			}
 		}
 
 		if(isset($id)) {
 			$query .= " WHERE id = $id";
 		} else {
-			$query .= "$join_query $condition";
+			$query .= $condition;
 		}
 
 		// DEBUG
@@ -1081,7 +1130,6 @@ class DBI {
 		$result = $con->query($query);
 		if($result === false) {
   			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		$data = array();
@@ -1133,7 +1181,6 @@ class DBI {
 		$result = $con->query($query);
 		if($result === false) {
   			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		$data = array();
@@ -1176,7 +1223,6 @@ class DBI {
 		$result = $con->query($query);
 		if($result === false) {
   			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		if (is_bool($result)) {
@@ -1235,7 +1281,6 @@ class DBI {
 		$result = $con->query($query);
 		if($result === false) {
   			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
-  			return false;
 		}
 
 		$data = array();

@@ -44,9 +44,9 @@ class Api
     public $app = null;
 
 	/**
-     * @var \Kyte\Util\Logger The Application model object.
+     * * @var \Kyte\Exception\ErrorHandler Error handler singleton.
      */
-    public $logger = null;
+    public $errorHandler = null;
     
     /**
      * The API signature.
@@ -184,6 +184,18 @@ class Api
 	
 		// initialize base framework
 		self::dbconnect();
+
+		// if not cli, register error handler and attempt IMDS/IMDSv2 retrieval
+		if (php_sapi_name() !== 'cli') {
+			// retrieve IMDS data
+			$imdsData = \Kyte\Util\IMDS::fetchMetadata();
+
+			$this->response['imds'] = $imdsData;
+
+			// register error handler
+			$this->errorHandler = \Kyte\Exception\ErrorHandler::getInstance($this);
+			$this->errorHandler->register();
+		}
 	}
 
 	/**
@@ -504,29 +516,6 @@ class Api
 				self::loadAppModels($this->app);
 				
 				self::dbappconnect($this->app->db_name, $this->app->db_username, $this->app->db_password);
-
-				// TODO: Determine best practice for logging and implement new stack/adapter
-				// setup logger for app level
-				// $this->logger = new \Kyte\Util\Logger($this->app);
-				// if (S3_DEBUG) {
-				// 	$relevantErrors = [
-				// 		E_ERROR,
-				// 		E_WARNING,
-				// 		E_PARSE,
-				// 		E_NOTICE,
-				// 		E_USER_ERROR,
-				// 		E_USER_WARNING,
-				// 		E_USER_NOTICE,
-				// 		E_STRICT
-				// 	];
-				// 	foreach($relevantErrors as $errorLevel) {
-				// 		set_error_handler([$this->logger, 'systemErrorHandler'], $errorLevel);
-				// 	}
-				// }
-			} else {
-				// TODO: setup logger for framework level
-				// $this->system_logger = new \Kyte\Util\Logger(null, KYTE_S3_LOG_BUCKET, KYTE_LOGGER_REGION, ACCESS_KEY, SECRET_KEY);
-				// $this->logger = $this->system_logger;
 			}
 			
 			// next determine session by checking if app requires app-level user table
@@ -735,7 +724,7 @@ class Api
 
 		if (count($elements) >= 1) {
 			$this->model = $elements[0];
-			$this->field = isset($elements[1]) ? $elements[1] : null;
+			$this->field = isset($elements[1]) ? urldecode($elements[1]) : null;
 			$this->value = isset($elements[2]) ? urldecode($elements[2]) : null;
 
 			$this->response['model'] = $this->model;

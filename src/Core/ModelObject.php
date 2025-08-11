@@ -9,6 +9,7 @@ namespace Kyte\Core;
  *
  * @package Kyte\Core
  */
+#[\AllowDynamicProperties]
 class ModelObject
 {
 	/**
@@ -58,16 +59,37 @@ class ModelObject
 		$types = '';
 		foreach ($params as $key => $value) {
 			if (array_key_exists($key, $this->kyte_model['struct'])) {
-				// check if type is t, in which case return 's'
-				// otherwise return type as is
-				$types .= $this->kyte_model['struct'][$key]['type'] == 't' ? 's' : $this->kyte_model['struct'][$key]['type'];
+				// Determine the type based on the custom type mappings
+				$type = $this->kyte_model['struct'][$key]['type'];
+				switch ($type) {
+					case 's':   // String
+					case 't':   // Text
+					case 'tt':  // TinyText
+					case 'mt':  // MediumText
+					case 'lt':  // LongText
+					case 'date':// Date
+						$types .= 's';
+						break;
+					case 'b':   // Blob
+					case 'tb':  // TinyBlob
+					case 'mb':  // MediumBlob
+					case 'lb':  // LongBlob
+						$types .= 's';
+						break;
+					case 'i':   // Integer
+					case 'bi':  // BigInt
+						$types .= 'i';
+						break;
+					default:
+						$types .= 's'; // Default to string if type is unknown
+				}
 			} else {
 				unset($params[$key]);
 			}
 		}
-
+	
 		return $types;
-	}
+	}	
 
 	/**
      * Check if the minimum required params for SQL insert query are met.
@@ -80,12 +102,10 @@ class ModelObject
 	protected function validateRequiredParams($params) {
 		if (count($params) == 0) {
 			throw new \Exception("Unable to create new entry without valid parameters.");
-			return false;
 		} else {
 			foreach ($this->kyte_model['struct'] as $key => $value) {
 				if ($value['required'] && !isset($value['pk']) && !isset($params[$key])) {
 					throw new \Exception("Column $key cannot be null.");
-					return false;
 				}
 			}
 		}
@@ -124,7 +144,6 @@ class ModelObject
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -193,7 +212,6 @@ class ModelObject
 			}
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -210,7 +228,6 @@ class ModelObject
 		$id = $this->id;
 		if (!isset($id)) {
 			throw new \Exception("No retrieved data to update.  Please try retrieving information with retrieve() first.");
-			return false;
 		}
 
 		// audit attributes - set date modified
@@ -234,7 +251,6 @@ class ModelObject
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -250,7 +266,6 @@ class ModelObject
 		try {
 			if (!isset($o)) {
 				throw new \Exception("No object id was found to retrieve data.");
-				return false;
 			}
 
 			if (is_array($o)) {
@@ -265,7 +280,6 @@ class ModelObject
 				// if $id is null from parameter, set it to the object's id value
 				if (!is_int($o)) {
 					throw new \Exception("A non-integer was passed for ID.");
-					return false;
 				}
 
 				$data = \Kyte\Core\DBI::select($this->kyte_model['name'], $o);
@@ -280,7 +294,6 @@ class ModelObject
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -302,14 +315,15 @@ class ModelObject
 				} else {
 					throw new \Exception("No entry found for provided condition");
 				}
-			} else if (!isset($field, $value, $id)) {
+			} else if (!isset($field, $value) && isset($this->id)) {
 				$id = $this->id;
+			} else {
+				throw new \Exception("No condition or prior entry information was provided for data to be deleted.");
 			}
 				
 			// last check to make sure id is set
 			if (!isset($id)) {
-				throw new \Exception("No condition or prior entry information was provided for data to be deleted.");
-				return false;
+				throw new \Exception("ID is null.");
 			}
 
 			// check db context
@@ -324,7 +338,6 @@ class ModelObject
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -352,7 +365,6 @@ class ModelObject
 			// last check to make sure id is set
 			if (!isset($id)) {
 				throw new \Exception("No condition or prior entry information was provided for data to be deleted.");
-				return false;
 			}
 
 			// check db context
@@ -368,7 +380,6 @@ class ModelObject
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
-			return false;
 		}
 	}
 
@@ -390,23 +401,36 @@ class ModelObject
 				// check if type is t, in which case return 's'
 				// otherwise return type as is
 				switch ($this->kyte_model['struct'][$key]['type']) {
-					case 's':
-					case 't':
+					case 's':   // String
+					case 't':   // Text
+					case 'tt':  // TinyText
+					case 'mt':  // MediumText
+					case 'lt':  // LongText
 						$this->{$key} = strval($value);
 						break;
-
-					case 'i':
+				
+					case 'i':   // Integer
+					case 'bi':  // BigInt
 						$this->{$key} = intval($value);
 						break;
-
-					case 'd':
+				
+					case 'd':   // Double or Decimal
 						$this->{$key} = floatval($value);
 						break;
-						
+				
+					case 'b':   // Blob
+					case 'tb':  // TinyBlob
+					case 'mb':  // MediumBlob
+					case 'lb':  // LongBlob
+						// Return blob as is for now...but this will need to be handled by each app specific controller
+						$this->{$key} = $value;
+						break;
+				
 					default:
 						$this->{$key} = $value;
 						break;
 				}
+				
 			} else {
 				$this->{$key} = strval($value);
 			}

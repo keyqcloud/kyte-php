@@ -1,74 +1,79 @@
 <?php
-	/* APP BASE URL */
+	/* Base URL of the application */
 	define('API_URL', $_SERVER['SERVER_NAME']);
 
-    /* GENERAL APP SETTINGS */
-    define('APP_NAME', '');
-	define('APP_EMAIL', '');
-	define('SUPPORT_EMAIL', '');
-	define('SUPPORT_PHONE', '');
-    define('APP_DATE_FORMAT', 'Y/m/d');
+    /* General Application Settings */
+    define('APP_NAME', ''); // Name of the application
+	define('APP_EMAIL', ''); // Application email address
+	define('SUPPORT_EMAIL', ''); // Support email address
+	define('SUPPORT_PHONE', ''); // Support phone number
+    define('APP_DATE_FORMAT', 'Y/m/d'); // Date format for the application
 
-    define('KYTE_JS_CDN', 'https://cdn.keyqcloud.com/kyte/js/stable/kyte.js');
+    define('KYTE_JS_CDN', 'https://cdn.keyqcloud.com/kyte/js/stable/kyte.js'); // URL for Kyte JavaScript CDN
     
-    /* BASE PATH for API - for example /var/www/html */
-    define('APP_DIR', '/var/www/html');
+    /* Base Path for API */
+    define('APP_DIR', '/var/www/html'); // Example: /var/www/html
 
-	/* AWS INTEGRATION */
-	define('AWS_ACCESS_KEY_ID', '');
-	define('AWS_SECRET_KEY', '');
-	define('AWS_KMS_KEYID', '');
+	/* AWS Integration */
+	define('AWS_ACCESS_KEY_ID', ''); // AWS Access Key ID
+	define('AWS_SECRET_KEY', ''); // AWS Secret Access Key
+	define('AWS_KMS_KEYID', ''); // AWS KMS Key ID for encryption
 
-    /* AWS SNS QUEUES */
-    define('SNS_REGION', 'us-east-1');
-    define('SNS_QUEUE_SITE_MANAGEMENT', '');
-    define('SNS_KYTE_SHIPYARD_UPDATE', '');
+    /* AWS SNS Queues */
+    define('SNS_REGION', 'us-east-1'); // AWS region for SNS
+    define('SNS_QUEUE_SITE_MANAGEMENT', ''); // SNS queue for site management
+    define('SNS_KYTE_SHIPYARD_UPDATE', ''); // SNS queue for Kyte Shipyard updates
 
-    /* KYTE FRAMEWORK SPECIFIC SETTINGS */
-    define('KYTE_USE_SNS', true);
-    define('DEBUG', false);
-    define('S3_DEBUG', false);
-    define('ALLOW_ENC_HANDOFF', true);
-    define('ALLOW_MULTILOGON', false);
-    define('ALLOW_SAME_TXTOKEN', false);
-    define('SESSION_TIMEOUT', 3600);
-    define('SIGNATURE_TIMEOUT', 600);
-    define('USERNAME_FIELD', 'email');
-    define('PASSWORD_FIELD', 'password');
-    define('VERBOSE_LOG', false);
-    define('IS_PRIVATE', true);
-    define('RETURN_NO_MODEL', true);
-    define('SESSION_RETURN_FK', true);
-    define('PAGE_SIZE', 50);
-    define('USE_SESSION_MAP', false);
-    define('CHECK_SYNTAX_ON_IMPORT', false);
-    define('STRICT_TYPING', true);
+    /* Kyte Framework Specific Settings */
+    define('KYTE_USE_SNS', true); // Enable/Disable AWS SNS integration
+    define('DEBUG', false); // Enable/Disable debug mode
+    define('S3_DEBUG', false); // Enable/Disable S3 debug mode
+    define('ALLOW_ENC_HANDOFF', true); // Allow encrypted handoff
+    define('ALLOW_MULTILOGON', false); // Allow multiple logins for the same user
+    define('ALLOW_SAME_TXTOKEN', false); // Allow the same transaction token
+    define('SESSION_TIMEOUT', 3600); // Session timeout in seconds
+    define('SIGNATURE_TIMEOUT', 600); // Signature timeout in seconds
+    define('USERNAME_FIELD', 'email'); // Username field for login
+    define('PASSWORD_FIELD', 'password'); // Password field for login
+    define('VERBOSE_LOG', false); // Enable/Disable verbose logging
+    define('IS_PRIVATE', true); // Is the application private
+    define('RETURN_NO_MODEL', true); // Return no model
+    define('SESSION_RETURN_FK', true); // Return foreign keys in session
+    define('PAGE_SIZE', 50); // Page size for pagination
+    define('USE_SESSION_MAP', false); // Use session map
+    define('CHECK_SYNTAX_ON_IMPORT', false); // Check syntax on import
+    define('STRICT_TYPING', true); // Enable/Disable strict typing
 
-    /* DB INTEGRATION */
-    define('KYTE_DB_USERNAME', '');
-    define('KYTE_DB_PASSWORD', '');
-    define('KYTE_DB_HOST', '');
-    define('KYTE_DB_DATABASE', '');
-    define('KYTE_DB_CHARSET', 'utf8mb4');
+    /* Database Integration */
+    define('KYTE_DB_USERNAME', ''); // Database username
+    define('KYTE_DB_PASSWORD', ''); // Database password
+    define('KYTE_DB_HOST', ''); // Database host
+    define('KYTE_DB_DATABASE', ''); // Database name
+    define('KYTE_DB_CHARSET', 'utf8mb4'); // Database charset
+    // Uncomment and specify CA cert bundle path if you wish to use SSL
+    // define('KYTE_DB_CA_BUNDLE', '/etc/ssl/certs/global-bundle.cert');
 
-	/* APP TIMEZONE */
-	date_default_timezone_set("Asia/Tokyo");
-	/* LIST OF AVAILABLE TIMEZONES */
+    /* Optional Slack Integration for APM */
+    // define('SLACK_ERROR_WEBHOOK', '<YOUR SLACK WEBHOOK>');
+
+	/* Application Timezone */
+	date_default_timezone_set("Asia/Tokyo"); // Set the default timezone for the application
+	/* List of Available Timezones */
 	// 'Pacific/Midway'       => "(GMT-11:00) Midway Island",
     // 'US/Samoa'             => "(GMT-11:00) Samoa",
     // 'US/Hawaii'            => "(GMT-10:00) Hawaii",
     // 'US/Alaska'            => "(GMT-09:00) Alaska",
-    // 'US/Pacific'           => "(GMT-08:00) Pacific Time (US &amp; Canada)",
+    // 'US/Pacific'           => "(GMT-08:00) Pacific Time (US & Canada)",
     // 'America/Tijuana'      => "(GMT-08:00) Tijuana",
     // 'US/Arizona'           => "(GMT-07:00) Arizona",
-    // 'US/Mountain'          => "(GMT-07:00) Mountain Time (US &amp; Canada)",
+    // 'US/Mountain'          => "(GMT-07:00) Mountain Time (US & Canada)",
     // 'America/Chihuahua'    => "(GMT-07:00) Chihuahua",
     // 'America/Mazatlan'     => "(GMT-07:00) Mazatlan",
     // 'America/Mexico_City'  => "(GMT-06:00) Mexico City",
     // 'America/Monterrey'    => "(GMT-06:00) Monterrey",
     // 'Canada/Saskatchewan'  => "(GMT-06:00) Saskatchewan",
-    // 'US/Central'           => "(GMT-06:00) Central Time (US &amp; Canada)",
-    // 'US/Eastern'           => "(GMT-05:00) Eastern Time (US &amp; Canada)",
+    // 'US/Central'           => "(GMT-06:00) Central Time (US & Canada)",
+    // 'US/Eastern'           => "(GMT-05:00) Eastern Time (US & Canada)",
     // 'US/East-Indiana'      => "(GMT-05:00) Indiana (East)",
     // 'America/Bogota'       => "(GMT-05:00) Bogota",
     // 'America/Lima'         => "(GMT-05:00) Lima",

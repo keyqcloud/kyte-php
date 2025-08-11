@@ -39,7 +39,7 @@ $Function = [
 		],
 
 		'code'		=> [
-			'type'		=> 't',
+			'type'		=> 'lb',
 			'required'	=> false,
 			'date'		=> false,
 		],

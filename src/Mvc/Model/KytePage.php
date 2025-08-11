@@ -25,7 +25,7 @@ $KytePage = [
 
 		'lang' => [
 			'type'		=> 's',
-			'required'	=> true,
+			'required'	=> false,
 			'size'		=> 255,
 			'date'		=> false,
 		],
@@ -128,6 +128,15 @@ $KytePage = [
 		],
 
 		'obfuscate_js' => [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 0,
+			'date'		=> false,
+		],
+
+		'is_js_module' => [
 			'type'		=> 'i',
 			'required'	=> false,
 			'size'		=> 1,

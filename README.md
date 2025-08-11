@@ -2,7 +2,7 @@
 [![PHP Composer](https://github.com/keyqcloud/kyte-php/actions/workflows/php.yml/badge.svg)](https://github.com/keyqcloud/kyte-php/actions/workflows/php.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/keyqcloud/kyte-php.svg?style=flat)](https://packagist.org/packages/keyqcloud/kyte-php)
 
-(c) 2020 [KeyQ, Inc.](https://www.keyq.cloud)
+(c) 2020-2025 [KeyQ, Inc.](https://www.keyq.cloud)
 
 ## About Kyte-PHP
 Web application development shouldn't have to be a chore.  Kyte was created with the intention to make things more enjoyable and to simplify the development workflow.  The Kyte-php framework works as the backend API and can be integrated into different types of application architectures and front-end languages/frameworks.
