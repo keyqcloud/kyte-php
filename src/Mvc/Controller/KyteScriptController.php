@@ -44,7 +44,7 @@ class KyteScriptController extends ModelController
                 if ($o->state == 1 && !isset($d['state'])) {
                     $o->save(['state' => 2]);
                 }
-                if (isset($d['state']) && $d['state'] == 1) {
+                if ((isset($d['state']) && $d['state'] == 1) || ($o->state == 1 && isset($d['include_all']) && $d['include_all'] == 1)) {
                     $app = new \Kyte\Core\ModelObject(Application);
                     if (!$app->retrieve('id', $r['site']['application']['id'])) {
                         throw new \Exception("CRITICAL ERROR: Unable to find application.");
@@ -55,13 +55,33 @@ class KyteScriptController extends ModelController
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
                     // write script to file
-                    $s3->write($o->s3key, $o->obfuscate_js ? $r['content_js_obfuscated'] : $r['content']);
+                    $content = ($script_type == 'css') ? $r['content'] : 
+                            ($o->obfuscate_js ? $r['content_js_obfuscated'] : $r['content']);
+
+                    $s3->write($o->s3key, $content);
 
                     $pages = new \Kyte\Core\Model(KytePage);
                     $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $r['site']['id']]]);
 
                     // iterate through each page
                     foreach($pages->objects as $page) {
+                        // if script was marked as include_all then update assignments for each page.
+                        if (isset($d['include_all']) && $d['include_all'] == 1) {
+                            // check if assignment already exists
+                            $scriptAssignment = new \Kyte\Core\ModelObject(KyteScriptAssignment);
+                            if (!$scriptAssignment->retrieve('script', $o->id, [['field' => 'page', 'value' => $page->id]])) {
+                                // create new assignment
+                                if (!$scriptAssignment->create([
+                                    'script'        => $o->id,
+                                    'page'          => $page->id,
+                                    'site'          => $page->site,
+                                    'kyte_account'  => $page->kyte_account,
+                                ], $this->api->user->id)) {
+                                    throw new \Exception("Failed to assign script {$o->s3key} to page '{$page->title}'");
+                                }
+                            }
+                        }
+
                         $params = $this->getObject($page);
                         $pd = new \Kyte\Core\ModelObject(KytePageData);
                         if (!$pd->retrieve('page', $page->id)) {
@@ -127,6 +147,13 @@ class KyteScriptController extends ModelController
                     if (!empty($o->s3key)) {
                         // delete s3 file
                         $s3->unlink($o->s3key);
+
+                        // remove script assignments
+                        $assignments = new \Kyte\Core\Model(KyteScriptAssignment);
+                        $assignments->retrieve('script', $o->id);
+                        foreach ($assignments->objects as $assignment) {
+                            $assignment->delete();
+                        }
 
                         $pages = new \Kyte\Core\Model(KytePage);
                         $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $r['site']['id']]]);

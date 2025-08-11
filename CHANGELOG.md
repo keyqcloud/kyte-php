@@ -1,3 +1,12 @@
+## 3.7.5
+
+* Add support for global includes for custom scripts. Requires a table change in the database (see below)
+
+**Database Changes**
+```sql
+ALTER TABLE KyteScript ADD include_all TINYINT(1) unsigned DEFAULT 0 AFTER obfuscate_js;
+```
+
 ## 3.7.4
 
 * Adds LEFT and INNER JOIN SQL support.
