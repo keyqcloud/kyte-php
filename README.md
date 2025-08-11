@@ -16,6 +16,11 @@ Coming soon
 ### Configuration
 Coming soon
 
+#### AWS RDS TLS/SSL Connection
+To get a certificate bundle for all AWS Regions, download it from [https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem]https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+
+More information on using SSL with RDS can be found at [https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html]https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html
+
 ### Calling the API
 The first step to calling the API is requesting a signature.  The signature can be generated on the server-side or client-side, or alternatively requested through the Kyte framework.  Requesting a signature from the Kyte framework may be convenient when the client-side web interface may not have access to crytpogrphic libraries necessary for generating a signature, or when hosting as a static website in a cloud storage place like the AWS S3.
 
