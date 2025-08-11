@@ -1,6 +1,10 @@
 ## 3.7.7
 
-* Update Kyte Lirbary to support global and non-global includes.
+* Update Kyte Lirbary to support global and non-global includes. Requires a new table which can be added using `gust` as shown below.
+*After running composer update*
+```bash
+gust model add KyteLibraryAssignment
+```
 
 ## 3.7.6
 
