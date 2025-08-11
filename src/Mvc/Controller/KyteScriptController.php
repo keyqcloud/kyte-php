@@ -66,7 +66,7 @@ class KyteScriptController extends ModelController
                     // iterate through each page
                     foreach($pages->objects as $page) {
                         // if script was marked as include_all then update assignments for each page.
-                        if (isset($d['include_all']) && $d['include_all'] == 1) {
+                        if (($o->include_all == 1 && (!isset($d['include_all']) || $d['include_all'] === '' || $d['include_all'] == 1)) || (isset($d['include_all']) && $d['include_all'] == 1)) {
                             // check if assignment already exists
                             $scriptAssignment = new \Kyte\Core\ModelObject(KyteScriptAssignment);
                             if (!$scriptAssignment->retrieve('script', $o->id, [['field' => 'page', 'value' => $page->id]])) {
