@@ -1,107 +1,327 @@
-# Kyte-PHP
+# Kyte-PHP Framework
 [![PHP Composer](https://github.com/keyqcloud/kyte-php/actions/workflows/php.yml/badge.svg)](https://github.com/keyqcloud/kyte-php/actions/workflows/php.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/keyqcloud/kyte-php.svg?style=flat)](https://packagist.org/packages/keyqcloud/kyte-php)
 
 (c) 2020-2025 [KeyQ, Inc.](https://www.keyq.cloud)
 
 ## About Kyte-PHP
-Web application development shouldn't have to be a chore.  Kyte was created with the intention to make things more enjoyable and to simplify the development workflow.  The Kyte-php framework works as the backend API and can be integrated into different types of application architectures and front-end languages/frameworks.
+
+Kyte-PHP is a modern, database-driven web application framework designed to make development more enjoyable and streamline the development workflow. The framework works as a backend API and can be integrated into different application architectures and front-end languages/frameworks.
+
+**Key Features:**
+- **Dynamic MVC Architecture**: Models, views, and controllers are managed through Kyte Shipyard and stored in the database
+- **Multi-tenant SaaS Support**: Built-in support for multi-tenant applications with account-level scoping
+- **API-First Design**: RESTful API with HMAC signature authentication
+- **Database-Driven Configuration**: Application models and controllers are dynamically loaded from the database
+- **AWS Integration**: Native support for S3, SES, SNS, and other AWS services
+- **Session Management**: Robust session handling with configurable timeouts and multi-login support
+
+## Architecture Overview
+
+Kyte-PHP has evolved from a traditional file-based MVC framework to a dynamic, database-driven architecture. All application models, controllers, and configurations are now managed through **Kyte Shipyard** and stored in the database, allowing for:
+
+- Runtime model and controller loading
+- Dynamic application configuration
+- Multi-application support from a single framework instance
+- Version-controlled deployments through the database
 
 ## Getting Started
-Coming soon
 
-### .htaccess
-`FallbackResource /index.php`
+### Prerequisites
 
-### Configuration
-Coming soon
+- PHP 7.4 or higher
+- MySQL 5.7+ or MariaDB 10.2+
+- Composer
+- AWS account (optional, for cloud features)
 
-#### AWS RDS TLS/SSL Connection
-To get a certificate bundle for all AWS Regions, download it from [https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem]https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+### Installation
 
-More information on using SSL with RDS can be found at [https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html]https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html
-
-### Calling the API
-The first step to calling the API is requesting a signature.  The signature can be generated on the server-side or client-side, or alternatively requested through the Kyte framework.  Requesting a signature from the Kyte framework may be convenient when the client-side web interface may not have access to crytpogrphic libraries necessary for generating a signature, or when hosting as a static website in a cloud storage place like the AWS S3.
-
-To request a signature from Kyte, simply submit a get request in the following format:
-GET      `/{key}/{time}/{identifier}`
-
-The response is json formated with `signature` containing the hash necessary for making API calls.  Once a signature has been generated or obtained, the following HTTP method and URL format can be used to call the API successfully.
- * POST     `/{token}/{key}/{signature}/{time}/{model}`
- * PUT      `/{token}/{key}/{signature}/{time}/{model}/{field}/{value}`
- * GET      `/{token}/{key}/{signature}/{time}/{model}/{field}/{value}`
- * DELETE   `/{token}/{key}/{signature}/{time}/{model}/{field}/{value}`
-
-Each component in the URL is defined below:
-* `token` is the session token that is stored as a cookie.
-* `key` is the public access key.
-* `signature` is the API signature returned from the Kyte API, which is used to validate all API requests.
-* `time` is the UTC time used to sign the signature for API validation.
-* `model` is the name of the model or view controller's virtual model being called.
-* `field` is the name of the model field.
-* `value` is the value of the model field.
-
-### Models
-Models are defined in the `/models` directory of the framework.  Models are defined as associative arrays and follows the following format:
-```
-$ModelName = [
-	'name' => 'ModelName',          // must correspond with the table name in the database
-	'struct' => [
-		'field1'		=> [...attributes...],
-
-		'field2'	=> [...attributes...],
-
-		'field3'	=> [...attributes...],
-	],
-];
+```bash
+composer require keyqcloud/kyte-php
 ```
 
+### Basic Setup
 
-### Model Attributes
-The following are allowed model attributes used when declaring a field - some are required.
+1. **Configure your web server** with the following `.htaccess`:
+```apache
+FallbackResource /index.php
+```
 
-* `type: {s/i/d/t}` - defines field type (currently supports s for varchar, i for int, d for decimal, and t for text)
-* `required: {true/false}` - flag for if field is required, i.e. cannot be null
-* `size: {int}` - defines size of field for varchar and int
-* `precision: {int}` - defines precision for decimal
-* `scale: {int}` - defines scale for decimal
-* `date: {true/false}` - flag for if field is date time
-* `protected: {true/false}` - flag for if field should not be returned in response data, i.e. passwords and hashes
-* `dateformat: {ex: YYYY/MM/DD H:i:s}` - optional date format which can be used to override framework configuration
-* `unsigned: {true/false}` - flag for unsigned int
-* `default: {default value}` - defines optional default value
-* `fk: {array with FK attributes}` - if a field is a foreign key, then used to define table and field that associates with it (see below)
+2. **Database Configuration** - Set your database credentials in your configuration:
+```php
+define('KYTE_DB_HOST', 'your-db-host');
+define('KYTE_DB_DATABASE', 'your-db-name');
+define('KYTE_DB_USERNAME', 'your-db-user');
+define('KYTE_DB_PASSWORD', 'your-db-password');
+define('KYTE_DB_CHARSET', 'utf8mb4');
+```
 
-For FK attributes, the following are required:
-* `model: {true/false}` - fk table name
-* `field: {true/false}` - fk table field that links to current model
-* `cascade: {true/false}` - flag for whether fk table should be deleted too
+3. **Initialize the API** in your `index.php`:
+```php
+<?php
+require_once 'vendor/autoload.php';
 
-### Controller Attributes and Flags
-Available controller attributes and flags to modify behaviour. Some a auto populated by API engine.
-`user`
-`account`
-`session`
-`response`
-`dateformat`
-`model`
-`getFKTables`
-`getExternalTables`
-`requireAuth`
-`requireAccount`
-`failOnNull`
-`allowableActions`
-`checkExisting`
+$api = new \Kyte\Core\Api();
+$api->route();
+?>
+```
 
-### Controllers Hooks
-Available controller hooks to modify an existing or abstract controllers behaviour
-`public function hook_init() {}`
-`public function hook_auth() {}`
-`public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}`
-`public function hook_preprocess($method, &$r, &$o = null) {}`
-`public function hook_response_data($method, $o, &$r = null) {}`
-`public function hook_process_get_response(&$r) {}`
+## Authentication & API Access
 
-### "Abstract" Controllers or View Controllers
-For data that may have unique requirements and complex relations, an abstract controller can be created to manipulate the data and update one or more models.  "Abstract" or View controllers do not need to have a model and can act as standalone controllers that directly process and return data, such as the built-in MailController.  View Controllers are similar to virtual tables or views in traditional relational databases, such as Oracle or MySQL.  View Controllers are created just like any other controller and extends the `ModelController` class and must override all class methods.  View Controllers are called using the same URL syntax where the model is replaced by the View Controller's "view" name.  For example, for the `MailController`, the model name is `Mail`, even though no model named `Mail` exists.  The API router will recongize that the requested resource is a View Controller and correctly route the call.
+### API Signature Generation
+
+Kyte-PHP uses HMAC-SHA256 signatures for secure API access. To request a signature:
+
+**GET** `/{key}/{time}/{identifier}`
+
+Response:
+```json
+{
+    "signature": "generated_hmac_signature"
+}
+```
+
+### Making API Calls
+
+Once you have a signature, use the following URL format:
+
+- **POST** `/{model}` + data (Create)
+- **PUT** `/{model}/{field}/{value}` + data (Update)
+- **GET** `/{model}/{field}/{value}` (Read)
+- **DELETE** `/{model}/{field}/{value}` (Delete)
+
+Required headers:
+- `X-Kyte-Identity`: Base64 encoded identity string
+- `X-Kyte-Signature`: HMAC signature
+- `X-Kyte-AppId`: Application identifier (for multi-tenant apps)
+
+## Dynamic Model System
+
+### Database-Driven Models
+
+Models are now stored in the `DataModel` table and dynamically loaded:
+
+```php
+// Models are automatically loaded from the database
+// No need to define them in files anymore
+$user = new \Kyte\Core\ModelObject(constant('User'));
+$user->create([
+    'name' => 'John Doe',
+    'email' => 'john@example.com'
+]);
+```
+
+### Model Structure
+
+Models follow this structure in the database:
+```php
+[
+    'name' => 'ModelName',
+    'struct' => [
+        'field_name' => [
+            'type' => 's|i|d|t|b',  // string, integer, decimal, text, blob
+            'required' => true|false,
+            'size' => 255,
+            'date' => true|false,
+            'protected' => true|false,
+            'fk' => [
+                'model' => 'RelatedModel',
+                'field' => 'id'
+            ]
+        ]
+    ]
+]
+```
+
+### Supported Field Types
+
+| Type | Description | MySQL Type |
+|------|-------------|------------|
+| `s` | String | VARCHAR |
+| `i` | Integer | INT |
+| `bi` | Big Integer | BIGINT |
+| `d` | Decimal | DECIMAL |
+| `t` | Text | TEXT |
+| `tt` | Tiny Text | TINYTEXT |
+| `mt` | Medium Text | MEDIUMTEXT |
+| `lt` | Long Text | LONGTEXT |
+| `b` | Blob | BLOB |
+
+## Controllers
+
+### Dynamic Controller Loading
+
+Controllers are stored in the `Controller` table and loaded dynamically:
+
+```php
+class CustomController extends \Kyte\Mvc\Controller\ModelController 
+{
+    protected function init() {
+        // Custom initialization
+        $this->requireAuth = true;
+        $this->allowableActions = ['get', 'new', 'update'];
+    }
+    
+    public function hook_preprocess($method, &$data, &$obj = null) {
+        // Custom preprocessing logic
+        if ($method === 'new') {
+            $data['created_by'] = $this->api->user->id;
+        }
+    }
+}
+```
+
+### Controller Hooks
+
+Available hooks for customizing behavior:
+
+- `hook_init()` - Initialize controller settings
+- `hook_auth()` - Custom authentication logic
+- `hook_prequery()` - Modify query parameters
+- `hook_preprocess()` - Process data before operations
+- `hook_response_data()` - Modify response data
+- `hook_process_get_response()` - Process GET responses
+
+## Multi-Tenant Applications
+
+Kyte-PHP supports multi-tenant architectures:
+
+```php
+// Application-level models with org scoping
+$this->api->app->org_model; // Organization model
+$this->api->app->userorg_colname; // User-organization relationship
+
+// Automatic scoping in controllers
+if ($this->api->app->org_model !== null) {
+    $conditions = [
+        ['field' => $this->api->app->userorg_colname, 'value' => $this->user->organization_id]
+    ];
+}
+```
+
+## Database Features
+
+### SSL/TLS Support
+
+Configure SSL connections with:
+```php
+define('KYTE_DB_CA_BUNDLE', '/path/to/rds-ca-2019-root.pem');
+```
+
+### Connection Management
+
+- Automatic connection switching between main and application databases
+- Connection pooling and management
+- Fallback support for non-SSL connections
+
+## Advanced Features
+
+### Environment Variables
+
+Application-level environment variables stored in `KyteEnvironmentVariable` and managed through Kyte Shipyard:
+```php
+// Access app-specific environment variables
+$envVars = KYTE_APP_ENV;
+echo $envVars['CUSTOM_SETTING'];
+```
+
+### AWS Integration
+
+Built-in support for:
+- **S3**: File storage and static website hosting
+- **SES**: Email sending capabilities
+- **SNS**: Notification services
+- **CloudFront**: CDN distribution
+
+## Configuration Options
+
+### Framework Constants
+
+```php
+define('DEBUG', false);
+define('ALLOW_MULTILOGON', false);
+define('SESSION_TIMEOUT', 3600);
+define('SIGNATURE_TIMEOUT', 300);
+define('PAGE_SIZE', 50);
+define('STRICT_TYPING', true);
+```
+
+### Date Formatting
+
+```php
+define('APP_DATE_FORMAT', 'Y-m-d H:i:s');
+```
+
+## Error Handling
+
+Comprehensive error handling with:
+- Session exceptions for authentication errors
+- Database connection error recovery
+- Application-level error logging
+- S3-based error logging for production
+
+## Migration from Earlier Versions
+
+If migrating from file-based models:
+
+1. Use Kyte Shipyard to import existing models
+2. Convert file-based controllers to database entries
+3. Update application configuration for multi-tenant support
+4. Test dynamic loading functionality
+
+## API Response Format
+
+Standard API responses:
+```json
+{
+    "response_code": 200,
+    "session": "session_token",
+    "token": "transaction_token",
+    "uid": "user_id",
+    "model": "ModelName",
+    "transaction": "GET|POST|PUT|DELETE",
+    "txTimestamp": "1640995200",
+    "data": [],
+    "page_size": 50,
+    "page_num": 1,
+    "total_count": 100,
+    "total_filtered": 75
+}
+```
+
+## Development Tools
+
+### Kyte Shipyard Integration
+
+All model and controller management is now done through Kyte Shipyard:
+- Visual model designer
+- Controller code editor
+- Application deployment management
+- Environment variable configuration
+
+### CLI Support
+
+The framework includes CLI support for:
+- Database migrations
+- Model synchronization
+- Application deployment
+
+## Security
+
+- HMAC-SHA256 signature authentication
+- SQL injection prevention with prepared statements
+- Cross-origin resource sharing (CORS) support
+- Session token validation
+- Protected field support for sensitive data
+
+## Performance
+
+- Connection pooling
+- Prepared statement caching
+- Efficient foreign key loading
+- Pagination support for large datasets
+- Optional external table loading
+
+## License
+
+Copyright (c) 2020-2025 KeyQ, Inc. All rights reserved.
