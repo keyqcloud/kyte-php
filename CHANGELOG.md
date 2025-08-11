@@ -1,3 +1,7 @@
+## 3.7.8 (draft)
+
+* Fix issue where obfuscated javascript was still plain text. Problem was with script_type not being accessed as property member of object.
+
 ## 3.7.7
 
 * Update Kyte Lirbary to support global and non-global includes. Requires a new table which can be added using `gust` as shown below.
