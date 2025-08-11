@@ -1,3 +1,7 @@
+## 3.7.7
+
+* Update Kyte Lirbary to support global and non-global includes.
+
 ## 3.7.6
 
 * Fix issue where model definition did not update correctly after creating, updating, or deleting a new column.
