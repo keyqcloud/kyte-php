@@ -1,6 +1,11 @@
-## 3.7.8 (draft)
+## 3.7.8
 
 * Fix issue where obfuscated javascript was still plain text. Problem was with script_type not being accessed as property member of object.
+* If there is an entry in the error log for an undefined array index `labelCenterBlock`, run the following sql statement:
+**Database Changes (if not applied previously)**
+```sql
+ALTER TABLE SideNav ADD labelCenterBlock TINYINT(1) unsigned DEFAULT 0 AFTER columnStyle;
+```
 
 ## 3.7.7
 

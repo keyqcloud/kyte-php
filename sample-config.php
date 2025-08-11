@@ -51,7 +51,6 @@
     // define('KYTE_REDIS_PORT', 6379);
     // define('KYTE_REDIS_TTL', 0);
 
-
     /* Database Integration */
     define('KYTE_DB_USERNAME', ''); // Database username
     define('KYTE_DB_PASSWORD', ''); // Database password

@@ -181,13 +181,6 @@ class Api
 	public function __construct() {
 		$this->defineEnvironmentConstants();
 		$this->loadModelsAndControllers();
-
-		// check if redis is available
-		if (defined('KYTE_REDIS_ENDPOINT')) {
-			$redisPort = defined('KYTE_REDIS_PORT') ? KYTE_REDIS_PORT : 6379;
-			$redisTTL = defined('KYTE_REDIS_TTL') ? KYTE_REDIS_TTL : 0;
-			\Kyte\Core\DBI::initRedis(KYTE_REDIS_ENDPOINT, $redisPort, $redisTTL);
-		}
 	
 		// initialize base framework
 		self::dbconnect();
