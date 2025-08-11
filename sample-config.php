@@ -4,7 +4,9 @@
 
     /* General Application Settings */
     define('APP_NAME', ''); // Name of the application
+    define('SHIPYARD_URL', ''); // Base URL of Kyte Shipyard
 	define('APP_EMAIL', ''); // Application email address
+    define('APP_SES_REGION', ''); // AWS SES region for sending emails')
 	define('SUPPORT_EMAIL', ''); // Support email address
 	define('SUPPORT_PHONE', ''); // Support phone number
     define('APP_DATE_FORMAT', 'Y/m/d'); // Date format for the application
