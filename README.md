@@ -18,7 +18,7 @@ Kyte-PHP is a modern, database-driven web application framework designed to make
 
 ## Architecture Overview
 
-Kyte-PHP has evolved from a traditional file-based MVC framework to a dynamic, database-driven architecture. All application models, controllers, and configurations are now managed through **Kyte Shipyard** and stored in the database, allowing for:
+Kyte-PHP has evolved from a traditional file-based MVC framework to a dynamic, database-driven architecture. All application models, controllers, and configurations are now managed through **[Kyte Shipyard](https://github.com/keyqcloud/kyte-shipyard/)** and stored in the database, allowing for:
 
 - Runtime model and controller loading
 - Dynamic application configuration
@@ -32,7 +32,8 @@ Kyte-PHP has evolved from a traditional file-based MVC framework to a dynamic, d
 - PHP 7.4 or higher
 - MySQL 5.7+ or MariaDB 10.2+
 - Composer
-- AWS account (optional, for cloud features)
+- [Kyte Shipyard](https://github.com/keyqcloud/kyte-shipyard/)
+- AWS account
 
 ### Installation
 
