@@ -1,3 +1,7 @@
+## 3.7.6
+
+* Fix issue where model definition did not update correctly after creating, updating, or deleting a new column.
+
 ## 3.7.5
 
 * Add support for global includes for custom scripts. Requires a table change in the database (see below)
