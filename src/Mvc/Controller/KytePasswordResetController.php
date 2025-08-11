@@ -304,7 +304,7 @@ class KytePasswordResetController extends ModelController
             
             <div class="security-notice">
                 <h4>🔒 Security Notice</h4>
-                <p>If you didn\'t request this password reset, please ignore this email. Your password will remain unchanged. For security reasons, this reset link will expire in 1 hour and you will need to generate a new request if it expires.</p>
+                <p>If you didn\'t request this password reset, please ignore this email. For security reasons, this reset link will expire in 1 hour and you will need to generate a new request if it expires.</p>
             </div>
         </div>
         
