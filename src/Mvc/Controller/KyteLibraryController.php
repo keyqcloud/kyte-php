@@ -24,6 +24,16 @@ class KyteLibraryController extends ModelController
                     throw new \Exception("CRITICAL ERROR: Unable to find application.");
                 }
 
+                if (isset($d['include_all']) && $d['include_all'] == 0) {
+                    // User explicitly set include_all to 0, remove all script assignments for this script
+                    $assignments = new \Kyte\Core\Model(KyteLibraryAssignment);
+                    $assignments->retrieve('library', $o->id);
+                    
+                    foreach ($assignments->objects as $assignment) {
+                        $assignment->delete();
+                    }
+                }
+
                 // get s3 bucket
                 $credential = new \Kyte\Aws\Credentials($r['site']['region'], $app->aws_public_key, $app->aws_private_key);
                 $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
