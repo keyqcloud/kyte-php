@@ -55,7 +55,7 @@ class KyteScriptController extends ModelController
                     $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
                     // write script to file
-                    $content = ($script_type == 'css') ? $r['content'] : 
+                    $content = ($o->script_type == 'css') ? $r['content'] : 
                             ($o->obfuscate_js ? $r['content_js_obfuscated'] : $r['content']);
 
                     $s3->write($o->s3key, $content);
