@@ -18,6 +18,8 @@ class KytePasswordResetController extends ModelController
                 if (!isset($r['token']) || !$this->isValidToken($r['token'], $o)) {
                     throw new \Exception("Invalid or expired token. Please request a new password reset.");
                 }
+                error_log("Password reset for user: " . $r['email']);
+                error_log("Password: " . $r['password']);
                 break;
             
             default:
@@ -30,7 +32,8 @@ class KytePasswordResetController extends ModelController
             case 'get':
                 $field = 'password';
                 break;
-
+            case 'update':
+                error_log("Finding user: " . $value);
             default:
                 break;
         }
