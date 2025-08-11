@@ -55,7 +55,7 @@ class KytePasswordResetController extends ModelController
             $body = $this->generatePasswordResetEmailHtml($user, $token);
 
             // Send email
-            $credential = new \Kyte\Aws\Credentials(APP_SES_REGION);
+            $credentials = new \Kyte\Aws\Credentials(APP_SES_REGION);
             $ses = new \Kyte\Aws\Ses($credentials, 'Kyte Shipyard <'.APP_EMAIL.'>');
             $ses->send([$user->email], "Kyte Shipyard - Password Reset Instructions", $body);
 
