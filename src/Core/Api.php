@@ -727,6 +727,12 @@ class Api
 			$this->field = isset($elements[1]) ? urldecode($elements[1]) : null;
 			$this->value = isset($elements[2]) ? urldecode($elements[2]) : null;
 
+			// Debug logging
+			if (VERBOSE_LOG) {
+				error_log("Raw URL element[2]: " . (isset($elements[2]) ? $elements[2] : 'null'));
+				error_log("Decoded value: " . ($this->value ?? 'null'));
+			}
+
 			$this->response['model'] = $this->model;
 
 			// get API associated with the account
