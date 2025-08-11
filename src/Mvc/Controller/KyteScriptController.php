@@ -60,13 +60,23 @@ class KyteScriptController extends ModelController
 
                     $s3->write($o->s3key, $content);
 
+                    if (isset($d['include_all']) && $d['include_all'] == 0) {
+                        // User explicitly set include_all to 0, remove all script assignments for this script
+                        $scriptAssignments = new \Kyte\Core\Model(KyteScriptAssignment);
+                        $scriptAssignments->retrieve('script', $o->id);
+                        
+                        foreach ($scriptAssignments->objects as $assignment) {
+                            $assignment->delete();
+                        }
+                    }
+
                     $pages = new \Kyte\Core\Model(KytePage);
                     $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $r['site']['id']]]);
 
                     // iterate through each page
                     foreach($pages->objects as $page) {
                         // if script was marked as include_all then update assignments for each page.
-                        if (isset($d['include_all']) && $d['include_all'] == 1) {
+                        if (($o->include_all == 1 && (!isset($d['include_all']) || $d['include_all'] === '' || $d['include_all'] == 1)) || (isset($d['include_all']) && $d['include_all'] == 1)) {
                             // check if assignment already exists
                             $scriptAssignment = new \Kyte\Core\ModelObject(KyteScriptAssignment);
                             if (!$scriptAssignment->retrieve('script', $o->id, [['field' => 'page', 'value' => $page->id]])) {

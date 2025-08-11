@@ -269,18 +269,23 @@ class KytePageController extends ModelController
         $code .= '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">';
         
         // retrieve libraries
-        $libraries = new \Kyte\Core\Model(KyteLibrary);
-        $libraries->retrieve('include_all', 1, false, [['field' => 'site', 'value' => $page['site']['id']]], false, [['field' => 'id', 'direction' => 'asc']]);
-        foreach($libraries->objects as $library) {
-            switch ($library->script_type) {
-                case 'js':
-                    $code .= '<script src="'.$library->link.'"'.($library->is_js_module == 1 ? ' type="module"' : '').'></script>';
-                    break;
-                case 'css':
-                    $code .= '<link rel="stylesheet" href="'.$library->link.'">';
-                    break;
-                default:
-                    error_log("Unknown library type {$library->script_type} for {$library->name} located {$library->link}");
+        $libraries = new \Kyte\Core\Model(KyteLibraryAssignment);
+        $libraries->retrieve('page', $page['id'], false, [['field' => 'site', 'value' => $page['site']['id']]], false, [['field' => 'id', 'direction' => 'asc']]);
+        foreach($libraries->objects as $include) {
+            $library = new \Kyte\Core\ModelObject(KyteLibrary);
+            if ($library->retrieve('id', $include->library)) {
+                switch ($library->script_type) {
+                    case 'js':
+                        $code .= '<script src="'.$library->link.'"'.($library->is_js_module == 1 ? ' type="module"' : '').'></script>';
+                        break;
+                    case 'css':
+                        $code .= '<link rel="stylesheet" href="'.$library->link.'">';
+                        break;
+                    default:
+                        error_log("Unknown library type {$library->script_type} for {$library->name} located {$library->link}");
+                }
+            } else {
+                error_log("Unknown library id {$include->library}");
             }
         }
 
@@ -388,7 +393,7 @@ class KytePageController extends ModelController
             $code .= '</footer>';
         }
 
-        // retrieve custom javascripts scripts
+        // retrieve custom javascripts and stylesheets
         $includes = new \Kyte\Core\Model(KyteScriptAssignment);
         $includes->retrieve('page', $page['id'], false, [['field' => 'site', 'value' => $page['site']['id']]], false, [['field' => 'id', 'direction' => 'asc']]);
         foreach($includes->objects as $include) {

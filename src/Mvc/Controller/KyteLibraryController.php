@@ -24,6 +24,16 @@ class KyteLibraryController extends ModelController
                     throw new \Exception("CRITICAL ERROR: Unable to find application.");
                 }
 
+                if (isset($d['include_all']) && $d['include_all'] == 0) {
+                    // User explicitly set include_all to 0, remove all script assignments for this script
+                    $assignments = new \Kyte\Core\Model(KyteLibraryAssignment);
+                    $assignments->retrieve('library', $o->id);
+                    
+                    foreach ($assignments->objects as $assignment) {
+                        $assignment->delete();
+                    }
+                }
+
                 // get s3 bucket
                 $credential = new \Kyte\Aws\Credentials($r['site']['region'], $app->aws_public_key, $app->aws_private_key);
                 $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
@@ -38,6 +48,23 @@ class KyteLibraryController extends ModelController
                     if (!$pd->retrieve('page', $page->id)) {
                         throw new \Exception("CRITICAL ERROR: Unable to find page data.");
                     }
+
+                    // check if include_all is set
+                    if ($o->include_all == 1) {
+                        $assignment = new \Kyte\Core\ModelObject(KyteLibraryAssignment);
+                        if (!$assignment->retrieve('library', $o->id, [['field' => 'page', 'value' => $page->id]])) {
+                            // create new assignment
+                            if (!$assignment->create([
+                                'library'        => $o->id,
+                                'page'          => $page->id,
+                                'site'          => $page->site,
+                                'kyte_account'  => $page->kyte_account,
+                            ], $this->api->user->id)) {
+                                throw new \Exception("Failed to assign library {$o->link} to page '{$page->title}'");
+                            }
+                        }
+                    }
+
                     $params['html'] = bzdecompress($pd->html);
                     $params['stylesheet'] = bzdecompress($pd->stylesheet);
                     $params['javascript'] = bzdecompress($pd->javascript);
@@ -93,6 +120,13 @@ class KyteLibraryController extends ModelController
                 $d = $this->getObject($o);
                 $credential = new \Kyte\Aws\Credentials($d['site']['region'], $app->aws_public_key, $app->aws_private_key);
                 $s3 = new \Kyte\Aws\S3($credential, $d['site']['s3BucketName']);
+
+                // remove library assignments
+                $assignments = new \Kyte\Core\Model(KyteLibraryAssignment);
+                $assignments->retrieve('library', $o->id);
+                foreach ($assignments->objects as $assignment) {
+                    $assignment->delete();
+                }
                 
                 $pages = new \Kyte\Core\Model(KytePage);
                 $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $r['site']['id']]]);
