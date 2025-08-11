@@ -16,7 +16,7 @@ class KytePasswordResetController extends ModelController
             case 'update':
                 // Check if token exists and is valid
                 if (!isset($r['token']) || !$this->isValidToken($r['token'], $o)) {
-                    throw new \Exception("Invalid or expired token");
+                    throw new \Exception("Invalid or expired token. Please request a new password reset.");
                 }
                 break;
             
