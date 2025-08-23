@@ -17,6 +17,35 @@ class KytePageController extends ModelController
                 $r['s3key'] = strtolower(preg_replace('/[^A-Za-z0-9_.-\/]/', '-', $r['s3key']));
                 break;
 
+            case 'update':
+                // check if s3key is being updated (i.e renaming file)
+                if (isset($r['s3key']) && $r['s3key'] != $o->s3key) {
+                    $r['s3key'] = strtolower(preg_replace('/[^A-Za-z0-9_.-\/]/', '-', $r['s3key']));
+                    $d = $this->getObject($o);
+                    // move s3 file if it exists
+                    $credential = new \Kyte\Aws\Credentials($d['site']['region'], $app->aws_public_key, $app->aws_private_key);
+                    $s3 = new \Kyte\Aws\S3($credential, $d['site']['s3BucketName']);
+                    $s3->rename($o->s3key, $r['s3key']);
+                    // invalidate CF cache
+                    $invalidationPaths = ['/*'];
+                    if (KYTE_USE_SNS) {
+                        $credential = new \Kyte\Aws\Credentials(SNS_REGION);
+                        $sns = new \Kyte\Aws\Sns($credential, SNS_QUEUE_SITE_MANAGEMENT);
+                        $sns->publish([
+                            'action' => 'cf_invalidate',
+                            'site_id' => $d['site']['id'],
+                            'cf_id' => $d['site']['cfDistributionId'],
+                            'cf_invalidation_paths' => $invalidationPaths,
+                            'caller_id' => time(),
+                        ]);
+                    } else {
+                        // invalidate CF
+                        $cf = new \Kyte\Aws\CloudFront($credential);
+                        $cf->createInvalidation($d['site']['cfDistributionId'], $invalidationPaths);
+                    }
+                }
+                break;
+
             default:
                 break;
         }
