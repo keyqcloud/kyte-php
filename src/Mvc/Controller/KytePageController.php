@@ -68,6 +68,39 @@ class KytePageController extends ModelController
                     $o->purge();
                     throw new \Exception("CRITICAL ERROR: Unable to find page data.");
                 }
+                // check for global includes and assign them
+                $kyteLibraries = new \Kyte\Core\Model(KyteLibrary);
+                $kyteLibraries->retrieve();
+                foreach ($kyteLibraries->objects as $lib) {
+                    if ($lib->include_all == 1) {
+                        $assignment = new \Kyte\Core\ModelObject(KyteLibraryAssignment);
+                        if(!$assignment->create([
+                            'library' => $lib->id,
+                            'page' => $o->id,
+                            'site' => $o->site,
+                            'kyte_account' => $this->account->id,
+                        ], $this->api->user->id)) {
+                            throw new \Exception("CRITICAL ERROR: Unable to assign library ".$lib->name." to page.");
+                        }
+                    }
+                }
+
+                // check for global scripts and assign them
+                $kyteScripts = new \Kyte\Core\Model(KyteScript);
+                $kyteScripts->retrieve();
+                foreach ($kyteScripts->objects as $script) {
+                    if ($script->include_all == 1) {
+                        $assignment = new \Kyte\Core\ModelObject(KyteScriptAssignment);
+                        if(!$assignment->create([
+                            'script' => $script->id,
+                            'page' => $o->id,
+                            'site' => $o->site,
+                            'kyte_account' => $this->account->id,
+                        ], $this->api->user->id)) {
+                            throw new \Exception("CRITICAL ERROR: Unable to assign script ".$script->name." to page.");
+                        }
+                    }
+                }
                 break;
             case 'update':
                 $params = $r;

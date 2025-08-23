@@ -1,3 +1,7 @@
+## 3.7.9
+
+* Fix issue where new pages did not have global script and library assignments
+
 ## 3.7.8
 
 * Fix issue where obfuscated javascript was still plain text. Problem was with script_type not being accessed as property member of object.
