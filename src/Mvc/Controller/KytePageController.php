@@ -199,6 +199,20 @@ class KytePageController extends ModelController
                     $pd->delete();
                 }
 
+                // remove library assignments
+                $assignments = new \Kyte\Core\Model(KyteLibraryAssignment);
+                $assignments->retrieve('page', $o->id);
+                foreach ($assignments->objects as $a) {
+                    $a->delete();
+                }
+
+                // remove script assignments
+                $assignments = new \Kyte\Core\Model(KyteScriptAssignment);
+                $assignments->retrieve('page', $o->id);
+                foreach ($assignments->objects as $a) {
+                    $a->delete();
+                }
+
                 // check if s3 key exists
                 if (!empty($o->s3key)) {
                     $credential = new \Kyte\Aws\Credentials($d['site']['region'], $app->aws_public_key, $app->aws_private_key);
