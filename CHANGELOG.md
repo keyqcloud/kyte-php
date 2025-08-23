@@ -1,6 +1,7 @@
 ## 3.7.9
 
 * Fix issue where new pages did not have global script and library assignments
+* Remove script and library assignments on page deletion
 
 ## 3.7.8
 
