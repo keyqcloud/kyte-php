@@ -940,7 +940,7 @@ class KytePageController extends ModelController
             'javascript_obfuscated' => isset($data['javascript_obfuscated']) ? bzcompress($data['javascript_obfuscated'], 9) : null,
             'block_layout' => isset($data['block_layout']) ? bzcompress($data['block_layout'], 9) : null,
             'reference_count' => 1,
-            'date_created' => time(),
+            'kyte_account' => $this->account->id,
             'last_referenced' => time(),
         ];
 
