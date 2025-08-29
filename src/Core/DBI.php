@@ -846,7 +846,7 @@ class DBI {
 		}
 
 		// DEBUG
-		if (defined('DEBUG_SQL_PARAMS')) {
+		if (defined('DEBUG_SQL_PARAMS') && DEBUG_SQL_PARAMS) {
 			error_log(print_r($params, true));
 		}
 
@@ -865,7 +865,7 @@ class DBI {
 		$query = sprintf("INSERT INTO `%s`(%s) VALUES(%s)", $table, implode(',', $columns), $placeholder);
 
 		// DEBUG
-		if (defined('DEBUG_SQL')) {
+		if (defined('DEBUG_SQL') && DEBUG_SQL) {
 			error_log($query);
 		}
 
@@ -914,7 +914,7 @@ class DBI {
 		}
 
 		// DEBUG
-		if (defined('DEBUG_SQL_PARAMS')) {
+		if (defined('DEBUG_SQL_PARAMS') && DEBUG_SQL_PARAMS) {
 			error_log(print_r($params, true));
 		}
 
@@ -937,7 +937,7 @@ class DBI {
 		$query .= " WHERE id = ?";
 
 		// DEBUG
-		if (defined('DEBUG_SQL')) {
+		if (defined('DEBUG_SQL') && DEBUG_SQL) {
 			error_log($query);
 		}
 
@@ -986,7 +986,7 @@ class DBI {
 		$query = "DELETE FROM `$table` WHERE id = ?";
 
 		// DEBUG
-		if (defined('DEBUG_SQL')) {
+		if (defined('DEBUG_SQL') && DEBUG_SQL) {
 			error_log($query);
 		}
 
@@ -1051,7 +1051,7 @@ class DBI {
 		$query .= $condition;
 
 		// DEBUG
-		if (defined('DEBUG_SQL')) {
+		if (defined('DEBUG_SQL') && DEBUG_SQL) {
 			error_log($query);
 		}
 
@@ -1123,7 +1123,7 @@ class DBI {
 		}
 
 		// DEBUG
-		if (defined('DEBUG_SQL')) {
+		if (defined('DEBUG_SQL') && DEBUG_SQL) {
 			error_log($query);
 		}
 
@@ -1174,7 +1174,7 @@ class DBI {
 		$query .= " GROUP BY `$field`";
 
 		// DEBUG
-		if (defined('DEBUG_SQL')) {
+		if (defined('DEBUG_SQL') && DEBUG_SQL) {
 			error_log($query);
 		}
 
@@ -1216,7 +1216,7 @@ class DBI {
 		}
 
 		// DEBUG
-		if (defined('DEBUG_SQL')) {
+		if (defined('DEBUG_SQL') && DEBUG_SQL) {
 			error_log($query);
 		}
 
@@ -1274,7 +1274,7 @@ class DBI {
 		}
 
 		// DEBUG
-		if (defined('DEBUG_SQL')) {
+		if (defined('DEBUG_SQL') && DEBUG_SQL) {
 			error_log($query);
 		}
 

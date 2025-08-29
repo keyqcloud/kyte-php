@@ -4,6 +4,7 @@
 * Remove script and library assignments on page deletion
 * Add support for renaming site page files
 * Change ErrorHandler to only handle application space errors
+* Fix issue with SQL debug verbosity not working
 
 **Database Changes**
 
