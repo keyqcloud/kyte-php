@@ -7,9 +7,6 @@ class KytePageController extends ModelController
     public function hook_init() {
         $this->dateformat = 'm/d/Y H:i:s';
     }
-    // public function hook_auth() {}
-
-    // public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
 
     public function hook_preprocess($method, &$r, &$o = null) {
         switch ($method) {
@@ -66,6 +63,7 @@ class KytePageController extends ModelController
             $r['header']['javascript_obfuscated'] = bzdecompress($r['header']['javascript_obfuscated']);
             $r['header']['block_layout'] = bzdecompress($r['header']['block_layout']);
         }
+
         switch ($method) {
             case 'get':
                 $app = new \Kyte\Core\ModelObject(Application);
@@ -75,7 +73,11 @@ class KytePageController extends ModelController
                 $credential = new \Kyte\Aws\Credentials($r['site']['region'], $app->aws_public_key, $app->aws_private_key);
                 $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
                 $r['download_link'] = $s3->getObject($o->s3key);
+
+                // Add version information to response
+                $r['version_info'] = $this->getPageVersionInfo($o->id);
                 break;
+
             case 'new':
                 $pd = new \Kyte\Core\ModelObject(KytePageData);
                 $bz_html = isset($d['html']) ? bzcompress($d['html'], 9) : '';
@@ -83,6 +85,7 @@ class KytePageController extends ModelController
                 $bz_javascript = isset($d['javascript']) ? bzcompress($d['javascript'], 9) : '';
                 $bz_javascript_obfuscated = isset($d['javascript_obfuscated']) ? bzcompress($d['javascript_obfuscated'], 9) : '';
                 $bz_block_layout = isset($d['block_layout']) ? bzcompress($d['block_layout'], 9) : '';
+
                 if(!$pd->create([
                     'page' => $o->id,
                     'html' => $bz_html,
@@ -97,6 +100,10 @@ class KytePageController extends ModelController
                     $o->purge();
                     throw new \Exception("CRITICAL ERROR: Unable to find page data.");
                 }
+
+                // Create initial version
+                $this->createPageVersion($o, $d, 'manual_save', 'Initial version');
+
                 // check for global includes and assign them
                 $kyteLibraries = new \Kyte\Core\Model(KyteLibrary);
                 $kyteLibraries->retrieve();
@@ -131,91 +138,61 @@ class KytePageController extends ModelController
                     }
                 }
                 break;
+
             case 'update':
                 $params = $r;
+                $versionType = isset($d['version_type']) ? $d['version_type'] : 'manual_save';
+                $changeSummary = isset($d['change_summary']) ? $d['change_summary'] : null;
+
                 if (isset($d['html'], $d['stylesheet'], $d['javascript'], $d['javascript_obfuscated'])) {
-                    $params['html'] = $d['html'];
-                    $params['stylesheet'] = $d['stylesheet'];
-                    $params['javascript'] = $d['javascript'];
-                    $params['javascript_obfuscated'] = $d['javascript_obfuscated'];
-                    //
-                    $bz_html = isset($d['html']) ? bzcompress($d['html'], 9) : '';
-                    $bz_stylesheet = isset($d['stylesheet']) ? bzcompress($d['stylesheet'], 9) : '';
-                    $bz_javascript = isset($d['javascript']) ? bzcompress($d['javascript'], 9) : '';
-                    $bz_javascript_obfuscated = isset($d['javascript_obfuscated']) ? bzcompress($d['javascript_obfuscated'], 9) : '';
-                    $bz_block_layout = isset($d['block_layout']) ? bzcompress($d['block_layout'], 9) : '';
-                    //
-                    $pd = new \Kyte\Core\ModelObject(KytePageData);
-                    if($pd->retrieve('page', $o->id)) {
-                        $pd->save([
-                            'html' => $bz_html,
-                            'stylesheet' => $bz_stylesheet,
-                            'javascript' => $bz_javascript,
-                            'javascript_obfuscated' => $bz_javascript_obfuscated,
-                            'block_layout' => $bz_block_layout,
-                            'modified_by' => $this->user->id,
-                            'date_modified' => time(),
-                        ]);
-                    } else {
-                        throw new \Exception("CRITICAL ERROR: Unable to find page data.");
+                    // Check if content actually changed before creating version
+                    if ($this->hasContentChanged($o, $d)) {
+                        // Create version before updating
+                        $this->createPageVersion($o, $d, $versionType, $changeSummary);
+
+                        $params['html'] = $d['html'];
+                        $params['stylesheet'] = $d['stylesheet'];
+                        $params['javascript'] = $d['javascript'];
+                        $params['javascript_obfuscated'] = $d['javascript_obfuscated'];
+
+                        // Update KytePageData
+                        $bz_html = isset($d['html']) ? bzcompress($d['html'], 9) : '';
+                        $bz_stylesheet = isset($d['stylesheet']) ? bzcompress($d['stylesheet'], 9) : '';
+                        $bz_javascript = isset($d['javascript']) ? bzcompress($d['javascript'], 9) : '';
+                        $bz_javascript_obfuscated = isset($d['javascript_obfuscated']) ? bzcompress($d['javascript_obfuscated'], 9) : '';
+                        $bz_block_layout = isset($d['block_layout']) ? bzcompress($d['block_layout'], 9) : '';
+
+                        $pd = new \Kyte\Core\ModelObject(KytePageData);
+                        if($pd->retrieve('page', $o->id)) {
+                            $pd->save([
+                                'html' => $bz_html,
+                                'stylesheet' => $bz_stylesheet,
+                                'javascript' => $bz_javascript,
+                                'javascript_obfuscated' => $bz_javascript_obfuscated,
+                                'block_layout' => $bz_block_layout,
+                                'modified_by' => $this->user->id,
+                                'date_modified' => time(),
+                            ]);
+                        } else {
+                            throw new \Exception("CRITICAL ERROR: Unable to find page data.");
+                        }
                     }
                 }
+
+                // Handle state changes and publishing 
                 if ($o->state == 1 && !isset($d['state'])) {
                     $o->save(['state' => 2]);
                 }
+
                 if (isset($d['state']) && $d['state'] == 1) {
-                    // if these fields are not set then retrieve them from source
-                    if (!isset($d['html'], $d['stylesheet'], $d['javascript'], $d['javascript_obfuscated'])) {
-                        $pd = new \Kyte\Core\ModelObject(KytePageData);
-                        if (!$pd->retrieve('page', $o->id)) {
-                            throw new \Exception("CRITICAL ERROR: Unable to find page data.");
-                        }
-                        $params['html'] = bzdecompress($pd->html);
-                        $params['stylesheet'] = bzdecompress($pd->stylesheet);
-                        $params['javascript'] = bzdecompress($pd->javascript);
-                        $params['javascript_obfuscated'] = bzdecompress($pd->javascript_obfuscated);
-                    }
-                    $app = new \Kyte\Core\ModelObject(Application);
-                    if (!$app->retrieve('id', $r['site']['application']['id'])) {
-                        throw new \Exception("CRITICAL ERROR: Unable to find application.");
-                    }
-
-                    // publish file to s3
-                    $credential = new \Kyte\Aws\Credentials($r['site']['region'], $app->aws_public_key, $app->aws_private_key);
-                    $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
-
-                    // compile html file
-                    $data = self::createHtml($params);
-                    // write to file
-                    $s3->write($o->s3key, $data);
-
-                    // create or update sitemap
-                    $sitemap = self::updateSitemap($r['site']['id'], $r['site']['aliasDomain'] ? $r['site']['aliasDomain'] : $r['site']['cfDomain']);
-                    $s3->write('sitemap.xml', $sitemap);
-
-                    // create cf invalidation paths
-                    $invalidationPaths = ['/sitemap.xml'];
-                    $invalidationPaths[] = strpos($o->s3key, "index.html") !== false ? '/'.str_replace("index.html", "*", $o->s3key) : '/'.$o->s3key;
-                    // invalidate CF
-                    if (KYTE_USE_SNS) {
-                        $credential = new \Kyte\Aws\Credentials(SNS_REGION);
-                        $sns = new \Kyte\Aws\Sns($credential, SNS_QUEUE_SITE_MANAGEMENT);
-                        $sns->publish([
-                            'action' => 'cf_invalidate',
-                            'site_id' => $r['site']['id'],
-                            'cf_id' => $r['site']['cfDistributionId'],
-                            'cf_invalidation_paths' => $invalidationPaths,
-                            'caller_id' => time(),
-                        ]);
-                    } else {
-                        // invalidate CF
-                        $cf = new \Kyte\Aws\CloudFront($credential);
-                        $cf->createInvalidation($r['site']['cfDistributionId'], $invalidationPaths);
-                    }
+                    $this->publishPage($o, $params, $r);
                 }
                 break;
 
             case 'delete':
+                // Clean up versions when page is deleted
+                $this->cleanupPageVersions($o->id);
+
                 $d = $this->getObject($o);
 
                 $app = new \Kyte\Core\ModelObject(Application);
@@ -280,7 +257,166 @@ class KytePageController extends ModelController
         }
     }
 
-    // public function hook_process_get_response(&$r) {}
+    /**
+     * Create a new page version if content has changed
+     */
+    private function createPageVersion($pageObj, $data, $versionType = 'manual_save', $changeSummary = null) {
+        // Get current page data for comparison
+        $currentData = $this->getCurrentPageData($pageObj->id);
+        
+        // Detect changes
+        $changes = $this->detectChanges($pageObj, $currentData, $data);
+        
+        if (empty($changes)) {
+            return null; // No changes detected, don't create version
+        }
+
+        // Get next version number
+        $nextVersion = $this->getNextVersionNumber($pageObj->id);
+
+        // Create content hash for deduplication
+        $contentHash = $this->generateContentHash($data);
+
+        // Check if this exact content already exists
+        $existingContent = $this->findExistingContent($contentHash);
+        
+        $versionData = [
+            'page' => $pageObj->id,
+            'version_number' => $nextVersion,
+            'version_type' => $versionType,
+            'change_summary' => $changeSummary,
+            'changes_detected' => json_encode($changes),
+            'content_hash' => $contentHash,
+            'is_current' => 1,
+            'kyte_account' => $this->account->id,
+            'created_by' => $this->user->id,
+        ];
+
+        // Only store changed fields to save space
+        $this->addChangedFieldsToVersion($versionData, $changes, $pageObj, $data);
+
+        // Mark previous version as not current
+        $this->markPreviousVersionsAsNotCurrent($pageObj->id);
+
+        // Create the version record
+        $version = new \Kyte\Core\ModelObject(KytePageVersion);
+        if (!$version->create($versionData)) {
+            throw new \Exception("CRITICAL ERROR: Unable to create page version.");
+        }
+
+        // Store or reference content
+        if (!$existingContent) {
+            $this->storeVersionContent($contentHash, $data);
+        } else {
+            $this->incrementContentReference($contentHash);
+        }
+
+        return $version;
+    }
+
+    /**
+     * Check if page content has actually changed
+     */
+    private function hasContentChanged($pageObj, $newData) {
+        $currentData = $this->getCurrentPageData($pageObj->id);
+        $changes = $this->detectChanges($pageObj, $currentData, $newData);
+        return !empty($changes);
+    }
+
+    /**
+     * Get current page data for comparison
+     */
+    private function getCurrentPageData($pageId) {
+        $pd = new \Kyte\Core\ModelObject(KytePageData);
+        if (!$pd->retrieve('page', $pageId)) {
+            return null;
+        }
+
+        return [
+            'html' => bzdecompress($pd->html),
+            'stylesheet' => bzdecompress($pd->stylesheet),
+            'javascript' => bzdecompress($pd->javascript),
+            'javascript_obfuscated' => bzdecompress($pd->javascript_obfuscated),
+            'block_layout' => bzdecompress($pd->block_layout),
+        ];
+    }
+
+    /**
+     * Detect what fields have changed
+     */
+    private function detectChanges($pageObj, $currentData, $newData) {
+        $changes = [];
+
+        // Check page metadata fields
+        $metadataFields = ['title', 'description', 'lang', 'page_type', 'state', 'sitemap_include', 
+                          'obfuscate_js', 'is_js_module', 'use_container', 'protected', 
+                          'webcomponent_obj_name', 'header', 'footer', 'main_navigation', 'side_navigation'];
+
+        foreach ($metadataFields as $field) {
+            if (isset($newData[$field]) && $pageObj->$field != $newData[$field]) {
+                $changes[$field] = [
+                    'old' => $pageObj->$field,
+                    'new' => $newData[$field]
+                ];
+            }
+        }
+
+        // Check content fields
+        $contentFields = ['html', 'stylesheet', 'javascript', 'javascript_obfuscated', 'block_layout'];
+        
+        foreach ($contentFields as $field) {
+            $oldValue = isset($currentData[$field]) ? $currentData[$field] : '';
+            $newValue = isset($newData[$field]) ? $newData[$field] : '';
+            
+            if ($oldValue !== $newValue) {
+                $changes[$field] = [
+                    'old_length' => strlen($oldValue),
+                    'new_length' => strlen($newValue),
+                    'changed' => true
+                ];
+            }
+        }
+
+        return $changes;
+    }
+
+    /**
+     * Get version information for a page
+     */
+    private function getPageVersionInfo($pageId) {
+        $versions = new \Kyte\Core\Model(KytePageVersion);
+        $versions->retrieve('page', $pageId, false, null, false, [['field' => 'version_number', 'direction' => 'desc']], 10);
+        
+        $versionInfo = [
+            'current_version' => 0,
+            'total_versions' => 0,
+            'recent_versions' => []
+        ];
+
+        foreach ($versions->objects as $version) {
+            if ($version->is_current) {
+                $versionInfo['current_version'] = $version->version_number;
+            }
+            
+            $versionInfo['recent_versions'][] = [
+                'id' => $version->id,
+                'version_number' => $version->version_number,
+                'version_type' => $version->version_type,
+                'change_summary' => $version->change_summary,
+                'changes_detected' => json_decode($version->changes_detected, true),
+                'date_created' => $version->date_created,
+                'created_by' => $version->created_by,
+                'is_current' => (bool)$version->is_current
+            ];
+        }
+
+        // Get total count
+        $totalCount = new \Kyte\Core\Model(KytePageVersion);
+        $totalCount->retrieve('page', $pageId);
+        $versionInfo['total_versions'] = $totalCount->count();
+
+        return $versionInfo;
+    }
 
     public static function isColorDark($color)
     {
@@ -672,5 +808,422 @@ class KytePageController extends ModelController
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n",
             "</urlset>"
         ];
+    }
+
+    // Version control helper functions
+
+    /**
+     * Get the next version number for a page
+     */
+    private function getNextVersionNumber($pageId) {
+        $lastVersion = new \Kyte\Core\Model(KytePageVersion);
+        $lastVersion->retrieve('page', $pageId, false, null, false, [['field' => 'version_number', 'direction' => 'desc']], 1);
+        
+        if ($lastVersion->count() > 0) {
+            return $lastVersion->objects[0]->version_number + 1;
+        }
+        
+        return 1;
+    }
+
+    /**
+     * Generate content hash for deduplication
+     */
+    private function generateContentHash($data) {
+        $contentString = '';
+        $contentFields = ['html', 'stylesheet', 'javascript', 'block_layout'];
+        
+        foreach ($contentFields as $field) {
+            $contentString .= isset($data[$field]) ? $data[$field] : '';
+        }
+        
+        return hash('sha256', $contentString);
+    }
+
+    /**
+     * Find existing content with same hash
+     */
+    private function findExistingContent($contentHash) {
+        $content = new \Kyte\Core\ModelObject(KytePageVersionContent);
+        return $content->retrieve('content_hash', $contentHash) ? $content : null;
+    }
+
+    /**
+     * Store new version content
+     */
+    private function storeVersionContent($contentHash, $data) {
+        $contentData = [
+            'content_hash' => $contentHash,
+            'html' => isset($data['html']) ? bzcompress($data['html'], 9) : null,
+            'stylesheet' => isset($data['stylesheet']) ? bzcompress($data['stylesheet'], 9) : null,
+            'javascript' => isset($data['javascript']) ? bzcompress($data['javascript'], 9) : null,
+            'javascript_obfuscated' => isset($data['javascript_obfuscated']) ? bzcompress($data['javascript_obfuscated'], 9) : null,
+            'block_layout' => isset($data['block_layout']) ? bzcompress($data['block_layout'], 9) : null,
+            'reference_count' => 1,
+            'date_created' => time(),
+            'last_referenced' => time(),
+        ];
+
+        $content = new \Kyte\Core\ModelObject(KytePageVersionContent);
+        if (!$content->create($contentData)) {
+            throw new \Exception("CRITICAL ERROR: Unable to store version content.");
+        }
+        
+        return $content;
+    }
+
+    /**
+     * Increment reference count for existing content
+     */
+    private function incrementContentReference($contentHash) {
+        $content = new \Kyte\Core\ModelObject(KytePageVersionContent);
+        if ($content->retrieve('content_hash', $contentHash)) {
+            $content->save([
+                'reference_count' => $content->reference_count + 1,
+                'last_referenced' => time()
+            ]);
+        }
+    }
+
+    /**
+     * Mark all previous versions as not current
+     */
+    private function markPreviousVersionsAsNotCurrent($pageId) {
+        $lastVersion = new \Kyte\Core\ModelObject(KytePageVersion);
+        if ($lastVersion->retrieve('page', $pageId, [['field' => 'is_current', 'value' => 1]])) {
+            $lastVersion->save(['is_current' => 0]);
+        }
+        
+        // Use direct SQL for efficiency
+        $sql = "UPDATE KytePageVersion SET is_current = 0 WHERE page = ? AND is_current = 1";
+        // This would use your framework's database connection
+        // $this->db->execute($sql, [$pageId]);
+    }
+
+    /**
+     * Add only changed fields to version data to save space
+     */
+    private function addChangedFieldsToVersion(&$versionData, $changes, $pageObj, $newData) {
+        // Add changed metadata fields
+        $metadataFields = ['title', 'description', 'lang', 'page_type', 'state', 'sitemap_include', 
+                        'obfuscate_js', 'is_js_module', 'use_container', 'protected', 
+                        'webcomponent_obj_name', 'header', 'footer', 'main_navigation', 'side_navigation'];
+
+        foreach ($metadataFields as $field) {
+            if (isset($changes[$field])) {
+                $versionData[$field] = isset($newData[$field]) ? $newData[$field] : $pageObj->$field;
+            }
+        }
+
+        // Add changed content fields (compressed)
+        $contentFields = ['html', 'stylesheet', 'javascript', 'javascript_obfuscated', 'block_layout'];
+        
+        foreach ($contentFields as $field) {
+            if (isset($changes[$field]) && isset($newData[$field])) {
+                $versionData[$field] = bzcompress($newData[$field], 9);
+            }
+        }
+    }
+
+    /**
+     * Revert page to a specific version
+     */
+    public function revertToVersion($pageId, $versionId, $createNewVersion = true) {
+        $version = new \Kyte\Core\ModelObject(KytePageVersion);
+        if (!$version->retrieve('id', $versionId)) {
+            throw new \Exception("Version not found.");
+        }
+
+        if ($version->page != $pageId) {
+            throw new \Exception("Version does not belong to this page.");
+        }
+
+        // Get the page object
+        $page = new \Kyte\Core\ModelObject(KytePage);
+        if (!$page->retrieve('id', $pageId)) {
+            throw new \Exception("Page not found.");
+        }
+
+        // Get full version data by reconstructing from version chain
+        $fullVersionData = $this->reconstructVersionData($version);
+
+        if ($createNewVersion) {
+            // Create a new version before reverting (for undo capability)
+            $currentData = $this->getCurrentPageData($pageId);
+            if ($currentData) {
+                $this->createPageVersion($page, $currentData, 'revert', "Revert to version {$version->version_number}");
+            }
+        }
+
+        // Update the page with version data
+        $pageUpdateData = [];
+        $contentUpdateData = [];
+
+        // Extract metadata changes
+        $metadataFields = ['title', 'description', 'lang', 'page_type', 'state', 'sitemap_include', 
+                        'obfuscate_js', 'is_js_module', 'use_container', 'protected', 
+                        'webcomponent_obj_name', 'header', 'footer', 'main_navigation', 'side_navigation'];
+
+        foreach ($metadataFields as $field) {
+            if (isset($fullVersionData[$field])) {
+                $pageUpdateData[$field] = $fullVersionData[$field];
+            }
+        }
+
+        // Extract content changes
+        $contentFields = ['html', 'stylesheet', 'javascript', 'javascript_obfuscated', 'block_layout'];
+        
+        foreach ($contentFields as $field) {
+            if (isset($fullVersionData[$field])) {
+                $contentUpdateData[$field] = bzcompress($fullVersionData[$field], 9);
+            }
+        }
+
+        // Update page metadata
+        if (!empty($pageUpdateData)) {
+            $pageUpdateData['modified_by'] = $this->user->id;
+            $pageUpdateData['date_modified'] = time();
+            $page->save($pageUpdateData);
+        }
+
+        // Update page content
+        if (!empty($contentUpdateData)) {
+            $pd = new \Kyte\Core\ModelObject(KytePageData);
+            if ($pd->retrieve('page', $pageId)) {
+                $contentUpdateData['modified_by'] = $this->user->id;
+                $contentUpdateData['date_modified'] = time();
+                $pd->save($contentUpdateData);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Reconstruct full version data by walking back through version chain
+     */
+    private function reconstructVersionData($version) {
+        $data = [];
+        $currentVersion = $version;
+
+        // Start with the target version and walk backwards to fill in missing fields
+        while ($currentVersion) {
+            // Add any fields that haven't been set yet
+            $allFields = ['title', 'description', 'lang', 'page_type', 'state', 'sitemap_include', 
+                        'obfuscate_js', 'is_js_module', 'use_container', 'protected', 
+                        'webcomponent_obj_name', 'header', 'footer', 'main_navigation', 'side_navigation',
+                        'html', 'stylesheet', 'javascript', 'javascript_obfuscated', 'block_layout'];
+
+            foreach ($allFields as $field) {
+                if (!isset($data[$field]) && $currentVersion->$field !== null) {
+                    if (in_array($field, ['html', 'stylesheet', 'javascript', 'javascript_obfuscated', 'block_layout'])) {
+                        // Decompress content fields
+                        $data[$field] = bzdecompress($currentVersion->$field);
+                    } else {
+                        $data[$field] = $currentVersion->$field;
+                    }
+                }
+            }
+
+            // Move to parent version if we still need more fields
+            if ($currentVersion->parent_version) {
+                $parentVersion = new \Kyte\Core\ModelObject(KytePageVersion);
+                if ($parentVersion->retrieve('id', $currentVersion->parent_version)) {
+                    $currentVersion = $parentVersion;
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Get version history for a page with pagination
+     */
+    public function getVersionHistory($pageId, $limit = 20, $offset = 0) {
+        $versions = new \Kyte\Core\Model(KytePageVersion);
+        $versions->retrieve('page', $pageId, false, null, false, 
+                        [['field' => 'version_number', 'direction' => 'desc']], 
+                        $limit, $offset);
+
+        $history = [];
+        foreach ($versions->objects as $version) {
+            $changes = json_decode($version->changes_detected, true) ?: [];
+            
+            $history[] = [
+                'id' => $version->id,
+                'version_number' => $version->version_number,
+                'version_type' => $version->version_type,
+                'change_summary' => $version->change_summary,
+                'changes_detected' => $changes,
+                'change_count' => count($changes),
+                'date_created' => $version->date_created,
+                'created_by' => $version->created_by,
+                'is_current' => (bool)$version->is_current,
+                'can_revert' => !$version->is_current // Can't revert to current version
+            ];
+        }
+
+        return $history;
+    }
+
+    /**
+     * Compare two versions and return differences
+     */
+    public function compareVersions($versionId1, $versionId2) {
+        $version1 = new \Kyte\Core\ModelObject(KytePageVersion);
+        $version2 = new \Kyte\Core\ModelObject(KytePageVersion);
+
+        if (!$version1->retrieve('id', $versionId1) || !$version2->retrieve('id', $versionId2)) {
+            throw new \Exception("One or both versions not found.");
+        }
+
+        if ($version1->page != $version2->page) {
+            throw new \Exception("Versions must be from the same page.");
+        }
+
+        $data1 = $this->reconstructVersionData($version1);
+        $data2 = $this->reconstructVersionData($version2);
+
+        $differences = [];
+        $allFields = array_unique(array_merge(array_keys($data1), array_keys($data2)));
+
+        foreach ($allFields as $field) {
+            $value1 = isset($data1[$field]) ? $data1[$field] : null;
+            $value2 = isset($data2[$field]) ? $data2[$field] : null;
+
+            if ($value1 !== $value2) {
+                $differences[$field] = [
+                    'version_' . $version1->version_number => $value1,
+                    'version_' . $version2->version_number => $value2,
+                    'field_type' => in_array($field, ['html', 'stylesheet', 'javascript', 'javascript_obfuscated', 'block_layout']) ? 'content' : 'metadata'
+                ];
+            }
+        }
+
+        return [
+            'version1' => [
+                'id' => $version1->id,
+                'version_number' => $version1->version_number,
+                'date_created' => $version1->date_created
+            ],
+            'version2' => [
+                'id' => $version2->id,
+                'version_number' => $version2->version_number,
+                'date_created' => $version2->date_created
+            ],
+            'differences' => $differences
+        ];
+    }
+
+    /**
+     * Clean up old versions based on retention policy
+     */
+    public function cleanupOldVersions($pageId, $retentionPolicy = null) {
+        // Default retention: keep last 50 versions, or versions newer than 90 days
+        $retentionPolicy = $retentionPolicy ?: [
+            'max_versions' => 50,
+            'max_age_days' => 90,
+            'always_keep_published' => true,
+            'always_keep_manual_saves' => 10 // Keep at least 10 manual saves
+        ];
+
+        $versions = new \Kyte\Core\Model(KytePageVersion);
+        $versions->retrieve('page', $pageId, false, null, false, 
+                        [['field' => 'version_number', 'direction' => 'desc']]);
+
+        if ($versions->count() <= $retentionPolicy['max_versions']) {
+            return; // Don't clean up if under limit
+        }
+
+        $cutoffDate = time() - ($retentionPolicy['max_age_days'] * 24 * 60 * 60);
+        $manualSaveCount = 0;
+        $versionsToDelete = [];
+
+        foreach (array_reverse($versions->objects) as $index => $version) {
+            $shouldKeep = false;
+
+            // Always keep current version
+            if ($version->is_current) {
+                $shouldKeep = true;
+            }
+            // Keep recent versions
+            elseif ($index < $retentionPolicy['max_versions']) {
+                $shouldKeep = true;
+            }
+            // Keep versions newer than cutoff
+            elseif ($version->date_created > $cutoffDate) {
+                $shouldKeep = true;
+            }
+            // Keep published versions if policy says so
+            elseif ($retentionPolicy['always_keep_published'] && $version->version_type === 'publish') {
+                $shouldKeep = true;
+            }
+            // Keep some manual saves
+            elseif ($version->version_type === 'manual_save' && $manualSaveCount < $retentionPolicy['always_keep_manual_saves']) {
+                $shouldKeep = true;
+                $manualSaveCount++;
+            }
+
+            if (!$shouldKeep) {
+                $versionsToDelete[] = $version;
+            }
+        }
+
+        // Delete old versions and decrement content references
+        foreach ($versionsToDelete as $version) {
+            $this->decrementContentReference($version->content_hash);
+            $version->delete();
+        }
+
+        // Clean up unreferenced content
+        $this->cleanupUnreferencedContent();
+    }
+
+    /**
+     * Decrement content reference count and clean up if needed
+     */
+    private function decrementContentReference($contentHash) {
+        $content = new \Kyte\Core\ModelObject(KytePageVersionContent);
+        if ($content->retrieve('content_hash', $contentHash)) {
+            if ($content->reference_count <= 1) {
+                $content->delete();
+            } else {
+                $content->save(['reference_count' => $content->reference_count - 1]);
+            }
+        }
+    }
+
+    /**
+     * Clean up content records with zero references
+     */
+    private function cleanupUnreferencedContent() {
+        $contents = new \Kyte\Core\Model(KytePageVersionContent);
+        $contents->retrieve('reference_count', 0);
+        foreach ($contents->objects as $content) {
+            $content->delete();
+        }
+        // Use direct SQL for efficiency
+        // $sql = "DELETE FROM KytePageVersionContent WHERE reference_count <= 0";
+        // $this->db->execute($sql);
+    }
+
+    /**
+     * Clean up all versions when a page is deleted
+     */
+    private function cleanupPageVersions($pageId) {
+        $versions = new \Kyte\Core\Model(KytePageVersion);
+        $versions->retrieve('page', $pageId);
+        
+        foreach ($versions->objects as $version) {
+            $this->decrementContentReference($version->content_hash);
+            $version->delete();
+        }
+        
+        $this->cleanupUnreferencedContent();
     }
 }
