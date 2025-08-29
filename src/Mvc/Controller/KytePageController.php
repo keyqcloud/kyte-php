@@ -49,14 +49,21 @@ class KytePageController extends ModelController
     }
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
-        if ($r['footer'] && isset($r['footer']['html'], $r['footer']['stylesheet'], $r['footer']['javascript'], $r['footer']['javascript_obfuscated'], $r['footer']['block_layout'])) {
+        if (isset($r['footer']) && is_array($r['footer']) &&
+            isset($r['footer']['html'], $r['footer']['stylesheet'], $r['footer']['javascript'],
+                $r['footer']['javascript_obfuscated'], $r['footer']['block_layout'])) {
+
             $r['footer']['html'] = bzdecompress($r['footer']['html']);
             $r['footer']['stylesheet'] = bzdecompress($r['footer']['stylesheet']);
             $r['footer']['javascript'] = bzdecompress($r['footer']['javascript']);
             $r['footer']['javascript_obfuscated'] = bzdecompress($r['footer']['javascript_obfuscated']);
             $r['footer']['block_layout'] = bzdecompress($r['footer']['block_layout']);
         }
-        if ($r['header'] && isset($r['header']['html'], $r['header']['stylesheet'], $r['header']['javascript'], $r['header']['javascript_obfuscated'], $r['header']['block_layout'])) {
+
+        if (isset($r['header']) && is_array($r['header']) &&
+            isset($r['header']['html'], $r['header']['stylesheet'], $r['header']['javascript'],
+                $r['header']['javascript_obfuscated'], $r['header']['block_layout'])) {
+
             $r['header']['html'] = bzdecompress($r['header']['html']);
             $r['header']['stylesheet'] = bzdecompress($r['header']['stylesheet']);
             $r['header']['javascript'] = bzdecompress($r['header']['javascript']);
