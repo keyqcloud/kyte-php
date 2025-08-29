@@ -258,6 +258,79 @@ class KytePageController extends ModelController
     }
 
     /**
+     * Publish a page to S3 and invalidate CloudFront cache
+     * 
+     * @param object $pageObj The page object being published
+     * @param array $params Parameters including page content and metadata
+     * @param array $responseData Response data containing site information
+     * @throws \Exception if critical errors occur during publishing
+     */
+    private function publishPage($pageObj, $params, &$responseData) {
+        // If content fields are not set, retrieve them from database
+        if (!isset($params['html'], $params['stylesheet'], $params['javascript'], $params['javascript_obfuscated'])) {
+            $pd = new \Kyte\Core\ModelObject(KytePageData);
+            if (!$pd->retrieve('page', $pageObj->id)) {
+                throw new \Exception("CRITICAL ERROR: Unable to find page data.");
+            }
+            $params['html'] = bzdecompress($pd->html);
+            $params['stylesheet'] = bzdecompress($pd->stylesheet);
+            $params['javascript'] = bzdecompress($pd->javascript);
+            $params['javascript_obfuscated'] = bzdecompress($pd->javascript_obfuscated);
+        }
+
+        // Get application credentials
+        $app = new \Kyte\Core\ModelObject(Application);
+        if (!$app->retrieve('id', $responseData['site']['application']['id'])) {
+            throw new \Exception("CRITICAL ERROR: Unable to find application.");
+        }
+
+        // Initialize AWS credentials and S3
+        $credential = new \Kyte\Aws\Credentials($responseData['site']['region'], $app->aws_public_key, $app->aws_private_key);
+        $s3 = new \Kyte\Aws\S3($credential, $responseData['site']['s3BucketName']);
+
+        // Compile HTML file
+        $compiledHtml = self::createHtml($params);
+        
+        // Write compiled HTML to S3
+        $s3->write($pageObj->s3key, $compiledHtml);
+
+        // Update sitemap
+        $siteDomain = $responseData['site']['aliasDomain'] ?: $responseData['site']['cfDomain'];
+        $sitemap = self::updateSitemap($responseData['site']['id'], $siteDomain);
+        $s3->write('sitemap.xml', $sitemap);
+
+        // Create CloudFront invalidation paths
+        $invalidationPaths = ['/sitemap.xml'];
+        
+        // Add page-specific invalidation path
+        if (strpos($pageObj->s3key, "index.html") !== false) {
+            // For index.html files, invalidate the directory with wildcard
+            $invalidationPaths[] = '/' . str_replace("index.html", "*", $pageObj->s3key);
+        } else {
+            // For other files, invalidate the specific path
+            $invalidationPaths[] = '/' . $pageObj->s3key;
+        }
+
+        // Invalidate CloudFront cache
+        if (KYTE_USE_SNS) {
+            // Use SNS for asynchronous invalidation
+            $snsCredential = new \Kyte\Aws\Credentials(SNS_REGION);
+            $sns = new \Kyte\Aws\Sns($snsCredential, SNS_QUEUE_SITE_MANAGEMENT);
+            $sns->publish([
+                'action' => 'cf_invalidate',
+                'site_id' => $responseData['site']['id'],
+                'cf_id' => $responseData['site']['cfDistributionId'],
+                'cf_invalidation_paths' => $invalidationPaths,
+                'caller_id' => time(),
+            ]);
+        } else {
+            // Direct CloudFront invalidation
+            $cf = new \Kyte\Aws\CloudFront($credential);
+            $cf->createInvalidation($responseData['site']['cfDistributionId'], $invalidationPaths);
+        }
+    }
+
+    /**
      * Create a new page version if content has changed
      */
     private function createPageVersion($pageObj, $data, $versionType = 'manual_save', $changeSummary = null) {
