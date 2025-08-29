@@ -113,7 +113,7 @@ class KytePageController extends ModelController
 
                 // check for global includes and assign them
                 $kyteLibraries = new \Kyte\Core\Model(KyteLibrary);
-                $kyteLibraries->retrieve('include_all', 1, false, null, false, [['field' => 'id', 'direction' => 'asc']]);
+                $kyteLibraries->retrieve('include_all', 1, false, null, [['field' => 'kyte_account', 'value' => $this->account->id]], [['field' => 'id', 'direction' => 'asc']]);
                 foreach ($kyteLibraries->objects as $lib) {
                     if ($lib->include_all == 1) {
                         $assignment = new \Kyte\Core\ModelObject(KyteLibraryAssignment);
@@ -130,7 +130,7 @@ class KytePageController extends ModelController
 
                 // check for global scripts and assign them
                 $kyteScripts = new \Kyte\Core\Model(KyteScript);
-                $kyteScripts->retrieve('include_all', 1, false, null, false, [['field' => 'id', 'direction' => 'asc']]);
+                $kyteScripts->retrieve('include_all', 1, false, null, [['field' => 'kyte_account', 'value' => $this->account->id]], [['field' => 'id', 'direction' => 'asc']]);
                 foreach ($kyteScripts->objects as $script) {
                     if ($script->include_all == 1) {
                         $assignment = new \Kyte\Core\ModelObject(KyteScriptAssignment);
@@ -926,7 +926,7 @@ class KytePageController extends ModelController
      */
     private function findExistingContent($contentHash) {
         $content = new \Kyte\Core\ModelObject(KytePageVersionContent);
-        return $content->retrieve('content_hash', $contentHash) ? $content : null;
+        return $content->retrieve('content_hash', $contentHash, [['field' => 'kyte_account', 'value' => $this->account->id]]) ? $content : null;
     }
 
     /**
@@ -958,7 +958,7 @@ class KytePageController extends ModelController
      */
     private function incrementContentReference($contentHash) {
         $content = new \Kyte\Core\ModelObject(KytePageVersionContent);
-        if ($content->retrieve('content_hash', $contentHash)) {
+        if ($content->retrieve('content_hash', $contentHash, [['field' => 'kyte_account', 'value' => $this->account->id]])) {
             $content->save([
                 'reference_count' => $content->reference_count + 1,
                 'last_referenced' => time()
@@ -1270,7 +1270,7 @@ class KytePageController extends ModelController
      */
     private function decrementContentReference($contentHash) {
         $content = new \Kyte\Core\ModelObject(KytePageVersionContent);
-        if ($content->retrieve('content_hash', $contentHash)) {
+        if ($content->retrieve('content_hash', $contentHash, [['field' => 'kyte_account', 'value' => $this->account->id]])) {
             if ($content->reference_count <= 1) {
                 $content->delete();
             } else {
