@@ -67,7 +67,6 @@ CREATE TABLE `KytePageVersionContent` (
     `javascript_obfuscated` longblob DEFAULT NULL,
     `block_layout` longblob DEFAULT NULL,
     `reference_count` int unsigned NOT NULL DEFAULT 1,
-    `date_created` bigint unsigned NOT NULL,
     `last_referenced` bigint unsigned NOT NULL,
 
     -- Framework field
