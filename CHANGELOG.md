@@ -84,8 +84,7 @@ CREATE TABLE `KytePageVersionContent` (
     `date_deleted` bigint unsigned,
     `deleted` tinyint(1) NOT NULL DEFAULT 0,
     
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `idx_content_hash` (`content_hash`)
+    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
