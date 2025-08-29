@@ -1,8 +1,91 @@
-## 3.7.9
+## 3.8.0
 
 * Fix issue where new pages did not have global script and library assignments
 * Remove script and library assignments on page deletion
 * Add support for renaming site page files
+
+**Database Changes**
+
+*KytePageVersion*
+```sql
+CREATE TABLE `KytePageVersion` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `page` int unsigned NOT NULL,
+    `version_number` int unsigned NOT NULL,
+    `version_type` enum('auto_save','manual_save','publish') NOT NULL DEFAULT 'manual_save',
+    `change_summary` varchar(500) DEFAULT NULL,
+    `changes_detected` json DEFAULT NULL, -- stores which fields changed
+    `content_hash` varchar(64) NOT NULL, -- SHA256 of combined content for deduplication
+    
+    -- Page metadata snapshot (only store if changed from previous version)
+    `title` varchar(255) DEFAULT NULL,
+    `description` text DEFAULT NULL,
+    `lang` varchar(255) DEFAULT NULL,
+    `page_type` varchar(255) DEFAULT NULL,
+    `state` int unsigned DEFAULT NULL,
+    `sitemap_include` int unsigned DEFAULT NULL,
+    `obfuscate_js` int unsigned DEFAULT NULL,
+    `is_js_module` int unsigned DEFAULT NULL,
+    `use_container` int unsigned DEFAULT NULL,
+    `protected` int unsigned DEFAULT NULL,
+    `webcomponent_obj_name` varchar(255) DEFAULT NULL,
+    
+    -- Relationship references (only if changed)
+    `header` int unsigned DEFAULT NULL,
+    `footer` int unsigned DEFAULT NULL,
+    `main_navigation` int unsigned DEFAULT NULL,
+    `side_navigation` int unsigned DEFAULT NULL,
+    
+    -- Version metadata
+    `is_current` tinyint(1) NOT NULL DEFAULT 0,
+    `parent_version` int unsigned DEFAULT NULL, -- references previous version
+    
+    -- Framework field
+    `kyte_account` int unsigned NOT NULL,
+
+    -- Audit fields
+    `created_by` int NOT NULL,
+    `date_created` bigint unsigned NOT NULL,
+    `modified_by` int NOT NULL,
+    `date_modified` bigint unsigned NOT NULL,
+    `deleted_by` int NOT NULL,
+    `date_deleted` bigint unsigned NOT NULL,
+    `deleted` tinyint(1) NOT NULL DEFAULT 0,
+    
+    PRIMARY KEY (`id`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+*KytePageVersionContent*
+```sql
+CREATE TABLE `KytePageVersionContent` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `content_hash` varchar(64) NOT NULL UNIQUE,
+    `html` longblob DEFAULT NULL,
+    `stylesheet` longblob DEFAULT NULL,
+    `javascript` longblob DEFAULT NULL,
+    `javascript_obfuscated` longblob DEFAULT NULL,
+    `block_layout` longblob DEFAULT NULL,
+    `reference_count` int unsigned NOT NULL DEFAULT 1,
+    `date_created` bigint unsigned NOT NULL,
+    `last_referenced` bigint unsigned NOT NULL,
+
+    -- Framework field
+    `kyte_account` int unsigned NOT NULL,
+
+    -- Audit fields
+    `created_by` int NOT NULL,
+    `date_created` bigint unsigned NOT NULL,
+    `modified_by` int NOT NULL,
+    `date_modified` bigint unsigned NOT NULL,
+    `deleted_by` int NOT NULL,
+    `date_deleted` bigint unsigned NOT NULL,
+    `deleted` tinyint(1) NOT NULL DEFAULT 0,
+    
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `idx_content_hash` (`content_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
 
 ## 3.7.8
 
