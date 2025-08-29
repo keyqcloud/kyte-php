@@ -48,11 +48,11 @@ CREATE TABLE `KytePageVersion` (
 
     -- Audit fields
     `created_by` int NOT NULL,
-    `date_created` bigint unsigned NOT NULL,
+    `date_created` bigint unsigned,
     `modified_by` int NOT NULL,
-    `date_modified` bigint unsigned NOT NULL,
+    `date_modified` bigint unsigned,
     `deleted_by` int NOT NULL,
-    `date_deleted` bigint unsigned NOT NULL,
+    `date_deleted` bigint unsigned,
     `deleted` tinyint(1) NOT NULL DEFAULT 0,
     
     PRIMARY KEY (`id`)
@@ -77,11 +77,11 @@ CREATE TABLE `KytePageVersionContent` (
 
     -- Audit fields
     `created_by` int NOT NULL,
-    `date_created` bigint unsigned NOT NULL,
+    `date_created` bigint unsigned,
     `modified_by` int NOT NULL,
-    `date_modified` bigint unsigned NOT NULL,
+    `date_modified` bigint unsigned,
     `deleted_by` int NOT NULL,
-    `date_deleted` bigint unsigned NOT NULL,
+    `date_deleted` bigint unsigned,
     `deleted` tinyint(1) NOT NULL DEFAULT 0,
     
     PRIMARY KEY (`id`),
