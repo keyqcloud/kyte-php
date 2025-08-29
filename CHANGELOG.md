@@ -6,6 +6,7 @@
 * Change ErrorHandler to only handle application space errors
 * Fix issue with SQL debug verbosity not working
 * Add ability to bypass Kyte error handlers
+* If page is created with missing menu page link, then place "#"
 
 **Database Changes**
 
