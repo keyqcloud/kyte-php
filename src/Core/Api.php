@@ -533,6 +533,9 @@ class Api
 			// if minimum count of elements exist, then process api request based on request type
 			if ($this->validateRequest()) {
 				// register error handler
+				if ($this->errorHandler == null) {
+					$this->errorHandler = \Kyte\Exception\ErrorHandler::getInstance($this);
+				}
 				$this->errorHandler->register();
 
 				if ($this->appId != null) {
