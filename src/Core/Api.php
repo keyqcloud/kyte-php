@@ -191,8 +191,6 @@ class Api
 			$imdsData = \Kyte\Util\IMDS::fetchMetadata();
 
 			$this->response['imds'] = $imdsData;
-
-			$this->errorHandler = \Kyte\Exception\ErrorHandler::getInstance($this);
 		}
 	}
 
@@ -533,10 +531,12 @@ class Api
 			// if minimum count of elements exist, then process api request based on request type
 			if ($this->validateRequest()) {
 				// register error handler
-				if ($this->errorHandler == null) {
-					$this->errorHandler = \Kyte\Exception\ErrorHandler::getInstance($this);
+				if (defined('USE_KYTE_ERROR_HANDLER') && USE_KYTE_ERROR_HANDLER) {
+					if ($this->errorHandler == null) {
+						$this->errorHandler = \Kyte\Exception\ErrorHandler::getInstance($this);
+					}
+					$this->errorHandler->register();
 				}
-				$this->errorHandler->register();
 
 				if ($this->appId != null) {
 					self::loadAppController($this->app, $this->model);
@@ -580,7 +580,11 @@ class Api
 				}
 
 				// return back to regular error reporting
-				$this->errorHandler->unregister();
+				if (defined('USE_KYTE_ERROR_HANDLER') && USE_KYTE_ERROR_HANDLER) {
+					if ($this->errorHandler != null) {
+						$this->errorHandler->unregister();
+					}
+				}
 
 				// as a safety, make sure we are back on the main db
 				self::dbconnect();

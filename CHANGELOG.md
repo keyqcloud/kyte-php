@@ -5,6 +5,7 @@
 * Add support for renaming site page files
 * Change ErrorHandler to only handle application space errors
 * Fix issue with SQL debug verbosity not working
+* Add ability to bypass Kyte error handlers
 
 **Database Changes**
 
