@@ -113,7 +113,7 @@ class KytePageController extends ModelController
 
                 // check for global includes and assign them
                 $kyteLibraries = new \Kyte\Core\Model(KyteLibrary);
-                $kyteLibraries->retrieve('include_all', 1, false, null, [['field' => 'kyte_account', 'value' => $this->account->id]], false, [['field' => 'id', 'direction' => 'asc']]);
+                $kyteLibraries->retrieve('include_all', 1, false, [['field' => 'kyte_account', 'value' => $this->account->id]], false, [['field' => 'id', 'direction' => 'asc']]);
                 foreach ($kyteLibraries->objects as $lib) {
                     if ($lib->include_all == 1) {
                         $assignment = new \Kyte\Core\ModelObject(KyteLibraryAssignment);
@@ -130,7 +130,7 @@ class KytePageController extends ModelController
 
                 // check for global scripts and assign them
                 $kyteScripts = new \Kyte\Core\Model(KyteScript);
-                $kyteScripts->retrieve('include_all', 1, false, null, [['field' => 'kyte_account', 'value' => $this->account->id]], false, [['field' => 'id', 'direction' => 'asc']]);
+                $kyteScripts->retrieve('include_all', 1, false, [['field' => 'kyte_account', 'value' => $this->account->id]], false, [['field' => 'id', 'direction' => 'asc']]);
                 foreach ($kyteScripts->objects as $script) {
                     if ($script->include_all == 1) {
                         $assignment = new \Kyte\Core\ModelObject(KyteScriptAssignment);
