@@ -192,9 +192,7 @@ class Api
 
 			$this->response['imds'] = $imdsData;
 
-			// register error handler
 			$this->errorHandler = \Kyte\Exception\ErrorHandler::getInstance($this);
-			$this->errorHandler->register();
 		}
 	}
 
@@ -534,6 +532,9 @@ class Api
 
 			// if minimum count of elements exist, then process api request based on request type
 			if ($this->validateRequest()) {
+				// register error handler
+				$this->errorHandler->register();
+
 				if ($this->appId != null) {
 					self::loadAppController($this->app, $this->model);
 				}
@@ -574,6 +575,9 @@ class Api
 						throw new \Exception("[ERROR] Unknown HTTP request type: $this->request.");
 						break;
 				}
+
+				// return back to regular error reporting
+				$this->errorHandler->unregister();
 
 				// as a safety, make sure we are back on the main db
 				self::dbconnect();

@@ -3,6 +3,7 @@
 * Fix issue where new pages did not have global script and library assignments
 * Remove script and library assignments on page deletion
 * Add support for renaming site page files
+* Change ErrorHandler to only handle application space errors
 
 **Database Changes**
 
