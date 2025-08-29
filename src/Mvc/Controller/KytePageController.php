@@ -764,10 +764,11 @@ class KytePageController extends ModelController
                 // if page is set, get page
                 if ($m->page) {
                     $linked_page = new \Kyte\Core\ModelObject(KytePage);
-                    if (!$linked_page->retrieve('id', $m->page)) {
-                        throw new \Exception("Unable to find page");
+                    if ($linked_page->retrieve('id', $m->page)) {
+                        $link = '/'.$linked_page->s3key;
+                    } else {
+                        $link = '#';
                     }
-                    $link = '/'.$linked_page->s3key;
                 }
                 if ($m->center == 1) {
                     if ($m->parentItem) {
