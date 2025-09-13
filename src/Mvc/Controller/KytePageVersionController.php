@@ -30,6 +30,19 @@ class KytePageVersionController extends ModelController
                     $r['change_count'] = count($r['changes_detected']);
                 }
 
+                // Get user info
+                if (!empty($r['created_by'])) {
+                    $user = new \Kyte\Core\ModelObject(KyteUser);
+                    if ($user->retrieve('id', $r['created_by'])) {
+                        $r['created_by_user'] = [
+                            'id' => $user->id,
+                            'name' => $user->name,
+                            'username' => $user->username,
+                            'email' => $user->email,
+                        ];
+                    }
+                }
+
                 // Add version metadata
                 $r['can_revert'] = !$r['is_current']; // Can't revert to current version
                 break;
