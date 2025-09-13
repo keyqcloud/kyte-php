@@ -76,7 +76,7 @@ class ApplicationController extends ModelController
         switch ($method) {
             case 'update':
                 if (isset($d['republish_kyte_connect']) && $d['republish_kyte_connect'] == 1) {
-                    $sites = new \Kyte\Core\ModelObject(KyteSite);
+                    $sites = new \Kyte\Core\Model(KyteSite);
                     $sites->retrieve('application', $o->id);
                     foreach($sites->objects as $site) {
                         $credential = new \Kyte\Aws\Credentials($site->region, $app->aws_public_key, $app->aws_private_key);
