@@ -1,4 +1,4 @@
-## 3.8.0
+## 3.8.0 (pending)
 
 * Fix issue where new pages did not have global script and library assignments
 * Remove script and library assignments on page deletion
