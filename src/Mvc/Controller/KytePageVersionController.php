@@ -34,7 +34,7 @@ class KytePageVersionController extends ModelController
                 if (!empty($r['created_by'])) {
                     $user = new \Kyte\Core\ModelObject(KyteUser);
                     if ($user->retrieve('id', $r['created_by'])) {
-                        $r['created_by_user'] = [
+                        $r['created_by'] = [
                             'id' => $user->id,
                             'name' => $user->name,
                             'username' => $user->username,
