@@ -7,6 +7,7 @@
 * Fix issue with SQL debug verbosity not working
 * Add ability to bypass Kyte error handlers
 * If page is created with missing menu page link, then place "#"
+* Add feature to allow for page republishing if kyte_connect changes, or obfuscation settings change for kyte_connect
 
 **Database Changes**
 
