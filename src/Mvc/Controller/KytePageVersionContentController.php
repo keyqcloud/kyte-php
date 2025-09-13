@@ -5,7 +5,7 @@ namespace Kyte\Mvc\Controller;
 /**
  * Controller for KytePageVersion model
  */
-class KytePageVersionController extends ModelController
+class KytePageVersionContentController extends ModelController
 {
     public function hook_init() {
         $this->dateformat = 'm/d/Y H:i:s';
@@ -16,10 +16,12 @@ class KytePageVersionController extends ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'get':
-                // Add change summary parsing
-                if (!empty($r['changes_detected'])) {
-                    $r['changes_detected'] = json_decode($r['changes_detected'], true);
-                    $r['change_count'] = count($r['changes_detected']);
+                // Decompress content fields for display
+                $contentFields = ['html', 'stylesheet', 'javascript', 'javascript_obfuscated', 'block_layout'];
+                foreach ($contentFields as $field) {
+                    if (!empty($r[$field])) {
+                        $r[$field] = bzdecompress($r[$field]);
+                    }
                 }
 
                 // Get user info
@@ -34,9 +36,6 @@ class KytePageVersionController extends ModelController
                         ];
                     }
                 }
-
-                // Add version metadata
-                $r['can_revert'] = !$r['is_current']; // Can't revert to current version
                 break;
 
             default:
