@@ -79,7 +79,7 @@ class ApplicationController extends ModelController
                     $sites = new \Kyte\Core\Model(KyteSite);
                     $sites->retrieve('application', $o->id);
                     foreach($sites->objects as $site) {
-                        $credential = new \Kyte\Aws\Credentials($site->region, $app->aws_public_key, $app->aws_private_key);
+                        $credential = new \Kyte\Aws\Credentials($site->region, $o->aws_public_key, $o->aws_private_key);
                         $s3 = new \Kyte\Aws\S3($credential, $site->s3BucketName);
 
                         $pages = new \Kyte\Core\Model(KytePage);
@@ -126,7 +126,7 @@ class ApplicationController extends ModelController
                         $sns->publish([
                             'action' => 'cf_invalidate',
                             'site_id' => $site->id,
-                            'cf_id' => $rsite->cfDistributionId,
+                            'cf_id' => $site->cfDistributionId,
                             'cf_invalidation_paths' => $invalidationPaths,
                             'caller_id' => time(),
                         ]);
