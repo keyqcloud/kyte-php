@@ -32,9 +32,8 @@ $KytePageVersion = [
         ],
 
         'change_summary' => [
-            'type' => 's',
+            'type' => 't',
             'required' => false,
-            'size' => 500,
             'date' => false,
         ],
 
