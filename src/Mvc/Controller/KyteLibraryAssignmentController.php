@@ -12,7 +12,7 @@ class KyteLibraryAssignmentController extends ModelController
                 if ($assignments->count() > 1) {
                     // remove duplicates, keep the first one
                     $first = true;
-                    foreach ($assignments->objects() as $a) {
+                    foreach ($assignments->objects as $a) {
                         if ($first) {
                             $first = false;
                             continue;
