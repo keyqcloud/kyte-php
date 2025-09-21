@@ -15,4 +15,11 @@ class KyteScriptGlobalAssignmentController extends ModelController
         }
         $conditions[] = ['field' => 'global_scope', 'value' => 1];
     }
+
+    public function hook_response_data($method, $o, &$r = null, &$d = null) {
+        if (isset($r['page'], $r['page']['header'], $r['page']['footer'])) {
+            $r['page']['header'] = null;
+            $r['page']['footer'] = null;
+        }
+    }
 }
