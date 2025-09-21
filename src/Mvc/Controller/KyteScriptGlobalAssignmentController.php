@@ -4,6 +4,7 @@ namespace Kyte\Mvc\Controller;
 class KyteScriptGlobalAssignmentController extends ModelController
 {
     public function hook_init() {
+        $this->model = KyteScriptAssignment;
         // for global assignments, disallow direct create/update/delete
         $this->allowableActions = ['get'];
     }

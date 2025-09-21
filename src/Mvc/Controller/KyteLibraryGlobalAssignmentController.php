@@ -4,6 +4,7 @@ namespace Kyte\Mvc\Controller;
 class KyteLibraryGlobalAssignmentController extends ModelController
 {
     public function hook_init() {
+        $this->model = KyteLibraryAssignment;
         // for global assignments, disallow direct create/update/delete
         $this->allowableActions = ['get'];
     }
