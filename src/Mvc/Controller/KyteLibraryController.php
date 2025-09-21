@@ -111,6 +111,7 @@ class KyteLibraryController extends ModelController
                 break;
 
             case 'delete':
+                $d = $this->getObject($o);
                 // check if s3 file exists and delete
                 $app = new \Kyte\Core\ModelObject(Application);
                 if (!$app->retrieve('id', $d['site']['application']['id'])) {

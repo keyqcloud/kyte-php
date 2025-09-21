@@ -146,6 +146,7 @@ class KyteScriptController extends ModelController
             case 'delete':
                 // check if s3 file exists and delete
                 if ($o->state > 0) {
+                    $d = $this->getObject($o);
                     $app = new \Kyte\Core\ModelObject(Application);
                     if (!$app->retrieve('id', $d['site']['application']['id'])) {
                         throw new \Exception("CRITICAL ERROR: Unable to find application.");
