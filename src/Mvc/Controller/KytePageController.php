@@ -520,375 +520,851 @@ class KytePageController extends ModelController
     }
 
     public static function createHtml($page) {
-        $gtm_body_script = '';  // empty gtm body script...if gtm code is present, will be populates with gtm script
+        // Initialize variables
+        $gtm_body_script = '';
+        $code_parts = [];
+        
+        // Build language attribute
+        $lang = self::buildLanguageAttribute($page);
+        
+        // Start HTML document
+        $code_parts[] = "<!DOCTYPE html><html{$lang}><head>";
+        
+        // Add analytics scripts
+        $code_parts[] = self::buildAnalyticsScripts($page, $gtm_body_script);
+        
+        // Add meta tags and title
+        $code_parts[] = self::buildMetaTags($page);
+        
+        // Add SEO tags
+        $code_parts[] = self::buildSeoTags($page);
+        
+        // Add Font Awesome
+        $code_parts[] = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">';
+        
+        // Add libraries
+        $code_parts[] = self::buildLibraries($page);
+        
+        // Add KyteJS
+        $code_parts[] = '<script src="' . KYTE_JS_CDN . '" crossorigin="anonymous"></script>';
+        
+        // Add styles
+        $code_parts[] = self::buildStyles($page);
+        
+        // Close head and start body
+        $code_parts[] = '</head><body>';
+        
+        // Add GTM body script
+        if ($gtm_body_script) {
+            $code_parts[] = $gtm_body_script;
+        }
+        
+        // Add page loader
+        $code_parts[] = self::buildPageLoader();
+        
+        // Add page structure
+        $code_parts[] = self::buildPageStructure($page);
+        
+        // Add custom scripts
+        $code_parts[] = self::buildCustomScripts($page);
+        
+        // Add JavaScript
+        $code_parts[] = self::buildJavaScript($page);
+        
+        // Close body and html
+        $code_parts[] = '</body></html>';
+        
+        return implode('', array_filter($code_parts));
+    }
 
+    private static function buildLanguageAttribute($page) {
         $lang = '';
-        if (strlen($page['site']['default_lang'] > 0)) {
-            $lang = ' lang="'.$page['site']['default_lang'].'"';
+        if (!empty($page['site']['default_lang'])) {
+            $lang = ' lang="' . htmlspecialchars($page['site']['default_lang'], ENT_QUOTES) . '"';
         }
-        // if page lang is set, override site lang
-        if (strlen($page['lang']) > 0) {
-            $lang = ' lang="'.$page['lang'].'"';
+        // Page lang overrides site lang
+        if (!empty($page['lang'])) {
+            $lang = ' lang="' . htmlspecialchars($page['lang'], ENT_QUOTES) . '"';
         }
-        $code = '<!DOCTYPE html><html'.$lang.'><head>';
+        return $lang;
+    }
+
+    private static function buildAnalyticsScripts($page, &$gtm_body_script) {
+        $scripts = [];
         
         // Google Analytics
-        if (strlen($page['site']['ga_code']) > 0) {
-            $code .= self::generateGAIntegration($page['site']['ga_code']);
+        if (!empty($page['site']['ga_code'])) {
+            $scripts[] = self::generateGAIntegration($page['site']['ga_code']);
         }
+        
         // Google Tag Manager
-        if (strlen($page['site']['gtm_code']) > 0) {
+        if (!empty($page['site']['gtm_code'])) {
             $gtm_script = self::generateGTMIntegration($page['site']['gtm_code']);
-            $code .= $gtm_script[0];
+            $scripts[] = $gtm_script[0];
             $gtm_body_script = $gtm_script[1];
         }
+        
+        return implode('', $scripts);
+    }
 
-        $code .= '<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"><title>'.$page['title'].'</title>';
+    private static function buildMetaTags($page) {
+        return '<meta charset="utf-8">' .
+            '<meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">' .
+            '<title>' . htmlspecialchars($page['title'], ENT_QUOTES) . '</title>';
+    }
 
-        // SEO
-        $code .= '<meta property="og:title" content="'.$page['title'].'" />';
-        if (strlen($page['description'])) {
-            $code .= '<meta property="og:description" content="'.$page['description'].'" />';
-            $code .= '<meta name="description" content="'.$page['description'].'">';
+    private static function buildSeoTags($page) {
+        $seo_tags = [];
+        
+        $seo_tags[] = '<meta property="og:title" content="' . htmlspecialchars($page['title'], ENT_QUOTES) . '" />';
+        
+        if (!empty($page['description'])) {
+            $escaped_desc = htmlspecialchars($page['description'], ENT_QUOTES);
+            $seo_tags[] = '<meta property="og:description" content="' . $escaped_desc . '" />';
+            $seo_tags[] = '<meta name="description" content="' . $escaped_desc . '">';
         }
+        
         if ($page['sitemap_include'] == 1) {
-            $code .= '<meta name="robots" content="index,follow" />';
+            $seo_tags[] = '<meta name="robots" content="index,follow" />';
         }
-        $code .= '<link rel="canonical" href="https://'.(strlen($page['site']['aliasDomain']) > 0 ? $page['site']['aliasDomain'] : $page['site']['cfDomain']).'/'.$page['s3key'].'" />';
+        
+        $domain = !empty($page['site']['aliasDomain']) ? $page['site']['aliasDomain'] : $page['site']['cfDomain'];
+        $seo_tags[] = '<link rel="canonical" href="https://' . htmlspecialchars($domain, ENT_QUOTES) . '/' . htmlspecialchars($page['s3key'], ENT_QUOTES) . '" />';
+        
+        return implode('', $seo_tags);
+    }
 
-        
-        // font aweseom
-        $code .= '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">';
-        
-        // retrieve libraries
+    private static function buildLibraries($page) {
         $libraries = new \Kyte\Core\Model(KyteLibraryAssignment);
         $libraries->retrieve('page', $page['id'], false, [['field' => 'site', 'value' => $page['site']['id']]], false, [['field' => 'id', 'direction' => 'asc']]);
+        
+        $library_tags = [];
         foreach($libraries->objects as $include) {
             $library = new \Kyte\Core\ModelObject(KyteLibrary);
             if ($library->retrieve('id', $include->library)) {
-                switch ($library->script_type) {
-                    case 'js':
-                        $code .= '<script src="'.$library->link.'"'.($library->is_js_module == 1 ? ' type="module"' : '').'></script>';
-                        break;
-                    case 'css':
-                        $code .= '<link rel="stylesheet" href="'.$library->link.'">';
-                        break;
-                    default:
-                        error_log("Unknown library type {$library->script_type} for {$library->name} located {$library->link}");
-                }
+                $library_tags[] = self::buildLibraryTag($library);
             } else {
                 error_log("Unknown library id {$include->library}");
             }
         }
+        
+        return implode('', $library_tags);
+    }
 
-        // KyteJS
-        $code .= '<script src="'.KYTE_JS_CDN.'" crossorigin="anonymous"></script>';
-
-        // custom styles
-        $code .= '<style>'.$page['stylesheet'].($page['side_navigation'] ? ' main {display: flex;flex-wrap: nowrap;min-height: 100vh;min-height: --webkit-fill-available;overflow-x: auto;overflow-y: hidden;}' : '').'</style>';
-
-        // main navigation styles
-        if ($page['main_navigation']) {
-            $code .='<style>';
-            $code .= '#mainnav { background-color: '.$page['main_navigation']['bgColor'].' !important; }';
-            $code .= '#mainnav a { color: '.$page['main_navigation']['fgColor'].' !important; }';
-            $code .= '#mainnav .dropdown-menu { background-color: '.$page['main_navigation']['bgDropdownColor'].' !important; }';
-            $code .= '#mainnav .dropdown-item { color: '.$page['main_navigation']['fgDropdownColor'].' !important; }';
-            $code .='</style>';
+    private static function buildLibraryTag($library) {
+        $escaped_link = htmlspecialchars($library->link, ENT_QUOTES);
+        
+        switch ($library->script_type) {
+            case 'js':
+                $module_attr = $library->is_js_module == 1 ? ' type="module"' : '';
+                return "<script src=\"{$escaped_link}\"{$module_attr}></script>";
+            case 'css':
+                return "<link rel=\"stylesheet\" href=\"{$escaped_link}\">";
+            default:
+                error_log("Unknown library type {$library->script_type} for {$library->name} located {$library->link}");
+                return '';
         }
-        // side navigation styles
+    }
+
+    private static function buildStyles($page) {
+        $styles = [];
+        
+        // Custom page styles
+        $page_styles = $page['stylesheet'];
         if ($page['side_navigation']) {
-            $code .='<style>';
-            if ($page['side_navigation']['columnStyle'] == 1) {
-                $code .= '#sidenav { background-color: '.$page['side_navigation']['bgColor'].'; margin: 1rem;border-radius: 1em;filter: drop-shadow(0px 0px 6px #000);}';
-            } else if($page['side_navigation']['columnStyle'] == 2) {
-                $code .= '#sidenav { background-color: '.$page['side_navigation']['bgColor'].'; margin: 1rem;border-radius: 1em;filter: drop-shadow(0px 0px 6px #000); height: 100%; }';
+            $page_styles .= ' main {display: flex;flex-wrap: nowrap;min-height: 100vh;min-height: --webkit-fill-available;overflow-x: auto;overflow-y: hidden;}';
+        }
+        $styles[] = "<style>{$page_styles}</style>";
+        
+        // Navigation styles
+        $styles[] = self::buildNavigationStyles($page);
+        
+        // Header/Footer styles
+        $styles[] = self::buildHeaderFooterStyles($page);
+        
+        // Web component styles
+        $styles[] = self::buildWebComponentStyles($page);
+        
+        return implode('', array_filter($styles));
+    }
+
+    private static function buildNavigationStyles($page) {
+        $nav_styles = [];
+        
+        // Main navigation styles
+        if (!empty($page['main_navigation'])) {
+            $nav = $page['main_navigation'];
+            $nav_styles[] = "<style>";
+            $nav_styles[] = "#mainnav { background-color: {$nav['bgColor']} !important; }";
+            $nav_styles[] = "#mainnav a { color: {$nav['fgColor']} !important; }";
+            $nav_styles[] = "#mainnav .dropdown-menu { background-color: {$nav['bgDropdownColor']} !important; }";
+            $nav_styles[] = "#mainnav .dropdown-item { color: {$nav['fgDropdownColor']} !important; }";
+            $nav_styles[] = "</style>";
+        }
+        
+        // Side navigation styles
+        if (!empty($page['side_navigation'])) {
+            $sidenav = $page['side_navigation'];
+            $nav_styles[] = "<style>";
+            
+            // Column style logic
+            if ($sidenav['columnStyle'] == 1) {
+                $nav_styles[] = "#sidenav { background-color: {$sidenav['bgColor']}; margin: 1rem;border-radius: 1em;filter: drop-shadow(0px 0px 6px #000);}";
+            } elseif ($sidenav['columnStyle'] == 2) {
+                $nav_styles[] = "#sidenav { background-color: {$sidenav['bgColor']}; margin: 1rem;border-radius: 1em;filter: drop-shadow(0px 0px 6px #000); height: 100%; }";
             } else {
-                $code .= '#sidenav-wrapper { background-color: '.$page['side_navigation']['bgColor'].'; }';
+                $nav_styles[] = "#sidenav-wrapper { background-color: {$sidenav['bgColor']}; }";
             }
             
-            $code .= '#sidenav a { color: '.$page['side_navigation']['fgColor'].' !important; }';
-            $code .= '#sidenav .nav-pills .nav-link.active { background-color: '.$page['side_navigation']['bgActiveColor'].' !important; color: '.$page['side_navigation']['fgActiveColor'].' !important; }';
-            $code .='</style>';
+            $nav_styles[] = "#sidenav a { color: {$sidenav['fgColor']} !important; }";
+            $nav_styles[] = "#sidenav .nav-pills .nav-link.active { background-color: {$sidenav['bgActiveColor']} !important; color: {$sidenav['fgActiveColor']} !important; }";
+            $nav_styles[] = "</style>";
         }
-        if ($page['header']) {
-            $code .='<style>.custom-page-header { color: '.$page['header']['fgColor'].' !important; width:100%; background-color: '.$page['header']['bgColor'].' !important; }'.$page['header']['stylesheet'].'</style>';
-        }
-        if ($page['footer']) {
-            $code .='<style>footer { color: '.$page['footer']['fgColor'].' !important; position:fixed; bottom:0; width:100%; background-color: '.$page['footer']['bgColor'].' !important; }'.$page['footer']['stylesheet'].'</style>';
-        }
+        
+        return implode('', $nav_styles);
+    }
 
-        // styles for any web components
-        // retrieve libraries
+    private static function buildHeaderFooterStyles($page) {
+        $styles = [];
+        
+        if (!empty($page['header'])) {
+            $header = $page['header'];
+            $styles[] = "<style>.custom-page-header { color: {$header['fgColor']} !important; width:100%; background-color: {$header['bgColor']} !important; }{$header['stylesheet']}</style>";
+        }
+        
+        if (!empty($page['footer'])) {
+            $footer = $page['footer'];
+            $styles[] = "<style>footer { color: {$footer['fgColor']} !important; position:fixed; bottom:0; width:100%; background-color: {$footer['bgColor']} !important; }{$footer['stylesheet']}</style>";
+        }
+        
+        return implode('', $styles);
+    }
+
+    private static function buildWebComponentStyles($page) {
         $webComponents = new \Kyte\Core\Model(KytePageWebComponent);
         $webComponents->retrieve('page', $page['id']);
-        if ($webComponents->count() > 0) {
-            $code .= '<style>';
-            foreach($webComponents->objects as $component) {
-                $template = new \Kyte\Core\ModelObject(KyteWebComponent);
-                if ($template->retrieve('id', $component->component)) {
-                    $code .= bzdecompress($template->stylesheet);
-                }
+        
+        if ($webComponents->count() === 0) {
+            return '';
+        }
+        
+        $component_styles = ['<style>'];
+        foreach($webComponents->objects as $component) {
+            $template = new \Kyte\Core\ModelObject(KyteWebComponent);
+            if ($template->retrieve('id', $component->component)) {
+                $component_styles[] = bzdecompress($template->stylesheet);
             }
-            $code .= '</style>';
         }
+        $component_styles[] = '</style>';
+        
+        return implode('', $component_styles);
+    }
 
-        // close head
-        $code .= '</head>';
+    private static function buildPageLoader() {
+        return '<!-- Page loading modal.  Once session is validated, the loading modal will close. -->' .
+            '<div id="pageLoaderModal" class="modal white" data-backdrop="static" data-keyboard="false" tabindex="-1">' .
+            '<div class="modal-dialog modal-sm h-100 d-flex">' .
+            '<div class="mx-auto align-self-center" style="width: 48px">' .
+            '<div class="spinner-wrapper text-center fa-6x">' .
+            '<span class="fas fa-sync fa-spin"></span>' .
+            '</div></div></div></div><!--  -->';
+    }
 
-        // body
-        $code .= '<body>';
-
-        // Google Tag Manager
-        if (strlen($page['site']['gtm_code']) > 0) {
-            $code .= $gtm_body_script;
+    private static function buildPageStructure($page) {
+        $structure = [];
+        
+        // Wrapper
+        $structure[] = '<div id="wrapper">';
+        
+        // Header
+        if (!empty($page['header'])) {
+            $structure[] = '<div class="custom-page-header">' . $page['header']['html'] . '</div>';
         }
-
-        // loader
-        $code .= '<!-- Page loading modal.  Once session is validated, the loading modal will close. --><div id="pageLoaderModal" class="modal white" data-backdrop="static" data-keyboard="false" tabindex="-1"><div class="modal-dialog modal-sm h-100 d-flex"><div class="mx-auto align-self-center" style="width: 48px"><div class="spinner-wrapper text-center fa-6x"><span class="fas fa-sync fa-spin"></span></div></div></div></div><!--  -->';
-
-        // wrapper
-        $code .= '<div id="wrapper">';
-
-        // header
-        if ($page['header']) {
-            $code .= '<div class="custom-page-header">';
-            $code .= $page['header']['html'];
-            $code .= '</div>';
+        
+        // Main navigation
+        if (!empty($page['main_navigation'])) {
+            $nav_class = self::isColorDark($page['main_navigation']['bgColor']) ? 'navbar-light' : 'navbar-dark';
+            $sticky_class = $page['main_navigation']['isStickyTop'] == 1 ? ' sticky-top' : '';
+            $structure[] = "<!-- START NAV --><nav id=\"mainnav\" class=\"navbar {$nav_class} navbar-expand-lg{$sticky_class}\"></nav><!-- END NAV -->";
         }
-
-        // main navigation and header
-        if ($page['main_navigation']) {
-            $code .= '<!-- START NAV --><nav id="mainnav" class="navbar '.(self::isColorDark($page['main_navigation']['bgColor']) ? 'navbar-light' : 'navbar-dark').' navbar-expand-lg'.($page['main_navigation']['isStickyTop'] == 1 ? ' sticky-top' : '').'"></nav><!-- END NAV -->';
+        
+        // Main wrapper
+        $structure[] = '<main>';
+        
+        // Side navigation
+        if (!empty($page['side_navigation'])) {
+            $structure[] = '<!-- BEGIN SIDE NAVIGATION --><div id="sidenav-wrapper" class="d-flex flex-column flex-shrink-0 py-3"><div id="sidenav" class="p-3" style="width: 230px;"></div></div><!-- END SIDE NAVIGATION -->';
         }
-
-        // main wrapper
-        $code .= '<main>';
-
-        // side navigation
-        if ($page['side_navigation']) {
-            $code .= '<!-- BEGIN SIDE NAVIGATION --><div id="sidenav-wrapper" class="d-flex flex-column flex-shrink-0 py-3"><div id="sidenav" class="p-3" style="width: 230px;"></div></div><!-- END SIDE NAVIGATION -->';
+        
+        // Page container
+        $container_class = $page['use_container'] == 1 ? 'class="container container-flex"' : '';
+        $structure[] = "<div id=\"kyte-page-container\" {$container_class}>{$page['html']}</div>";
+        
+        // Close main wrapper
+        $structure[] = '</main>';
+        
+        // Close page wrapper
+        $structure[] = '</div>';
+        
+        // Footer
+        if (!empty($page['footer'])) {
+            $structure[] = '<footer>' . $page['footer']['html'] . '</footer>';
         }
+        
+        return implode('', $structure);
+    }
 
-        $code .= '<div id="kyte-page-container"'.($page['use_container'] == 1 ? 'class="container container-flex"' : '').'>'.$page['html'].'</div>';
-
-        // close main wrapper
-        $code .= '</main>';
-
-        // close page wrapper
-        $code .= '</div>';
-
-        // footer
-        if ($page['footer']) {
-            $code .= '<footer>';
-            $code .= $page['footer']['html'];
-            $code .= '</footer>';
-        }
-
-        // retrieve custom javascripts and stylesheets
+    private static function buildCustomScripts($page) {
         $includes = new \Kyte\Core\Model(KyteScriptAssignment);
         $includes->retrieve('page', $page['id'], false, [['field' => 'site', 'value' => $page['site']['id']]], false, [['field' => 'id', 'direction' => 'asc']]);
+        
+        $script_tags = [];
         foreach($includes->objects as $include) {
             $script = new \Kyte\Core\ModelObject(KyteScript);
             if ($script->retrieve('id', $include->script, [['field' => 'state', 'value' => 1]])) {
-                switch ($script->script_type) {
-                    case 'js':
-                        $code .= '<script src="/'.$script->s3key.'"'.($script->is_js_module == 1 ? ' type="module"' : '').'></script>';
-                        break;
-                    case 'css':
-                        $code .= '<link rel="stylesheet" href="/'.$script->s3key.'">';
-                        break;
-                    default:
-                        error_log("Unknown custom script type {$script->script_type} for script name {$script->name} located {$script->s3key}");
-                }
+                $script_tags[] = self::buildScriptTag($script);
             }
         }
-
-        // begin javascript
-        $code .= $page['is_js_module'] == 1 ? '<script type="module">' : '<script>';
-
-        // add kyte connect
-        if ($page['site']['application']['obfuscate_kyte_connect'] == 1) {
-            $code .= $page['site']['application']['kyte_connect_obfuscated']."\n\n";
-        } else {
-            $code .= $page['site']['application']['kyte_connect']."\n\n";
-        }
-
-        if ($webComponents->count() > 0) {
-            $code .= 'const templates = {';
-            foreach($webComponents->objects as $component) {
-                $template = new \Kyte\Core\ModelObject(KyteWebComponent);
-                if ($template->retrieve('id', $component->component)) {
-                    $templateHtml = bzdecompress($template->html);
-                    // Ensure the component identifier and template are properly escaped for JavaScript
-                    $identifier = addslashes($template->identifier);
-                    $templateHtml = addslashes($templateHtml);
         
-                    // Construct the object key-value pair
-                    $code .= "'$identifier': `$templateHtml`,";
-                }
-            }
-            $code = rtrim($code, ','); // Remove the last comma
-            $code .= '};'; // Close the templates object
-            $code .= 'const '.$page['webcomponent_obj_name'].' = new KyteWebComponent(templates);';
-        }
+        return implode('', $script_tags);
+    }
 
-        // custom js
-        $code .= '$(document).ready(function() { ';
-        if ($page['protected'] == 1) {
-            $code .= 'k.addLogoutHandler(".logout");'."\n";
-            $code .= 'if (k.isSession()) { '."\n";
+    private static function buildScriptTag($script) {
+        $escaped_s3key = htmlspecialchars($script->s3key, ENT_QUOTES);
+        
+        switch ($script->script_type) {
+            case 'js':
+                $module_attr = $script->is_js_module == 1 ? ' type="module"' : '';
+                return "<script src=\"/{$escaped_s3key}\"{$module_attr}></script>";
+            case 'css':
+                return "<link rel=\"stylesheet\" href=\"/{$escaped_s3key}\">";
+            default:
+                error_log("Unknown custom script type {$script->script_type} for script name {$script->name} located {$script->s3key}");
+                return '';
         }
-        if ($page['obfuscate_js'] == 1) {
-            $code .= $page['javascript_obfuscated']."\n";
+    }
+
+    private static function buildJavaScript($page) {
+        $js_parts = [];
+        
+        // Start script tag
+        $js_parts[] = $page['is_js_module'] == 1 ? '<script type="module">' : '<script>';
+        
+        // Add kyte connect
+        if ($page['site']['application']['obfuscate_kyte_connect'] == 1) {
+            $js_parts[] = $page['site']['application']['kyte_connect_obfuscated'] . "\n\n";
         } else {
-            $code .= $page['javascript']."\n";
+            $js_parts[] = $page['site']['application']['kyte_connect'] . "\n\n";
         }
+        
+        // Add web components
+        $js_parts[] = self::buildWebComponentsJS($page);
+        
+        // Start document ready
+        $js_parts[] = '$(document).ready(function() { ';
+        
+        // Add protection logic
         if ($page['protected'] == 1) {
-            $code .= ' } else { location.href="/?redir="+encodeURIComponent(window.location); }';
+            $js_parts[] = 'k.addLogoutHandler(".logout");' . "\n";
+            $js_parts[] = 'if (k.isSession()) { ' . "\n";
         }
+        
+        // Add custom JS
+        if ($page['obfuscate_js'] == 1) {
+            $js_parts[] = $page['javascript_obfuscated'] . "\n";
+        } else {
+            $js_parts[] = $page['javascript'] . "\n";
+        }
+        
+        // Close protection logic
+        if ($page['protected'] == 1) {
+            $js_parts[] = ' } else { location.href="/?redir="+encodeURIComponent(window.location); }';
+        }
+        
+        // Add navigation JS
+        $js_parts[] = self::buildNavigationJS($page);
+        
+        // Add header/footer JS
+        $js_parts[] = self::buildHeaderFooterJS($page);
+        
+        // Close document ready and script
+        $js_parts[] = ' });</script>';
+        
+        return implode('', array_filter($js_parts));
+    }
 
-        // add navigation code
-        if ($page['main_navigation']) {
-            // retrieve menu items and create array
-            $items = new \Kyte\Core\Model(NavigationItem);
-            $items->retrieve('navigation', $page['main_navigation']['id'], false, null, false, [['field' => 'itemOrder', 'direction' => 'asc']]);
-            $menu_items = [];
-            $menu_items_center = [];
-            $menu_items_right = [];
-            $menu_items_center_sub = [];
-            $menu_items_right_sub = [];
-            foreach($items->objects as $m) {
-                $menu_items[$m->id] = $m;
-                $link = $m->link;
-                // if page is set, get page
-                if ($m->page) {
-                    $linked_page = new \Kyte\Core\ModelObject(KytePage);
-                    if ($linked_page->retrieve('id', $m->page)) {
-                        $link = '/'.$linked_page->s3key;
-                    } else {
-                        $link = '#';
-                    }
-                }
-                if ($m->center == 1) {
-                    if ($m->parentItem) {
-                        $menu_items_center_sub[$m->parentItem][] = '{'.($m->isLogout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",id:"'.$m->element_id.'",class:"me-2 text-dark'.(strlen($m->element_class) > 0 ? ' '.$m->element_class : '').'",label:"'.$m->title.'",href:"'.$link.'"},';
-                    } else {
-                        $menu_items_center[$m->id] = '{'.($m->isLogout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",id:"'.$m->element_id.'",class:"me-2 text-light'.(strlen($m->element_class) > 0 ? ' '.$m->element_class : '').'",label:"'.$m->title.'",href:"'.$link.'"},';
-                    }
+    private static function buildWebComponentsJS($page) {
+        $webComponents = new \Kyte\Core\Model(KytePageWebComponent);
+        $webComponents->retrieve('page', $page['id']);
+        
+        if ($webComponents->count() === 0) {
+            return '';
+        }
+        
+        $js_parts = [];
+        $js_parts[] = 'const templates = {';
+        
+        $template_parts = [];
+        foreach($webComponents->objects as $component) {
+            $template = new \Kyte\Core\ModelObject(KyteWebComponent);
+            if ($template->retrieve('id', $component->component)) {
+                $templateHtml = bzdecompress($template->html);
+                $identifier = addslashes($template->identifier);
+                $templateHtml = addslashes($templateHtml);
+                $template_parts[] = "'{$identifier}': `{$templateHtml}`";
+            }
+        }
+        
+        $js_parts[] = implode(',', $template_parts);
+        $js_parts[] = '};';
+        $js_parts[] = "const {$page['webcomponent_obj_name']} = new KyteWebComponent(templates);";
+        
+        return implode('', $js_parts);
+    }
+
+    private static function buildNavigationJS($page) {
+        $nav_js = [];
+        
+        // Main navigation
+        if (!empty($page['main_navigation'])) {
+            $nav_js[] = self::buildMainNavigationJS($page);
+        }
+        
+        // Side navigation  
+        if (!empty($page['side_navigation'])) {
+            $nav_js[] = self::buildSideNavigationJS($page);
+        }
+        
+        return implode('', $nav_js);
+    }
+
+    private static function buildMainNavigationJS($page) {
+        // Get menu items
+        $items = new \Kyte\Core\Model(NavigationItem);
+        $items->retrieve('navigation', $page['main_navigation']['id'], false, null, false, [['field' => 'itemOrder', 'direction' => 'asc']]);
+        
+        $menu_items = [];
+        $menu_items_center = [];
+        $menu_items_right = [];
+        $menu_items_center_sub = [];
+        $menu_items_right_sub = [];
+        
+        // Process menu items
+        foreach($items->objects as $m) {
+            $menu_items[$m->id] = $m;
+            $link = self::getMenuItemLink($m);
+            $menu_config = self::buildMenuItemConfig($m, $link);
+            
+            if ($m->center == 1) {
+                if ($m->parentItem) {
+                    $menu_items_center_sub[$m->parentItem][] = $menu_config;
                 } else {
-                    if ($m->parentItem) {
-                        $menu_items_right_sub[$m->parentItem][] = '{'.($m->isLogout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",id:"'.$m->element_id.'",class:"me-2 text-dark'.(strlen($m->element_class) > 0 ? ' '.$m->element_class : '').'",label:"'.$m->title.'",href:"'.$link.'"},';
-                    } else {
-                        $menu_items_right[$m->id] = '{'.($m->isLogout == 1 ? 'logout:true,':'').'faicon:"'.$m->faicon.'",id:"'.$m->element_id.'",class:"me-2 text-light'.(strlen($m->element_class) > 0 ? ' '.$m->element_class : '').'",label:"'.$m->title.'",href:"'.$link.'"},';
-                    }
+                    $menu_items_center[$m->id] = $menu_config;
+                }
+            } else {
+                if ($m->parentItem) {
+                    $menu_items_right_sub[$m->parentItem][] = $menu_config;
+                } else {
+                    $menu_items_right[$m->id] = $menu_config;
                 }
             }
-            foreach(array_keys($menu_items_center_sub) as $key) {
-                $menu_items_center[$key] = '{dropdown:true,id:"'.$menu_items[$key]->element_id.'",class:"me-2 text-light'.(strlen($menu_items[$key]->element_class) > 0 ? ' '.$menu_items[$key]->element_class : '').'",label:"'.$menu_items[$key]->title.'",items:['.implode($menu_items_center_sub[$key]).']},';
+        }
+        
+        // Build dropdown items
+        self::buildDropdownItems($menu_items, $menu_items_center, $menu_items_center_sub);
+        self::buildDropdownItems($menu_items, $menu_items_right, $menu_items_right_sub);
+        
+        // Get navigation link
+        $nav_link = self::getNavigationLink($page['main_navigation']);
+        
+        $center_items = implode('', $menu_items_center);
+        $right_items = implode('', $menu_items_right);
+        
+        return "let appnavdef = [[{$center_items}],[{$right_items}]];" .
+            "let navbar = new KyteNav(\"#mainnav\", appnavdef, \"{$page['main_navigation']['logo']}\", \"" . 
+            ($page['main_navigation']['logo'] ? '' : $page['site']['name']) . 
+            "\", null, \"{$nav_link}\");navbar.create();";
+    }
+
+    private static function getMenuItemLink($menuItem) {
+        $link = $menuItem->link;
+        
+        if ($menuItem->page) {
+            $linked_page = new \Kyte\Core\ModelObject(KytePage);
+            if ($linked_page->retrieve('id', $menuItem->page)) {
+                $link = '/' . $linked_page->s3key;
+            } else {
+                $link = '#';
             }
-            foreach(array_keys($menu_items_right_sub) as $key) {
-                $menu_items_right[$key] = '{dropdown:true,id:"'.$menu_items[$key]->element_id.'",class:"me-2 text-light'.(strlen($menu_items[$key]->element_class) > 0 ? ' '.$menu_items[$key]->element_class : '').'",label:"'.$menu_items[$key]->title.'",items:['.implode($menu_items_right_sub[$key]).']},';
-            }
-            $nav_link = $page['main_navigation']['link'] ? $page['main_navigation']['link'] : '/';
-            if ($page['main_navigation']['page']) {
-                $linked_page = new \Kyte\Core\ModelObject(KytePage);
-                if ($linked_page->retrieve('id', $page['main_navigation']['page'])) {
-                    $nav_link = '/'.$linked_page->s3key;
-                }
+        }
+        
+        return $link;
+    }
+
+    private static function buildMenuItemConfig($menuItem, $link) {
+        $config_parts = [];
+        
+        if ($menuItem->isLogout == 1) {
+            $config_parts[] = 'logout:true';
+        }
+        
+        $config_parts[] = "faicon:\"{$menuItem->faicon}\"";
+        $config_parts[] = "id:\"{$menuItem->element_id}\"";
+        
+        $css_class = $menuItem->center == 1 ? 'me-2 text-light' : 'me-2 text-light';
+        if (!empty($menuItem->element_class)) {
+            $css_class .= ' ' . $menuItem->element_class;
+        }
+        $config_parts[] = "class:\"{$css_class}\"";
+        
+        $config_parts[] = "label:\"{$menuItem->title}\"";
+        $config_parts[] = "href:\"{$link}\"";
+        
+        return '{' . implode(',', $config_parts) . '},';
+    }
+
+    private static function buildDropdownItems($menu_items, &$target_array, $sub_items) {
+        foreach(array_keys($sub_items) as $key) {
+            $parent_item = $menu_items[$key];
+            $css_class = 'me-2 text-light';
+            if (!empty($parent_item->element_class)) {
+                $css_class .= ' ' . $parent_item->element_class;
             }
             
-            $code .= 'let appnavdef = [['.implode($menu_items_center).'],['.implode($menu_items_right).']];';
-            $code .= 'let navbar = new KyteNav("#mainnav", appnavdef, "'.$page['main_navigation']['logo'].'", "'.($page['main_navigation']['logo'] ? '' : $page['site']['name']).'", null, "'.$nav_link.'");navbar.create();';
+            $items_string = implode('', $sub_items[$key]);
+            $target_array[$key] = "{dropdown:true,id:\"{$parent_item->element_id}\",class:\"{$css_class}\",label:\"{$parent_item->title}\",items:[{$items_string}]},";
         }
+    }
 
-        // side navigation
-        if ($page['side_navigation']) {
-            // retrieve menu items and create array
-            $items = new \Kyte\Core\Model(SideNavItem);
-            $items->retrieve('sidenav', $page['side_navigation']['id'], false, null, false, [['field' => 'itemOrder', 'direction' => 'asc']]);
-            $side_menu_items = [];
-            $default_sidenav = '';
-            foreach($items->objects as $m) {
-                $link = $m->link;
-                if ($m->page) {
-                    $linked_page = new \Kyte\Core\ModelObject(KytePage);
-                    if (!$linked_page->retrieve('id', $m->page)) {
-                        throw new \Exception("Unable to find page");
-                    }
-                    $link = '/'.$linked_page->s3key;
-                }
-                $side_menu_items[] = '{faicon:"'.$m->faicon.'",label:"'.$m->title.'",'.(isset($link[0]) && $link[0] == '#' ? '' : 'id:"'.$m->element_id.'",').'class:"'.$m->element_class.'",'.($m->isLogout == 1 ? 'logout:true,':'').($page['side_navigation']['labelCenterBlock'] == 1 ? 'labelCenterBlock:true,':'').(isset($link[0]) && $link[0] == '#' ? 'selector:"'.$link.'"' : 'href:"'.$link.'"').'},';
+    private static function getNavigationLink($navigation) {
+        $nav_link = $navigation['link'] ? $navigation['link'] : '/';
+        
+        if ($navigation['page']) {
+            $linked_page = new \Kyte\Core\ModelObject(KytePage);
+            if ($linked_page->retrieve('id', $navigation['page'])) {
+                $nav_link = '/' . $linked_page->s3key;
             }
-            if (count($items->objects) > 0) {
-                if (isset($items->objects[0]->link) && $items->objects[0]->link[0] == '#') {
-                    $default_sidenav = $items->objects[0]->link;
-                }
-            }
-            //
-            $code .= 'let sidenavdef = ['.implode($side_menu_items).'];';
-            $code .= 'let sidenav = new KyteSidenav("#sidenav", sidenavdef, "'.$default_sidenav.'");sidenav.create();sidenav.bind();';
         }
+        
+        return $nav_link;
+    }
 
-        if ($page['header']) {
+    private static function buildSideNavigationJS($page) {
+        $items = new \Kyte\Core\Model(SideNavItem);
+        $items->retrieve('sidenav', $page['side_navigation']['id'], false, null, false, [['field' => 'itemOrder', 'direction' => 'asc']]);
+        
+        $side_menu_items = [];
+        $default_sidenav = '';
+        
+        foreach($items->objects as $m) {
+            $link = $m->link;
+            if ($m->page) {
+                $linked_page = new \Kyte\Core\ModelObject(KytePage);
+                if (!$linked_page->retrieve('id', $m->page)) {
+                    throw new \Exception("Unable to find page");
+                }
+                $link = '/' . $linked_page->s3key;
+            }
+            
+            $config_parts = [];
+            $config_parts[] = "faicon:\"{$m->faicon}\"";
+            $config_parts[] = "label:\"{$m->title}\"";
+            
+            if (!(isset($link[0]) && $link[0] == '#')) {
+                $config_parts[] = "id:\"{$m->element_id}\"";
+            }
+            
+            $config_parts[] = "class:\"{$m->element_class}\"";
+            
+            if ($m->isLogout == 1) {
+                $config_parts[] = 'logout:true';
+            }
+            
+            if ($page['side_navigation']['labelCenterBlock'] == 1) {
+                $config_parts[] = 'labelCenterBlock:true';
+            }
+            
+            if (isset($link[0]) && $link[0] == '#') {
+                $config_parts[] = "selector:\"{$link}\"";
+            } else {
+                $config_parts[] = "href:\"{$link}\"";
+            }
+            
+            $side_menu_items[] = '{' . implode(',', $config_parts) . '},';
+        }
+        
+        if (count($items->objects) > 0) {
+            if (isset($items->objects[0]->link) && $items->objects[0]->link[0] == '#') {
+                $default_sidenav = $items->objects[0]->link;
+            }
+        }
+        
+        $items_string = implode('', $side_menu_items);
+        return "let sidenavdef = [{$items_string}];" .
+            "let sidenav = new KyteSidenav(\"#sidenav\", sidenavdef, \"{$default_sidenav}\");sidenav.create();sidenav.bind();";
+    }
+
+    private static function buildHeaderFooterJS($page) {
+        $js_parts = [];
+        
+        if (!empty($page['header'])) {
             if ($page['header']['obfuscate_js'] == 1) {
-                $code .= $page['header']['javascript_obfuscated']."\n";
+                $js_parts[] = $page['header']['javascript_obfuscated'] . "\n";
             } else {
-                $code .= $page['header']['javascript']."\n";
+                $js_parts[] = $page['header']['javascript'] . "\n";
             }
         }
-
-        if ($page['footer']) {
+        
+        if (!empty($page['footer'])) {
             if ($page['footer']['obfuscate_js'] == 1) {
-                $code .= $page['footer']['javascript_obfuscated']."\n";
+                $js_parts[] = $page['footer']['javascript_obfuscated'] . "\n";
             } else {
-                $code .= $page['footer']['javascript']."\n";
+                $js_parts[] = $page['footer']['javascript'] . "\n";
             }
         }
-
-        $code .= ' });</script>';
-
-        // close body
-        $code .= '</body>';
-        // close html
-        $code .= '</html>';
-
-        return $code;
+        
+        return implode('', $js_parts);
     }
 
     public static function generateGAIntegration($ga_code) {
-        return "<!-- Google tag (gtag.js) --><script async src=\"https://www.googletagmanager.com/gtag/js?id=$ga_code\"></script><script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date());gtag('config', '$ga_code');</script>";
+        // Validate GA code format (GA4: G-XXXXXXXXXX, Universal: UA-XXXXXXXX-X)
+        if (!self::isValidGACode($ga_code)) {
+            error_log("Invalid Google Analytics code format: {$ga_code}");
+            return '';
+        }
+        
+        $escaped_code = htmlspecialchars($ga_code, ENT_QUOTES);
+        
+        return "<!-- Google tag (gtag.js) -->" .
+            "<script async src=\"https://www.googletagmanager.com/gtag/js?id={$escaped_code}\"></script>" .
+            "<script>" .
+            "window.dataLayer = window.dataLayer || [];" .
+            "function gtag(){dataLayer.push(arguments);}" .
+            "gtag('js', new Date());" .
+            "gtag('config', '{$escaped_code}');" .
+            "</script>";
     }
 
     public static function generateGTMIntegration($gtm_code) {
-        return [
-            "<!-- Google Tag Manager --><script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','$gtm_code');</script><!-- End Google Tag Manager -->",
-            "<!-- Google Tag Manager (noscript) --><noscript><iframe src=\"https://www.googletagmanager.com/ns.html?id=$gtm_code\" height=\"0\" width=\"0\" style=\"display:none;visibility:hidden\"></iframe></noscript><!-- End Google Tag Manager (noscript) -->"
-        ];
+        // Validate GTM code format (GTM-XXXXXXX)
+        if (!self::isValidGTMCode($gtm_code)) {
+            error_log("Invalid Google Tag Manager code format: {$gtm_code}");
+            return ['', ''];
+        }
+        
+        $escaped_code = htmlspecialchars($gtm_code, ENT_QUOTES);
+        
+        $head_script = "<!-- Google Tag Manager -->" .
+                    "<script>" .
+                    "(function(w,d,s,l,i){" .
+                    "w[l]=w[l]||[];" .
+                    "w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});" .
+                    "var f=d.getElementsByTagName(s)[0]," .
+                    "j=d.createElement(s)," .
+                    "dl=l!='dataLayer'?'&l='+l:'';" .
+                    "j.async=true;" .
+                    "j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;" .
+                    "f.parentNode.insertBefore(j,f);" .
+                    "})(window,document,'script','dataLayer','{$escaped_code}');" .
+                    "</script>" .
+                    "<!-- End Google Tag Manager -->";
+        
+        $body_script = "<!-- Google Tag Manager (noscript) -->" .
+                    "<noscript>" .
+                    "<iframe src=\"https://www.googletagmanager.com/ns.html?id={$escaped_code}\" " .
+                    "height=\"0\" width=\"0\" style=\"display:none;visibility:hidden\">" .
+                    "</iframe>" .
+                    "</noscript>" .
+                    "<!-- End Google Tag Manager (noscript) -->";
+        
+        return [$head_script, $body_script];
     }
 
     public static function updateSitemap($siteIdx, $siteDomain) {
-        $pages = new \Kyte\Core\Model(KytePage);
-        $pages->retrieve('state', '1', false, [['field' => 'protected', 'value' => '0'],['field' => 'sitemap_include', 'value' => '1'],['field' => 'site', 'value' => $siteIdx]], false, [['field' => 'date_modified', 'direction' => 'desc']]);
-        $urlset = self::generateSitemapUrlSet();
-        $sitemap = $urlset[0];
-        foreach($pages->objects as $page) {
-            $sitemap .= self::generateSitemapUrlTag($page, $siteDomain);
+        // Validate inputs
+        if (!is_numeric($siteIdx) || $siteIdx <= 0) {
+            error_log("Invalid site index for sitemap generation: {$siteIdx}");
+            return false;
         }
-        $sitemap .= $urlset[1];
-
-        return $sitemap;
+        
+        if (!self::isValidDomain($siteDomain)) {
+            error_log("Invalid domain for sitemap generation: {$siteDomain}");
+            return false;
+        }
+        
+        // Retrieve pages with optimized query
+        $pages = new \Kyte\Core\Model(KytePage);
+        $conditions = [
+            ['field' => 'state', 'value' => '1'],
+            ['field' => 'protected', 'value' => '0'],
+            ['field' => 'sitemap_include', 'value' => '1'],
+            ['field' => 'site', 'value' => $siteIdx]
+        ];
+        $order = [['field' => 'date_modified', 'direction' => 'desc']];
+        
+        $pages->retrieve('state', '1', false, $conditions, false, $order);
+        
+        if ($pages->count() === 0) {
+            // Return minimal sitemap if no pages found
+            return self::generateEmptySitemap();
+        }
+        
+        // Build sitemap efficiently
+        $sitemap_parts = [];
+        $sitemap_parts[] = self::generateSitemapHeader();
+        
+        $escaped_domain = htmlspecialchars($siteDomain, ENT_QUOTES);
+        foreach($pages->objects as $page) {
+            $sitemap_parts[] = self::generateSitemapUrlTag($page, $escaped_domain);
+        }
+        
+        $sitemap_parts[] = self::generateSitemapFooter();
+        
+        return implode('', $sitemap_parts);
     }
 
     public static function generateSitemapUrlTag($page, $siteDomain) {
-        return "\t<url>\n\t\t<loc>https://$siteDomain/{$page->s3key}</loc>\n\t\t<lastmod>".date('Y-m-d', $page->date_modified)."</lastmod>\n\t</url>\n";
+        // Validate page object
+        if (!isset($page->s3key, $page->date_modified)) {
+            error_log("Invalid page object for sitemap generation");
+            return '';
+        }
+        
+        // Sanitize and validate inputs
+        $escaped_domain = htmlspecialchars($siteDomain, ENT_QUOTES);
+        $escaped_s3key = htmlspecialchars($page->s3key, ENT_QUOTES);
+        
+        // Ensure s3key doesn't start with slash (avoid double slashes)
+        $s3key = ltrim($escaped_s3key, '/');
+        
+        // Format date properly (ensure it's a valid timestamp)
+        $last_modified = is_numeric($page->date_modified) ? 
+            date('Y-m-d', $page->date_modified) : 
+            date('Y-m-d');
+        
+        // Add change frequency and priority based on page characteristics
+        $change_freq = self::determineChangeFrequency($page);
+        $priority = self::determinePriority($page);
+        
+        return "\t<url>\n" .
+            "\t\t<loc>https://{$escaped_domain}/{$s3key}</loc>\n" .
+            "\t\t<lastmod>{$last_modified}</lastmod>\n" .
+            "\t\t<changefreq>{$change_freq}</changefreq>\n" .
+            "\t\t<priority>{$priority}</priority>\n" .
+            "\t</url>\n";
     }
 
     public static function generateSitemapUrlSet() {
+        // Deprecated: Use generateSitemapHeader() and generateSitemapFooter() instead
         return [
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n",
-            "</urlset>"
+            self::generateSitemapHeader(),
+            self::generateSitemapFooter()
         ];
+    }
+
+    // New helper methods for better functionality and validation
+
+    private static function generateSitemapHeader() {
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" .
+            "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n";
+    }
+
+    private static function generateSitemapFooter() {
+        return "</urlset>";
+    }
+
+    private static function generateEmptySitemap() {
+        return self::generateSitemapHeader() . self::generateSitemapFooter();
+    }
+
+    private static function isValidGACode($code) {
+        // GA4 format: G-XXXXXXXXXX or Universal Analytics: UA-XXXXXXXX-X
+        return preg_match('/^(G-[A-Z0-9]{10}|UA-\d{4,10}-\d{1,4})$/', $code);
+    }
+
+    private static function isValidGTMCode($code) {
+        // GTM format: GTM-XXXXXXX
+        return preg_match('/^GTM-[A-Z0-9]{7}$/', $code);
+    }
+
+    private static function isValidDomain($domain) {
+        // Basic domain validation
+        return filter_var($domain, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) !== false;
+    }
+
+    private static function determineChangeFrequency($page) {
+        // Determine change frequency based on page characteristics
+        // You can customize this logic based on your specific needs
+        
+        if (isset($page->page_type)) {
+            switch ($page->page_type) {
+                case 'blog':
+                case 'news':
+                    return 'daily';
+                case 'product':
+                    return 'weekly';
+                case 'static':
+                case 'about':
+                case 'contact':
+                    return 'monthly';
+                default:
+                    return 'weekly';
+            }
+        }
+        
+        // Default fallback
+        return 'weekly';
+    }
+
+    private static function determinePriority($page) {
+        // Determine priority based on page characteristics
+        // Priority should be between 0.0 and 1.0
+        
+        if (isset($page->s3key)) {
+            // Homepage gets highest priority
+            if ($page->s3key === '' || $page->s3key === 'index') {
+                return '1.0';
+            }
+            
+            // Important pages get high priority
+            if (in_array($page->s3key, ['about', 'contact', 'services', 'products'])) {
+                return '0.8';
+            }
+            
+            // Blog/news pages get medium priority
+            if (strpos($page->s3key, 'blog') !== false || strpos($page->s3key, 'news') !== false) {
+                return '0.6';
+            }
+        }
+        
+        // Default priority for other pages
+        return '0.5';
+    }
+
+    // Enhanced version for better performance with large sitemaps
+    public static function generateSitemapIndex($sites) {
+        // For sites with multiple sitemaps or large page counts
+        $sitemap_parts = [];
+        $sitemap_parts[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+        $sitemap_parts[] = "<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n";
+        
+        foreach ($sites as $site) {
+            if (!self::isValidDomain($site['domain'])) {
+                continue;
+            }
+            
+            $escaped_domain = htmlspecialchars($site['domain'], ENT_QUOTES);
+            $last_modified = date('Y-m-d');
+            
+            $sitemap_parts[] = "\t<sitemap>\n";
+            $sitemap_parts[] = "\t\t<loc>https://{$escaped_domain}/sitemap.xml</loc>\n";
+            $sitemap_parts[] = "\t\t<lastmod>{$last_modified}</lastmod>\n";
+            $sitemap_parts[] = "\t</sitemap>\n";
+        }
+        
+        $sitemap_parts[] = "</sitemapindex>";
+        
+        return implode('', $sitemap_parts);
     }
 
     // Version control helper functions
