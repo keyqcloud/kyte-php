@@ -18,25 +18,52 @@ class KytePageVersionController extends ModelController
             case 'get':
                 // Add change summary parsing
                 if (!empty($r['changes_detected'])) {
-                    $r['changes_detected'] = json_decode($r['changes_detected'], true);
-                    $r['change_count'] = count($r['changes_detected']);
+                    $decoded = json_decode($r['changes_detected'], true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $r['changes_detected'] = $decoded;
+                        $r['change_count'] = count($r['changes_detected']);
+                    } else {
+                        // Log the error and provide fallback
+                        error_log("JSON decode failed for changes_detected: " . json_last_error_msg());
+                        $r['changes_detected'] = [];
+                        $r['change_count'] = 0;
+                    }
                 }
 
                 // Get user info
                 if (!empty($r['created_by'])) {
-                    $user = new \Kyte\Core\ModelObject(KyteUser);
-                    if ($user->retrieve('id', $r['created_by'])) {
+                    try {
+                        $user = new \Kyte\Core\ModelObject(KyteUser);
+                        if ($user->retrieve('id', $r['created_by'])) {
+                            $r['created_by'] = [
+                                'id' => $user->id,
+                                'name' => $user->name ?? '',
+                                'username' => $user->username ?? '',
+                                'email' => $user->email ?? '',
+                            ];
+                        } else {
+                            // User not found - provide fallback
+                            $r['created_by'] = [
+                                'id' => $r['created_by'],
+                                'name' => 'Unknown User',
+                                'username' => '',
+                                'email' => '',
+                            ];
+                        }
+                    } catch (Exception $e) {
+                        error_log("User retrieval failed: " . $e->getMessage());
                         $r['created_by'] = [
-                            'id' => $user->id,
-                            'name' => $user->name,
-                            'username' => $user->username,
-                            'email' => $user->email,
+                            'id' => $r['created_by'],
+                            'name' => 'Error Loading User',
+                            'username' => '',
+                            'email' => '',
                         ];
                     }
                 }
 
                 // Add version metadata
-                $r['can_revert'] = !$r['is_current']; // Can't revert to current version
+                // Can't revert to current version
+                $r['can_revert'] = isset($r['is_current']) ? !$r['is_current'] : true;
                 break;
 
             default:
