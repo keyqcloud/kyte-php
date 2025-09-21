@@ -55,7 +55,8 @@ class KyteLibraryController extends ModelController
                         if (!$assignment->retrieve('library', $o->id, [['field' => 'page', 'value' => $page->id]])) {
                             // create new assignment
                             if (!$assignment->create([
-                                'library'        => $o->id,
+                                'library'       => $o->id,
+                                'global_scope'  => 1,
                                 'page'          => $page->id,
                                 'site'          => $page->site,
                                 'kyte_account'  => $page->kyte_account,

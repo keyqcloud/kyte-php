@@ -15,6 +15,15 @@ $KyteScriptAssignment = [
 			],
 		],
 
+		'global_scope' => [
+			'type'     => 'i',
+			'required' => false,
+			'size'     => 1,
+			'unsigned' => true,
+			'default'  => 0,
+			'date'     => false,
+		],
+
 		'page'	=> [
 			'type'		=> 'i',
 			'required'	=> false,

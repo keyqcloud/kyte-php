@@ -83,6 +83,7 @@ class KyteScriptController extends ModelController
                                 // create new assignment
                                 if (!$scriptAssignment->create([
                                     'script'        => $o->id,
+                                    'global_scope'  => 1,
                                     'page'          => $page->id,
                                     'site'          => $page->site,
                                     'kyte_account'  => $page->kyte_account,

@@ -12,6 +12,6 @@ class KyteScriptGlobalAssignmentController extends ModelController
         if (!is_array($conditions)) {
             $conditions = [];
         }
-        $conditions[] = ['field' => 'include_all', 'value' => 1];
+        $conditions[] = ['field' => 'global_scope', 'value' => 1];
     }
 }

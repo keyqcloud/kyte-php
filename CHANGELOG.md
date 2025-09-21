@@ -12,6 +12,18 @@
 
 **Database Changes**
 
+*KyteLibraryAssignment*
+```sql
+ALTER TABLE KyteLibraryAssignment 
+ADD COLUMN `global_scope` TINYINT(1) DEFAULT 0 UNSIGNED AFTER `order`;
+```
+
+*KyteScriptAssignment*
+```sql
+ALTER TABLE KyteScriptAssignment 
+ADD COLUMN `global_scope` TINYINT(1) DEFAULT 0 UNSIGNED AFTER `order`;
+```
+
 *KytePageVersion*
 ```sql
 CREATE TABLE `KytePageVersion` (
