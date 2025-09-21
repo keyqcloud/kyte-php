@@ -15,13 +15,13 @@
 *KyteLibraryAssignment*
 ```sql
 ALTER TABLE KyteLibraryAssignment 
-ADD COLUMN `global_scope` TINYINT(1) DEFAULT 0 UNSIGNED AFTER `library`;
+ADD COLUMN `global_scope` TINYINT(1) UNSIGNED DEFAULT 0 AFTER `library`;
 ```
 
 *KyteScriptAssignment*
 ```sql
 ALTER TABLE KyteScriptAssignment 
-ADD COLUMN `global_scope` TINYINT(1) DEFAULT 0 UNSIGNED AFTER `script`;
+ADD COLUMN `global_scope` TINYINT(1) UNSIGNED DEFAULT 0 AFTER `script`;
 ```
 
 *KytePageVersion*
