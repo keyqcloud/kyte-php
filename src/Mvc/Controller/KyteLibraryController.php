@@ -131,7 +131,7 @@ class KyteLibraryController extends ModelController
                 }
                 
                 $pages = new \Kyte\Core\Model(KytePage);
-                $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $r['site']['id']]]);
+                $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $d['site']['id']]]);
                 
                 // iterate through each page
                 foreach($pages->objects as $page) {
