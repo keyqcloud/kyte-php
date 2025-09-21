@@ -6,7 +6,7 @@ class KyteLibraryAssignmentController extends ModelController
     public function hook_preprocess($method, &$r, &$o = null) {
         if ($method == 'new') {
             $assignments = new \Kyte\Core\Model($this->model);
-            $assignments->retrieve('library', $d['library'], false, [['field' => 'page', 'value' => $d['page']], ['field' => 'site', 'value' => $d['site']], ['field' => 'kyte_account', 'value' => $this->account->id]]);
+            $assignments->retrieve('library', $r['library'], false, [['field' => 'page', 'value' => $r['page']], ['field' => 'site', 'value' => $r['site']], ['field' => 'kyte_account', 'value' => $this->account->id]]);
             if ($assignments->count > 0) {
                 throw new \Exception("This library is already assigned to the specified page or site.");
             }
