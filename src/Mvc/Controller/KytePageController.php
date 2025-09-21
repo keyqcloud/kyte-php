@@ -697,7 +697,7 @@ class KytePageController extends ModelController
         $primary_cdn = $config['primary_cdn'];
         
         $ui_css_integrity = [
-            '1.13.2' => 'sha512-hbs/7O+vqWZS49DulqH1n2lVtu63t3c3MTAn0oYMINS5aT8eIAbJGDXgLt6IxDHcWyzVTgf9XyzZ9iWyVQ7mCQ==',
+            '1.13.2' => 'sha512-b2Vnu4ARgWtz47cxvNMnJtelWzsIHnwLf8YlVWa5+kSPbUnWzr+jg6xHcG2ah0amx2nZ94C9cwz/+R06fFzl6g==',
             '1.13.1' => 'sha512-5UPERJanD1dNBaAcD2iVuSO4UD4zPJd4gVLzAjhg3k2eWTFJJhiVfFLGE3qgb3lYyZRUP5vXBQlL6HPe7eBpww==',
         ];
         
