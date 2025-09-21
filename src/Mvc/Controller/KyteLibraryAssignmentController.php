@@ -3,6 +3,13 @@ namespace Kyte\Mvc\Controller;
 
 class KyteLibraryAssignmentController extends ModelController
 {
+    public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {
+        if (!is_array($conditions)) {
+            $conditions = [];
+        }
+        $conditions[] = ['field' => 'global_scope', 'value' => 0];
+    }
+
     public function hook_preprocess($method, &$r, &$o = null) {
         if ($method == 'new') {
             $assignments = new \Kyte\Core\Model($this->model);
