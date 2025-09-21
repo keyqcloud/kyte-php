@@ -9,6 +9,7 @@
 * If page is created with missing menu page link, then place "#"
 * Add feature to allow for page republishing if kyte_connect changes, or obfuscation settings change for kyte_connect
 * Return user information for version history
+* Add global_scope alias in Assignments table
 
 **Database Changes**
 
