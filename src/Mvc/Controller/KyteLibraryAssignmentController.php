@@ -9,6 +9,13 @@ class KyteLibraryAssignmentController extends ModelController
                 throw new \Exception("Cannot delete assignment for globally included libraries. This library is set to include on all pages. To remove it, either disable global inclusion in Site → Libraries or delete the library entirely.");
             }
         } else {
+            if ($method == 'new') {
+                $assignments = new \Kyte\Core\Model($this->model);
+                $assignments->retrieve('library', $d['library'], false, [['field' => 'page', 'value' => $d['page']], ['field' => 'site', 'value' => $d['site']], ['field' => 'kyte_account', 'value' => $this->account]]);
+                if ($assignments->count > 0) {
+                    throw new \Exception("This library is already assigned to the specified page or site.");
+                }
+            }
             if (isset($r['page'], $r['page']['header'], $r['page']['footer'])) {
                 $r['page']['header'] = null;
                 $r['page']['footer'] = null;
