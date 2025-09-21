@@ -539,10 +539,13 @@ class KytePageController extends ModelController
         // Add SEO tags
         $code_parts[] = self::buildSeoTags($page);
         
+        // Add core dependencies (jQuery, Bootstrap, jQuery UI)
+        $code_parts[] = self::buildCoreDependencies();
+        
         // Add Font Awesome
         $code_parts[] = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">';
         
-        // Add libraries
+        // Add optional libraries
         $code_parts[] = self::buildLibraries($page);
         
         // Add KyteJS
@@ -575,6 +578,157 @@ class KytePageController extends ModelController
         $code_parts[] = '</body></html>';
         
         return implode('', array_filter($code_parts));
+    }
+
+    private static function buildCoreDependencies($options = []) {
+        // Check for global config constants first, then use defaults
+        $defaults = [
+            'jquery_version' => defined('KYTE_JQUERY_VERSION') ? KYTE_JQUERY_VERSION : '3.7.1',
+            'bootstrap_version' => defined('KYTE_BOOTSTRAP_VERSION') ? KYTE_BOOTSTRAP_VERSION : '5.3.2',
+            'jqueryui_version' => defined('KYTE_JQUERYUI_VERSION') ? KYTE_JQUERYUI_VERSION : '1.13.2',
+            'jqueryui_theme' => defined('KYTE_JQUERYUI_THEME') ? KYTE_JQUERYUI_THEME : 'ui-lightness',
+            'use_cdn_fallback' => defined('KYTE_USE_CDN_FALLBACK') ? KYTE_USE_CDN_FALLBACK : true,
+            'local_fallback_path' => defined('KYTE_LOCAL_FALLBACK_PATH') ? KYTE_LOCAL_FALLBACK_PATH : '/assets/js/',
+            'integrity_check' => defined('KYTE_INTEGRITY_CHECK') ? KYTE_INTEGRITY_CHECK : true,
+            'primary_cdn' => defined('KYTE_PRIMARY_CDN') ? KYTE_PRIMARY_CDN : 'https://cdnjs.cloudflare.com',
+            'fallback_cdn' => defined('KYTE_FALLBACK_CDN') ? KYTE_FALLBACK_CDN : 'https://code.jquery.com',
+            'google_cdn' => defined('KYTE_GOOGLE_CDN') ? KYTE_GOOGLE_CDN : 'https://ajax.googleapis.com'
+        ];
+        
+        $config = array_merge($defaults, $options);
+        $dependencies = [];
+        
+        // jQuery
+        if ($config['integrity_check']) {
+            $dependencies[] = self::buildJQueryWithIntegrity($config);
+        } else {
+            $dependencies[] = "<script src=\"{$config['primary_cdn']}/ajax/libs/jquery/{$config['jquery_version']}/jquery.min.js\" crossorigin=\"anonymous\"></script>";
+        }
+        
+        if ($config['use_cdn_fallback']) {
+            $dependencies[] = self::buildJQueryFallback($config);
+        }
+        
+        // Bootstrap CSS & JS
+        $dependencies[] = self::buildBootstrapDependencies($config);
+        
+        // jQuery UI
+        $dependencies[] = self::buildJQueryUIDependencies($config);
+        
+        return implode('', $dependencies);
+    }
+
+    private static function buildJQueryFallback($config) {
+        $fallbacks = [];
+        
+        // Fallback to alternative CDN
+        if ($config['fallback_cdn']) {
+            $fallbacks[] = "<script>window.jQuery || document.write('<script src=\"{$config['fallback_cdn']}/jquery-{$config['jquery_version']}.min.js\"><\/script>')</script>";
+        }
+        
+        // Fallback to Google CDN
+        if ($config['google_cdn']) {
+            $fallbacks[] = "<script>window.jQuery || document.write('<script src=\"{$config['google_cdn']}/ajax/libs/jquery/{$config['jquery_version']}/jquery.min.js\"><\/script>')</script>";
+        }
+        
+        // Final fallback to local if path is set
+        if ($config['local_fallback_path']) {
+            $fallbacks[] = "<script>window.jQuery || document.write('<script src=\"{$config['local_fallback_path']}jquery.min.js\"><\/script>')</script>";
+        }
+        
+        return implode('', $fallbacks);
+    }
+
+    private static function buildJQueryWithIntegrity($config) {
+        // Keep integrity hashes updated - these are for specific versions
+        $integrity_hashes = [
+            '3.7.1' => 'sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==',
+            '3.6.4' => 'sha512-pumBsjNRGGqkPzKHndZMaAG+bir374sORyzM3uulLV14lN5LyykqNk8eEeUlUkB3U0M4FApyaHraT65ihJhDpQ==',
+            '3.6.0' => 'sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==',
+        ];
+        
+        $version = $config['jquery_version'];
+        $integrity = isset($integrity_hashes[$version]) ? $integrity_hashes[$version] : '';
+        
+        if ($integrity) {
+            return "<script src=\"{$config['primary_cdn']}/ajax/libs/jquery/{$version}/jquery.min.js\" integrity=\"{$integrity}\" crossorigin=\"anonymous\" referrerpolicy=\"no-referrer\"></script>";
+        } else {
+            error_log("No integrity hash available for jQuery version {$version}, loading without integrity check");
+            return "<script src=\"{$config['primary_cdn']}/ajax/libs/jquery/{$version}/jquery.min.js\" crossorigin=\"anonymous\"></script>";
+        }
+    }
+
+    private static function buildBootstrapDependencies($config) {
+        $version = $config['bootstrap_version'];
+        $primary_cdn = $config['primary_cdn'];
+        
+        // Bootstrap integrity hashes
+        $css_integrity = [
+            '5.3.2' => 'sha512-b2QcS5SsA8tZodcDtGRELiGv5SaKSk1vDHDaQRda0htPYWZ6046lr3kJ5bAAQdpV2mmA/4v0wQF9MyU6/pDIAg==',
+            '5.3.1' => 'sha512-Z/def5z5u2aR89OuzYcxmDJ0Bnd5V1cKqBEbvLOiUNWdg9PQeXVvXLI90SE4QOHGlfLqUnDNVAYyZi8UwUTmWQ==',
+            '5.3.0' => 'sha512-t4GWSVZO1eC8BM339Xd7Uphw5s17a86tIZIj8qRxhnKub6WoyhnrxeCIMeAqBPgdZGlCcG2PrZjMc+Wr78+5Xg==',
+        ];
+        
+        $js_integrity = [
+            '5.3.2' => 'sha512-X/YkDZyjTf4wyc2Vy16YGCPHwAY8rZJY+POgokZjQB2mhIRFJCckEGc6YyX9eNsPfn0PzThEuNs+uaomE5CO6A==',
+            '5.3.1' => 'sha512-fgBNQX8NWKvH/ZjhzZrv2wOdBxVT8Y8+EfaT5j3tJ3bNn/9RiKG3H0W6O5a7PgZ8JOH6T7jJlP8M8NQLfj3CA==',
+            '5.3.0' => 'sha512-3dZ9wIrMMij8rOH7X3kLfXAzwtcHpuYpEgQg1OA4QAob1e81H8ntUQmQm3pBudqIoySO5j0tHN4ENzA6+n2r4w==',
+        ];
+        
+        $css_hash = '';
+        $js_hash = '';
+        
+        if ($config['integrity_check']) {
+            $css_hash = isset($css_integrity[$version]) ? " integrity=\"{$css_integrity[$version]}\"" : '';
+            $js_hash = isset($js_integrity[$version]) ? " integrity=\"{$js_integrity[$version]}\"" : '';
+            
+            if (!$css_hash || !$js_hash) {
+                error_log("No integrity hash available for Bootstrap version {$version}");
+            }
+        }
+        
+        return "<link href=\"{$primary_cdn}/ajax/libs/bootstrap/{$version}/css/bootstrap.min.css\" rel=\"stylesheet\"{$css_hash} crossorigin=\"anonymous\" referrerpolicy=\"no-referrer\">" .
+            "<script src=\"{$primary_cdn}/ajax/libs/bootstrap/{$version}/js/bootstrap.bundle.min.js\"{$js_hash} crossorigin=\"anonymous\" referrerpolicy=\"no-referrer\"></script>";
+    }
+
+    private static function buildJQueryUIDependencies($config) {
+        $version = $config['jqueryui_version'];
+        $theme = $config['jqueryui_theme'];
+        $primary_cdn = $config['primary_cdn'];
+        
+        $ui_css_integrity = [
+            '1.13.2' => 'sha512-hbs/7O+vqWZS49DulqH1n2lVtu63t3c3MTAn0oYMINS5aT8eIAbJGDXgLt6IxDHcWyzVTgf9XyzZ9iWyVQ7mCQ==',
+            '1.13.1' => 'sha512-5UPERJanD1dNBaAcD2iVuSO4UD4zPJd4gVLzAjhg3k2eWTFJJhiVfFLGE3qgb3lYyZRUP5vXBQlL6HPe7eBpww==',
+        ];
+        
+        $ui_js_integrity = [
+            '1.13.2' => 'sha512-57oZ/vW8ANMjR/KQ6Be9v/+/h6bq9/l3f0Oc7vn6qMqyhvPd1cvKBRWWpzu0QoneImqr2SkmO4MSqU+RpHom3Q==',
+            '1.13.1' => 'sha512-YGP0qyp3lqZUIGnXP4iFq2RDTmPRz3FKuDRVcMM4V9QdvJfmnPnqW1f6fEL5rE2kAn7C8c9Zp6TfD7gH2DZB1Q==',
+        ];
+        
+        $css_hash = '';
+        $js_hash = '';
+        
+        if ($config['integrity_check']) {
+            $css_hash = isset($ui_css_integrity[$version]) ? " integrity=\"{$ui_css_integrity[$version]}\"" : '';
+            $js_hash = isset($ui_js_integrity[$version]) ? " integrity=\"{$ui_js_integrity[$version]}\"" : '';
+        }
+        
+        $dependencies = [];
+        $dependencies[] = "<link rel=\"stylesheet\" href=\"{$primary_cdn}/ajax/libs/jqueryui/{$version}/themes/{$theme}/jquery-ui.min.css\"{$css_hash} crossorigin=\"anonymous\" referrerpolicy=\"no-referrer\">";
+        $dependencies[] = "<script src=\"{$primary_cdn}/ajax/libs/jqueryui/{$version}/jquery-ui.min.js\"{$js_hash} crossorigin=\"anonymous\" referrerpolicy=\"no-referrer\"></script>";
+        
+        if ($config['use_cdn_fallback']) {
+            // jQuery UI fallback
+            $dependencies[] = "<script>window.jQuery.ui || document.write('<script src=\"{$config['fallback_cdn']}/ui/{$version}/jquery-ui.min.js\"><\/script>')</script>";
+            
+            // Final fallback to local
+            if ($config['local_fallback_path']) {
+                $dependencies[] = "<script>window.jQuery.ui || document.write('<script src=\"{$config['local_fallback_path']}jquery-ui.min.js\"><\/script>')</script>";
+            }
+        }
+        
+        return implode('', $dependencies);
     }
 
     private static function buildLanguageAttribute($page) {
