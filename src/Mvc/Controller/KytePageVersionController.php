@@ -14,15 +14,6 @@ class KytePageVersionController extends ModelController
     }
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
-        // Log everything at the start
-    error_log("=== KytePageVersionController Debug ===");
-    error_log("Method: " . $method);
-    error_log("Object ID: " . ($o->id ?? 'null'));
-    error_log("Response \$r type: " . gettype($r));
-    error_log("Response \$r content: " . print_r($r, true));
-    error_log("Data \$d type: " . gettype($d));
-    error_log("Data \$d content: " . print_r($d, true));
-    
         switch ($method) {
             case 'get':
                 // Add change summary parsing
@@ -73,6 +64,11 @@ class KytePageVersionController extends ModelController
                 // Add version metadata
                 // Can't revert to current version
                 $r['can_revert'] = isset($r['is_current']) ? !$r['is_current'] : true;
+
+                if (isset($r['page'], $r['page']['header'], $r['page']['footer'])) {
+                    $r['page']['header'] = '';
+                    $r['page']['footer'] = '';
+                }
                 break;
 
             default:
