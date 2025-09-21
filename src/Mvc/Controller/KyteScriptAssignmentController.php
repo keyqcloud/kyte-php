@@ -11,7 +11,7 @@ class KyteScriptAssignmentController extends ModelController
         } else {
             if ($method == 'new') {
                 $assignments = new \Kyte\Core\Model($this->model);
-                $assignments->retrieve('script', $d['library'], false, [['field' => 'page', 'value' => $d['page']], ['field' => 'site', 'value' => $d['site']], ['field' => 'kyte_account', 'value' => $this->account]]);
+                $assignments->retrieve('script', $d['library'], false, [['field' => 'page', 'value' => $d['page']], ['field' => 'site', 'value' => $d['site']], ['field' => 'kyte_account', 'value' => $this->account->id]]);
                 if ($assignments->count > 0) {
                     throw new \Exception("This custom script is already assigned to the specified page or site.");
                 }
