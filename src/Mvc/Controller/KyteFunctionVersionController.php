@@ -64,6 +64,10 @@ class KyteFunctionVersionController extends ModelController
                 // Add version metadata
                 // Can't revert to current version
                 $r['can_revert'] = isset($r['is_current']) ? !$r['is_current'] : true;
+
+                if (isset($r['version'], $r['version']['code'])) {
+                    $r['version']['code'] = '';
+                }
                 break;
 
             default:
