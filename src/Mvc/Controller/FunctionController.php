@@ -107,6 +107,11 @@ class FunctionController extends ModelController
         }
     }
 
+    private function isValidBzip2Data($data) {
+        // bzip2 data always starts with 'BZ' magic bytes
+        return strlen($data) >= 2 && substr($data, 0, 2) === 'BZ';
+    }
+
     /**
      * Process new function creation
      */
@@ -123,7 +128,9 @@ class FunctionController extends ModelController
         $config = self::FUNCTION_TYPES[$type];
         $code = $this->generateCodeFromTemplate($config['template']);
         
-        $r['code'] = bzcompress($code, 9);
+        if (!empty($code) && !$this->isValidBzip2Data($code)) {
+            $r['code'] = bzcompress($code, 9);
+        }
     }
 
     /**
@@ -142,7 +149,13 @@ class FunctionController extends ModelController
             }
         }
         
-        $r['code'] = bzcompress($r['code'], 9);
+        // Only compress if not already compressed
+        if (isset($r['code']) && is_string($r['code'])) {
+            // Check if already compressed
+            if (!empty($r['code']) && !$this->isValidBzip2Data($r['code'])) {
+                $r['code'] = bzcompress($r['code'], 9);
+            }
+        }
     }
 
     /**
@@ -178,7 +191,14 @@ class FunctionController extends ModelController
     private function decompressCode(array &$r): void
     {
         if (isset($r['code'])) {
-            $r['code'] = bzdecompress($r['code']);
+            if ($this->isValidBzip2Data($r['code'])) {
+                $decompressed = bzdecompress($r['code']);
+                if ($decompressed === false) {
+                    throw new \Exception("Failed to decompress code data - data may be corrupted");
+                }
+                $r['code'] = $decompressed;
+            }
+            // If not valid bzip2 data, assume it's already decompressed
         }
     }
 
@@ -277,7 +297,7 @@ class FunctionController extends ModelController
         }
 
         return [
-            'code' => bzdecompress($func->code),
+            'code' => $this->isValidBzip2Data($func->code) ? bzdecompress($func->code) : $func->code,
         ];
     }
 
@@ -305,10 +325,16 @@ class FunctionController extends ModelController
         
         // For new data, code might be compressed, so decompress if needed
         if (is_string($newCode) && strlen($newCode) > 0) {
-            $decompressed = @bzdecompress($newCode);
-            if ($decompressed !== false) {
-                $newCode = $decompressed;
+            if ($this->isValidBzip2Data($newCode)) {
+                $decompressed = bzdecompress($newCode);
+                if ($decompressed !== false) {
+                    $newCode = $decompressed;
+                } else {
+                    // Valid bzip2 magic bytes but decompression failed - data is corrupted
+                    throw new \Exception("Corrupted compressed code data detected");
+                }
             }
+            // If not valid bzip2 data, assume it's already uncompressed
         }
         
         if ($oldCode !== $newCode) {
@@ -407,9 +433,7 @@ class FunctionController extends ModelController
         
         // If code is not compressed, compress it
         if (is_string($code) && strlen($code) > 0) {
-            $decompressed = @bzdecompress($code);
-            if ($decompressed === false) {
-                // Code is not compressed, compress it
+            if (!empty($code) && !$this->isValidBzip2Data($code)) {
                 $code = bzcompress($code, 9);
             }
         }
