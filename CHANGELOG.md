@@ -1,6 +1,71 @@
 ## 3.8.1 (pending)
 
 * Fix bug where users cannot add page specific scripts
+* Add controllers and models for tracking controller function version changes
+
+**Database Changes**
+
+*KyteFunctionVersion*
+```sql
+CREATE TABLE `KyteFunctionVersion` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `function` int unsigned NOT NULL,
+    `version_number` int unsigned NOT NULL,
+    `version_type` enum('auto_save','manual_save','publish') NOT NULL DEFAULT 'manual_save',
+    `change_summary` varchar(500) DEFAULT NULL,
+    `changes_detected` json DEFAULT NULL, -- stores which fields changed
+    `content_hash` varchar(64) NOT NULL, -- SHA256 of combined content for deduplication
+    
+    -- function metadata snapshot (only store if changed from previous version)
+    `name` varchar(255) DEFAULT NULL,
+    `description` text DEFAULT NULL,
+    `function_type` varchar(255) DEFAULT NULL,
+    `kyte_locked` int unsigned DEFAULT NULL,
+
+    -- Version metadata
+    `is_current` tinyint(1) NOT NULL DEFAULT 0,
+    `parent_version` int unsigned DEFAULT NULL, -- references previous version
+    
+    -- Framework field
+    `kyte_account` int unsigned NOT NULL,
+
+    -- Audit fields
+    `created_by` int NOT NULL,
+    `date_created` bigint unsigned,
+    `modified_by` int NOT NULL,
+    `date_modified` bigint unsigned,
+    `deleted_by` int NOT NULL,
+    `date_deleted` bigint unsigned,
+    `deleted` tinyint(1) NOT NULL DEFAULT 0,
+    
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+*KyteFunctionVersionContent*
+```sql
+CREATE TABLE `KyteFunctionVersionContent` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `content_hash` varchar(64) NOT NULL UNIQUE,
+    `code` longblob DEFAULT NULL,
+    `reference_count` int unsigned NOT NULL DEFAULT 1,
+    `last_referenced` bigint unsigned NOT NULL,
+
+    -- Framework field
+    `kyte_account` int unsigned NOT NULL,
+
+    -- Audit fields
+    `created_by` int NOT NULL,
+    `date_created` bigint unsigned,
+    `modified_by` int NOT NULL,
+    `date_modified` bigint unsigned,
+    `deleted_by` int NOT NULL,
+    `date_deleted` bigint unsigned,
+    `deleted` tinyint(1) NOT NULL DEFAULT 0,
+    
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
 
 ## 3.8.0
 
