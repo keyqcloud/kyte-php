@@ -1,3 +1,7 @@
+## 3.8.1 (pending)
+
+* Fix bug where users cannot add page specific scripts
+
 ## 3.8.0
 
 * Fix issue where new pages did not have global script and library assignments

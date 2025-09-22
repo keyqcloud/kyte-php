@@ -13,7 +13,7 @@ class KyteScriptAssignmentController extends ModelController
     public function hook_preprocess($method, &$r, &$o = null) {
         if ($method == 'new') {
             $assignments = new \Kyte\Core\Model($this->model);
-            $assignments->retrieve('script', $r['library'], false, [['field' => 'page', 'value' => $r['page']], ['field' => 'site', 'value' => $r['site']], ['field' => 'kyte_account', 'value' => $this->account->id]]);
+            $assignments->retrieve('script', $r['script'], false, [['field' => 'page', 'value' => $r['page']], ['field' => 'site', 'value' => $r['site']], ['field' => 'kyte_account', 'value' => $this->account->id]]);
             if ($assignments->count() > 0) {
                 // if count is greater than 1 we have duplicates
                 if ($assignments->count() > 1) {
@@ -35,7 +35,7 @@ class KyteScriptAssignmentController extends ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         if ($method == 'delete') {
             $ret = $this->getObject($o);
-            if (isset($ret['library']['include_all']) && $ret['library']['include_all'] == 1) {
+            if (isset($ret['script']['include_all']) && $ret['script']['include_all'] == 1) {
                 throw new \Exception("Cannot delete assignment for globally included script. This script is set to include on all pages. To remove it, either disable global inclusion in Site → Custom Scripts or delete the script entirely.");
             }
         } else {
