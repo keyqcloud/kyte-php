@@ -223,7 +223,7 @@ class FunctionController extends ModelController
     private function createFunctionVersion($functionObj, $data, $versionType = 'manual_save', $changeSummary = null) {
         // Get current function data for comparison
         $currentData = $this->getCurrentFunctionData($functionObj->id);
-        error_log("My object ID is ************ ".$functionObj->id);
+        
         // Detect changes
         $changes = $this->detectFunctionChanges($functionObj, $currentData, $data);
         
@@ -401,7 +401,7 @@ class FunctionController extends ModelController
                 $code = $decompressed;
             }
         }
-        
+        error_log("CONTENT HASH IS ****** ".hash('sha256', $code));
         return hash('sha256', $code);
     }
 
