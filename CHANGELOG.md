@@ -1,4 +1,4 @@
-## 3.8.1 (pending)
+## 3.8.1
 
 * Fix bug where users cannot add page specific scripts
 * Add controllers and models for tracking controller function version changes
