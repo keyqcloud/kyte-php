@@ -142,11 +142,8 @@ class FunctionController extends ModelController
             $versionType = isset($r['version_type']) ? $r['version_type'] : 'manual_save';
             $changeSummary = isset($r['change_summary']) ? $r['change_summary'] : null;
             
-            // Check if content actually changed before creating version
-            if ($this->hasFunctionChanged($o, $r)) {
-                // Create version before updating
-                $this->createFunctionVersion($o, $r, $versionType, $changeSummary);
-            }
+            // Check if content actually changed and create version before updating
+            $this->createFunctionVersion($o, $r, $versionType, $changeSummary);
         }
         
         // Only compress if not already compressed
@@ -226,7 +223,7 @@ class FunctionController extends ModelController
     private function createFunctionVersion($functionObj, $data, $versionType = 'manual_save', $changeSummary = null) {
         // Get current function data for comparison
         $currentData = $this->getCurrentFunctionData($functionObj->id);
-        
+        error_log("My object ID is ************ ".$functionObj->id);
         // Detect changes
         $changes = $this->detectFunctionChanges($functionObj, $currentData, $data);
         
@@ -276,15 +273,6 @@ class FunctionController extends ModelController
         }
 
         return $version;
-    }
-
-    /**
-     * Check if function content has actually changed
-     */
-    private function hasFunctionChanged($functionObj, $newData) {
-        $currentData = $this->getCurrentFunctionData($functionObj->id);
-        $changes = $this->detectFunctionChanges($functionObj, $currentData, $newData);
-        return !empty($changes);
     }
 
     /**
