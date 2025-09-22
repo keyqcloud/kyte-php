@@ -405,8 +405,6 @@ class FunctionController extends ModelController
                 }
             }
         }
-        error_log("CODE IS 2 ****** ".$code);
-        error_log("CONTENT HASH IS ****** ".hash('sha256', $code));
         return hash('sha256', $code);
     }
 
