@@ -65,8 +65,8 @@ class KyteFunctionVersionController extends ModelController
                 // Can't revert to current version
                 $r['can_revert'] = isset($r['is_current']) ? !$r['is_current'] : true;
 
-                if (isset($r['version'], $r['version']['code'])) {
-                    $r['version']['code'] = '';
+                if (isset($r['function'], $r['function']['code'])) {
+                    $r['function']['code'] = '';
                 }
                 break;
 
