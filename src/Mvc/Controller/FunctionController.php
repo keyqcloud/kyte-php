@@ -45,6 +45,10 @@ class FunctionController extends ModelController
         'delete' => [
             'template' => "public function delete(\$field, \$value) {\r\n\r\n}\r\n",
             'is_hook' => false
+        ],
+        'custom' => [
+            'template' => "",
+            'is_hook' => false
         ]
     ];
 
@@ -146,6 +150,8 @@ class FunctionController extends ModelController
      */
     private function validateFunctionUniqueness(int $controllerId, string $type): void
     {
+        if ($type == 'custom') return;  // allow for multiple custom types
+
         $functionModel = new \Kyte\Core\Model(constant("Function"));
         $functionModel->retrieve('controller', $controllerId, false, [
             ['field' => 'type', 'value' => $type]
