@@ -393,6 +393,8 @@ class FunctionController extends ModelController
      */
     private function generateFunctionContentHash($data) {
         $code = isset($data['code']) ? $data['code'] : '';
+
+        error_log("CODE IS ****** ".$code);
         
         // If code is compressed, decompress it for consistent hashing
         if (is_string($code) && strlen($code) > 0) {
