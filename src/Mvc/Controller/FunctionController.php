@@ -398,9 +398,11 @@ class FunctionController extends ModelController
         
         // If code is compressed, decompress it for consistent hashing
         if (is_string($code) && strlen($code) > 0) {
-            $decompressed = @bzdecompress($code);
-            if ($decompressed !== false) {
-                $code = $decompressed;
+            if ($this->isValidBzip2Data($code)) {
+                $decompressed = @bzdecompress($code);
+                if ($decompressed !== false) {
+                    $code = $decompressed;
+                }
             }
         }
         error_log("CODE IS 2 ****** ".$code);
