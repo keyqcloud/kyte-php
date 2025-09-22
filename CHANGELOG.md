@@ -2,6 +2,7 @@
 
 * Fix bug where users cannot add page specific scripts
 * Add controllers and models for tracking controller function version changes
+* Add version control to function controller
 
 **Database Changes**
 
