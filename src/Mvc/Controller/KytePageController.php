@@ -177,7 +177,9 @@ class KytePageController extends ModelController
                                 'javascript' => $bz_javascript,
                                 'javascript_obfuscated' => $bz_javascript_obfuscated,
                                 'block_layout' => $bz_block_layout,
-                                'modified_by' => $this->user->id,
+                                'modified_by' => (is_object($this->user) && isset($this->user->id))
+                                    ? (int) $this->user->id
+                                    : ((is_numeric($this->user)) ? (int) $this->user : 0),
                                 'date_modified' => time(),
                             ]);
                         } else {

@@ -1,3 +1,7 @@
+## 3.8.2
+
+* Fix bug if FK mapping is not enabled user ID is not mapped for modified field in page controller
+
 ## 3.8.1
 
 * Fix bug where users cannot add page specific scripts
