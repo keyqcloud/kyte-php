@@ -40,11 +40,11 @@ CREATE TABLE `KyteScriptVersion` (
     `kyte_account` int unsigned NOT NULL,
 
     -- Audit fields
-    `created_by` int NOT NULL,
+    `created_by` int DEFAULT NULL,
     `date_created` bigint unsigned,
-    `modified_by` int NOT NULL,
+    `modified_by` int DEFAULT NULL,
     `date_modified` bigint unsigned,
-    `deleted_by` int NOT NULL,
+    `deleted_by` int DEFAULT NULL,
     `date_deleted` bigint unsigned,
     `deleted` tinyint(1) NOT NULL DEFAULT 0,
     
@@ -66,11 +66,11 @@ CREATE TABLE `KyteScriptVersionContent` (
     `kyte_account` int unsigned NOT NULL,
 
     -- Audit fields
-    `created_by` int NOT NULL,
+    `created_by` int DEFAULT NULL,
     `date_created` bigint unsigned,
-    `modified_by` int NOT NULL,
+    `modified_by` int DEFAULT NULL,
     `date_modified` bigint unsigned,
-    `deleted_by` int NOT NULL,
+    `deleted_by` int DEFAULT NULL,
     `date_deleted` bigint unsigned,
     `deleted` tinyint(1) NOT NULL DEFAULT 0,
     
@@ -103,11 +103,11 @@ CREATE TABLE `KyteFunctionVersion` (
     `kyte_account` int unsigned NOT NULL,
 
     -- Audit fields
-    `created_by` int NOT NULL,
+    `created_by` int DEFAULT NULL,
     `date_created` bigint unsigned,
-    `modified_by` int NOT NULL,
+    `modified_by` int DEFAULT NULL,
     `date_modified` bigint unsigned,
-    `deleted_by` int NOT NULL,
+    `deleted_by` int DEFAULT NULL,
     `date_deleted` bigint unsigned,
     `deleted` tinyint(1) NOT NULL DEFAULT 0,
     
@@ -128,11 +128,11 @@ CREATE TABLE `KyteFunctionVersionContent` (
     `kyte_account` int unsigned NOT NULL,
 
     -- Audit fields
-    `created_by` int NOT NULL,
+    `created_by` int DEFAULT NULL,
     `date_created` bigint unsigned,
-    `modified_by` int NOT NULL,
+    `modified_by` int DEFAULT NULL,
     `date_modified` bigint unsigned,
-    `deleted_by` int NOT NULL,
+    `deleted_by` int DEFAULT NULL,
     `date_deleted` bigint unsigned,
     `deleted` tinyint(1) NOT NULL DEFAULT 0,
     
@@ -205,11 +205,11 @@ CREATE TABLE `KytePageVersion` (
     `kyte_account` int unsigned NOT NULL,
 
     -- Audit fields
-    `created_by` int NOT NULL,
+    `created_by` int DEFAULT NULL,
     `date_created` bigint unsigned,
-    `modified_by` int NOT NULL,
+    `modified_by` int DEFAULT NULL,
     `date_modified` bigint unsigned,
-    `deleted_by` int NOT NULL,
+    `deleted_by` int DEFAULT NULL,
     `date_deleted` bigint unsigned,
     `deleted` tinyint(1) NOT NULL DEFAULT 0,
     
@@ -234,11 +234,11 @@ CREATE TABLE `KytePageVersionContent` (
     `kyte_account` int unsigned NOT NULL,
 
     -- Audit fields
-    `created_by` int NOT NULL,
+    `created_by` int DEFAULT NULL,
     `date_created` bigint unsigned,
-    `modified_by` int NOT NULL,
+    `modified_by` int DEFAULT NULL,
     `date_modified` bigint unsigned,
-    `deleted_by` int NOT NULL,
+    `deleted_by` int DEFAULT NULL,
     `date_deleted` bigint unsigned,
     `deleted` tinyint(1) NOT NULL DEFAULT 0,
     
