@@ -32,8 +32,9 @@
 
 * Add model definition caching to Api for eliminating repeated database queries and JSON parsing
   - Memory cache (per-request) for instant model definition access
-  - File cache (optional, persistent) with 1-hour TTL for cross-request caching
-  - `setModelCacheFile($path)` - Configure file cache location
+  - File cache (optional, persistent, disabled by default) with 1-hour TTL for cross-request caching
+  - Uses JSON serialization to avoid OPcache issues
+  - `setModelCacheFile($path)` - Configure file cache location (opt-in)
   - `clearModelCache($appId)` - Clear cache for specific app or all apps
 * Add query result caching to DBI for eliminating repeated identical queries
   - Per-request cache with configurable TTL (default 60 seconds)
@@ -56,13 +57,14 @@
 
 **Configuration Example:**
 ```php
-// config.php - Optional file cache for models
-define('MODEL_CACHE_FILE', '/tmp/kyte_model_cache.php');
+// config.php - Optional file cache for models (uses JSON format)
+// IMPORTANT: Only enable in single-server environments!
+define('MODEL_CACHE_FILE', '/tmp/kyte_model_cache.json');
 if (defined('MODEL_CACHE_FILE')) {
     \Kyte\Core\Api::setModelCacheFile(MODEL_CACHE_FILE);
 }
 
-// Optional query caching (300 second TTL)
+// Optional query caching (300 second TTL) - safe for all environments
 \Kyte\Core\DBI::enableQueryCache(300);
 ```
 
@@ -70,9 +72,21 @@ if (defined('MODEL_CACHE_FILE')) {
 * All changes are 100% backward compatible
 * Transaction methods are opt-in (call explicitly when needed)
 * Query logging is disabled by default (call `enableQueryLogging()` to use)
-* Model caching works without configuration (memory cache), file cache is optional
+* Model caching works without configuration (memory cache), file cache is optional and disabled by default
 * Query caching is opt-in (call `enableQueryCache()` to use)
 * No breaking changes to existing APIs
+
+**IMPORTANT - Load Balancer Environments:**
+* File cache (`MODEL_CACHE_FILE`) is **disabled by default** for safety
+* **DO NOT enable file cache** in multi-server/load-balanced environments - cache invalidation does not propagate across servers, leading to stale data
+* Memory cache is always safe (per-process, per-request)
+* Query cache is always safe (per-request only, no persistence)
+* For multi-server caching, consider Redis/Memcached (future enhancement)
+
+**Why JSON instead of PHP?**
+* JSON files are not affected by OPcache, ensuring cache updates are immediate
+* Smaller file size and faster serialization
+* No risk of stale opcached bytecode being served after cache updates
 
 * Fix bug where custom script assignments were deleted when republishing scripts without `include_all` enabled
 * Fix bug where custom library assignments were deleted when updating libraries without `include_all` enabled

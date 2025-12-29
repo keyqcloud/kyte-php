@@ -423,8 +423,9 @@ class Api
 
 		// Check file cache (if configured)
 		if (self::$modelCacheFile && file_exists(self::$modelCacheFile)) {
-			$cache = include self::$modelCacheFile;
-			if (isset($cache[$cacheKey]) &&
+			$cacheJson = file_get_contents(self::$modelCacheFile);
+			$cache = json_decode($cacheJson, true);
+			if ($cache && isset($cache[$cacheKey]) &&
 				$cache[$cacheKey]['timestamp'] > time() - 3600) {  // 1 hour TTL
 				self::$modelCache[$cacheKey] = $cache[$cacheKey]['models'];
 				foreach ($cache[$cacheKey]['models'] as $name => $def) {
@@ -473,18 +474,20 @@ class Api
 	 * @return void
 	 */
 	private static function updateModelCache($cacheKey, $modelDefs) {
-		$cache = file_exists(self::$modelCacheFile) ?
-			include self::$modelCacheFile : [];
+		$cache = [];
+		if (file_exists(self::$modelCacheFile)) {
+			$cacheJson = file_get_contents(self::$modelCacheFile);
+			$cache = json_decode($cacheJson, true) ?: [];
+		}
 
 		$cache[$cacheKey] = [
 			'timestamp' => time(),
 			'models' => $modelDefs
 		];
 
-		$exportedCache = var_export($cache, true);
 		file_put_contents(
 			self::$modelCacheFile,
-			"<?php\nreturn {$exportedCache};"
+			json_encode($cache, JSON_PRETTY_PRINT)
 		);
 	}
 
@@ -506,12 +509,12 @@ class Api
 
 			// Update file cache
 			if (self::$modelCacheFile && file_exists(self::$modelCacheFile)) {
-				$cache = include self::$modelCacheFile;
+				$cacheJson = file_get_contents(self::$modelCacheFile);
+				$cache = json_decode($cacheJson, true) ?: [];
 				unset($cache[$cacheKey]);
-				$exportedCache = var_export($cache, true);
 				file_put_contents(
 					self::$modelCacheFile,
-					"<?php\nreturn {$exportedCache};"
+					json_encode($cache, JSON_PRETTY_PRINT)
 				);
 			}
 		}
