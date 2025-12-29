@@ -51,10 +51,13 @@ class KyteErrorController extends ModelController
                         $query[] = ['field' => 'account_id', 'value' => $this->api->account->id];
                     }
                 } elseif ($logType === 'application') {
-                    // Application logs: log_type='application' AND app_id = {current app}
+                    // Application logs: log_type='application' AND app_id = {queried app}
                     $query[] = ['field' => 'log_type', 'value' => 'application'];
 
-                    if (isset($this->api->appId) && strlen($this->api->appId) > 0) {
+                    // Use the converted app_id from $value if field is 'app_id', otherwise use API context
+                    if ($field === 'app_id' && !empty($value)) {
+                        $query[] = ['field' => 'app_id', 'value' => $value];
+                    } elseif (isset($this->api->appId) && strlen($this->api->appId) > 0) {
                         $query[] = ['field' => 'app_id', 'value' => $this->api->appId];
                     }
                 } else {
