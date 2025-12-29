@@ -57,15 +57,23 @@
 
 **Configuration Example:**
 ```php
-// config.php - Optional file cache for models (uses JSON format)
+// config.php
+
+// Enable query caching (300 second TTL) - safe for all environments
+\Kyte\Core\DBI::enableQueryCache(300);
+
+// Enable model memory cache (per-request) - safe for all environments
+define('MODEL_CACHE', true);
+
+// Optional: Enable file cache for models (uses JSON format)
 // IMPORTANT: Only enable in single-server environments!
-define('MODEL_CACHE_FILE', '/tmp/kyte_model_cache.json');
-if (defined('MODEL_CACHE_FILE')) {
-    \Kyte\Core\Api::setModelCacheFile(MODEL_CACHE_FILE);
+define('MODEL_CACHE_FILE', false);  // Disabled by default for safety
+if (MODEL_CACHE_FILE) {
+    \Kyte\Core\Api::setModelCacheFile('/tmp/kyte_model_cache.json');
 }
 
-// Optional query caching (300 second TTL) - safe for all environments
-\Kyte\Core\DBI::enableQueryCache(300);
+// Development only: Enable query logging for debugging
+\Kyte\Core\DBI::enableQueryLogging();
 ```
 
 **Notes:**
@@ -201,7 +209,8 @@ $productIds = [1, 2, 3, 4, 5];
 ```php
 // config.php - Enable performance monitoring in development
 if (getenv('ENVIRONMENT') === 'development') {
-    define('DEBUG_PERFORMANCE', true);
+    \Kyte\Core\DBI::enableQueryLogging();  // Required to track db_queries
+    define('DEBUG_PERFORMANCE', true);      // Shows _performance in response
 }
 
 // Example API response with performance data
@@ -223,6 +232,12 @@ if (getenv('ENVIRONMENT') === 'development') {
     }
 }
 ```
+
+**Important Notes:**
+* Query caching requires `\Kyte\Core\DBI::enableQueryCache()` method call (not just a constant)
+* Performance monitoring requires both `enableQueryLogging()` and `DEBUG_PERFORMANCE` constant
+* Model caching uses `MODEL_CACHE` constant (memory cache always on when defined)
+* File cache uses `MODEL_CACHE_FILE` constant + `setModelCacheFile()` method (disabled by default)
 
 **Files Modified (Phase 4):**
 * `src/Core/DBI.php` - Extracted `buildFieldDefinition()` helper, refactored DDL methods

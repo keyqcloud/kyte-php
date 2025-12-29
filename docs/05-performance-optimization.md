@@ -45,14 +45,17 @@ When query caching is enabled:
 
 ### Enabling Query Caching
 
-Add this constant to your configuration file (usually `config.php`):
+Add this method call to your configuration file (usually `config.php`):
 
 ```php
-// Enable query caching
-define('QUERY_CACHE', true);
+// Enable query caching with 300 second TTL
+\Kyte\Core\DBI::enableQueryCache(300);
 ```
 
 **That's it!** Query caching is now active for all SELECT queries.
+
+**Parameters:**
+- `$ttl` (optional) - Time to live in seconds (default: 60). How long cached queries remain valid.
 
 ### Example: Before and After
 
@@ -105,7 +108,7 @@ Monitor cache effectiveness:
 
 ```php
 // Enable query caching
-define('QUERY_CACHE', true);
+\Kyte\Core\DBI::enableQueryCache(300);
 
 // Run some queries
 $users->retrieve();
@@ -505,14 +508,19 @@ Performance monitoring lets you track query counts, execution times, cache perfo
 
 ### Enabling Performance Monitoring
 
-Add this constant to your configuration:
+Add these lines to your configuration:
 
 ```php
-// Enable performance monitoring
+// Enable query logging (tracks db_queries and db_time)
+\Kyte\Core\DBI::enableQueryLogging();
+
+// Enable performance monitoring in API responses
 define('DEBUG_PERFORMANCE', true);
 ```
 
 **Important:** Only enable this in development or testing. In production, only enable when debugging performance issues.
+
+**Note:** `DEBUG_PERFORMANCE` shows the `_performance` object in responses, but you also need `enableQueryLogging()` to actually track query counts and execution times.
 
 ### What Gets Tracked
 
@@ -625,7 +633,7 @@ Query caching is safe for production and provides significant performance benefi
 
 ```php
 // config.php
-define('QUERY_CACHE', true);
+\Kyte\Core\DBI::enableQueryCache(300);  // 300 second TTL
 ```
 
 **Why:** 50-80% faster repeated queries with zero downside.
@@ -669,6 +677,7 @@ Enable performance monitoring during development:
 
 ```php
 // config.php
+\Kyte\Core\DBI::enableQueryLogging();
 define('DEBUG_PERFORMANCE', true);
 ```
 
@@ -695,8 +704,8 @@ Stack optimizations for maximum benefit:
 
 ```php
 // config.php
-define('QUERY_CACHE', true);        // Enable query caching
-define('MODEL_CACHE', true);        // Enable model caching
+\Kyte\Core\DBI::enableQueryCache(300);  // Enable query caching
+define('MODEL_CACHE', true);             // Enable model caching
 
 // In your code
 $orders = new \Kyte\Core\Model(constant('Order'));
@@ -729,12 +738,20 @@ if ($stats['hits'] + $stats['misses'] > 0) {
 
 ### Query Cache Not Working
 
-**Symptoms:** High query count, low cache hit rate
+**Symptoms:** High query count, low cache hit rate, or `cache.hits: 0` in performance data
 
 **Solutions:**
-1. Verify `QUERY_CACHE` constant is defined and set to `true`
+1. Verify `\Kyte\Core\DBI::enableQueryCache()` is called (a constant alone won't work)
 2. Check that queries are SELECT statements (INSERT/UPDATE/DELETE don't cache)
 3. Ensure identical queries (different WHERE clauses = different cache keys)
+
+```php
+// WRONG - constant doesn't enable caching
+define('QUERY_CACHE', true);
+
+// CORRECT - method call enables caching
+\Kyte\Core\DBI::enableQueryCache(300);
+```
 
 ```php
 // These are DIFFERENT cache entries
@@ -829,22 +846,38 @@ for ($page = 1; $page <= 100; $page++) {
 }
 ```
 
-### Performance Monitoring Not Appearing
+### Performance Monitoring Not Appearing or Showing Zero Queries
 
-**Symptoms:** No `_performance` object in API response
+**Symptoms:** No `_performance` object in API response, or `db_queries: 0` when queries are running
 
 **Solutions:**
 1. Verify `DEBUG_PERFORMANCE` constant is defined and set to `true`
-2. Ensure you're extending from the correct controller base class
-3. Check that you're not removing it in your controller
+2. **Enable query logging** with `\Kyte\Core\DBI::enableQueryLogging()` to track query counts
+3. Ensure you're extending from the correct controller base class
+4. Check that you're not removing it in your controller
 
 ```php
 // config.php
-define('DEBUG_PERFORMANCE', true);
+\Kyte\Core\DBI::enableQueryLogging();  // Required to track db_queries
+define('DEBUG_PERFORMANCE', true);      // Shows _performance in response
 
 // In controller
 class MyController extends \Kyte\Mvc\Controller\ModelController {
     // Don't override response building without preserving _performance
+}
+```
+
+**Common Issue:** Having `DEBUG_PERFORMANCE` enabled but not calling `enableQueryLogging()` will result in:
+```json
+{
+    "_performance": {
+        "db_queries": 0,    // Shows 0 because logging is disabled
+        "db_time": 0,
+        "cache": {
+            "hits": 0,
+            "misses": 0
+        }
+    }
 }
 ```
 
@@ -887,16 +920,18 @@ Kyte-PHP's performance features provide dramatic speed improvements with minimal
 
 ```php
 // config.php - Production
-define('QUERY_CACHE', true);
-define('MODEL_CACHE', true);
-define('MODEL_CACHE_FILE', false);  // Disable for load-balanced environments
-define('DEBUG_PERFORMANCE', false);  // Disable in production
+\Kyte\Core\DBI::enableQueryCache(300);   // Enable query caching
+define('MODEL_CACHE', true);              // Enable model caching
+define('MODEL_CACHE_FILE', false);        // Disable for load-balanced environments
+define('DEBUG_PERFORMANCE', false);       // Disable in production
+// Don't enable query logging in production (performance overhead)
 
 // config.php - Development
-define('QUERY_CACHE', true);
-define('MODEL_CACHE', true);
-define('MODEL_CACHE_FILE', false);  // Easier cache management
-define('DEBUG_PERFORMANCE', true);  // Monitor everything
+\Kyte\Core\DBI::enableQueryLogging();    // Track all queries
+\Kyte\Core\DBI::enableQueryCache(300);   // Enable query caching
+define('MODEL_CACHE', true);              // Enable model caching
+define('MODEL_CACHE_FILE', false);        // Easier cache management
+define('DEBUG_PERFORMANCE', true);        // Monitor everything
 ```
 
 By combining these features, you can achieve 10-100x performance improvements for common operations while maintaining full backward compatibility with existing code.
