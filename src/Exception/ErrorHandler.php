@@ -44,7 +44,7 @@ class ErrorHandler
      * Handle exceptions
      */
     public function handleException($exception) {
-        $error = new \Kyte\Core\ModelObject('KyteError');
+        $error = new \Kyte\Core\ModelObject(KyteError);
 
         $log_detail = [
             'account_id' => isset($this->apiContext->account->id) ? $this->apiContext->account->id : null,
@@ -103,7 +103,7 @@ class ErrorHandler
         // Map PHP error constants to log levels
         $log_level = $this->mapErrorToLogLevel($errno);
 
-        $error = new \Kyte\Core\ModelObject('KyteError');
+        $error = new \Kyte\Core\ModelObject(KyteError);
 
         $log_detail = [
             'account_id' => isset($this->apiContext->account->id) ? $this->apiContext->account->id : null,
@@ -283,7 +283,7 @@ class ErrorHandler
             $threshold = LOG_OUTPUT_BUFFERING_THRESHOLD;
 
             if (strlen($buffer) > $threshold) {
-                $error = new \Kyte\Core\ModelObject('KyteError');
+                $error = new \Kyte\Core\ModelObject(KyteError);
 
                 $log_detail = [
                     'account_id' => isset($this->apiContext->account->id) ? $this->apiContext->account->id : null,
