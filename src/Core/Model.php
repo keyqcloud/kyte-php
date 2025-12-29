@@ -23,6 +23,12 @@ class Model
 	private $search_fields;
 	private $search_value;
 
+	/**
+	 * Relationships to eager load
+	 * @var array
+	 */
+	private $eagerLoad = [];
+
 	public function __construct($model, $page_size = null, $page_num = null, $search_fields = null, $search_value = null) {
 		$this->kyte_model = $model;
 		$this->page_size = $page_size;
@@ -35,6 +41,21 @@ class Model
 		} else {
 			\Kyte\Core\Api::dbswitch();
 		}
+	}
+
+	/**
+	 * Specify relationships to eager load (fixes N+1 query problem)
+	 *
+	 * @param string|array $relations Relationship name(s) - FK field names from model struct
+	 * @return self For method chaining
+	 */
+	public function with($relations) {
+		if (is_string($relations)) {
+			$this->eagerLoad[] = $relations;
+		} elseif (is_array($relations)) {
+			$this->eagerLoad = array_merge($this->eagerLoad, $relations);
+		}
+		return $this;  // Fluent interface for chaining
 	}
 
 	private function addJoin(&$join, $table, $main_table_idx, $table_idx, $table_alias = null, $join_type = 'LEFT') {
@@ -264,9 +285,76 @@ class Model
 
 			$this->objects = $dataObjects;
 
+			// Eager load relationships if specified (fixes N+1 query problem)
+			if (!empty($this->eagerLoad)) {
+				$this->eagerLoadRelations();
+			}
+
 			return true;
 		} catch (\Exception $e) {
 			throw $e;
+		}
+	}
+
+	/**
+	 * Eager load specified relationships
+	 * Loads all related records in a single query per relationship instead of N queries
+	 *
+	 * @return void
+	 */
+	private function eagerLoadRelations() {
+		foreach ($this->eagerLoad as $relation) {
+			// Skip if not a valid FK field
+			if (!isset($this->kyte_model['struct'][$relation]['fk'])) {
+				continue;
+			}
+
+			$fk = $this->kyte_model['struct'][$relation]['fk'];
+
+			// Validate FK model exists
+			if (!defined($fk['model'])) {
+				continue;
+			}
+
+			$fkModel = constant($fk['model']);
+
+			// Collect all FK IDs from loaded objects
+			$ids = [];
+			foreach ($this->objects as $obj) {
+				if (isset($obj->{$relation}) && !empty($obj->{$relation})) {
+					$ids[] = $obj->{$relation};
+				}
+			}
+
+			if (empty($ids)) {
+				continue;
+			}
+
+			// Single query to load all related records
+			$ids = array_unique($ids);
+			$idList = implode(',', array_map('intval', $ids));
+			$relatedData = \Kyte\Core\DBI::select(
+				$fkModel['name'],
+				null,
+				" WHERE `{$fk['field']}` IN ($idList)"
+			);
+
+			// Index by FK field for O(1) lookup
+			$relatedMap = [];
+			foreach ($relatedData as $row) {
+				$relatedMap[$row[$fk['field']]] = $row;
+			}
+
+			// Attach related objects to main objects
+			foreach ($this->objects as $obj) {
+				if (isset($obj->{$relation}) &&
+					isset($relatedMap[$obj->{$relation}])) {
+					$relatedObj = new \Kyte\Core\ModelObject($fkModel);
+					$relatedObj->populate($relatedMap[$obj->{$relation}]);
+					// Store eager-loaded object with '_object' suffix
+					$obj->{$relation . '_object'} = $relatedObj;
+				}
+			}
 		}
 	}
 

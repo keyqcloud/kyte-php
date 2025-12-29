@@ -247,8 +247,14 @@ class ModelController
     
                 if ($this->getFKTables && isset($struct['fk'], $value) && !empty($value)) {
                     $fk = $struct['fk'];
-    
-                    if (isset($fk['model'], $fk['field'])) {
+
+                    // Check if already eager loaded (fixes N+1 query problem)
+                    $eagerLoadedKey = $key . '_object';
+                    if (isset($obj->{$eagerLoadedKey})) {
+                        // Use eager-loaded object instead of querying
+                        $value = $this->getObject($obj->{$eagerLoadedKey});
+                    } elseif (isset($fk['model'], $fk['field'])) {
+                        // Fall back to lazy loading if not eager loaded
                         $fk_model = constant($fk['model']);
                         $fk_obj = new \Kyte\Core\ModelObject($fk_model);
 
@@ -258,7 +264,7 @@ class ModelController
                         } elseif ($this->requireAccount && $this->api->app !== null && $this->user !== null && $this->api->app->org_model !== null && $this->api->app->userorg_colname !== null && isset($fk_model['struct'][$this->api->app->userorg_colname])) {
                             $conditions = [['field' => $this->api->app->userorg_colname, 'value' => $this->user->{$this->api->app->userorg_colname}]];
                         }
-    
+
                         if ($fk_obj->retrieve($fk['field'], $value, $conditions, null, true)) {
                             $value = $this->getObject($fk_obj); // Recursively get object for FK
                         }

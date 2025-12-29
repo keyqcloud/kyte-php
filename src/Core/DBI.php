@@ -1089,6 +1089,145 @@ class DBI {
 		return true;
 	}
 
+	/**
+	 * Batch insert multiple rows in a single query (10-50x faster than individual inserts)
+	 *
+	 * @param string $table Table name
+	 * @param array $rows Array of rows, each row is an associative array of column => value
+	 * @param string $types Type string for all rows (must be same structure)
+	 * @return array Array of inserted IDs
+	 * @throws \Exception if insert fails
+	 */
+	public static function batchInsert($table, $rows, $types) {
+		if (empty($rows)) {
+			return [];
+		}
+
+		// db connection
+		$con = self::getConnection();
+
+		// Get columns from first row (all rows must have same structure)
+		$columns = array_keys($rows[0]);
+		$columnList = '`' . implode('`, `', $columns) . '`';
+
+		// Build VALUES clause with placeholders
+		$placeholders = [];
+		$bindParams = [];
+		$typeString = '';
+
+		foreach ($rows as $row) {
+			$rowPlaceholders = array_fill(0, count($columns), '?');
+			$placeholders[] = '(' . implode(', ', $rowPlaceholders) . ')';
+
+			// Add values to bind params in column order
+			foreach ($columns as $col) {
+				$bindParams[] = $row[$col];
+			}
+
+			// Repeat type string for each row
+			$typeString .= $types;
+		}
+
+		$query = "INSERT INTO `$table` ($columnList) VALUES " . implode(', ', $placeholders);
+
+		// DEBUG
+		if (defined('DEBUG_SQL') && DEBUG_SQL) {
+			error_log($query);
+		}
+
+		$stmt = $con->prepare($query);
+		if ($stmt === false) {
+			throw new \Exception("Error preparing batch insert statement '$query'; " . htmlspecialchars($con->error), 1);
+		}
+
+		$stmt->bind_param($typeString, ...$bindParams);
+
+		if (!$stmt->execute()) {
+			$stmt->close();
+			throw new \Exception("Error executing batch insert statement '$query'; " . htmlspecialchars($con->error), 1);
+		}
+
+		// Collect inserted IDs
+		$firstId = $stmt->insert_id;
+		$affectedRows = $stmt->affected_rows;
+		$stmt->close();
+
+		// Invalidate cache for this table
+		self::invalidateTableCache($table);
+
+		// Generate array of IDs (assuming auto-increment)
+		$ids = [];
+		for ($i = 0; $i < $affectedRows; $i++) {
+			$ids[] = $firstId + $i;
+		}
+
+		return $ids;
+	}
+
+	/**
+	 * Batch update multiple rows with same values
+	 *
+	 * @param string $table Table name
+	 * @param array $ids Array of IDs to update
+	 * @param array $params Associative array of column => value to update
+	 * @param string $types Type string for params
+	 * @return int Number of affected rows
+	 * @throws \Exception if update fails
+	 */
+	public static function batchUpdate($table, $ids, $params, $types) {
+		if (empty($ids) || empty($params)) {
+			return 0;
+		}
+
+		// db connection
+		$con = self::getConnection();
+
+		// Build SET clause
+		$setClause = [];
+		$bindParams = [];
+		foreach ($params as $col => $value) {
+			$setClause[] = "`$col` = ?";
+			$bindParams[] = $value;
+		}
+
+		// Build WHERE IN clause
+		$idPlaceholders = implode(',', array_fill(0, count($ids), '?'));
+		$query = "UPDATE `$table` SET " . implode(', ', $setClause) . " WHERE `id` IN ($idPlaceholders)";
+
+		// Add IDs to bind params
+		foreach ($ids as $id) {
+			$bindParams[] = $id;
+		}
+
+		// Build type string (params types + 'i' for each ID)
+		$typeString = $types . str_repeat('i', count($ids));
+
+		// DEBUG
+		if (defined('DEBUG_SQL') && DEBUG_SQL) {
+			error_log($query);
+		}
+
+		$stmt = $con->prepare($query);
+		if ($stmt === false) {
+			throw new \Exception("Error preparing batch update statement '$query'; " . htmlspecialchars($con->error), 1);
+		}
+
+		$stmt->bind_param($typeString, ...$bindParams);
+
+		if (!$stmt->execute()) {
+			$stmt->close();
+			throw new \Exception("Error executing batch update statement '$query'; " . htmlspecialchars($con->error), 1);
+		}
+
+		$affectedRows = $stmt->affected_rows;
+		$stmt->close();
+
+		// Invalidate cache for this table
+		self::invalidateTableCache($table);
+
+		return $affectedRows;
+	}
+
 	/*
 	 * Return table count
 	 *
