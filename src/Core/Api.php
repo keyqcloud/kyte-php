@@ -656,6 +656,11 @@ class Api
 						$this->errorHandler = \Kyte\Exception\ErrorHandler::getInstance($this);
 					}
 					$this->errorHandler->register();
+
+				// Initialize Logger API
+				if (defined('KYTE_LOGGER_ENABLED') && KYTE_LOGGER_ENABLED) {
+					\Kyte\Core\Logger::init($this);
+				}
 				}
 
 				if ($this->appId != null) {

@@ -101,49 +101,6 @@ $KyteError = [
 			'date'		=> false,
 		],
 
-	'log_level'		=> [
-		'type'		=> 's',
-		'required'	=> false,
-		'size'		=> 20,
-		'default'	=> 'error',
-		'date'		=> false,
-	],
-
-	'log_type'		=> [
-		'type'		=> 's',
-		'required'	=> false,
-		'size'		=> 20,
-		'default'	=> 'system',
-		'date'		=> false,
-	],
-
-	'context'		=> [
-		'type'		=> 't',
-		'required'	=> false,
-		'date'		=> false,
-	],
-
-	'request_id'		=> [
-		'type'		=> 's',
-		'required'	=> false,
-		'size'		=> 64,
-		'date'		=> false,
-	],
-
-	'trace'		=> [
-		'type'		=> 'lt',
-		'required'	=> false,
-		'date'		=> false,
-	],
-
-	'source'		=> [
-		'type'		=> 's',
-		'required'	=> false,
-		'size'		=> 30,
-		'default'	=> 'error_handler',
-		'date'		=> false,
-	],
-
 		'response'		=> [
 			'type'		=> 'lt',
 			'required'	=> false,

@@ -251,6 +251,159 @@ if (getenv('ENVIRONMENT') === 'development') {
 * Field builder is internal refactoring with no API changes
 * Documentation improvements help developers adopt Phases 1-3 features
 
+**Phase 5: Comprehensive Logging System**
+
+* **Add multi-level structured logging system** (debug, info, warning, error, critical)
+  - Extend KyteError table with 6 new fields: log_level, log_type, context, request_id, trace, source
+  - Create PSR-3 compatible Logger API with static methods: `Logger::debug()`, `Logger::info()`, `Logger::warning()`, `Logger::error()`, `Logger::critical()`
+  - Enhance ErrorHandler with configurable error level capture via LOG_LEVEL constant
+  - Add output buffering support to capture echo/print statements (opt-in)
+  - Request ID generation for correlating related log entries
+  - Stack trace capture for debugging
+  - Context data support (JSON structured data)
+  - System vs application log segregation (based on app_id presence)
+  - Account scoping for multi-tenant isolation
+  - Slack webhook integration for error/critical notifications
+
+* **Enhanced backend controller for filtering**
+  - Add log_level filtering (single or comma-separated: 'error,critical')
+  - Add log_type filtering ('system' vs 'application')
+  - Add source filtering (error_handler, exception_handler, logger, output_buffer)
+  - Add date range filtering (Unix timestamps)
+  - Account scoping for system logs
+  - Computed fields: log_level_color, context_decoded
+
+* **Enhanced frontend with filtering UI**
+  - Application-level log view with log level badges, filter panel (level, date range)
+  - New system-level log view page for platform logs
+  - Enhanced log details view with request_id, context data, stack trace display
+  - Color-coded badges for log levels and sources
+  - jQuery UI date pickers for date range filtering
+  - Real-time table refresh with filters
+
+**Performance Impact (Phase 5):**
+* Opt-in logging - zero overhead when disabled
+* Indexed fields ensure fast queries even with millions of log entries
+* Request ID enables efficient correlation of related logs
+* Output buffering configurable threshold prevents excessive logging
+
+**Configuration Example:**
+```php
+// config.php - Comprehensive Logging Configuration
+
+// Enable error handler (required)
+define('USE_KYTE_ERROR_HANDLER', true);
+
+// Set log level (default: 'error' for backward compatibility)
+define('LOG_LEVEL', 'error');     // Production: Only critical errors
+// define('LOG_LEVEL', 'warning'); // Staging: Errors + warnings
+// define('LOG_LEVEL', 'notice');  // Testing: Errors + warnings + notices
+// define('LOG_LEVEL', 'all');     // Development: Everything including deprecated
+
+// Enable Logger API (opt-in)
+define('KYTE_LOGGER_ENABLED', true);
+
+// Optional: Output buffering (capture echo/print)
+define('LOG_OUTPUT_BUFFERING', false);  // Disabled by default
+define('LOG_OUTPUT_BUFFERING_THRESHOLD', 100);  // Minimum bytes to log
+
+// Optional: Slack notifications
+define('SLACK_ERROR_WEBHOOK', 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL');
+```
+
+**Logger API Usage:**
+```php
+use Kyte\Core\Logger;
+
+// Debug level - detailed diagnostic information
+Logger::debug('Cache miss', ['key' => 'user:123', 'ttl' => 3600]);
+
+// Info level - general informational messages
+Logger::info('User logged in', ['user_id' => 123, 'ip' => $_SERVER['REMOTE_ADDR']]);
+
+// Warning level - non-critical issues
+Logger::warning('API rate limit approaching', ['remaining' => 95, 'limit' => 1000]);
+
+// Error level - runtime errors
+Logger::error('Failed to send email', ['to' => 'user@example.com', 'error' => $e->getMessage()]);
+
+// Critical level - serious failures
+Logger::critical('Database connection lost', ['host' => DB_HOST, 'attempts' => 3]);
+```
+
+**Files Modified (Phase 5):**
+* `src/Exception/ErrorHandler.php` - Enhanced with configurable levels, output buffering, request tracking
+* `src/Core/Logger.php` - NEW: PSR-3 compatible Logger API
+* `src/Core/Api.php` - Logger initialization after ErrorHandler registration
+* `src/Mvc/Model/KyteError.php` - Extended model with 6 new fields
+* `src/Mvc/Controller/KyteErrorController.php` - Enhanced with filtering, system log support
+* Frontend files: log.html, system-log.html, kyte-shipyard-log.js, kyte-shipyard-system-log.js, kyte-shipyard-log-details.js, navigation.js
+* `docs/logging-configuration.md` - NEW: Comprehensive logging configuration guide
+
+**Database Changes (Phase 5)**
+
+*KyteError - Extend for comprehensive logging*
+```sql
+-- Add log_level enum field (default 'error' for backward compatibility)
+ALTER TABLE KyteError
+ADD COLUMN log_level ENUM('debug', 'info', 'warning', 'error', 'critical')
+NOT NULL DEFAULT 'error'
+AFTER line;
+
+-- Add log_type enum field (automatically derived from app_id)
+ALTER TABLE KyteError
+ADD COLUMN log_type ENUM('system', 'application')
+NOT NULL DEFAULT 'system'
+AFTER log_level;
+
+-- Add context field for structured additional data (JSON)
+ALTER TABLE KyteError
+ADD COLUMN context MEDIUMTEXT NULL
+COMMENT 'JSON-encoded structured context data'
+AFTER log_type;
+
+-- Add request_id for request correlation
+ALTER TABLE KyteError
+ADD COLUMN request_id VARCHAR(64) NULL
+AFTER context;
+
+-- Add trace field for stack traces
+ALTER TABLE KyteError
+ADD COLUMN trace LONGTEXT NULL
+AFTER request_id;
+
+-- Add source field to distinguish error sources
+ALTER TABLE KyteError
+ADD COLUMN source ENUM('error_handler', 'exception_handler', 'logger', 'output_buffer')
+NOT NULL DEFAULT 'error_handler'
+AFTER trace;
+
+-- Create indexes for performance
+CREATE INDEX idx_log_level ON KyteError(log_level);
+CREATE INDEX idx_log_type ON KyteError(log_type);
+CREATE INDEX idx_request_id ON KyteError(request_id);
+CREATE INDEX idx_date_created_level ON KyteError(date_created, log_level);
+CREATE INDEX idx_account_log_type ON KyteError(account_id, log_type);
+
+-- Update existing records to set log_type based on app_id
+UPDATE KyteError
+SET log_type = CASE
+    WHEN app_id IS NOT NULL AND app_id != '' THEN 'application'
+    ELSE 'system'
+END
+WHERE log_type = 'system';
+```
+
+**Notes (Phase 5):**
+* All Phase 5 changes are 100% backward compatible
+* New fields have default values - existing code continues to work
+* Logger API is opt-in via KYTE_LOGGER_ENABLED constant
+* Output buffering is opt-in via LOG_OUTPUT_BUFFERING constant
+* Default LOG_LEVEL='error' maintains backward compatible behavior
+* System logs (app_id IS NULL) are account-scoped
+* Frontend displays log level badges, source badges, and enhanced filtering
+* Documentation provides comprehensive configuration examples
+
 * Fix bug where custom script assignments were deleted when republishing scripts without `include_all` enabled
 * Fix bug where custom library assignments were deleted when updating libraries without `include_all` enabled
 * Add tracking of original `include_all` value to properly detect changes from 1 to 0 in KyteScriptController
