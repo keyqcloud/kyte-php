@@ -146,15 +146,10 @@ class KyteErrorController extends ModelController
                 $o->context_decoded = null;
             }
 
-            // Add human-readable date
+            // Add formatted date field
+            // Note: ModelController already formats date_created based on 'date' => true in model
             if (isset($o->date_created)) {
-                // Handle both Unix timestamps (integer) and already-formatted strings
-                if (is_numeric($o->date_created)) {
-                    $o->date_created_formatted = date($this->dateformat, $o->date_created);
-                } else {
-                    // Already formatted, use as-is
-                    $o->date_created_formatted = $o->date_created;
-                }
+                $o->date_created_formatted = $o->date_created;
             }
         }
     }
