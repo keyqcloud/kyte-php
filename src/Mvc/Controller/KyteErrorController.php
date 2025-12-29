@@ -121,7 +121,7 @@ class KyteErrorController extends ModelController
      * Enhance response data with computed fields
      */
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
-        if ($method === 'get' && $o !== null) {
+        if ($method === 'get' && $o !== null && $r !== null) {
             // Add log level color for frontend display
             if (isset($o->log_level)) {
                 $colorMap = [
@@ -131,25 +131,25 @@ class KyteErrorController extends ModelController
                     'error' => '#dc3545',    // Red
                     'critical' => '#6f42c1'  // Purple
                 ];
-                $o->log_level_color = isset($colorMap[$o->log_level]) ? $colorMap[$o->log_level] : '#6c757d';
+                $r['log_level_color'] = isset($colorMap[$o->log_level]) ? $colorMap[$o->log_level] : '#6c757d';
             }
 
             // Decode context JSON if present
             if (isset($o->context) && !empty($o->context)) {
                 $decoded = json_decode($o->context, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
-                    $o->context_decoded = $decoded;
+                    $r['context_decoded'] = $decoded;
                 } else {
-                    $o->context_decoded = null;
+                    $r['context_decoded'] = null;
                 }
             } else {
-                $o->context_decoded = null;
+                $r['context_decoded'] = null;
             }
 
             // Add formatted date field
             // Note: ModelController already formats date_created based on 'date' => true in model
             if (isset($o->date_created)) {
-                $o->date_created_formatted = $o->date_created;
+                $r['date_created_formatted'] = $o->date_created;
             }
         }
     }
