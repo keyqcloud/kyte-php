@@ -611,13 +611,13 @@ class ModelController
             if ($this->model !== null) {
                 if (!isset($this->model['appId']) && $this->requireAccount) {
                     $conditions = [['field' => 'kyte_account', 'value' => $this->api->account->id]];
-                } elseif ($this->api->app->org_model !== null && $this->api->app->userorg_colname !== null && isset($this->model['struct'][$this->api->app->userorg_colname]) && $this->requireAccount) {
+                } elseif ($this->api->app !== null && $this->api->app->org_model !== null && $this->api->app->userorg_colname !== null && isset($this->model['struct'][$this->api->app->userorg_colname]) && $this->requireAccount) {
                     $conditions = [['field' => $this->api->app->userorg_colname, 'value' => $this->user->{$this->api->app->userorg_colname}]];
                 }
             }
-            
+
             $all = false;
-            
+
             $order = null;
 
             // handle table order requests
