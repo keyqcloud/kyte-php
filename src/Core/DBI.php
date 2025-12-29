@@ -29,6 +29,13 @@ class DBI {
 	private static $queryLog = [];
 	private static $queryLoggingEnabled = false;
 
+	// query result caching
+	private static $queryCache = [];
+	private static $cacheEnabled = false;
+	private static $cacheTTL = 60;
+	private static $cacheHits = 0;
+	private static $cacheMisses = 0;
+
 	/*
 	 * Sets the database username to be used to connect to DB
 	 *
@@ -374,6 +381,54 @@ class DBI {
 			'timestamp' => microtime(true),
 			'database' => self::$useAppDB ? self::$dbNameApp : self::$dbName
 		];
+	}
+
+	/**
+	 * Enable query result caching
+	 *
+	 * @param int $ttl Cache time-to-live in seconds
+	 * @return void
+	 */
+	public static function enableQueryCache($ttl = 60) {
+		self::$cacheEnabled = true;
+		self::$cacheTTL = $ttl;
+	}
+
+	/**
+	 * Disable query result caching
+	 *
+	 * @return void
+	 */
+	public static function disableQueryCache() {
+		self::$cacheEnabled = false;
+		self::$queryCache = [];
+	}
+
+	/**
+	 * Get cache statistics
+	 *
+	 * @return array Cache hit/miss counts and cache size
+	 */
+	public static function getCacheStats() {
+		return [
+			'hits' => self::$cacheHits,
+			'misses' => self::$cacheMisses,
+			'size' => count(self::$queryCache)
+		];
+	}
+
+	/**
+	 * Invalidate cache entries for a table
+	 *
+	 * @param string $table Table name
+	 * @return void
+	 */
+	private static function invalidateTableCache($table) {
+		foreach (self::$queryCache as $key => $entry) {
+			if (isset($entry['table']) && $entry['table'] === $table) {
+				unset(self::$queryCache[$key]);
+			}
+		}
 	}
 
 	/*
@@ -927,6 +982,9 @@ class DBI {
 		$insertId = $stmt->insert_id;
 		$stmt->close();
 
+		// Invalidate cache for this table
+		self::invalidateTableCache($table);
+
 		return $insertId;
 	}
 
@@ -986,7 +1044,10 @@ class DBI {
 		}
 
 		$stmt->close();
-		
+
+		// Invalidate cache for this table
+		self::invalidateTableCache($table);
+
 		return true;
 	}
 
@@ -1021,7 +1082,10 @@ class DBI {
 		}
 
 		$stmt->close();
-		
+
+		// Invalidate cache for this table
+		self::invalidateTableCache($table);
+
 		return true;
 	}
 
@@ -1089,6 +1153,27 @@ class DBI {
 	 */
 	public static function select($table, $id = null, $condition = null, $join = null)
 	{
+		$cacheKey = null;
+
+		// Check cache if enabled
+		if (self::$cacheEnabled) {
+			$cacheKey = md5(serialize([
+				'table' => $table,
+				'id' => $id,
+				'condition' => $condition,
+				'join' => $join,
+				'db' => self::$useAppDB ? 'app' : 'main'
+			]));
+
+			if (isset(self::$queryCache[$cacheKey]) &&
+				self::$queryCache[$cacheKey]['expires'] > time()) {
+				self::$cacheHits++;
+				return self::$queryCache[$cacheKey]['data'];
+			}
+
+			self::$cacheMisses++;
+		}
+
 		// db connection
 		$con = self::getConnection();
 
@@ -1132,7 +1217,16 @@ class DBI {
 		}
 
 		$result->free();
-		
+
+		// Store in cache if enabled
+		if (self::$cacheEnabled && $cacheKey) {
+			self::$queryCache[$cacheKey] = [
+				'data' => $data,
+				'expires' => time() + self::$cacheTTL,
+				'table' => $table
+			];
+		}
+
 		return $data;
 	}
 

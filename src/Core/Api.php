@@ -172,7 +172,21 @@ class Api
 		'STRICT_TYPING' => true,
 		'KYTE_USE_SNS' => false,
 	];
-	
+
+	/**
+	 * Model definition cache
+	 *
+	 * @var array
+	 */
+	private static $modelCache = [];
+
+	/**
+	 * Model cache file location
+	 *
+	 * @var string|null
+	 */
+	private static $modelCacheFile = null;
+
 	/**
      * Api constructor.
      *
@@ -384,19 +398,122 @@ class Api
 	}
 
 	/**
-	 * Load app specific models.
+	 * Load app specific models with caching support.
 	 *
-	 * This method loads app specific models.
+	 * This method loads app specific models. When caching is enabled, it will:
+	 * 1. Check memory cache first
+	 * 2. Check file cache (if configured)
+	 * 3. Load from DB and update caches
 	 *
+	 * @param object $app Application object
 	 * @return void
 	 */
 	public static function loadAppModels($app) {
+		$cacheKey = "app_{$app->id}";
+
+		// Check memory cache first
+		if (isset(self::$modelCache[$cacheKey])) {
+			foreach (self::$modelCache[$cacheKey] as $name => $def) {
+				if (!defined($name)) {
+					define($name, $def);
+				}
+			}
+			return;
+		}
+
+		// Check file cache (if configured)
+		if (self::$modelCacheFile && file_exists(self::$modelCacheFile)) {
+			$cache = include self::$modelCacheFile;
+			if (isset($cache[$cacheKey]) &&
+				$cache[$cacheKey]['timestamp'] > time() - 3600) {  // 1 hour TTL
+				self::$modelCache[$cacheKey] = $cache[$cacheKey]['models'];
+				foreach ($cache[$cacheKey]['models'] as $name => $def) {
+					if (!defined($name)) {
+						define($name, $def);
+					}
+				}
+				return;
+			}
+		}
+
+		// Load from DB (existing code)
 		$models = new \Kyte\Core\Model(DataModel);
 		$models->retrieve('application', $app->id);
+		$modelDefs = [];
+
 		foreach($models->objects as $object) {
 			$model_definition = json_decode($object->model_definition, true);
 			$model_definition['appId'] = $app->identifier;
+			$modelDefs[$model_definition['name']] = $model_definition;
 			define($model_definition['name'], $model_definition);
+		}
+
+		// Update caches
+		self::$modelCache[$cacheKey] = $modelDefs;
+		if (self::$modelCacheFile) {
+			self::updateModelCache($cacheKey, $modelDefs);
+		}
+	}
+
+	/**
+	 * Set model cache file location
+	 *
+	 * @param string $path Cache file path
+	 * @return void
+	 */
+	public static function setModelCacheFile($path) {
+		self::$modelCacheFile = $path;
+	}
+
+	/**
+	 * Update model cache file
+	 *
+	 * @param string $cacheKey Cache key
+	 * @param array $modelDefs Model definitions
+	 * @return void
+	 */
+	private static function updateModelCache($cacheKey, $modelDefs) {
+		$cache = file_exists(self::$modelCacheFile) ?
+			include self::$modelCacheFile : [];
+
+		$cache[$cacheKey] = [
+			'timestamp' => time(),
+			'models' => $modelDefs
+		];
+
+		$exportedCache = var_export($cache, true);
+		file_put_contents(
+			self::$modelCacheFile,
+			"<?php\nreturn {$exportedCache};"
+		);
+	}
+
+	/**
+	 * Clear model cache
+	 *
+	 * @param int|null $appId Application ID (null = clear all)
+	 * @return void
+	 */
+	public static function clearModelCache($appId = null) {
+		if ($appId === null) {
+			self::$modelCache = [];
+			if (self::$modelCacheFile && file_exists(self::$modelCacheFile)) {
+				unlink(self::$modelCacheFile);
+			}
+		} else {
+			$cacheKey = "app_$appId";
+			unset(self::$modelCache[$cacheKey]);
+
+			// Update file cache
+			if (self::$modelCacheFile && file_exists(self::$modelCacheFile)) {
+				$cache = include self::$modelCacheFile;
+				unset($cache[$cacheKey]);
+				$exportedCache = var_export($cache, true);
+				file_put_contents(
+					self::$modelCacheFile,
+					"<?php\nreturn {$exportedCache};"
+				);
+			}
 		}
 	}
 
