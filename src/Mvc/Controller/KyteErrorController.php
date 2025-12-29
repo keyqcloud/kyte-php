@@ -28,9 +28,10 @@ class KyteErrorController extends ModelController
             case 'get':
                 // Convert app_idx to app_id (backward compatible)
                 if ($field == 'app_idx') {
-                    $app = new \Kyte\Core\ModelObject('Application');
-                    if (!$app->retrieve('id', $value)) {
-                        throw new \Exception("Failed to retrieve application id.");
+                    $app = new \Kyte\Core\ModelObject($this->api, 'Application');
+                    $app->retrieve($value);
+                    if (!isset($app->identifier)) {
+                        throw new \Exception("Failed to retrieve application identifier.");
                     }
                     $field = 'app_id';
                     $value = $app->identifier;
