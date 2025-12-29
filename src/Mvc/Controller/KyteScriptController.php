@@ -4,6 +4,11 @@ namespace Kyte\Mvc\Controller;
 
 class KyteScriptController extends ModelController
 {
+    /**
+     * Store original include_all value to detect changes
+     */
+    private $originalIncludeAll = null;
+
     public function hook_init() {
         $this->dateformat = 'm/d/Y H:i:s';
     }
@@ -47,17 +52,22 @@ class KyteScriptController extends ModelController
                 $r['s3key'] = 'assets/'.$r['script_type'].'/'.strtolower(preg_replace('/[^A-Za-z0-9_.-\/]/', '-', $r['s3key']));
                 break;
             case 'update':
+                // Capture original include_all value BEFORE update to detect changes
+                if ($o && isset($r['include_all'])) {
+                    $this->originalIncludeAll = $o->include_all;
+                }
+
                 // Create version before updating if script exists
                 if ($o && (isset($r['content']) || isset($r['content_js_obfuscated']))) {
                     $versionType = $r['version_type'] ?? 'manual_save';
                     $changeSummary = $r['change_summary'] ?? null;
-                    
+
                     // Check if content actually changed before creating version
                     if ($this->hasScriptChanged($o, $r)) {
                         $this->createScriptVersion($o, $r, $versionType, $changeSummary);
                     }
                 }
-                
+
                 // Compress content for storage
                 if (isset($r['content'])) {
                     $r['content'] = $this->safeCompressCode($r['content']);
@@ -479,11 +489,13 @@ class KyteScriptController extends ModelController
 
         $s3->write($o->s3key, $content);
 
-        if (isset($d['include_all']) && $d['include_all'] == 0) {
-            // User explicitly set include_all to 0, remove all script assignments for this script
+        // Only delete assignments if include_all CHANGED from 1 to 0
+        // This preserves manual page assignments when republishing without include_all enabled
+        if (isset($d['include_all']) && $d['include_all'] == 0 && $this->originalIncludeAll == 1) {
+            // User changed include_all from 1 to 0, remove all script assignments for this script
             $scriptAssignments = new \Kyte\Core\Model(KyteScriptAssignment);
             $scriptAssignments->retrieve('script', $o->id);
-            
+
             foreach ($scriptAssignments->objects as $assignment) {
                 $assignment->delete();
             }
@@ -491,6 +503,9 @@ class KyteScriptController extends ModelController
 
         $this->updatePagesForScript($o, $r, $d, $s3);
         $this->invalidateCloudFront($r);
+
+        // Reset original value for next request
+        $this->originalIncludeAll = null;
     }
 
     /**

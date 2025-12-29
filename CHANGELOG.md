@@ -1,3 +1,47 @@
+## 3.8.3
+
+* Fix bug where custom script assignments were deleted when republishing scripts without `include_all` enabled
+* Fix bug where custom library assignments were deleted when updating libraries without `include_all` enabled
+* Add tracking of original `include_all` value to properly detect changes from 1 to 0 in KyteScriptController
+* Add tracking of original `include_all` value to properly detect changes from 1 to 0 in KyteLibraryController
+* Preserve manual page assignments for scripts and libraries when updating or republishing
+* Fix critical bug where version control content hash UNIQUE constraint was not scoped by account, causing duplicate hash errors across accounts
+
+**Database Changes**
+
+*KyteFunctionVersionContent - Fix UNIQUE constraint to scope by account*
+```sql
+-- Remove old UNIQUE constraint on content_hash alone
+ALTER TABLE `KyteFunctionVersionContent`
+DROP INDEX `content_hash`;
+
+-- Add composite UNIQUE constraint scoped by account
+ALTER TABLE `KyteFunctionVersionContent`
+ADD UNIQUE KEY `unique_hash_per_account` (`content_hash`, `kyte_account`);
+```
+
+*KyteScriptVersionContent - Fix UNIQUE constraint to scope by account*
+```sql
+-- Remove old UNIQUE constraint on content_hash alone
+ALTER TABLE `KyteScriptVersionContent`
+DROP INDEX `content_hash`;
+
+-- Add composite UNIQUE constraint scoped by account
+ALTER TABLE `KyteScriptVersionContent`
+ADD UNIQUE KEY `unique_hash_per_account` (`content_hash`, `kyte_account`);
+```
+
+*KytePageVersionContent - Fix UNIQUE constraint to scope by account*
+```sql
+-- Remove old UNIQUE constraint on content_hash alone
+ALTER TABLE `KytePageVersionContent`
+DROP INDEX `content_hash`;
+
+-- Add composite UNIQUE constraint scoped by account
+ALTER TABLE `KytePageVersionContent`
+ADD UNIQUE KEY `unique_hash_per_account` (`content_hash`, `kyte_account`);
+```
+
 ## 3.8.2
 
 * Fix bug if FK mapping is not enabled user ID is not mapped for modified field in page controller

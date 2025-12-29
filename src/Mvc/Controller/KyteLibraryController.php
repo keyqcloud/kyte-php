@@ -4,6 +4,11 @@ namespace Kyte\Mvc\Controller;
 
 class KyteLibraryController extends ModelController
 {
+    /**
+     * Store original include_all value to detect changes
+     */
+    private $originalIncludeAll = null;
+
     public function hook_init() {
         $this->dateformat = 'm/d/Y H:i:s';
     }
@@ -11,7 +16,12 @@ class KyteLibraryController extends ModelController
 
     // public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
 
-    // public function hook_preprocess($method, &$r, &$o = null) {}
+    public function hook_preprocess($method, &$r, &$o = null) {
+        // Capture original include_all value BEFORE update to detect changes
+        if ($method == 'update' && $o && isset($r['include_all'])) {
+            $this->originalIncludeAll = $o->include_all;
+        }
+    }
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
@@ -24,11 +34,13 @@ class KyteLibraryController extends ModelController
                     throw new \Exception("CRITICAL ERROR: Unable to find application.");
                 }
 
-                if (isset($d['include_all']) && $d['include_all'] == 0) {
-                    // User explicitly set include_all to 0, remove all script assignments for this script
+                // Only delete assignments if include_all CHANGED from 1 to 0
+                // This preserves manual page assignments when updating without include_all enabled
+                if (isset($d['include_all']) && $d['include_all'] == 0 && $this->originalIncludeAll == 1) {
+                    // User changed include_all from 1 to 0, remove all library assignments
                     $assignments = new \Kyte\Core\Model(KyteLibraryAssignment);
                     $assignments->retrieve('library', $o->id);
-                    
+
                     foreach ($assignments->objects as $assignment) {
                         $assignment->delete();
                     }
@@ -108,6 +120,9 @@ class KyteLibraryController extends ModelController
                     $cf = new \Kyte\Aws\CloudFront($credential);
                     $cf->createInvalidation($r['site']['cfDistributionId'], $invalidationPaths);
                 }
+
+                // Reset original value for next request
+                $this->originalIncludeAll = null;
                 break;
 
             case 'delete':
