@@ -749,6 +749,36 @@ class Api
 		$this->response['total_count'] = $this->total_count;
 		$this->response['total_filtered'] = $this->total_filtered;
 
+		// Add performance monitoring (opt-in via DEBUG_PERFORMANCE constant)
+		if (defined('DEBUG_PERFORMANCE') && DEBUG_PERFORMANCE) {
+			$queryLog = \Kyte\Core\DBI::getQueryLog();
+			$cacheStats = \Kyte\Core\DBI::getCacheStats();
+
+			$totalQueries = count($queryLog);
+			$dbTime = 0;
+			foreach ($queryLog as $log) {
+				if (isset($log['execution_time'])) {
+					$dbTime += $log['execution_time'];
+				}
+			}
+
+			$this->response['_performance'] = [
+				'total_time' => round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 2),
+				'db_queries' => $totalQueries,
+				'db_time' => round($dbTime, 2),
+				'memory_peak' => memory_get_peak_usage(true),
+				'memory_current' => memory_get_usage(true),
+				'cache' => [
+					'hits' => $cacheStats['hits'],
+					'misses' => $cacheStats['misses'],
+					'size' => $cacheStats['size'],
+					'hit_rate' => $totalQueries > 0 ?
+						round(($cacheStats['hits'] / max(1, $cacheStats['hits'] + $cacheStats['misses'])) * 100, 2) . '%' :
+						'0%'
+				]
+			];
+		}
+
 		// return response data
 		$this->response = ['response_code' => 200] + $this->response;
 		if (defined('LOG_RESPONSE')) {

@@ -167,6 +167,75 @@ $productIds = [1, 2, 3, 4, 5];
 * All changes are 100% backward compatible
 * No breaking changes to existing APIs
 
+**Phase 4: Code Refinement & Developer Tools**
+
+* **Extract field builder helper to eliminate duplicate code**
+  - Add `buildFieldDefinition($name, $attrs, $tableName)` private method to DBI
+  - Centralizes field definition logic for all field types (i, bi, s, d, t, tt, mt, lt, b, tb, mb, lb)
+  - Refactor `createTable()` to use helper (reduced from ~100 lines to ~12)
+  - Refactor `addColumn()` to use helper (eliminated ~50 lines of duplication)
+  - Refactor `changeColumn()` to use helper (eliminated ~50 lines of duplication)
+  - **Result**: Eliminated ~200 lines of duplicate code, single source of truth for field definitions
+
+* **Add performance monitoring for real-time metrics**
+  - Add `_performance` object to API responses when `DEBUG_PERFORMANCE` constant is defined
+  - Tracks: total_time (ms), db_queries (count), db_time (ms), memory_peak (bytes), memory_current (bytes)
+  - Includes cache statistics: hits, misses, size, hit_rate percentage
+  - Opt-in via constant definition (disabled by default for production)
+  - Automatically integrates with existing query logging and cache statistics
+
+* **Create comprehensive performance optimization guide**
+  - New documentation: `docs/05-performance-optimization.md`
+  - Covers query caching, model memory cache, eager loading, batch operations, performance monitoring
+  - Includes real-world before/after examples with metrics
+  - Best practices for production optimization
+  - Troubleshooting guide for common performance issues
+  - Updated `docs/README.md` to include performance guide in navigation
+
+**Performance Impact (Phase 4):**
+* Field builder extraction: More maintainable codebase, faster bug fixes
+* Performance monitoring: Real-time visibility into query counts, cache effectiveness, memory usage
+* Documentation: Helps developers adopt performance features, reducing support burden
+
+**Configuration Example:**
+```php
+// config.php - Enable performance monitoring in development
+if (getenv('ENVIRONMENT') === 'development') {
+    define('DEBUG_PERFORMANCE', true);
+}
+
+// Example API response with performance data
+{
+    "success": true,
+    "data": { ... },
+    "_performance": {
+        "total_time": 89.12,
+        "db_queries": 5,
+        "db_time": 45.67,
+        "memory_peak": 4194304,
+        "memory_current": 3145728,
+        "cache": {
+            "hits": 147,
+            "misses": 5,
+            "size": 5,
+            "hit_rate": "96.71%"
+        }
+    }
+}
+```
+
+**Files Modified (Phase 4):**
+* `src/Core/DBI.php` - Extracted `buildFieldDefinition()` helper, refactored DDL methods
+* `src/Core/Api.php` - Added performance monitoring with `_performance` response object
+* `docs/05-performance-optimization.md` - New comprehensive performance guide
+* `docs/README.md` - Updated navigation to include performance guide
+
+**Notes:**
+* All Phase 4 changes are 100% backward compatible
+* Performance monitoring is opt-in via `DEBUG_PERFORMANCE` constant
+* Field builder is internal refactoring with no API changes
+* Documentation improvements help developers adopt Phases 1-3 features
+
 * Fix bug where custom script assignments were deleted when republishing scripts without `include_all` enabled
 * Fix bug where custom library assignments were deleted when updating libraries without `include_all` enabled
 * Add tracking of original `include_all` value to properly detect changes from 1 to 0 in KyteScriptController

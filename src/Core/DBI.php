@@ -431,6 +431,112 @@ class DBI {
 		}
 	}
 
+	/**
+	 * Build SQL field definition string for CREATE/ALTER TABLE
+	 * Eliminates duplicate code across createTable(), addColumn(), and changeColumn()
+	 *
+	 * @param string $name Field name
+	 * @param array $attrs Field attributes from model definition
+	 * @param string $tableName Table name (for error messages)
+	 * @return string SQL field definition
+	 * @throws \Exception if required attributes are missing or invalid
+	 */
+	private static function buildFieldDefinition($name, $attrs, $tableName) {
+		// Validate required attributes
+		if (!isset($attrs['date'])) {
+			throw new \Exception("date attribute must be declared for column $name of table $tableName.");
+		}
+		if (!isset($attrs['required'])) {
+			throw new \Exception("required attribute must be declared for column $name of table $tableName.");
+		}
+		if (!isset($attrs['type'])) {
+			throw new \Exception("type attribute must be declared for column $name of table $tableName.");
+		}
+
+		$field = "`$name`";
+
+		// Type, size, and signedness
+		if ($attrs['date']) {
+			$field .= ' bigint unsigned';
+		} else {
+			switch ($attrs['type']) {
+				case 'i':
+					$field .= ' int';
+					if (array_key_exists('size', $attrs)) {
+						$field .= '(' . $attrs['size'] . ')';
+					}
+					if (array_key_exists('unsigned', $attrs)) {
+						$field .= ' unsigned';
+					}
+					break;
+				case 'bi':
+					$field .= ' bigint';
+					if (array_key_exists('size', $attrs)) {
+						$field .= '(' . $attrs['size'] . ')';
+					}
+					if (array_key_exists('unsigned', $attrs)) {
+						$field .= ' unsigned';
+					}
+					break;
+				case 's':
+					$field .= ' varchar';
+					if (array_key_exists('size', $attrs)) {
+						$field .= '(' . $attrs['size'] . ')';
+					} else {
+						throw new \Exception("varchar requires size to be declared for column $name of table $tableName.");
+					}
+					break;
+				case 'd':
+					if (array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
+						$field .= ' decimal(' . $attrs['precision'] . ',' . $attrs['scale'] . ')';
+					}
+					break;
+				case 't':
+					$field .= ' text';
+					break;
+				case 'tt':
+					$field .= ' tinytext';
+					break;
+				case 'mt':
+					$field .= ' mediumtext';
+					break;
+				case 'lt':
+					$field .= ' longtext';
+					break;
+				case 'b':
+					$field .= ' blob';
+					break;
+				case 'tb':
+					$field .= ' tinyblob';
+					break;
+				case 'mb':
+					$field .= ' mediumblob';
+					break;
+				case 'lb':
+					$field .= ' longblob';
+					break;
+				default:
+					throw new \Exception("Unknown type " . $attrs['type'] . " for column $name of table $tableName.");
+			}
+		}
+
+		// Default value
+		if (array_key_exists('default', $attrs)) {
+			$field .= ' DEFAULT ';
+			$field .= (is_string($attrs['default']) ? "'" . $attrs['default'] . "'" : $attrs['default']);
+		}
+
+		// Required/NOT NULL
+		$field .= ($attrs['required'] ? ' NOT NULL' : '');
+
+		// Auto-increment for primary keys
+		if (array_key_exists('pk', $attrs) && $attrs['pk']) {
+			$field .= ' AUTO_INCREMENT';
+		}
+
+		return $field;
+	}
+
 	/*
 	 * Create database
 	 */
@@ -516,105 +622,16 @@ class DBI {
 
 		// table columns
 		foreach ($cols as $name => $attrs) {
+			// Use extracted helper method to build field definition
+			$field = self::buildFieldDefinition($name, $attrs, $tbl_name);
 
-			// check if required attrs are set
-			if (!isset($attrs['date'])) {
-				throw new \Exception("date attribute must be declared for column $name of table $tbl_name.");
-			}
-
-			if (!isset($attrs['required'])) {
-				throw new \Exception("required attribute must be declared for column $name of table $tbl_name.");
-			}
-
-			if (!isset($attrs['type'])) {
-				throw new \Exception("type attribute must be declared for column $name of table $tbl_name.");
-			}
-
-			$field = "`$name`";	// column name
-			
-			// type, size and if signed or not
-			if ($attrs['date']) {
-				$field .= ' bigint unsigned';
-			} else {
-				switch ($attrs['type']) {
-					case 'i':
-						$field .= ' int';
-						if (array_key_exists('size', $attrs)) {
-							$field .= '(' . $attrs['size'] . ')';
-						}
-						if (array_key_exists('unsigned', $attrs)) {
-							$field .= ' unsigned';
-						}
-						break;
-					case 'bi':
-							$field .= ' bigint';
-							if (array_key_exists('size', $attrs)) {
-								$field .= '(' . $attrs['size'] . ')';
-							}
-							if (array_key_exists('unsigned', $attrs)) {
-								$field .= ' unsigned';
-							}
-							break;
-					case 's':
-						$field .= ' varchar';
-						if (array_key_exists('size', $attrs)) {
-							$field .= '(' . $attrs['size'] . ')';
-						} else {
-							throw new \Exception("varchar requires size to be declared for column $name of table $tbl_name.");
-						}
-						break;
-					case 'd':
-						if (array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
-							$field .= ' decimal(' . $attrs['precision'] . ',' . $attrs['scale'] . ')';
-						}
-						break;
-					case 't':
-						$field .= ' text';
-						break;
-					case 'tt':
-						$field .= ' tinytext';
-						break;
-					case 'mt':
-						$field .= ' mediumtext';
-						break;
-					case 'lt':
-						$field .= ' longtext';
-						break;
-					case 'b':
-						$field .= ' blob';
-						break;
-					case 'tb':
-						$field .= ' tinyblob';
-						break;
-					case 'mb':
-						$field .= ' mediumblob';
-						break;
-					case 'lb':
-						$field .= ' longblob';
-						break;
-					default:
-						throw new \Exception("Unknown type " . $attrs['type'] . " for column $name of table $tbl_name.");
-				}
-			}
-			if (array_key_exists('default', $attrs)) {
-				// default value?
-				$field .= ' DEFAULT ';
-				$field .= (is_string($attrs['default']) ? "'".$attrs['default']."'" : $attrs['default']);
-			}
-			$field .= ($attrs['required'] ? ' NOT NULL' : '');		// required?
-
-			if (array_key_exists('pk', $attrs)) {
-				// primary key?
-				if ($attrs['pk']) {
-					$field .= ' AUTO_INCREMENT';
-					$pk_name = $name;
-				}
+			// Track primary key name
+			if (array_key_exists('pk', $attrs) && $attrs['pk']) {
+				$pk_name = $name;
 			}
 
 			$field .= ",\n";
-
 			$tbl_sql .= $field;
-
 		}
 
 		// primary key
@@ -689,92 +706,9 @@ class DBI {
 
 		// db connection
 		$con = self::getConnection();
-		
-		// check if required attrs are set
-		if (!isset($attrs['date'])) {
-			throw new \Exception("date attribute must be declared for column $column of table $tbl_name.");
-		}
 
-		if (!isset($attrs['required'])) {
-			throw new \Exception("required attribute must be declared for column $column of table $tbl_name.");
-		}
-
-		if (!isset($attrs['type'])) {
-			throw new \Exception("type attribute must be declared for column $column of table $tbl_name.");
-		}
-
-		$field = "`$column`";	// column name
-		
-		// type, size and if signed or not
-		if ($attrs['date']) {
-			$field .= ' bigint unsigned';
-		} else {
-			switch ($attrs['type']) {
-				case 'i':
-					$field .= ' int';
-					if (array_key_exists('size', $attrs)) {
-						$field .= '(' . $attrs['size'] . ')';
-					}
-					if (array_key_exists('unsigned', $attrs)) {
-						$field .= ' unsigned';
-					}
-					break;
-				case 'bi':
-						$field .= ' bigint';
-						if (array_key_exists('size', $attrs)) {
-							$field .= '(' . $attrs['size'] . ')';
-						}
-						if (array_key_exists('unsigned', $attrs)) {
-							$field .= ' unsigned';
-						}
-						break;
-				case 's':
-					$field .= ' varchar';
-					if (array_key_exists('size', $attrs)) {
-						$field .= '(' . $attrs['size'] . ')';
-					} else {
-						throw new \Exception("varchar requires size to be declared for column $name of table $tbl_name.");
-					}
-					break;
-				case 'd':
-					if (array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
-						$field .= ' decimal(' . $attrs['precision'] . ',' . $attrs['scale'] . ')';
-					}
-					break;
-				case 't':
-					$field .= ' text';
-					break;
-				case 'tt':
-					$field .= ' tinytext';
-					break;
-				case 'mt':
-					$field .= ' mediumtext';
-					break;
-				case 'lt':
-					$field .= ' longtext';
-					break;
-				case 'b':
-					$field .= ' blob';
-					break;
-				case 'tb':
-					$field .= ' tinyblob';
-					break;
-				case 'mb':
-					$field .= ' mediumblob';
-					break;
-				case 'lb':
-					$field .= ' longblob';
-					break;
-				default:
-					throw new \Exception("Unknown type " . $attrs['type'] . " for column $name of table $tbl_name.");
-			}
-		}
-		if (array_key_exists('default', $attrs)) {
-			// default value?
-			$field .= ' DEFAULT ';
-			$field .= (is_string($attrs['default']) ? "'".$attrs['default']."'" : $attrs['default']);
-		}
-		$field .= ($attrs['required'] ? ' NOT NULL' : '');
+		// Use extracted helper method to build field definition
+		$field = self::buildFieldDefinition($column, $attrs, $tbl_name);
 
 		$tbl_sql = "ALTER TABLE `$tbl_name` ADD $field";
 
@@ -804,92 +738,9 @@ class DBI {
 
 		// db connection
 		$con = self::getConnection();
-		
-		// check if required attrs are set
-		if (!isset($attrs['date'])) {
-			throw new \Exception("date attribute must be declared for column $column_name_new of table $tbl_name.");
-		}
 
-		if (!isset($attrs['required'])) {
-			throw new \Exception("required attribute must be declared for column $column_name_new of table $tbl_name.");
-		}
-
-		if (!isset($attrs['type'])) {
-			throw new \Exception("type attribute must be declared for column $column_name_new of table $tbl_name.");
-		}
-
-		$field = "`$column_name_new`";	// column name
-		
-		// type, size and if signed or not
-		if ($attrs['date']) {
-			$field .= ' bigint unsigned';
-		} else {
-			switch ($attrs['type']) {
-				case 'i':
-					$field .= ' int';
-					if (array_key_exists('size', $attrs)) {
-						$field .= '(' . $attrs['size'] . ')';
-					}
-					if (array_key_exists('unsigned', $attrs)) {
-						$field .= ' unsigned';
-					}
-					break;
-				case 'bi':
-						$field .= ' bigint';
-						if (array_key_exists('size', $attrs)) {
-							$field .= '(' . $attrs['size'] . ')';
-						}
-						if (array_key_exists('unsigned', $attrs)) {
-							$field .= ' unsigned';
-						}
-						break;
-				case 's':
-					$field .= ' varchar';
-					if (array_key_exists('size', $attrs)) {
-						$field .= '(' . $attrs['size'] . ')';
-					} else {
-						throw new \Exception("varchar requires size to be declared for column $name of table $tbl_name.");
-					}
-					break;
-				case 'd':
-					if (array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
-						$field .= ' decimal(' . $attrs['precision'] . ',' . $attrs['scale'] . ')';
-					}
-					break;
-				case 't':
-					$field .= ' text';
-					break;
-				case 'tt':
-					$field .= ' tinytext';
-					break;
-				case 'mt':
-					$field .= ' mediumtext';
-					break;
-				case 'lt':
-					$field .= ' longtext';
-					break;
-				case 'b':
-					$field .= ' blob';
-					break;
-				case 'tb':
-					$field .= ' tinyblob';
-					break;
-				case 'mb':
-					$field .= ' mediumblob';
-					break;
-				case 'lb':
-					$field .= ' longblob';
-					break;
-				default:
-					throw new \Exception("Unknown type " . $attrs['type'] . " for column $name of table $tbl_name.");
-			}
-		}
-		if (array_key_exists('default', $attrs)) {
-			// default value?
-			$field .= ' DEFAULT ';
-			$field .= (is_string($attrs['default']) ? "'".$attrs['default']."'" : $attrs['default']);
-		}
-		$field .= ($attrs['required'] ? ' NOT NULL' : '');
+		// Use extracted helper method to build field definition
+		$field = self::buildFieldDefinition($column_name_new, $attrs, $tbl_name);
 
 		$tbl_sql = "ALTER TABLE `$tbl_name` CHANGE `$column_name_old` $field";
 
