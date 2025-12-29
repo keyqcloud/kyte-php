@@ -145,12 +145,6 @@ class KyteErrorController extends ModelController
             } else {
                 $r['context_decoded'] = null;
             }
-
-            // Add formatted date field
-            // Note: ModelController already formats date_created based on 'date' => true in model
-            if (isset($o->date_created)) {
-                $r['date_created_formatted'] = $o->date_created;
-            }
         }
     }
 
