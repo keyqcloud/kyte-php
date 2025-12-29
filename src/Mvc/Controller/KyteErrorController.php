@@ -148,7 +148,13 @@ class KyteErrorController extends ModelController
 
             // Add human-readable date
             if (isset($o->date_created)) {
-                $o->date_created_formatted = date($this->dateformat, $o->date_created);
+                // Handle both Unix timestamps (integer) and already-formatted strings
+                if (is_numeric($o->date_created)) {
+                    $o->date_created_formatted = date($this->dateformat, $o->date_created);
+                } else {
+                    // Already formatted, use as-is
+                    $o->date_created_formatted = $o->date_created;
+                }
             }
         }
     }
