@@ -406,18 +406,21 @@ class ModelObject
 					case 'tt':  // TinyText
 					case 'mt':  // MediumText
 					case 'lt':  // LongText
-						$this->{$key} = strval($value);
+						// Only convert if not already a string
+						$this->{$key} = is_string($value) ? $value : strval($value);
 						break;
-				
+
 					case 'i':   // Integer
 					case 'bi':  // BigInt
-						$this->{$key} = intval($value);
+						// Only convert if not already an integer
+						$this->{$key} = is_int($value) ? $value : intval($value);
 						break;
-				
+
 					case 'd':   // Double or Decimal
-						$this->{$key} = floatval($value);
+						// Only convert if not already a float
+						$this->{$key} = is_float($value) ? $value : floatval($value);
 						break;
-				
+
 					case 'b':   // Blob
 					case 'tb':  // TinyBlob
 					case 'mb':  // MediumBlob
@@ -425,14 +428,15 @@ class ModelObject
 						// Return blob as is for now...but this will need to be handled by each app specific controller
 						$this->{$key} = $value;
 						break;
-				
+
 					default:
 						$this->{$key} = $value;
 						break;
 				}
-				
+
 			} else {
-				$this->{$key} = strval($value);
+				// Only convert if not already a string
+				$this->{$key} = is_string($value) ? $value : strval($value);
 			}
 		} else {
 			// allow for non model defined properties

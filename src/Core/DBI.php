@@ -25,6 +25,10 @@ class DBI {
 	// public static $charsetApp = 'utf8mb4';
 	// public static $engineApp = 'InnoDB';
 
+	// query logging
+	private static $queryLog = [];
+	private static $queryLoggingEnabled = false;
+
 	/*
 	 * Sets the database username to be used to connect to DB
 	 *
@@ -238,6 +242,140 @@ class DBI {
 		self::$dbConnApp = null;
 	}
 
+	/**
+	 * Get current database connection
+	 * Eliminates code duplication across query methods
+	 *
+	 * @return mysqli Current connection object
+	 * @throws \Exception if connection fails
+	 */
+	private static function getConnection()
+	{
+		if (self::$useAppDB) {
+			if (!self::$dbConnApp) {
+				self::connectApp();
+			}
+			return self::$dbConnApp;
+		} else {
+			if (!self::$dbConn) {
+				self::connect();
+			}
+			return self::$dbConn;
+		}
+	}
+
+	/**
+	 * Begin database transaction
+	 * Provides ACID guarantees for multi-step operations
+	 *
+	 * @return bool True on success
+	 * @throws \Exception if transaction cannot be started
+	 */
+	public static function beginTransaction()
+	{
+		$con = self::getConnection();
+		if (!$con->begin_transaction()) {
+			throw new \Exception("Failed to begin transaction: " . $con->error);
+		}
+		return true;
+	}
+
+	/**
+	 * Commit database transaction
+	 * Persists all changes made within the transaction
+	 *
+	 * @return bool True on success
+	 * @throws \Exception if commit fails
+	 */
+	public static function commit()
+	{
+		$con = self::getConnection();
+		if (!$con->commit()) {
+			throw new \Exception("Failed to commit transaction: " . $con->error);
+		}
+		return true;
+	}
+
+	/**
+	 * Rollback database transaction
+	 * Reverts all changes made within the transaction
+	 *
+	 * @return bool True on success
+	 * @throws \Exception if rollback fails
+	 */
+	public static function rollback()
+	{
+		$con = self::getConnection();
+		if (!$con->rollback()) {
+			throw new \Exception("Failed to rollback transaction: " . $con->error);
+		}
+		return true;
+	}
+
+	/**
+	 * Enable query logging for debugging and performance analysis
+	 *
+	 * @return void
+	 */
+	public static function enableQueryLogging()
+	{
+		self::$queryLoggingEnabled = true;
+		self::$queryLog = [];
+	}
+
+	/**
+	 * Disable query logging
+	 *
+	 * @return void
+	 */
+	public static function disableQueryLogging()
+	{
+		self::$queryLoggingEnabled = false;
+	}
+
+	/**
+	 * Get the query log
+	 *
+	 * @return array Array of logged queries with timestamps and execution times
+	 */
+	public static function getQueryLog()
+	{
+		return self::$queryLog;
+	}
+
+	/**
+	 * Clear the query log
+	 *
+	 * @return void
+	 */
+	public static function clearQueryLog()
+	{
+		self::$queryLog = [];
+	}
+
+	/**
+	 * Log a query for debugging and performance analysis
+	 *
+	 * @param string $query The SQL query
+	 * @param array $params Query parameters (optional)
+	 * @param float $executionTime Execution time in milliseconds (optional)
+	 * @return void
+	 */
+	private static function logQuery($query, $params = [], $executionTime = null)
+	{
+		if (!self::$queryLoggingEnabled) {
+			return;
+		}
+
+		self::$queryLog[] = [
+			'query' => $query,
+			'params' => $params,
+			'execution_time' => $executionTime,
+			'timestamp' => microtime(true),
+			'database' => self::$useAppDB ? self::$dbNameApp : self::$dbName
+		];
+	}
+
 	/*
 	 * Create database
 	 */
@@ -252,19 +390,7 @@ class DBI {
 		}
 
 		// db connection
-		$con = null;
-
-		if (self::$useAppDB) {
-			if (!self::$dbConnApp) {
-				self::connectApp();
-			}
-			$con = self::$dbConnApp;
-		} else {
-			if (!self::$dbConn) {
-				self::connect();
-			}
-			$con = self::$dbConn;
-		}
+		$con = self::getConnection();
 
 		// create password
 		$password = '';
@@ -318,19 +444,7 @@ class DBI {
 		}
 
 		// db connection
-		$con = null;
-
-		if (self::$useAppDB) {
-			if (!self::$dbConnApp) {
-				self::connectApp();
-			}
-			$con = self::$dbConnApp;
-		} else {
-			if (!self::$dbConn) {
-				self::connect();
-			}
-			$con = self::$dbConn;
-		}
+		$con = self::getConnection();
 
 		$tbl_name = $modelDef['name'];
 		$cols = $modelDef['struct'];
@@ -469,19 +583,7 @@ class DBI {
 		}
 
 		// db connection
-		$con = null;
-
-		if (self::$useAppDB) {
-			if (!self::$dbConnApp) {
-				self::connectApp();
-			}
-			$con = self::$dbConnApp;
-		} else {
-			if (!self::$dbConn) {
-				self::connect();
-			}
-			$con = self::$dbConn;
-		}
+		$con = self::getConnection();
 
 		$tbl_sql = "DROP TABLE `$tbl_name`";
 
@@ -506,19 +608,7 @@ class DBI {
 		}
 
 		// db connection
-		$con = null;
-
-		if (self::$useAppDB) {
-			if (!self::$dbConnApp) {
-				self::connectApp();
-			}
-			$con = self::$dbConnApp;
-		} else {
-			if (!self::$dbConn) {
-				self::connect();
-			}
-			$con = self::$dbConn;
-		}
+		$con = self::getConnection();
 
 		$tbl_sql = "ALTER TABLE `$tbl_name_old` RENAME TO `$tbl_name_news`";
 
@@ -543,19 +633,7 @@ class DBI {
 		}
 
 		// db connection
-		$con = null;
-
-		if (self::$useAppDB) {
-			if (!self::$dbConnApp) {
-				self::connectApp();
-			}
-			$con = self::$dbConnApp;
-		} else {
-			if (!self::$dbConn) {
-				self::connect();
-			}
-			$con = self::$dbConn;
-		}
+		$con = self::getConnection();
 		
 		// check if required attrs are set
 		if (!isset($attrs['date'])) {
@@ -670,19 +748,7 @@ class DBI {
 		}
 
 		// db connection
-		$con = null;
-
-		if (self::$useAppDB) {
-			if (!self::$dbConnApp) {
-				self::connectApp();
-			}
-			$con = self::$dbConnApp;
-		} else {
-			if (!self::$dbConn) {
-				self::connect();
-			}
-			$con = self::$dbConn;
-		}
+		$con = self::getConnection();
 		
 		// check if required attrs are set
 		if (!isset($attrs['date'])) {
@@ -793,19 +859,7 @@ class DBI {
 		}
 
 		// db connection
-		$con = null;
-
-		if (self::$useAppDB) {
-			if (!self::$dbConnApp) {
-				self::connectApp();
-			}
-			$con = self::$dbConnApp;
-		} else {
-			if (!self::$dbConn) {
-				self::connect();
-			}
-			$con = self::$dbConn;
-		}
+		$con = self::getConnection();
 
 		$tbl_sql = "ALTER TABLE `$tbl_name` DROP `$column_name`";
 
@@ -827,20 +881,8 @@ class DBI {
 	public static function insert($table, $params, $types)
 	{
 		// db connection
-		$con = null;
-
 		try {
-			if (self::$useAppDB) {
-				if (!self::$dbConnApp) {
-					self::connectApp();
-				}
-				$con = self::$dbConnApp;
-			} else {
-				if (!self::$dbConn) {
-					self::connect();
-				}
-				$con = self::$dbConn;
-			}
+			$con = self::getConnection();
 		} catch (\Exception $e) {
 			throw $e;
 		}
@@ -899,19 +941,7 @@ class DBI {
 	public static function update($table, $id, $params, $types)
 	{
 		// db connection
-		$con = null;
-
-		if (self::$useAppDB) {
-			if (!self::$dbConnApp) {
-				self::connectApp();
-			}
-			$con = self::$dbConnApp;
-		} else {
-			if (!self::$dbConn) {
-				self::connect();
-			}
-			$con = self::$dbConn;
-		}
+		$con = self::getConnection();
 
 		// DEBUG
 		if (defined('DEBUG_SQL_PARAMS') && DEBUG_SQL_PARAMS) {
@@ -969,19 +999,7 @@ class DBI {
 	public static function delete($table, $id)
 	{
 		// db connection
-		$con = null;
-
-		if (self::$useAppDB) {
-			if (!self::$dbConnApp) {
-				self::connectApp();
-			}
-			$con = self::$dbConnApp;
-		} else {
-			if (!self::$dbConn) {
-				self::connect();
-			}
-			$con = self::$dbConn;
-		}
+		$con = self::getConnection();
 
 		$query = "DELETE FROM `$table` WHERE id = ?";
 
@@ -1016,19 +1034,7 @@ class DBI {
 	public static function count($table, $condition = null, $join = null)
 	{
 		// db connection
-		$con = null;
-
-		if (self::$useAppDB) {
-			if (!self::$dbConnApp) {
-				self::connectApp();
-			}
-			$con = self::$dbConnApp;
-		} else {
-			if (!self::$dbConn) {
-				self::connect();
-			}
-			$con = self::$dbConn;
-		}
+		$con = self::getConnection();
 
 		$query = "SELECT count(`$table`.`id`) as count FROM `$table`";
 
@@ -1084,19 +1090,7 @@ class DBI {
 	public static function select($table, $id = null, $condition = null, $join = null)
 	{
 		// db connection
-		$con = null;
-
-		if (self::$useAppDB) {
-			if (!self::$dbConnApp) {
-				self::connectApp();
-			}
-			$con = self::$dbConnApp;
-		} else {
-			if (!self::$dbConn) {
-				self::connect();
-			}
-			$con = self::$dbConn;
-		}
+		$con = self::getConnection();
 
 		$query = "SELECT `$table`.* FROM `$table`";
 
@@ -1151,19 +1145,7 @@ class DBI {
 	public static function group($table, $field, $condition = null)
 	{
 		// db connection
-		$con = null;
-
-		if (self::$useAppDB) {
-			if (!self::$dbConnApp) {
-				self::connectApp();
-			}
-			$con = self::$dbConnApp;
-		} else {
-			if (!self::$dbConn) {
-				self::connect();
-			}
-			$con = self::$dbConn;
-		}
+		$con = self::getConnection();
 
 		$query = "SELECT `$field`, count(`$field`) FROM `$table`";
 
@@ -1201,19 +1183,7 @@ class DBI {
 	public static function query($query)
 	{
 		// db connection
-		$con = null;
-
-		if (self::$useAppDB) {
-			if (!self::$dbConnApp) {
-				self::connectApp();
-			}
-			$con = self::$dbConnApp;
-		} else {
-			if (!self::$dbConn) {
-				self::connect();
-			}
-			$con = self::$dbConn;
-		}
+		$con = self::getConnection();
 
 		// DEBUG
 		if (defined('DEBUG_SQL') && DEBUG_SQL) {
@@ -1249,19 +1219,7 @@ class DBI {
 	public static function sum($table, $sumField, $id = null, $condition = null)
 	{
 		// db connection
-		$con = null;
-
-		if (self::$useAppDB) {
-			if (!self::$dbConnApp) {
-				self::connectApp();
-			}
-			$con = self::$dbConnApp;
-		} else {
-			if (!self::$dbConn) {
-				self::connect();
-			}
-			$con = self::$dbConn;
-		}
+		$con = self::getConnection();
 
 		$new_field_name = 'sum_'.$sumField;
 
@@ -1295,19 +1253,7 @@ class DBI {
 
 	public static function escape_string($string) {
 		// db connection
-		$con = null;
-
-		if (self::$useAppDB) {
-			if (!self::$dbConnApp) {
-				self::connectApp();
-			}
-			$con = self::$dbConnApp;
-		} else {
-			if (!self::$dbConn) {
-				self::connect();
-			}
-			$con = self::$dbConn;
-		}
+		$con = self::getConnection();
 		
 		return $con->real_escape_string($string);
 	}
