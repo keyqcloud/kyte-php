@@ -238,7 +238,10 @@ class CronWorker
 	 */
 	private function findPendingExecutions() {
 		$sql = "
-			SELECT cje.*, cj.code, cj.timeout_seconds, cj.allow_concurrent, cj.name as job_name
+			SELECT cje.*,
+			       cj.code, cj.timeout_seconds, cj.allow_concurrent, cj.name as job_name,
+			       cj.schedule_type, cj.interval_seconds, cj.cron_expression,
+			       cj.time_of_day, cj.day_of_week, cj.day_of_month, cj.timezone
 			FROM CronJobExecution cje
 			JOIN CronJob cj ON cje.cron_job = cj.id
 			WHERE cje.next_run_time <= UNIX_TIMESTAMP()
@@ -387,14 +390,16 @@ class CronWorker
 			echo "[" . date('Y-m-d H:i:s') . "] Starting job execution...\n";
 			ob_start();
 
-			// Evaluate job code - this defines the class
-			eval($code);
-
-			// Extract class name from code
+			// Extract class name from code first
 			$className = $this->extractClassName($code);
 
-			if (!class_exists($className)) {
-				throw new \Exception("Job class {$className} not found after eval");
+			// Only eval if class doesn't exist yet (avoid redeclaration)
+			if (!class_exists($className, false)) {
+				eval($code);
+
+				if (!class_exists($className, false)) {
+					throw new \Exception("Job class {$className} not found after eval");
+				}
 			}
 
 			// Instantiate and execute job
