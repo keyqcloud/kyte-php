@@ -36,6 +36,9 @@ class DBI {
 	private static $cacheHits = 0;
 	private static $cacheMisses = 0;
 
+	// Store affected rows from last prepared query
+	private static $lastAffectedRows = 0;
+
 	/*
 	 * Sets the database username to be used to connect to DB
 	 *
@@ -1321,6 +1324,9 @@ class DBI {
 	 */
 	public static function prepared_query($query, $types, $params)
 	{
+		// Reset affected rows from previous query
+		self::$lastAffectedRows = 0;
+
 		// db connection
 		$con = self::getConnection();
 
@@ -1369,6 +1375,7 @@ class DBI {
 		if ($metadata === false) {
 			// Non-SELECT query (INSERT, UPDATE, DELETE)
 			$affectedRows = $stmt->affected_rows;
+			self::$lastAffectedRows = $affectedRows;
 			$stmt->close();
 			return $affectedRows > 0;
 		}
@@ -1407,6 +1414,12 @@ class DBI {
 	 */
 	public static function affected_rows()
 	{
+		// For prepared queries, return stored value
+		// For regular queries, get from connection
+		if (self::$lastAffectedRows !== null) {
+			return self::$lastAffectedRows;
+		}
+
 		$con = self::getConnection();
 		return $con->affected_rows;
 	}
