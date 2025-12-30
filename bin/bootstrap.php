@@ -40,6 +40,23 @@ if (class_exists('\Dotenv\Dotenv')) {
 	}
 }
 
+// Set default $_SERVER variables for CLI context
+// Many config.php files reference $_SERVER['SERVER_NAME'] which doesn't exist in CLI
+if (php_sapi_name() === 'cli' || php_sapi_name() === 'phpdbg') {
+	if (!isset($_SERVER['SERVER_NAME'])) {
+		$_SERVER['SERVER_NAME'] = 'localhost';
+	}
+	if (!isset($_SERVER['HTTP_HOST'])) {
+		$_SERVER['HTTP_HOST'] = 'localhost';
+	}
+	if (!isset($_SERVER['REQUEST_URI'])) {
+		$_SERVER['REQUEST_URI'] = '/';
+	}
+	if (!isset($_SERVER['REMOTE_ADDR'])) {
+		$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+	}
+}
+
 // Load Kyte configuration
 // Standard Kyte setup has config.php at project root (same directory as index.php)
 $configPath = null;
