@@ -186,10 +186,17 @@ class DBI {
 				if (TRUE !== self::$dbConn->set_charset(self::$charset)) {
 					throw new \Exception(self::$dbConn->error, self::$dbConn->errno);
 				}
-			} catch (mysqli_sql_exception $e) {
+			} catch (\Exception $e) {
 				// If SSL connection fails, fall back to non-SSL connection
-				if (defined('KYTE_DB_CA_BUNDLE') && self::$dbConn->connect_errno) {
+				if (defined('KYTE_DB_CA_BUNDLE') && (self::$dbConn === null || self::$dbConn->connect_errno)) {
+					error_log("SSL connection failed, falling back to non-SSL: " . $e->getMessage());
 					self::$dbConn = new \mysqli(self::$dbHost, self::$dbUser, self::$dbPassword, self::$dbName);
+
+					// Check if fallback connection succeeded
+					if (self::$dbConn->connect_error) {
+						throw new \Exception('Database connection failed (both SSL and non-SSL): ' . self::$dbConn->connect_error, self::$dbConn->connect_errno);
+					}
+
 					// Set charset to utf8mb4
 					if (TRUE !== self::$dbConn->set_charset(self::$charset)) {
 						throw new \Exception(self::$dbConn->error, self::$dbConn->errno);
