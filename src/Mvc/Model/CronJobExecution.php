@@ -166,7 +166,6 @@ $CronJobExecution = [
 			'type'		=> 'i',
 			'required'	=> false,
 			'size'		=> 11,
-			'unsigned'	=> true,
 			'date'		=> false,
 			'fk'		=> [
 				'model'	=> 'Application',

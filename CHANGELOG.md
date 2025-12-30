@@ -221,7 +221,7 @@ CREATE TABLE IF NOT EXISTS `CronJob` (
     `consecutive_failures` INT(11) UNSIGNED DEFAULT 0 COMMENT 'Track failure streak',
 
     -- Context
-    `application` INT(11) UNSIGNED COMMENT 'FK to Application',
+    `application` INT(11) COMMENT 'FK to Application',
 
     -- Framework attributes
     `kyte_locked` TINYINT(1) UNSIGNED DEFAULT 0,
@@ -286,7 +286,7 @@ CREATE TABLE IF NOT EXISTS `CronJobExecution` (
     `dependency_execution` INT(11) UNSIGNED NULL COMMENT 'FK to parent job execution checked',
 
     -- Context
-    `application` INT(11) UNSIGNED,
+    `application` INT(11),
 
     -- Audit
     `kyte_account` INT(11) UNSIGNED NOT NULL,
