@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # Web application (existing)
+  web:
+    image: your-app-image:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - mysql
+    environment:
+      - DB_HOST=mysql
+      - DB_DATABASE=your_database
+      - DB_USERNAME=your_user
+      - DB_PASSWORD=your_password
+
+  # Kyte Cron Worker (add this)
+  cron-worker:
+    image: your-app-image:latest
+    command: php /var/www/html/vendor/keyqcloud/kyte-php/bin/cron-worker.php
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - mysql
+    environment:
+      - DB_HOST=mysql
+      - DB_DATABASE=your_database
+      - DB_USERNAME=your_user
+      - DB_PASSWORD=your_password
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Database (existing)
+  mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=your_database
+      - MYSQL_USER=your_user
+      - MYSQL_PASSWORD=your_password
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+volumes:
+  mysql-data:

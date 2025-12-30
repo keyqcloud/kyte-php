@@ -1,0 +1,29 @@
+[Unit]
+Description=Kyte Cron Worker - Background job scheduler and executor
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/html
+ExecStart=/usr/bin/php /var/www/html/vendor/keyqcloud/kyte-php/bin/cron-worker.php
+Restart=always
+RestartSec=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kyte-cron
+
+# Security
+PrivateTmp=true
+NoNewPrivileges=true
+
+# Resource limits (adjust as needed)
+MemoryLimit=512M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target
