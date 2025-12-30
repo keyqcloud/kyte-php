@@ -376,6 +376,10 @@ class CronWorker
 			}
 			echo "[" . date('Y-m-d H:i:s') . "] Code decompressed successfully\n";
 
+			// Strip PHP opening/closing tags for eval()
+			$code = preg_replace('/^<\?php\s*/i', '', $code);
+			$code = preg_replace('/\s*\?>$/', '', $code);
+
 			// Set timeout
 			set_time_limit($execution['timeout_seconds']);
 
