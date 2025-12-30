@@ -79,7 +79,8 @@ function createTestJob() {
 		)
 	";
 
-	DBI::prepared_query($sql, 'b', [$compressedCode]);
+	// Use 's' type for blob data - 'b' type requires send_long_data() which prepared_query doesn't support
+	DBI::prepared_query($sql, 's', [$compressedCode]);
 	$jobId = DBI::insert_id();
 
 	echo "✓ Test job created with ID: {$jobId}\n";
