@@ -112,6 +112,17 @@ if (!$hasOldStyle && !$hasNewStyle) {
 		"Required constants: DB_HOST/KYTE_DB_HOST, DB_NAME/KYTE_DB_DATABASE, DB_USER/KYTE_DB_USERNAME\n");
 }
 
+// Initialize DBI with database credentials
+// This is normally done by Api::__construct(), but CLI scripts bypass that
+$dbUser = defined('DB_USER') ? DB_USER : KYTE_DB_USERNAME;
+$dbPass = defined('DB_PASS') ? DB_PASS : KYTE_DB_PASSWORD;
+$dbHost = defined('DB_HOST') ? DB_HOST : KYTE_DB_HOST;
+$dbName = defined('DB_NAME') ? DB_NAME : KYTE_DB_DATABASE;
+$dbCharset = defined('DB_CHARSET') ? DB_CHARSET : (defined('KYTE_DB_CHARSET') ? KYTE_DB_CHARSET : 'utf8mb4');
+$dbEngine = 'InnoDB'; // Default engine
+
+\Kyte\Core\DBI::dbInit($dbUser, $dbPass, $dbHost, $dbName, $dbCharset, $dbEngine);
+
 // Export globals for scripts to use
 $GLOBALS['PROJECT_ROOT'] = $projectRoot;
 $GLOBALS['CONFIG_PATH'] = $configPath;
