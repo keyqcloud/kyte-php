@@ -190,12 +190,23 @@ class DBI {
 				// If SSL connection fails, fall back to non-SSL connection
 				if (defined('KYTE_DB_CA_BUNDLE') && (self::$dbConn === null || self::$dbConn->connect_errno)) {
 					error_log("SSL connection failed, falling back to non-SSL: " . $e->getMessage());
+					error_log("Connection params - Host: " . self::$dbHost . ", User: " . self::$dbUser . ", Database: " . self::$dbName);
+
+					// Disable mysqli exceptions temporarily to handle connection errors gracefully
+					$reportLevel = mysqli_report(MYSQLI_REPORT_OFF);
+
 					self::$dbConn = new \mysqli(self::$dbHost, self::$dbUser, self::$dbPassword, self::$dbName);
+
+					// Restore mysqli reporting
+					mysqli_report($reportLevel);
 
 					// Check if fallback connection succeeded
 					if (self::$dbConn->connect_error) {
+						error_log("Non-SSL connection also failed: " . self::$dbConn->connect_error . " (errno: " . self::$dbConn->connect_errno . ")");
 						throw new \Exception('Database connection failed (both SSL and non-SSL): ' . self::$dbConn->connect_error, self::$dbConn->connect_errno);
 					}
+
+					error_log("Successfully connected to database without SSL");
 
 					// Set charset to utf8mb4
 					if (TRUE !== self::$dbConn->set_charset(self::$charset)) {
