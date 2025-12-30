@@ -361,15 +361,18 @@ class CronWorker
 
 		try {
 			// Decompress code
+			echo "[" . date('Y-m-d H:i:s') . "] Decompressing job code...\n";
 			$code = bzdecompress($execution['code']);
 			if ($code === false) {
 				throw new \Exception("Failed to decompress job code");
 			}
+			echo "[" . date('Y-m-d H:i:s') . "] Code decompressed successfully\n";
 
 			// Set timeout
 			set_time_limit($execution['timeout_seconds']);
 
 			// Capture output
+			echo "[" . date('Y-m-d H:i:s') . "] Starting job execution...\n";
 			ob_start();
 
 			// Evaluate job code - this defines the class
