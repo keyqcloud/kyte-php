@@ -26,7 +26,8 @@
  *   php bin/cron-version.php prune 5 15
  */
 
-require_once __DIR__ . '/../vendor/autoload.php';
+// Load shared bootstrap (handles autoloader, config, etc.)
+require_once __DIR__ . '/bootstrap.php';
 
 use Kyte\Core\Api;
 use Kyte\Core\DBI;

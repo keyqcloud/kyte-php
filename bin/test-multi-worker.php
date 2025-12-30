@@ -31,38 +31,8 @@ $numWorkers = isset($options['workers']) ? (int)$options['workers'] : 3;
 $duration = isset($options['duration']) ? (int)$options['duration'] : 60;
 $cleanup = isset($options['cleanup']);
 
-// Determine the base path
-$basePath = dirname(dirname(__FILE__));
-
-// Load autoloader
-if (file_exists($basePath . '/../../autoload.php')) {
-	require_once $basePath . '/../../autoload.php';
-} elseif (file_exists($basePath . '/vendor/autoload.php')) {
-	require_once $basePath . '/vendor/autoload.php';
-} else {
-	die("ERROR: Composer autoloader not found. Please run 'composer install'.\n");
-}
-
-// Load Kyte configuration
-$configPath = null;
-$searchPaths = [
-	$basePath . '/config/config.php',
-	$basePath . '/../../config/config.php',
-	dirname(dirname($basePath)) . '/config/config.php',
-];
-
-foreach ($searchPaths as $path) {
-	if (file_exists($path)) {
-		$configPath = $path;
-		break;
-	}
-}
-
-if ($configPath === null) {
-	die("ERROR: Kyte configuration file not found.\n");
-}
-
-require_once $configPath;
+// Load shared bootstrap (handles autoloader, config, etc.)
+require_once __DIR__ . '/bootstrap.php';
 
 use Kyte\Core\DBI;
 
