@@ -259,6 +259,8 @@ class CronWorker
 	 * Phase 4: Enhanced with dependency checking before execution
 	 */
 	private function processExecution($execution) {
+		echo "[" . date('Y-m-d H:i:s') . "] DEBUG: processExecution started for execution #{$execution['id']}\n";
+
 		// Phase 4: Get full job details to check dependencies
 		$sql = "SELECT * FROM CronJob WHERE id = ?";
 		$job = DBI::prepared_query($sql, 'i', [$execution['cron_job']]);
@@ -269,6 +271,7 @@ class CronWorker
 		}
 
 		$job = $job[0];
+		echo "[" . date('Y-m-d H:i:s') . "] DEBUG: Job #{$job['id']} loaded\n";
 
 		// Phase 4: Check if job has dependency
 		if (!empty($job['depends_on_job'])) {
@@ -279,18 +282,23 @@ class CronWorker
 		}
 
 		// Check concurrent execution
+		echo "[" . date('Y-m-d H:i:s') . "] DEBUG: Checking concurrency...\n";
 		if (!$this->checkConcurrency($execution)) {
 			$this->skipExecution($execution['id'], "Job already running (concurrent execution disabled)");
 			return;
 		}
 
 		// Try to acquire lock
+		echo "[" . date('Y-m-d H:i:s') . "] DEBUG: Attempting to acquire lock...\n";
 		if (!$this->acquireLock($execution['id'])) {
+			echo "[" . date('Y-m-d H:i:s') . "] DEBUG: Failed to acquire lock\n";
 			return; // Another worker got it
 		}
+		echo "[" . date('Y-m-d H:i:s') . "] DEBUG: Lock acquired! Calling executeJob...\n";
 
 		// Execute the job
 		$this->executeJob($execution);
+		echo "[" . date('Y-m-d H:i:s') . "] DEBUG: executeJob returned\n";
 	}
 
 	/**
