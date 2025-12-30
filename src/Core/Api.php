@@ -910,8 +910,9 @@ class Api
 		* DELETE   /{model}/{field}/{value}
 		*/
 
-		// Trim leading slash(es)
-		$path = ltrim($_SERVER['REQUEST_URI'], '/');
+		// Strip query string and trim leading slash(es)
+		$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+		$path = ltrim($path, '/');
 
 		$elements = explode('/', $path);
 
