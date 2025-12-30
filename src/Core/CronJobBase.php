@@ -45,7 +45,9 @@ abstract class CronJobBase
 	protected $execution;
 
 	public function __construct() {
-		$this->api = Api::getInstance();
+		// In CLI context (cron worker), Api::getInstance() doesn't exist
+		// The Api context is not needed for cron jobs
+		$this->api = null;
 	}
 
 	/**
