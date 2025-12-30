@@ -1349,25 +1349,54 @@ class DBI {
 			throw new \Exception("Error executing mysql statement '$query'; " . htmlspecialchars($error));
 		}
 
-		// Get result
+		// Try get_result() first (works with mysqlnd)
 		$result = $stmt->get_result();
 
-		if ($result === false) {
+		if ($result !== false) {
+			// SELECT query with mysqlnd - fetch all rows
+			$data = array();
+			while ($row = $result->fetch_assoc()) {
+				$data[] = $row;
+			}
+			$result->free();
+			$stmt->close();
+			return $data;
+		}
+
+		// Check if this was a non-SELECT query or if we need to use bind_result
+		$metadata = $stmt->result_metadata();
+
+		if ($metadata === false) {
 			// Non-SELECT query (INSERT, UPDATE, DELETE)
 			$affectedRows = $stmt->affected_rows;
 			$stmt->close();
 			return $affectedRows > 0;
 		}
 
-		// SELECT query - fetch all rows
+		// SELECT query with libmysqlclient - use bind_result
+		$fields = array();
+		$row = array();
+		$references = array();
+
+		// Build bind_result parameters
+		while ($field = $metadata->fetch_field()) {
+			$references[] = &$row[$field->name];
+		}
+		$metadata->free();
+
+		call_user_func_array(array($stmt, 'bind_result'), $references);
+
+		// Fetch all rows
 		$data = array();
-		while ($row = $result->fetch_assoc()) {
-			$data[] = $row;
+		while ($stmt->fetch()) {
+			$copy = array();
+			foreach ($row as $key => $val) {
+				$copy[$key] = $val;
+			}
+			$data[] = $copy;
 		}
 
-		$result->free();
 		$stmt->close();
-
 		return $data;
 	}
 
