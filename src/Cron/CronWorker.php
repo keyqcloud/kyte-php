@@ -765,8 +765,15 @@ class CronWorker
 			return $matches[1];
 		}
 
-		echo "[DEBUG] Failed to extract class name from code:\n";
-		echo substr($code, 0, 500) . "\n";
+		error_log("[CronWorker DEBUG] Failed to extract class name. Code preview:");
+		error_log(substr($code, 0, 500));
+
+		// Also write to stdout (will be in execution output)
+		echo "\n=== DEBUG: Class extraction failed ===\n";
+		echo "Code length: " . strlen($code) . " bytes\n";
+		echo "First 500 chars:\n" . substr($code, 0, 500) . "\n";
+		echo "=== END DEBUG ===\n\n";
+
 		throw new \Exception("Could not extract class name from job code");
 	}
 
