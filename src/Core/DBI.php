@@ -1311,6 +1311,88 @@ class DBI {
 		}
 	}
 
+	/**
+	 * Execute prepared statement with parameters
+	 *
+	 * @param string $query SQL query with ? placeholders
+	 * @param string $types Parameter types (i=integer, s=string, d=double, b=blob)
+	 * @param array $params Parameter values
+	 * @return array|bool Result rows or boolean for non-SELECT queries
+	 */
+	public static function prepared_query($query, $types, $params)
+	{
+		// db connection
+		$con = self::getConnection();
+
+		// DEBUG
+		if (defined('DEBUG_SQL') && DEBUG_SQL) {
+			error_log($query);
+		}
+		if (defined('DEBUG_SQL_PARAMS') && DEBUG_SQL_PARAMS) {
+			error_log(print_r($params, true));
+		}
+
+		$stmt = $con->prepare($query);
+		if ($stmt === false) {
+			throw new \Exception("Error preparing mysql statement '$query'; " . htmlspecialchars($con->error));
+		}
+
+		// Bind parameters
+		if (!empty($params)) {
+			$stmt->bind_param($types, ...$params);
+		}
+
+		// Execute
+		if (!$stmt->execute()) {
+			$error = $stmt->error;
+			$stmt->close();
+			throw new \Exception("Error executing mysql statement '$query'; " . htmlspecialchars($error));
+		}
+
+		// Get result
+		$result = $stmt->get_result();
+
+		if ($result === false) {
+			// Non-SELECT query (INSERT, UPDATE, DELETE)
+			$affectedRows = $stmt->affected_rows;
+			$stmt->close();
+			return $affectedRows > 0;
+		}
+
+		// SELECT query - fetch all rows
+		$data = array();
+		while ($row = $result->fetch_assoc()) {
+			$data[] = $row;
+		}
+
+		$result->free();
+		$stmt->close();
+
+		return $data;
+	}
+
+	/**
+	 * Get number of affected rows from last query
+	 *
+	 * @return int Number of affected rows
+	 */
+	public static function affected_rows()
+	{
+		$con = self::getConnection();
+		return $con->affected_rows;
+	}
+
+	/**
+	 * Get last insert ID
+	 *
+	 * @return int Last insert ID
+	 */
+	public static function insert_id()
+	{
+		$con = self::getConnection();
+		return $con->insert_id;
+	}
+
 	/*
 	 * Select from table in database and returns the first row only
 	 *
