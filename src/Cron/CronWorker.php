@@ -520,7 +520,18 @@ class CronWorker
 				if (empty($job['interval_seconds'])) {
 					throw new \Exception("Interval seconds is required for interval schedule type");
 				}
-				return time() + $job['interval_seconds'];
+
+				// Check if this is the first run (no completed executions)
+				$sql = "SELECT MAX(completed_at) as last_completed FROM CronJobExecution WHERE cron_job = ? AND status = 'completed'";
+				$result = DBI::prepared_query($sql, 'i', [$job['id']]);
+
+				if (!empty($result) && $result[0]['last_completed'] !== null) {
+					// Schedule based on last completion
+					return $result[0]['last_completed'] + $job['interval_seconds'];
+				} else {
+					// First run - schedule immediately
+					return time();
+				}
 
 			case 'daily':
 				return $this->calculateDailyNextRun($job);
@@ -693,19 +704,35 @@ class CronWorker
 	 * Create new execution record
 	 */
 	private function createExecution($job, $scheduledTime) {
-		$sql = "
-			INSERT INTO CronJobExecution (
-				cron_job, scheduled_time, next_run_time, status, application, kyte_account, date_created
-			) VALUES (?, ?, ?, 'pending', ?, ?, UNIX_TIMESTAMP())
-		";
+		// Handle NULL application - can't use 'i' type for NULL in mysqli
+		if ($job['application'] === null || $job['application'] === '') {
+			$sql = "
+				INSERT INTO CronJobExecution (
+					cron_job, scheduled_time, next_run_time, status, application, kyte_account, date_created
+				) VALUES (?, ?, ?, 'pending', NULL, ?, UNIX_TIMESTAMP())
+			";
 
-		DBI::prepared_query($sql, 'iiiii', [
-			$job['id'],
-			$scheduledTime,
-			$scheduledTime,
-			$job['application'] ?? null,
-			$job['kyte_account']
-		]);
+			DBI::prepared_query($sql, 'iiii', [
+				$job['id'],
+				$scheduledTime,
+				$scheduledTime,
+				$job['kyte_account']
+			]);
+		} else {
+			$sql = "
+				INSERT INTO CronJobExecution (
+					cron_job, scheduled_time, next_run_time, status, application, kyte_account, date_created
+				) VALUES (?, ?, ?, 'pending', ?, ?, UNIX_TIMESTAMP())
+			";
+
+			DBI::prepared_query($sql, 'iiiii', [
+				$job['id'],
+				$scheduledTime,
+				$scheduledTime,
+				$job['application'],
+				$job['kyte_account']
+			]);
+		}
 	}
 
 	/**
