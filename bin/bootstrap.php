@@ -84,9 +84,32 @@ if ($configPath === null) {
 
 require_once $configPath;
 
-// Verify required configuration
-if (!defined('DB_HOST') || !defined('DB_NAME') || !defined('DB_USER')) {
-	die("ERROR: Database configuration missing. Please check config.php.\n");
+// Support both old and new naming conventions for database constants
+// New style: KYTE_DB_* (preferred)
+// Old style: DB_* (legacy)
+if (defined('KYTE_DB_HOST') && !defined('DB_HOST')) {
+	define('DB_HOST', KYTE_DB_HOST);
+}
+if (defined('KYTE_DB_DATABASE') && !defined('DB_NAME')) {
+	define('DB_NAME', KYTE_DB_DATABASE);
+}
+if (defined('KYTE_DB_USERNAME') && !defined('DB_USER')) {
+	define('DB_USER', KYTE_DB_USERNAME);
+}
+if (defined('KYTE_DB_PASSWORD') && !defined('DB_PASS')) {
+	define('DB_PASS', KYTE_DB_PASSWORD);
+}
+if (defined('KYTE_DB_CHARSET') && !defined('DB_CHARSET')) {
+	define('DB_CHARSET', KYTE_DB_CHARSET);
+}
+
+// Verify required configuration (check both naming conventions)
+$hasOldStyle = defined('DB_HOST') && defined('DB_NAME') && defined('DB_USER');
+$hasNewStyle = defined('KYTE_DB_HOST') && defined('KYTE_DB_DATABASE') && defined('KYTE_DB_USERNAME');
+
+if (!$hasOldStyle && !$hasNewStyle) {
+	die("ERROR: Database configuration missing. Please check config.php.\n" .
+		"Required constants: DB_HOST/KYTE_DB_HOST, DB_NAME/KYTE_DB_DATABASE, DB_USER/KYTE_DB_USERNAME\n");
 }
 
 // Export globals for scripts to use
