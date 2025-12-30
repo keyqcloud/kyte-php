@@ -57,9 +57,13 @@ if (class_exists('\Dotenv\Dotenv')) {
 // Load Kyte configuration
 $configPath = null;
 $searchPaths = [
-	$basePath . '/config/config.php',
+	// Standard Kyte setup: config.php at project root
+	$basePath . '/../../config.php',
+	dirname(dirname($basePath)) . '/config.php',
+	// Alternative: config/ subdirectory
 	$basePath . '/../../config/config.php',
 	dirname(dirname($basePath)) . '/config/config.php',
+	$basePath . '/config/config.php',
 ];
 
 foreach ($searchPaths as $path) {
