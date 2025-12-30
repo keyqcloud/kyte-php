@@ -750,10 +750,23 @@ class CronWorker
 	 * Extract class name from evaluated code
 	 */
 	private function extractClassName($code) {
-		// Simple regex to find class name
-		if (preg_match('/class\s+(\w+)\s+extends/', $code, $matches)) {
+		// Try to find class name with 'extends' keyword (most common)
+		if (preg_match('/class\s+(\w+)\s+extends/i', $code, $matches)) {
 			return $matches[1];
 		}
+
+		// Try to find standalone class declaration
+		if (preg_match('/class\s+(\w+)\s*[{\n]/i', $code, $matches)) {
+			return $matches[1];
+		}
+
+		// Try to find namespaced class
+		if (preg_match('/class\s+(\w+)/i', $code, $matches)) {
+			return $matches[1];
+		}
+
+		echo "[DEBUG] Failed to extract class name from code:\n";
+		echo substr($code, 0, 500) . "\n";
 		throw new \Exception("Could not extract class name from job code");
 	}
 
