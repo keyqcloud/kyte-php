@@ -26,7 +26,7 @@ class CronJobManager
 
     public function __construct(Api $api = null)
     {
-        $this->api = $api ?? Api::getInstance();
+        $this->api = $api;
         $this->versionControl = new CronVersionControl();
     }
 

@@ -25,7 +25,18 @@ class CronJobController extends ModelController
 
     public function hook_init() {
         $this->dateformat = 'm/d/Y H:i:s';
-        $this->cronJobManager = new CronJobManager(Api::getInstance());
+        // Initialize CronJobManager lazily to ensure $this->api is available
+    }
+
+    /**
+     * Get CronJobManager instance (lazy initialization)
+     */
+    private function getCronJobManager(): CronJobManager
+    {
+        if ($this->cronJobManager === null) {
+            $this->cronJobManager = new CronJobManager($this->api);
+        }
+        return $this->cronJobManager;
     }
 
     /**
@@ -148,7 +159,7 @@ class CronJobController extends ModelController
     {
         // Validate code if provided
         if (!empty($r['code'])) {
-            $validation = $this->cronJobManager->validateCode($r['code']);
+            $validation = $this->getCronJobManager()->validateCode($r['code']);
 
             if (!$validation['valid']) {
                 throw new \Exception("Invalid job code: " . $validation['error']);
@@ -191,7 +202,7 @@ class CronJobController extends ModelController
             $currentCode = bzdecompress($o->code);
 
             if ($currentCode !== $r['code']) {
-                $validation = $this->cronJobManager->validateCode($r['code']);
+                $validation = $this->getCronJobManager()->validateCode($r['code']);
 
                 if (!$validation['valid']) {
                     throw new \Exception("Invalid job code: " . $validation['error']);
@@ -199,7 +210,7 @@ class CronJobController extends ModelController
 
                 // Create version before updating
                 $userId = $this->api->user ? $this->api->user->id : null;
-                $this->cronJobManager->updateCode($o->id, $r['code'], $userId);
+                $this->getCronJobManager()->updateCode($o->id, $r['code'], $userId);
 
                 $codeChanged = true;
 
@@ -571,7 +582,7 @@ class CronJobController extends ModelController
         }
 
         try {
-            $result = $this->cronJobManager->rollback(
+            $result = $this->getCronJobManager()->rollback(
                 $job->id,
                 (int)$versionNumber,
                 $this->api->user ? $this->api->user->id : null
