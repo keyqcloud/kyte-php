@@ -2,7 +2,7 @@
 [![PHP Composer](https://github.com/keyqcloud/kyte-php/actions/workflows/php.yml/badge.svg)](https://github.com/keyqcloud/kyte-php/actions/workflows/php.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/keyqcloud/kyte-php.svg?style=flat)](https://packagist.org/packages/keyqcloud/kyte-php)
 
-(c) 2020-2025 [KeyQ, Inc.](https://www.keyq.cloud)
+(c) 2020-2026 [KeyQ, Inc.](https://www.keyq.cloud)
 
 ## About Kyte-PHP
 
@@ -327,4 +327,4 @@ The framework includes CLI support for:
 
 ## License
 
-Copyright (c) 2020-2025 KeyQ, Inc. All rights reserved.
+Copyright (c) 2020-2026 KeyQ, Inc. All rights reserved.
