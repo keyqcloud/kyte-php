@@ -65,6 +65,11 @@ class CronJobExecutionController extends ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'get':
+                // Remove compressed code field from FK object (contains binary data that breaks JSON encoding)
+                if (isset($r['cron_job']) && is_array($r['cron_job']) && isset($r['cron_job']['code'])) {
+                    unset($r['cron_job']['code']);
+                }
+
                 // Add job information (extract ID if FK was resolved to object)
                 if (!empty($r['cron_job'])) {
                     $jobId = is_array($r['cron_job']) ? $r['cron_job']['id'] : $r['cron_job'];
