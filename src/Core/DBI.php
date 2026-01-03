@@ -253,7 +253,8 @@ class DBI {
 	public static function close()
 	{
 		if (self::$dbConn) {
-			self::$dbConn->close();
+			// Suppress SSL broken pipe warnings after fork (expected behavior)
+			@self::$dbConn->close();
 		}
 		self::$dbConn = null;
 	}
@@ -265,7 +266,8 @@ class DBI {
 	public static function closeApp()
 	{
 		if (self::$dbConnApp) {
-			self::$dbConnApp->close();
+			// Suppress SSL broken pipe warnings after fork (expected behavior)
+			@self::$dbConnApp->close();
 		}
 		self::$dbConnApp = null;
 	}
