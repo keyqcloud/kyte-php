@@ -786,6 +786,13 @@ class Api
 
 		// return response data
 		$this->response = ['response_code' => 200] + $this->response;
+
+		// TEMPORARY DEBUG - Remove after testing
+		error_log("=== API RESPONSE DEBUG ===");
+		error_log("Response keys: " . implode(', ', array_keys($this->response)));
+		error_log("Data count: " . (isset($this->response['data']) ? count($this->response['data']) : 'NO DATA'));
+		error_log("JSON encode result length: " . strlen(json_encode($this->response)));
+
 		if (defined('LOG_RESPONSE')) {
 			error_log(json_encode($this->response, JSON_PRETTY_PRINT));
 		}
