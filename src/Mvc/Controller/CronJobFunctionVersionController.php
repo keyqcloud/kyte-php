@@ -40,5 +40,13 @@ class CronJobFunctionVersionController extends ModelController
                 }
             }
         }
+
+        // Remove compressed code field from nested FK objects (contains binary data that breaks JSON encoding)
+        // CronJobFunctionVersion -> CronJobFunction -> CronJob (has compressed code)
+        if (isset($r['cron_job_function']) && is_array($r['cron_job_function'])) {
+            if (isset($r['cron_job_function']['cron_job']) && is_array($r['cron_job_function']['cron_job'])) {
+                unset($r['cron_job_function']['cron_job']['code']);
+            }
+        }
     }
 }
