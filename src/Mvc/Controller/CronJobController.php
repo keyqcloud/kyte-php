@@ -466,8 +466,8 @@ class CronJobController extends ModelController
     // ========================================================================
 
     /**
-     * Handle manual job trigger
-     * URL: POST /CronJob/trigger/5
+     * Handle manual job trigger - executes job immediately and synchronously
+     * URL: PUT /CronJob/trigger/5
      */
     private function handleTrigger(int $jobId): void
     {
@@ -481,30 +481,26 @@ class CronJobController extends ModelController
             return;
         }
 
-        error_log("handleTrigger() - Job found, creating execution...");
+        error_log("handleTrigger() - Job found, executing synchronously...");
 
-        // Manual triggers work even if job is disabled (only scheduled execution respects enabled flag)
-        // This allows testing disabled jobs without re-enabling them
+        // Manual triggers work even if job is disabled or in DLQ
+        // This is for debugging/testing purposes
 
-        if ($job->in_dead_letter_queue) {
-            $this->response['error'] = 'Job is in dead letter queue. Recover it first.';
-            $this->response['response_code'] = 400;
-            return;
-        }
-
-        // Create immediate execution
         $now = time();
+        $startTime = microtime(true);
+
+        // Create execution record with 'running' status
         $sql = "
             INSERT INTO CronJobExecution (
-                cron_job, scheduled_time, next_run_time, status,
+                cron_job, scheduled_time, started_at, status,
                 application, kyte_account, created_by, date_created
-            ) VALUES (?, ?, ?, 'pending', ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, 'running', ?, ?, ?, ?)
         ";
 
         DBI::prepared_query($sql, 'iiiiiii', [
             $job->id,
             $now,
-            $now, // Run immediately
+            $now,
             $job->application,
             $job->kyte_account,
             $this->api->user ? $this->api->user->id : null,
@@ -512,18 +508,94 @@ class CronJobController extends ModelController
         ]);
 
         $executionId = DBI::insert_id();
-        error_log("handleTrigger() - Execution created with ID: $executionId");
+        error_log("handleTrigger() - Execution record created with ID: $executionId, now executing job...");
 
-        // Set response and return (framework will output it)
+        // Execute the job synchronously
+        $output = '';
+        $error = '';
+        $status = 'completed';
+
+        try {
+            // Decompress job code
+            $code = bzdecompress($job->code);
+            if ($code === false) {
+                throw new \Exception("Failed to decompress job code");
+            }
+
+            // Start output buffering to capture any output
+            ob_start();
+
+            // Set a reasonable execution time limit (60 seconds for manual triggers)
+            set_time_limit(60);
+
+            // Execute the job code
+            // The code should be a closure that returns void
+            $closure = eval('return ' . $code . ';');
+
+            if (!is_callable($closure)) {
+                throw new \Exception("Job code did not return a callable function");
+            }
+
+            // Execute the closure
+            $closure();
+
+            // Capture output
+            $output = ob_get_clean();
+
+        } catch (\Throwable $e) {
+            $output = ob_get_clean();
+            $error = $e->getMessage() . "\n" . $e->getTraceAsString();
+            $status = 'failed';
+            error_log("handleTrigger() - Job execution failed: " . $e->getMessage());
+        }
+
+        $endTime = microtime(true);
+        $durationMs = round(($endTime - $startTime) * 1000);
+        $memoryPeakMb = round(memory_get_peak_usage(true) / 1024 / 1024, 2);
+
+        // Update execution record with results
+        $updateSql = "
+            UPDATE CronJobExecution
+            SET status = ?,
+                completed_at = ?,
+                duration_ms = ?,
+                memory_peak_mb = ?,
+                output = ?,
+                error = ?,
+                modified_by = ?,
+                date_modified = ?
+            WHERE id = ?
+        ";
+
+        DBI::prepared_query($updateSql, 'siidssiis', [
+            $status,
+            time(),
+            $durationMs,
+            $memoryPeakMb,
+            $output,
+            $error,
+            $this->api->user ? $this->api->user->id : null,
+            time(),
+            $executionId
+        ]);
+
+        error_log("handleTrigger() - Execution completed. Status: $status, Duration: {$durationMs}ms");
+
+        // Set response with execution details
         $this->response['data'] = [[
-            'success' => true,
-            'message' => 'Job execution queued',
+            'success' => ($status === 'completed'),
+            'message' => $status === 'completed' ? 'Job executed successfully' : 'Job execution failed',
             'execution_id' => $executionId,
             'job_id' => $job->id,
-            'job_name' => $job->name
+            'job_name' => $job->name,
+            'status' => $status,
+            'duration_ms' => $durationMs,
+            'memory_peak_mb' => $memoryPeakMb,
+            'output' => $output,
+            'error' => $error
         ]];
 
-        error_log("handleTrigger() - Response set, data: " . json_encode($this->response['data']));
+        error_log("handleTrigger() - Response set with execution results");
     }
 
     /**
