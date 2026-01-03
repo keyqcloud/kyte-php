@@ -15,9 +15,9 @@ use Kyte\Core\DBI;
  * manual triggering, DLQ recovery, and validation.
  *
  * Custom Actions:
- * - POST /CronJob/trigger/5 - Manually trigger job execution
- * - POST /CronJob/recover/5 - Recover job from DLQ
- * - POST /CronJob/rollback/5?version=3 - Rollback to specific version
+ * - PUT /CronJob/trigger/5 - Manually trigger job execution
+ * - PUT /CronJob/recover/5 - Recover job from DLQ
+ * - PUT /CronJob/rollback/5?version=3 - Rollback to specific version
  * - GET /CronJob/stats/5 - Get job statistics
  */
 class CronJobController extends ModelController
@@ -41,25 +41,25 @@ class CronJobController extends ModelController
     // }
 
     /**
-     * Override new() to handle POST custom actions
+     * Override update() to handle PUT custom actions
      *
-     * URL: POST /CronJob/trigger/5
-     * Routing: new($data) with $this->api->field='trigger', $this->api->value='5'
+     * URL: PUT /CronJob/trigger/5
+     * Routing: update('trigger', '5', $data)
      */
-    public function new($data)
+    public function update($field, $value, $data)
     {
-        // Check if this is a custom action (POST /CronJob/{action}/{id})
-        $action = $this->api->field;
-        $jobId = $this->api->value;
+        // Check if this is a custom action (PUT /CronJob/{action}/{id})
+        $action = $field;
+        $jobId = $value;
 
         // Debug logging
-        error_log("CronJobController::new() - action: " . var_export($action, true) . ", jobId: " . var_export($jobId, true));
+        error_log("CronJobController::update() - action: " . var_export($action, true) . ", jobId: " . var_export($jobId, true));
 
         if ($action && $jobId) {
-            error_log("CronJobController::new() - Matched custom action: $action");
+            error_log("CronJobController::update() - Matched custom action: $action");
             switch ($action) {
                 case 'trigger':
-                    error_log("CronJobController::new() - Calling handleTrigger($jobId)");
+                    error_log("CronJobController::update() - Calling handleTrigger($jobId)");
                     return $this->handleTrigger($jobId);
 
                 case 'recover':
@@ -69,13 +69,13 @@ class CronJobController extends ModelController
                     return $this->handleRollback($jobId, $data);
 
                 default:
-                    // Not a recognized action, fall through to normal create
+                    // Not a recognized action, fall through to normal update
                     break;
             }
         }
 
-        // Normal job creation
-        parent::new($data);
+        // Normal job update
+        parent::update($field, $value, $data);
     }
 
     /**
