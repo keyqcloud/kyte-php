@@ -238,14 +238,13 @@ class CronJobFunctionController extends ModelController
                 if ($decompressed !== false) {
                     $r['function_body'] = $decompressed;
                 } else {
-                    // Decompression failed - log error and provide fallback
-                    error_log("CronJobFunctionController: Failed to decompress content for hash {$r['content_hash']}");
+                    // Decompression failed - only log on error
+                    error_log("CronJobFunctionController: Failed to decompress hash {$r['content_hash']}");
                     $r['function_body'] = '';
                     $r['decompression_error'] = true;
                 }
             } else {
-                // Content not found in database
-                error_log("CronJobFunctionController: Content not found for hash {$r['content_hash']}");
+                // Content not found
                 $r['function_body'] = '';
                 $r['content_missing'] = true;
             }
