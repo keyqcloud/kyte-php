@@ -110,9 +110,9 @@ class CronJobFunctionController extends ModelController
     /**
      * Override update() to handle function updates with version control
      */
-    public function update($data)
+    public function update($field, $value, $data)
     {
-        $functionId = $this->api->value;
+        $functionId = $value;
 
         $function = Model::one('CronJobFunction', $functionId);
         if (!$function) {
