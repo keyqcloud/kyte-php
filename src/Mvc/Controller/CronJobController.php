@@ -698,13 +698,13 @@ return "Success";',
                 time()
             ]);
 
-            echo "[" . date('Y-m-d H:i:s') . "] Created default function {$functionName} for job {$jobId}\n";
+            // Note: Default function created successfully
         }
 
         // Generate complete class code
         \Kyte\Cron\CronJobCodeGenerator::regenerateJobCode($jobId);
 
-        echo "[" . date('Y-m-d H:i:s') . "] Generated complete class for job {$jobId}\n";
+        // Note: Complete class generated successfully
     }
 
     /**

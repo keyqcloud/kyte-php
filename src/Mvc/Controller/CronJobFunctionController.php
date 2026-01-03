@@ -106,7 +106,7 @@ class CronJobFunctionController extends ModelController
             // Regenerate complete job class
             CronJobCodeGenerator::regenerateJobCode($data['cron_job']);
 
-            echo "[" . date('Y-m-d H:i:s') . "] Created function {$data['name']} for job {$data['cron_job']}\n";
+            // Note: Version created successfully (logged to response)
         }
     }
 
@@ -204,7 +204,7 @@ class CronJobFunctionController extends ModelController
                 // Regenerate complete job class
                 CronJobCodeGenerator::regenerateJobCode($function->cron_job);
 
-                echo "[" . date('Y-m-d H:i:s') . "] Updated function {$function->name} (version {$nextVersion})\n";
+                // Note: Version updated successfully (version info will be in response)
             }
         }
 
