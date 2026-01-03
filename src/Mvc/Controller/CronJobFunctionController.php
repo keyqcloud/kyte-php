@@ -41,8 +41,9 @@ class CronJobFunctionController extends ModelController
             return;
         }
 
-        $cronJob = Model::one('CronJob', $data['cron_job']);
-        if (!$cronJob) {
+        $cronJob = new ModelObject('CronJob');
+        $cronJob->retrieve('id', $data['cron_job']);
+        if (!$cronJob->id) {
             $this->respondError('Cron job not found', 404);
             return;
         }
@@ -62,12 +63,13 @@ class CronJobFunctionController extends ModelController
         $contentHash = hash('sha256', $functionBody);
 
         // Check if content already exists
-        $existingContent = Model::one('CronJobFunctionContent', $contentHash, 'content_hash');
+        $existingContent = new ModelObject('CronJobFunctionContent');
+        $existingContent->retrieve('content_hash', $contentHash);
 
-        if ($existingContent) {
+        if ($existingContent->id) {
             // Increment reference count
             $existingContent->reference_count++;
-            $existingContent->save();
+            $existingContent->save([], $this->api->user ? $this->api->user->id : null);
         } else {
             // Create new content record
             $compressed = bzcompress($functionBody, 9);
@@ -114,8 +116,9 @@ class CronJobFunctionController extends ModelController
     {
         $functionId = $value;
 
-        $function = Model::one('CronJobFunction', $functionId);
-        if (!$function) {
+        $function = new ModelObject('CronJobFunction');
+        $function->retrieve('id', $functionId);
+        if (!$function->id) {
             $this->respondError('Function not found', 404);
             return;
         }
@@ -147,9 +150,10 @@ class CronJobFunctionController extends ModelController
                 $nextVersion = ($versionResult[0]['max_version'] ?? 0) + 1;
 
                 // Check if new content already exists
-                $existingContent = Model::one('CronJobFunctionContent', $newContentHash, 'content_hash');
+                $existingContent = new ModelObject('CronJobFunctionContent');
+                $existingContent->retrieve('content_hash', $newContentHash);
 
-                if (!$existingContent) {
+                if (!$existingContent->id) {
                     // Create new content record
                     $compressed = bzcompress($functionBody, 9);
 
@@ -166,15 +170,16 @@ class CronJobFunctionController extends ModelController
                 } else {
                     // Increment reference count
                     $existingContent->reference_count++;
-                    $existingContent->save();
+                    $existingContent->save([], $this->api->user ? $this->api->user->id : null);
                 }
 
                 // Decrement old content reference count
                 if ($function->content_hash) {
-                    $oldContent = Model::one('CronJobFunctionContent', $function->content_hash, 'content_hash');
-                    if ($oldContent && $oldContent->reference_count > 0) {
+                    $oldContent = new ModelObject('CronJobFunctionContent');
+                    $oldContent->retrieve('content_hash', $function->content_hash);
+                    if ($oldContent->id && $oldContent->reference_count > 0) {
                         $oldContent->reference_count--;
-                        $oldContent->save();
+                        $oldContent->save([], $this->api->user ? $this->api->user->id : null);
                     }
                 }
 

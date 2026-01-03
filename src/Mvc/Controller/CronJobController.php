@@ -451,9 +451,10 @@ class CronJobController extends ModelController
      */
     private function handleTrigger(int $jobId): void
     {
-        $job = Model::one('CronJob', $jobId);
+        $job = new ModelObject('CronJob');
+        $job->retrieve('id', $jobId);
 
-        if (!$job) {
+        if (!$job->id) {
             $this->respond(['error' => 'Job not found'], 404);
             return;
         }
@@ -504,9 +505,10 @@ class CronJobController extends ModelController
      */
     private function handleRecover(int $jobId): void
     {
-        $job = Model::one('CronJob', $jobId);
+        $job = new ModelObject('CronJob');
+        $job->retrieve('id', $jobId);
 
-        if (!$job) {
+        if (!$job->id) {
             $this->respond(['error' => 'Job not found'], 404);
             return;
         }
@@ -540,9 +542,10 @@ class CronJobController extends ModelController
      */
     private function handleRollback(int $jobId, array $data): void
     {
-        $job = Model::one('CronJob', $jobId);
+        $job = new ModelObject('CronJob');
+        $job->retrieve('id', $jobId);
 
-        if (!$job) {
+        if (!$job->id) {
             $this->respond(['error' => 'Job not found'], 404);
             return;
         }
@@ -568,9 +571,10 @@ class CronJobController extends ModelController
      */
     private function handleStats(int $jobId): void
     {
-        $job = Model::one('CronJob', $jobId);
+        $job = new ModelObject('CronJob');
+        $job->retrieve('id', $jobId);
 
-        if (!$job) {
+        if (!$job->id) {
             $this->respond(['error' => 'Job not found'], 404);
             return;
         }
@@ -612,8 +616,9 @@ class CronJobController extends ModelController
      */
     private function createDefaultFunctions(int $jobId, ?int $userId): void
     {
-        $job = Model::one('CronJob', $jobId);
-        if (!$job) {
+        $job = new ModelObject('CronJob');
+        $job->retrieve('id', $jobId);
+        if (!$job->id) {
             return;
         }
 
@@ -640,9 +645,10 @@ return "Success";',
             $contentHash = hash('sha256', $functionBody);
 
             // Check if content exists (unlikely for defaults, but check anyway)
-            $existingContent = Model::one('CronJobFunctionContent', $contentHash, 'content_hash');
+            $existingContent = new ModelObject('CronJobFunctionContent');
+            $existingContent->retrieve('content_hash', $contentHash);
 
-            if (!$existingContent) {
+            if (!$existingContent->id) {
                 // Create content record
                 $compressed = bzcompress($functionBody, 9);
 
@@ -659,7 +665,7 @@ return "Success";',
             } else {
                 // Increment reference count
                 $existingContent->reference_count++;
-                $existingContent->save();
+                $existingContent->save([], $userId);
             }
 
             // Create function record

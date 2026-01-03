@@ -65,19 +65,22 @@ class CronJobExecutionController extends ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'get':
-                // Add job information
+                // Add job information (extract ID if FK was resolved to object)
                 if (!empty($r['cron_job'])) {
-                    $r['job'] = $this->getJobInfo($r['cron_job']);
+                    $jobId = is_array($r['cron_job']) ? $r['cron_job']['id'] : $r['cron_job'];
+                    $r['job'] = $this->getJobInfo($jobId);
                 }
 
                 // Add parent execution info if retry
                 if (!empty($r['parent_execution'])) {
-                    $r['parent_execution_info'] = $this->getExecutionInfo($r['parent_execution']);
+                    $parentId = is_array($r['parent_execution']) ? $r['parent_execution']['id'] : $r['parent_execution'];
+                    $r['parent_execution_info'] = $this->getExecutionInfo($parentId);
                 }
 
                 // Add dependency execution info
                 if (!empty($r['dependency_execution'])) {
-                    $r['dependency_execution_info'] = $this->getExecutionInfo($r['dependency_execution']);
+                    $depId = is_array($r['dependency_execution']) ? $r['dependency_execution']['id'] : $r['dependency_execution'];
+                    $r['dependency_execution_info'] = $this->getExecutionInfo($depId);
                 }
 
                 // Calculate duration if not set (for running jobs)
