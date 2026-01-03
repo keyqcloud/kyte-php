@@ -797,6 +797,21 @@ class Api
 
 		if (strlen($jsonOutput) == 0) {
 			error_log("JSON ENCODE FAILED: " . json_last_error_msg());
+
+			// Find the problematic field
+			if (isset($this->response['data']) && is_array($this->response['data'])) {
+				foreach ($this->response['data'] as $idx => $item) {
+					error_log("Testing data[$idx]...");
+					foreach ($item as $key => $value) {
+						if (is_string($value)) {
+							$testEncode = json_encode([$key => $value]);
+							if ($testEncode === false || strlen($testEncode) == 0) {
+								error_log("  PROBLEM FIELD: $key = " . substr(bin2hex($value), 0, 100));
+							}
+						}
+					}
+				}
+			}
 		}
 
 		if (defined('LOG_RESPONSE')) {
