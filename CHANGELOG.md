@@ -216,6 +216,7 @@ CREATE TABLE IF NOT EXISTS CronJobFunctionVersion (
     is_current TINYINT(1) UNSIGNED DEFAULT 0,
     change_description TEXT NULL COMMENT 'What changed in this version',
     diff_json LONGTEXT NULL COMMENT 'JSON-encoded line-by-line diff from previous version',
+    kyte_account INT NOT NULL COMMENT 'Account ownership for multi-tenant isolation',
     created_by INT NULL,
     date_created INT UNSIGNED NOT NULL,
     deleted_by INT NULL,
@@ -226,11 +227,13 @@ CREATE TABLE IF NOT EXISTS CronJobFunctionVersion (
     INDEX idx_version (version_number),
     INDEX idx_content_hash (content_hash),
     INDEX idx_current (is_current),
+    INDEX idx_account (kyte_account),
     INDEX idx_deleted (deleted),
     UNIQUE KEY unique_function_version (cron_job_function, version_number),
 
     FOREIGN KEY (cron_job_function) REFERENCES CronJobFunction(id) ON DELETE CASCADE,
-    FOREIGN KEY (content_hash) REFERENCES CronJobFunctionContent(content_hash) ON DELETE RESTRICT
+    FOREIGN KEY (content_hash) REFERENCES CronJobFunctionContent(content_hash) ON DELETE RESTRICT,
+    FOREIGN KEY (kyte_account) REFERENCES KyteAccount(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================================================================
