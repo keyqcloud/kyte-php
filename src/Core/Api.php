@@ -787,49 +787,10 @@ class Api
 		// return response data
 		$this->response = ['response_code' => 200] + $this->response;
 
-		// TEMPORARY DEBUG - Remove after testing
-		error_log("=== API RESPONSE DEBUG ===");
-		error_log("Response keys: " . implode(', ', array_keys($this->response)));
-		error_log("Data count: " . (isset($this->response['data']) ? count($this->response['data']) : 'NO DATA'));
-
-		$jsonOutput = json_encode($this->response);
-		error_log("JSON encode result length: " . strlen($jsonOutput));
-
-		if (strlen($jsonOutput) == 0) {
-			error_log("JSON ENCODE FAILED: " . json_last_error_msg());
-
-			// Find the problematic field
-			if (isset($this->response['data']) && is_array($this->response['data'])) {
-				foreach ($this->response['data'] as $idx => $item) {
-					error_log("Testing data[$idx]...");
-					foreach ($item as $key => $value) {
-						$testEncode = json_encode([$key => $value]);
-						if ($testEncode === false || strlen($testEncode) == 0) {
-							if (is_string($value)) {
-								error_log("  PROBLEM FIELD: $key (string) = " . substr(bin2hex($value), 0, 100));
-							} elseif (is_array($value)) {
-								error_log("  PROBLEM FIELD: $key (array), checking nested...");
-								foreach ($value as $subkey => $subvalue) {
-									if (is_string($subvalue)) {
-										$testSubEncode = json_encode([$subkey => $subvalue]);
-										if ($testSubEncode === false || strlen($testSubEncode) == 0) {
-											error_log("    NESTED PROBLEM: $key.$subkey = " . substr(bin2hex($subvalue), 0, 100));
-										}
-									}
-								}
-							} else {
-								error_log("  PROBLEM FIELD: $key (" . gettype($value) . ")");
-							}
-						}
-					}
-				}
-			}
-		}
-
 		if (defined('LOG_RESPONSE')) {
 			error_log(json_encode($this->response, JSON_PRETTY_PRINT));
 		}
-		echo $jsonOutput;
+		echo json_encode($this->response);
 	}
 
 	/**
