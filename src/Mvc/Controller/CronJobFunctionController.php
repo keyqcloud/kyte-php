@@ -181,7 +181,10 @@ class CronJobFunctionController extends ModelController
                 }
 
                 // Update function with new content hash
-                $data['content_hash'] = $newContentHash;
+                $function->content_hash = $newContentHash;
+                $function->modified_by = $this->api->user ? $this->api->user->id : null;
+                $function->date_modified = time();
+                $function->save([], $this->api->user ? $this->api->user->id : null);
 
                 // Create new version
                 $this->createVersion($functionId, $newContentHash, $nextVersion, 'Code updated', $this->api->user ? $this->api->user->id : null);
@@ -193,10 +196,17 @@ class CronJobFunctionController extends ModelController
             }
         }
 
-        // Update function record (if any other fields changed)
-        if (!empty($data)) {
-            parent::update($field, $value, $data);
-        }
+        // Build response with updated function data
+        $responseData = $function->getAllParams($this->dateformat);
+
+        // Call hook_response_data to add decompressed function body and version info
+        $this->hook_response_data('update', $function, $responseData);
+
+        // Set response
+        $this->response['data'] = [$responseData];
+
+        // Output response as JSON
+        echo json_encode($this->response);
     }
 
     /**
