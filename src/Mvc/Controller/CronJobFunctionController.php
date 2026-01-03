@@ -217,8 +217,8 @@ class CronJobFunctionController extends ModelController
         // Set response
         $this->response['data'] = [$responseData];
 
-        // Output response as JSON
-        echo json_encode($this->response);
+        // Don't echo here - let the parent controller handle the response
+        // The Api class will automatically json_encode and output $this->response
     }
 
     /**
@@ -233,11 +233,21 @@ class CronJobFunctionController extends ModelController
 
             if (!empty($contentResult)) {
                 $compressed = $contentResult[0]['content'];
-                $decompressed = bzdecompress($compressed);
+                $decompressed = @bzdecompress($compressed);
 
                 if ($decompressed !== false) {
                     $r['function_body'] = $decompressed;
+                } else {
+                    // Decompression failed - log error and provide fallback
+                    error_log("CronJobFunctionController: Failed to decompress content for hash {$r['content_hash']}");
+                    $r['function_body'] = '';
+                    $r['decompression_error'] = true;
                 }
+            } else {
+                // Content not found in database
+                error_log("CronJobFunctionController: Content not found for hash {$r['content_hash']}");
+                $r['function_body'] = '';
+                $r['content_missing'] = true;
             }
 
             // Add version info (check if $o has id property)
