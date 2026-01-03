@@ -358,26 +358,93 @@ class CronWorker
 	}
 
 	/**
-	 * Execute the job code
+	 * Execute the job code in a forked worker process
+	 *
+	 * This approach:
+	 * - Ensures fresh code is loaded on every execution (no class caching)
+	 * - Prevents memory bloat (worker exits after each job)
+	 * - Provides isolation (one job can't affect others)
+	 * - Industry standard pattern (Laravel Queue, Sidekiq, Celery)
 	 */
 	private function executeJob($execution) {
-		$startTime = microtime(true);
-		$startMemory = memory_get_peak_usage(true);
+		// Check if pcntl extension is available
+		if (!function_exists('pcntl_fork')) {
+			// Fallback to inline execution if pcntl not available
+			echo "[" . date('Y-m-d H:i:s') . "] WARNING: pcntl extension not available, running inline (code may be cached)\n";
+			$this->executeJobInline($execution);
+			return;
+		}
 
 		// Track active execution for graceful shutdown
 		$this->activeExecution = $execution;
 		$this->stats['jobs_executed']++;
 
-		echo "[" . date('Y-m-d H:i:s') . "] Executing job #{$execution['cron_job']} ({$execution['job_name']}) - execution #{$execution['id']}\n";
+		echo "[" . date('Y-m-d H:i:s') . "] Forking worker for job #{$execution['cron_job']} ({$execution['job_name']}) - execution #{$execution['id']}\n";
+
+		// Fork a child process
+		$pid = pcntl_fork();
+
+		if ($pid == -1) {
+			// Fork failed
+			echo "[" . date('Y-m-d H:i:s') . "] ERROR: Failed to fork worker process\n";
+			$this->failExecution($execution, new \Exception("Failed to fork worker process"), 0, 0);
+			$this->stats['jobs_failed']++;
+			$this->activeExecution = null;
+			return;
+
+		} elseif ($pid == 0) {
+			// CHILD PROCESS: Execute the job
+			// Worker runs job and updates database directly, then exits
+			$this->runJobInWorker($execution);
+			exit(0); // Worker exits cleanly, freeing all memory
+
+		} else {
+			// PARENT PROCESS: Wait for worker to complete
+			$startTime = microtime(true);
+
+			// Wait for child process to finish
+			$status = 0;
+			pcntl_waitpid($pid, $status, 0);
+
+			$duration = (microtime(true) - $startTime) * 1000;
+			$exitCode = pcntl_wexitstatus($status);
+
+			if ($exitCode === 0) {
+				// Job completed successfully (child updated database)
+				$this->stats['jobs_completed']++;
+				echo "[" . date('Y-m-d H:i:s') . "] Worker completed job #{$execution['cron_job']} in " . round($duration) . "ms (exit code: 0)\n";
+			} else {
+				// Job failed (child updated database with error)
+				$this->stats['jobs_failed']++;
+				echo "[" . date('Y-m-d H:i:s') . "] Worker failed job #{$execution['cron_job']} (exit code: {$exitCode})\n";
+			}
+
+			// Clear active execution
+			$this->activeExecution = null;
+		}
+	}
+
+	/**
+	 * Run job in worker process (child process)
+	 *
+	 * This runs in a separate process, so it:
+	 * - Always loads fresh code from database
+	 * - Has its own memory space
+	 * - Exits after completion, freeing all resources
+	 */
+	private function runJobInWorker($execution) {
+		$startTime = microtime(true);
+		$startMemory = memory_get_peak_usage(true);
 
 		try {
+			// Get fresh database connection (parent's connection is not inherited properly)
+			DBI::reconnect();
+
 			// Decompress code
-			echo "[" . date('Y-m-d H:i:s') . "] Decompressing job code...\n";
 			$code = bzdecompress($execution['code']);
 			if ($code === false) {
 				throw new \Exception("Failed to decompress job code");
 			}
-			echo "[" . date('Y-m-d H:i:s') . "] Code decompressed successfully\n";
 
 			// Strip PHP opening/closing tags for eval()
 			$code = preg_replace('/^<\?php\s*/i', '', $code);
@@ -387,7 +454,85 @@ class CronWorker
 			set_time_limit($execution['timeout_seconds']);
 
 			// Capture output
-			echo "[" . date('Y-m-d H:i:s') . "] Starting job execution...\n";
+			ob_start();
+
+			// Eval the code (always fresh, no class_exists check needed)
+			eval($code);
+
+			// Extract class name and instantiate
+			$className = $this->extractClassName($code);
+			if (!class_exists($className, false)) {
+				throw new \Exception("Job class {$className} not found after eval");
+			}
+
+			$job = new $className();
+			$job->setExecution($execution);
+
+			// Run job lifecycle
+			$job->setUp();
+			$result = $job->execute();
+			$job->tearDown();
+
+			// Capture output
+			$output = ob_get_clean();
+
+			// Add result to output if it's a string
+			if (is_string($result)) {
+				$output .= "\n" . $result;
+			}
+
+			// Calculate metrics
+			$duration = (microtime(true) - $startTime) * 1000; // ms
+			$memoryPeak = (memory_get_peak_usage(true) - $startMemory) / 1024 / 1024; // MB
+
+			// Mark as completed
+			$this->completeExecution($execution, $output, $duration, $memoryPeak);
+
+			// Worker exits with success code
+			exit(0);
+
+		} catch (\Exception $e) {
+			ob_end_clean();
+
+			$duration = (microtime(true) - $startTime) * 1000;
+			$memoryPeak = (memory_get_peak_usage(true) - $startMemory) / 1024 / 1024;
+
+			// Mark as failed
+			$this->failExecution($execution, $e, $duration, $memoryPeak);
+
+			// Worker exits with error code
+			exit(1);
+		}
+	}
+
+	/**
+	 * Fallback: Execute job inline (old behavior)
+	 * Used when pcntl extension is not available
+	 */
+	private function executeJobInline($execution) {
+		$startTime = microtime(true);
+		$startMemory = memory_get_peak_usage(true);
+
+		$this->activeExecution = $execution;
+		$this->stats['jobs_executed']++;
+
+		echo "[" . date('Y-m-d H:i:s') . "] Executing job #{$execution['cron_job']} ({$execution['job_name']}) - execution #{$execution['id']}\n";
+
+		try {
+			// Decompress code
+			$code = bzdecompress($execution['code']);
+			if ($code === false) {
+				throw new \Exception("Failed to decompress job code");
+			}
+
+			// Strip PHP opening/closing tags for eval()
+			$code = preg_replace('/^<\?php\s*/i', '', $code);
+			$code = preg_replace('/\s*\?>$/', '', $code);
+
+			// Set timeout
+			set_time_limit($execution['timeout_seconds']);
+
+			// Capture output
 			ob_start();
 
 			// Extract class name from code first

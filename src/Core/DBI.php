@@ -271,6 +271,28 @@ class DBI {
 	}
 
 	/**
+	 * Reconnect to database (close existing connection and create fresh one)
+	 *
+	 * This is necessary after pcntl_fork() because MySQL connections cannot
+	 * be shared between parent and child processes. The child process must
+	 * create its own connection.
+	 *
+	 * @return void
+	 */
+	public static function reconnect()
+	{
+		// Close existing connections
+		self::close();
+		self::closeApp();
+
+		// Clear connection references
+		self::$dbConn = null;
+		self::$dbConnApp = null;
+
+		// New connections will be created on next getConnection() call
+	}
+
+	/**
 	 * Get current database connection
 	 * Eliminates code duplication across query methods
 	 *
