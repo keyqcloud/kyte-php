@@ -59,17 +59,20 @@ class CronJobController extends ModelController
             error_log("CronJobController::update() - Matched custom action: $action");
             switch ($action) {
                 case 'trigger':
-                    error_log("CronJobController::update() - Calling handleTrigger($jobId)");
+                    error_log("CronJobController::update() - TRIGGER - Calling handleTrigger($jobId)");
                     return $this->handleTrigger($jobId);
 
                 case 'recover':
+                    error_log("CronJobController::update() - RECOVER - Calling handleTrigger($jobId)");
                     return $this->handleRecover($jobId);
 
                 case 'rollback':
+                    error_log("CronJobController::update() - ROLLBACK - Calling handleTrigger($jobId)");
                     return $this->handleRollback($jobId, $data);
 
                 default:
                     // Not a recognized action, fall through to normal update
+                    error_log("CronJobController::update() - Unknown Action");
                     break;
             }
         }
