@@ -106,11 +106,16 @@ class CronJobController extends ModelController
     }
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
+        error_log("CronJobController::hook_response_data called with method=$method, o=" . ($o ? get_class($o) : 'null') . ", o->id=" . ($o && isset($o->id) ? $o->id : 'none'));
+
         switch ($method) {
             case 'new':
                 // Create default functions for new cron jobs
                 if ($o && $o->id) {
+                    error_log("Calling createDefaultFunctions for job {$o->id}");
                     $this->createDefaultFunctions($o->id, $this->api->user ? $this->api->user->id : null);
+                } else {
+                    error_log("ERROR: hook_response_data 'new' called but object has no ID");
                 }
 
                 // Decompress code for response
@@ -606,10 +611,15 @@ class CronJobController extends ModelController
      */
     private function createDefaultFunctions(int $jobId, ?int $userId): void
     {
+        error_log("=== createDefaultFunctions START for job $jobId ===");
+
         $job = new ModelObject(CronJob);
         if (!$job->retrieve('id', $jobId) || !isset($job->id)) {
+            error_log("ERROR: Failed to retrieve CronJob with id $jobId");
             return;
         }
+
+        error_log("CronJob retrieved: {$job->name}, app={$job->application}, account={$job->kyte_account}");
 
         $defaultFunctions = [
             'execute' => '$this->log("Job started");
@@ -630,8 +640,11 @@ return "Success";',
         ];
 
         foreach ($defaultFunctions as $functionName => $functionBody) {
+            error_log("Creating default function: $functionName");
+
             // Calculate content hash
             $contentHash = hash('sha256', $functionBody);
+            error_log("Content hash for $functionName: $contentHash");
 
             // Check if content exists (unlikely for defaults, but check anyway)
             $existingContent = new ModelObject(CronJobFunctionContent);
@@ -640,6 +653,7 @@ return "Success";',
             if (!$contentFound || !isset($existingContent->id)) {
                 // Create content record
                 $compressed = bzcompress($functionBody, 9);
+                error_log("Creating NEW content record, compressed size: " . strlen($compressed));
 
                 $contentData = [
                     'content_hash' => $contentHash,
@@ -650,9 +664,14 @@ return "Success";',
                 ];
 
                 $contentObj = new ModelObject(CronJobFunctionContent);
-                $contentObj->create($contentData, $userId);
+                if (!$contentObj->create($contentData, $userId)) {
+                    error_log("ERROR: Failed to create CronJobFunctionContent for $functionName");
+                    continue;
+                }
+                error_log("Content created with ID: {$contentObj->id}");
             } else {
                 // Increment reference count
+                error_log("Content exists with ID: {$existingContent->id}, incrementing reference count");
                 $existingContent->reference_count++;
                 $existingContent->save([
                     'reference_count' => $existingContent->reference_count
@@ -670,8 +689,15 @@ return "Success";',
                 'date_created' => time()
             ];
 
+            error_log("Creating CronJobFunction record with data: " . json_encode($functionData));
+
             $functionObj = new ModelObject(CronJobFunction);
-            $functionObj->create($functionData, $userId);
+            if (!$functionObj->create($functionData, $userId)) {
+                error_log("ERROR: Failed to create CronJobFunction for $functionName");
+                continue;
+            }
+
+            error_log("Function created with ID: {$functionObj->id}");
 
             // Create initial version (version 1)
             $versionSql = "
@@ -681,20 +707,25 @@ return "Success";',
                 ) VALUES (?, 1, ?, 1, 'Initial version', ?, ?, 0)
             ";
 
-            DBI::prepared_query($versionSql, 'isii', [
-                $functionObj->id,
-                $contentHash,
-                $userId,
-                time()
-            ]);
-
-            // Note: Default function created successfully
+            try {
+                DBI::prepared_query($versionSql, 'isii', [
+                    $functionObj->id,
+                    $contentHash,
+                    $userId,
+                    time()
+                ]);
+                error_log("Version record created for function {$functionObj->id}");
+            } catch (\Exception $e) {
+                error_log("ERROR: Failed to create version record: " . $e->getMessage());
+            }
         }
 
         // Generate complete class code
-        \Kyte\Cron\CronJobCodeGenerator::regenerateJobCode($jobId);
+        error_log("Regenerating job code for job $jobId");
+        $codeGenSuccess = \Kyte\Cron\CronJobCodeGenerator::regenerateJobCode($jobId);
+        error_log("Code generation " . ($codeGenSuccess ? "SUCCESS" : "FAILED"));
 
-        // Note: Complete class generated successfully
+        error_log("=== createDefaultFunctions END for job $jobId ===");
     }
 
     /**
