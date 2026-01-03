@@ -129,22 +129,36 @@ class CronJobController extends ModelController
                 break;
 
             case 'get':
-                // Decompress code for response
+                // Only add expensive computed fields for single-record GET (by ID)
+                // For list views (by application, etc.), skip to avoid N+1 query problem
+                $isSingleRecord = isset($_SERVER['REQUEST_URI']) &&
+                                  strpos($_SERVER['REQUEST_URI'], '/id/') !== false;
+
+                // Decompress code for response (always needed)
                 $this->decompressCode($r);
 
-                // Version info now per-function - access via CronJobFunctionVersion API
-                // $r['version_info'] = $this->getVersionInfo($o->id);
+                if ($isSingleRecord) {
+                    // Version info now per-function - access via CronJobFunctionVersion API
+                    // $r['version_info'] = $this->getVersionInfo($o->id);
 
-                // Add execution summary
-                $r['execution_summary'] = $this->getExecutionSummary($o->id);
+                    // Add execution summary (expensive - only for detail view)
+                    $r['execution_summary'] = $this->getExecutionSummary($o->id);
 
-                // Add dependency information if applicable
-                if (!empty($r['depends_on_job'])) {
-                    $r['parent_job'] = $this->getParentJobInfo($r['depends_on_job']);
+                    // Add dependency information if applicable
+                    if (!empty($r['depends_on_job'])) {
+                        $r['parent_job'] = $this->getParentJobInfo($r['depends_on_job']);
+                    }
+
+                    // Add next run time
+                    $r['next_run'] = $this->getNextRunTime($o->id);
+                } else {
+                    // For list views, only add lightweight computed fields
+                    // Next run time is relatively cheap (single query from pending execution)
+                    $r['next_run'] = $this->getNextRunTime($o->id);
+
+                    // Add basic execution summary (just counts, no aggregations)
+                    $r['execution_summary'] = $this->getExecutionSummary($o->id);
                 }
-
-                // Add next run time
-                $r['next_run'] = $this->getNextRunTime($o->id);
                 break;
 
             case 'update':
