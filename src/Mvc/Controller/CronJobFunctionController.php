@@ -123,7 +123,7 @@ class CronJobFunctionController extends ModelController
         $functionId = $value;
 
         if ($action === 'rollback') {
-            return $this->handleRollback($functionId, $data);
+            return $this->handleRollback((int)$functionId, $data);
         }
 
         // Normal update flow
