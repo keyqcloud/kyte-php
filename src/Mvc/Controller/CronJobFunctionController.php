@@ -362,7 +362,5 @@ class CronJobFunctionController extends ModelController
     {
         http_response_code($statusCode);
         $this->response['error'] = $message;
-        echo json_encode($this->response);
-        exit(0);
     }
 }

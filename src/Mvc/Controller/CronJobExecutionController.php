@@ -394,7 +394,5 @@ class CronJobExecutionController extends ModelController
     {
         http_response_code($statusCode);
         $this->response = array_merge($this->response, $data);
-        echo json_encode($this->response);
-        exit(0);
     }
 }
