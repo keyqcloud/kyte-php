@@ -447,10 +447,8 @@ class CronJobController extends ModelController
             return;
         }
 
-        if (!$job->enabled) {
-            $this->respond(['error' => 'Job is disabled'], 400);
-            return;
-        }
+        // Manual triggers work even if job is disabled (only scheduled execution respects enabled flag)
+        // This allows testing disabled jobs without re-enabling them
 
         if ($job->in_dead_letter_queue) {
             $this->respond(['error' => 'Job is in dead letter queue. Recover it first.'], 400);
