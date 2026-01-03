@@ -195,7 +195,7 @@ class CronJobFunctionController extends ModelController
 
         // Update function record (if any other fields changed)
         if (!empty($data)) {
-            parent::update($data);
+            parent::update($field, $value, $data);
         }
     }
 
