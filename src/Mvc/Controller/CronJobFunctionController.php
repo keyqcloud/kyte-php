@@ -317,16 +317,16 @@ class CronJobFunctionController extends ModelController
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ";
 
-        DBI::prepared_query($insertSql, 'iisisiii', [
-            $versionData['cron_job_function'],
-            $versionData['version_number'],
-            $versionData['content_hash'],
-            $versionData['is_current'],
-            $versionData['change_description'],
-            $versionData['kyte_account'],
-            $versionData['created_by'],
-            $versionData['date_created'],
-            $versionData['deleted']
+        DBI::prepared_query($insertSql, 'iisisiiii', [
+            $versionData['cron_job_function'],     // i - INT
+            $versionData['version_number'],        // i - INT
+            $versionData['content_hash'],          // s - VARCHAR
+            $versionData['is_current'],            // i - TINYINT
+            $versionData['change_description'],    // s - TEXT
+            $versionData['kyte_account'],          // i - INT
+            $versionData['created_by'],            // i - INT
+            $versionData['date_created'],          // i - INT
+            $versionData['deleted']                // i - TINYINT
         ]);
     }
 
