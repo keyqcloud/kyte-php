@@ -398,9 +398,17 @@ class CronJobFunctionController extends ModelController
             return;
         }
 
-        // Get the function
+        // Get the function with account scoping
         $function = new ModelObject(CronJobFunction);
-        if (!$function->retrieve('id', $functionId) || !isset($function->id)) {
+
+        $conditions = null;
+        if ($this->model !== null) {
+            if (!isset($this->model['appId']) && $this->requireAccount) {
+                $conditions = [['field' => 'kyte_account', 'value' => $this->api->account->id]];
+            }
+        }
+
+        if (!$function->retrieve('id', $functionId, $conditions) || !isset($function->id)) {
             $this->respondError('Function not found', 404);
             return;
         }
