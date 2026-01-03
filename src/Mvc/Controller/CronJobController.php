@@ -52,9 +52,14 @@ class CronJobController extends ModelController
         $action = $this->api->field;
         $jobId = $this->api->value;
 
+        // Debug logging
+        error_log("CronJobController::new() - action: " . var_export($action, true) . ", jobId: " . var_export($jobId, true));
+
         if ($action && $jobId) {
+            error_log("CronJobController::new() - Matched custom action: $action");
             switch ($action) {
                 case 'trigger':
+                    error_log("CronJobController::new() - Calling handleTrigger($jobId)");
                     return $this->handleTrigger($jobId);
 
                 case 'recover':
@@ -441,12 +446,17 @@ class CronJobController extends ModelController
      */
     private function handleTrigger(int $jobId): void
     {
+        error_log("handleTrigger() called with jobId: $jobId");
+
         $job = new ModelObject(CronJob);
         if (!$job->retrieve('id', $jobId) || !isset($job->id)) {
+            error_log("handleTrigger() - Job not found: $jobId");
             $this->response['error'] = 'Job not found';
             $this->response['response_code'] = 404;
             return;
         }
+
+        error_log("handleTrigger() - Job found, creating execution...");
 
         // Manual triggers work even if job is disabled (only scheduled execution respects enabled flag)
         // This allows testing disabled jobs without re-enabling them
@@ -477,6 +487,7 @@ class CronJobController extends ModelController
         ]);
 
         $executionId = DBI::insert_id();
+        error_log("handleTrigger() - Execution created with ID: $executionId");
 
         // Set response and return (framework will output it)
         $this->response['data'] = [[
@@ -486,6 +497,8 @@ class CronJobController extends ModelController
             'job_id' => $job->id,
             'job_name' => $job->name
         ]];
+
+        error_log("handleTrigger() - Response set, data: " . json_encode($this->response['data']));
     }
 
     /**
