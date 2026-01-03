@@ -443,7 +443,8 @@ class CronJobController extends ModelController
     {
         $job = new ModelObject(CronJob);
         if (!$job->retrieve('id', $jobId) || !isset($job->id)) {
-            $this->respond(['error' => 'Job not found'], 404);
+            $this->response['error'] = 'Job not found';
+            $this->response['response_code'] = 404;
             return;
         }
 
@@ -451,7 +452,8 @@ class CronJobController extends ModelController
         // This allows testing disabled jobs without re-enabling them
 
         if ($job->in_dead_letter_queue) {
-            $this->respond(['error' => 'Job is in dead letter queue. Recover it first.'], 400);
+            $this->response['error'] = 'Job is in dead letter queue. Recover it first.';
+            $this->response['response_code'] = 400;
             return;
         }
 
@@ -476,13 +478,14 @@ class CronJobController extends ModelController
 
         $executionId = DBI::insert_id();
 
-        $this->respond([
+        // Set response and return (framework will output it)
+        $this->response['data'] = [[
             'success' => true,
             'message' => 'Job execution queued',
             'execution_id' => $executionId,
             'job_id' => $job->id,
             'job_name' => $job->name
-        ]);
+        ]];
     }
 
     /**
@@ -493,12 +496,14 @@ class CronJobController extends ModelController
     {
         $job = new ModelObject(CronJob);
         if (!$job->retrieve('id', $jobId) || !isset($job->id)) {
-            $this->respond(['error' => 'Job not found'], 404);
+            $this->response['error'] = 'Job not found';
+            $this->response['response_code'] = 404;
             return;
         }
 
         if (!$job->in_dead_letter_queue) {
-            $this->respond(['error' => 'Job is not in dead letter queue'], 400);
+            $this->response['error'] = 'Job is not in dead letter queue';
+            $this->response['response_code'] = 400;
             return;
         }
 
@@ -520,12 +525,12 @@ class CronJobController extends ModelController
             'date_modified' => time()
         ], $this->api->user ? $this->api->user->id : null);
 
-        $this->respond([
+        $this->response['data'] = [[
             'success' => true,
             'message' => 'Job recovered from dead letter queue',
             'job_id' => $job->id,
             'job_name' => $job->name
-        ]);
+        ]];
     }
 
     /**
@@ -536,7 +541,8 @@ class CronJobController extends ModelController
     {
         $job = new ModelObject(CronJob);
         if (!$job->retrieve('id', $jobId) || !isset($job->id)) {
-            $this->respond(['error' => 'Job not found'], 404);
+            $this->response['error'] = 'Job not found';
+            $this->response['response_code'] = 404;
             return;
         }
 
@@ -544,15 +550,15 @@ class CronJobController extends ModelController
         $versionNumber = $_GET['version'] ?? $data['version'] ?? null;
 
         if (!$versionNumber) {
-            $this->respond(['error' => 'Version number is required'], 400);
+            $this->response['error'] = 'Version number is required';
+            $this->response['response_code'] = 400;
             return;
         }
 
         // TODO: Implement rollback for function-based versioning
         // Rollback now works at per-function level via CronJobFunctionVersionController
-        $this->respond([
-            'error' => 'Rollback not yet implemented for function-based versioning. Use CronJobFunctionVersion API to rollback individual functions.'
-        ], 501); // 501 Not Implemented
+        $this->response['error'] = 'Rollback not yet implemented for function-based versioning. Use CronJobFunctionVersion API to rollback individual functions.';
+        $this->response['response_code'] = 501; // 501 Not Implemented
     }
 
     /**
@@ -563,7 +569,8 @@ class CronJobController extends ModelController
     {
         $job = new ModelObject(CronJob);
         if (!$job->retrieve('id', $jobId) || !isset($job->id)) {
-            $this->respond(['error' => 'Job not found'], 404);
+            $this->response['error'] = 'Job not found';
+            $this->response['response_code'] = 404;
             return;
         }
 
@@ -589,12 +596,12 @@ class CronJobController extends ModelController
         // Get overall stats
         $overallSummary = $this->getExecutionSummary($jobId);
 
-        $this->respond([
+        $this->response['data'] = [[
             'job_id' => $job->id,
             'job_name' => $job->name,
             'overall_summary' => $overallSummary,
             'daily_stats' => $dailyStats ?: [],
-        ]);
+        ]];
     }
 
     /**
@@ -690,14 +697,5 @@ return "Success";',
 
         // Generate complete class code
         \Kyte\Cron\CronJobCodeGenerator::regenerateJobCode($jobId);
-    }
-
-    /**
-     * Send JSON response and exit
-     */
-    private function respond(array $data, int $statusCode = 200): void
-    {
-        http_response_code($statusCode);
-        $this->response = array_merge($this->response, $data);
     }
 }
