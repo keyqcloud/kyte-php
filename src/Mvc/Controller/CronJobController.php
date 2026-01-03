@@ -452,9 +452,7 @@ class CronJobController extends ModelController
     private function handleTrigger(int $jobId): void
     {
         $job = new ModelObject(CronJob);
-        $job->retrieve('id', $jobId);
-
-        if (!$job->id) {
+        if (!$job->retrieve('id', $jobId) || !isset($job->id)) {
             $this->respond(['error' => 'Job not found'], 404);
             return;
         }
@@ -506,9 +504,7 @@ class CronJobController extends ModelController
     private function handleRecover(int $jobId): void
     {
         $job = new ModelObject(CronJob);
-        $job->retrieve('id', $jobId);
-
-        if (!$job->id) {
+        if (!$job->retrieve('id', $jobId) || !isset($job->id)) {
             $this->respond(['error' => 'Job not found'], 404);
             return;
         }
@@ -543,9 +539,7 @@ class CronJobController extends ModelController
     private function handleRollback(int $jobId, array $data): void
     {
         $job = new ModelObject(CronJob);
-        $job->retrieve('id', $jobId);
-
-        if (!$job->id) {
+        if (!$job->retrieve('id', $jobId) || !isset($job->id)) {
             $this->respond(['error' => 'Job not found'], 404);
             return;
         }
@@ -572,9 +566,7 @@ class CronJobController extends ModelController
     private function handleStats(int $jobId): void
     {
         $job = new ModelObject(CronJob);
-        $job->retrieve('id', $jobId);
-
-        if (!$job->id) {
+        if (!$job->retrieve('id', $jobId) || !isset($job->id)) {
             $this->respond(['error' => 'Job not found'], 404);
             return;
         }
@@ -617,8 +609,7 @@ class CronJobController extends ModelController
     private function createDefaultFunctions(int $jobId, ?int $userId): void
     {
         $job = new ModelObject(CronJob);
-        $job->retrieve('id', $jobId);
-        if (!$job->id) {
+        if (!$job->retrieve('id', $jobId) || !isset($job->id)) {
             return;
         }
 
@@ -646,9 +637,9 @@ return "Success";',
 
             // Check if content exists (unlikely for defaults, but check anyway)
             $existingContent = new ModelObject(CronJobFunctionContent);
-            $existingContent->retrieve('content_hash', $contentHash);
+            $contentFound = $existingContent->retrieve('content_hash', $contentHash);
 
-            if (!$existingContent->id) {
+            if (!$contentFound || !isset($existingContent->id)) {
                 // Create content record
                 $compressed = bzcompress($functionBody, 9);
 

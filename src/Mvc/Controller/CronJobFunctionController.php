@@ -42,8 +42,7 @@ class CronJobFunctionController extends ModelController
         }
 
         $cronJob = new ModelObject(CronJob);
-        $cronJob->retrieve('id', $data['cron_job']);
-        if (!$cronJob->id) {
+        if (!$cronJob->retrieve('id', $data['cron_job']) || !isset($cronJob->id)) {
             $this->respondError('Cron job not found', 404);
             return;
         }
@@ -64,9 +63,9 @@ class CronJobFunctionController extends ModelController
 
         // Check if content already exists
         $existingContent = new ModelObject(CronJobFunctionContent);
-        $existingContent->retrieve('content_hash', $contentHash);
+        $contentFound = $existingContent->retrieve('content_hash', $contentHash);
 
-        if ($existingContent->id) {
+        if ($contentFound && isset($existingContent->id)) {
             // Increment reference count
             $existingContent->reference_count++;
             $existingContent->save([], $this->api->user ? $this->api->user->id : null);
@@ -117,8 +116,7 @@ class CronJobFunctionController extends ModelController
         $functionId = $value;
 
         $function = new ModelObject(CronJobFunction);
-        $function->retrieve('id', $functionId);
-        if (!$function->id) {
+        if (!$function->retrieve('id', $functionId) || !isset($function->id)) {
             $this->respondError('Function not found', 404);
             return;
         }
@@ -151,9 +149,9 @@ class CronJobFunctionController extends ModelController
 
                 // Check if new content already exists
                 $existingContent = new ModelObject(CronJobFunctionContent);
-                $existingContent->retrieve('content_hash', $newContentHash);
+                $newContentFound = $existingContent->retrieve('content_hash', $newContentHash);
 
-                if (!$existingContent->id) {
+                if (!$newContentFound || !isset($existingContent->id)) {
                     // Create new content record
                     $compressed = bzcompress($functionBody, 9);
 
@@ -176,8 +174,7 @@ class CronJobFunctionController extends ModelController
                 // Decrement old content reference count
                 if ($function->content_hash) {
                     $oldContent = new ModelObject(CronJobFunctionContent);
-                    $oldContent->retrieve('content_hash', $function->content_hash);
-                    if ($oldContent->id && $oldContent->reference_count > 0) {
+                    if ($oldContent->retrieve('content_hash', $function->content_hash) && isset($oldContent->id) && $oldContent->reference_count > 0) {
                         $oldContent->reference_count--;
                         $oldContent->save([], $this->api->user ? $this->api->user->id : null);
                     }

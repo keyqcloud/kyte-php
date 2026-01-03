@@ -4,6 +4,7 @@ namespace Kyte\Cron;
 
 use Kyte\Core\DBI;
 use Kyte\Core\Model;
+use Kyte\Core\ModelObject;
 
 /**
  * CronJobCodeGenerator
@@ -32,11 +33,15 @@ class CronJobCodeGenerator
             $className = "CronJob_{$cronJobId}";
         }
 
-        // Load all functions for this job
-        $functions = Model::all('CronJobFunction', [
-            ['field' => 'cron_job', 'value' => $cronJobId],
-            ['field' => 'deleted', 'value' => 0]
-        ]);
+        // Load all functions for this job using proper Model pattern
+        $functionModel = new Model(CronJobFunction);
+        $functions = $functionModel->retrieve(
+            'cron_job',
+            $cronJobId,
+            false,
+            [['field' => 'deleted', 'value' => 0]],
+            true // all records
+        );
 
         // Build function code map
         $functionBodies = [
@@ -45,8 +50,9 @@ class CronJobCodeGenerator
             'tearDown' => null
         ];
 
-        foreach ($functions as $function) {
-            $functionName = $function->name;
+        if (!empty($functions)) {
+            foreach ($functions as $function) {
+                $functionName = $function->name;
 
             // Get current content
             if ($function->content_hash) {
@@ -62,6 +68,7 @@ class CronJobCodeGenerator
                     }
                 }
             }
+        }
         }
 
         // Generate class code
