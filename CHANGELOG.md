@@ -8,6 +8,230 @@ This major version brings two transformative feature sets that fundamentally enh
 
 2. **Enterprise-Grade Distributed Cron System** - Production-ready job scheduling with cron expressions, intervals, and calendar-based schedules. Features lease-based locking for multi-server environments, automatic retry with exponential backoff, dead letter queue, job dependencies, complete version control with SHA256 deduplication, execution history, Slack/email notifications, and a full REST API with web-based management interface.
 
+**BREAKING CHANGE - Cron Job Code Structure:**
+* Refactored cron jobs to use function-based code (matching controller pattern) instead of full class definitions
+* Users now write only method bodies (`execute`, `setUp`, `tearDown`) instead of full PHP classes
+* Backend assembles complete class at runtime from function bodies
+* **Security improvement**: Prevents malicious class definitions, constructors, or namespace manipulation
+* **Per-function version control**: Each method (execute, setUp, tearDown) has independent version history
+* **Migration required**: Existing cron jobs with full class definitions must be migrated (see SQL below)
+* This change improves security by restricting what users can define in cron job code
+
+**Database Migration SQL (v4.0.0):**
+
+```sql
+-- =========================================================================
+-- Kyte v4.0.0 - Complete Cron Job System Setup
+-- =========================================================================
+-- IMPORTANT: Backup your database before running this migration
+-- This creates all tables needed for the distributed cron job system
+-- with function-based code (secure, matching controller pattern)
+-- =========================================================================
+
+-- Step 1: Create main CronJob table (job definitions)
+CREATE TABLE IF NOT EXISTS CronJob (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    code LONGBLOB COMMENT 'bzip2 compressed PHP code (auto-generated from functions)',
+
+    -- Schedule configuration (supports multiple types)
+    schedule_type ENUM('cron', 'interval', 'daily', 'weekly', 'monthly') DEFAULT 'cron',
+    cron_expression VARCHAR(100) COMMENT 'Standard 5-field cron: 0 2 * * * (2am daily)',
+    interval_seconds INT UNSIGNED COMMENT 'For interval type: 300 = every 5 minutes',
+    time_of_day TIME COMMENT 'For daily type: 02:00:00',
+    day_of_week TINYINT UNSIGNED COMMENT 'For weekly type: 0=Sunday, 6=Saturday',
+    day_of_month TINYINT UNSIGNED COMMENT 'For monthly type: 1-31',
+    timezone VARCHAR(50) DEFAULT 'UTC' COMMENT 'Job timezone',
+
+    -- Execution settings
+    enabled TINYINT UNSIGNED DEFAULT 1,
+    timeout_seconds INT UNSIGNED DEFAULT 300 COMMENT 'Default 5min, max 1800 (30min)',
+    max_retries TINYINT UNSIGNED DEFAULT 3 COMMENT '0-5 range',
+    retry_strategy ENUM('immediate', 'fixed', 'exponential') DEFAULT 'exponential',
+    retry_delay_seconds INT UNSIGNED DEFAULT 60 COMMENT 'For fixed strategy',
+    allow_concurrent TINYINT UNSIGNED DEFAULT 0,
+
+    -- Dependencies (V1: Linear chain only)
+    depends_on_job INT UNSIGNED NULL COMMENT 'FK to parent CronJob',
+
+    -- Notifications
+    notify_on_failure TINYINT UNSIGNED DEFAULT 0,
+    notify_after_failures INT UNSIGNED DEFAULT 3 COMMENT 'Alert after N consecutive failures',
+    notify_on_dead_letter TINYINT UNSIGNED DEFAULT 1 COMMENT 'Alert when moved to DLQ',
+    slack_webhook VARCHAR(512) COMMENT 'Optional per-job webhook (overrides app default)',
+    notification_email VARCHAR(255),
+
+    -- Dead Letter Queue
+    in_dead_letter_queue TINYINT UNSIGNED DEFAULT 0,
+    dead_letter_reason TEXT,
+    dead_letter_since INT UNSIGNED,
+    consecutive_failures INT UNSIGNED DEFAULT 0 COMMENT 'Track failure streak',
+
+    -- Context
+    application INT COMMENT 'FK to Application',
+
+    -- Framework attributes
+    kyte_locked TINYINT UNSIGNED DEFAULT 0,
+    kyte_account INT UNSIGNED NOT NULL,
+
+    -- Audit attributes
+    created_by INT,
+    date_created INT UNSIGNED,
+    modified_by INT,
+    date_modified INT UNSIGNED,
+    deleted_by INT,
+    date_deleted INT UNSIGNED,
+    deleted TINYINT UNSIGNED DEFAULT 0,
+
+    INDEX idx_application (application),
+    INDEX idx_enabled (enabled),
+    INDEX idx_depends_on (depends_on_job),
+    INDEX idx_dead_letter (in_dead_letter_queue),
+    INDEX idx_deleted (deleted),
+    INDEX idx_app_account (application, kyte_account),
+
+    CONSTRAINT fk_cronjob_application
+        FOREIGN KEY (application) REFERENCES Application(id) ON DELETE CASCADE,
+    CONSTRAINT fk_cronjob_depends_on
+        FOREIGN KEY (depends_on_job) REFERENCES CronJob(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Step 2: Create CronJobExecution table (execution history with locking)
+CREATE TABLE IF NOT EXISTS CronJobExecution (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    cron_job INT UNSIGNED NOT NULL,
+
+    -- Scheduling
+    scheduled_time INT UNSIGNED NOT NULL COMMENT 'Unix timestamp when job was supposed to run',
+    next_run_time INT UNSIGNED COMMENT 'When this job should run next',
+
+    -- Locking (lease-based for idempotency)
+    status ENUM('pending', 'running', 'completed', 'failed', 'timeout', 'skipped') DEFAULT 'pending',
+    locked_by VARCHAR(255) COMMENT 'Server identifier: hostname:pid',
+    locked_at INT UNSIGNED COMMENT 'When lock was acquired',
+    locked_until INT UNSIGNED COMMENT 'Lease expiration timestamp',
+
+    -- Execution results
+    started_at INT UNSIGNED,
+    completed_at INT UNSIGNED,
+    duration_ms INT UNSIGNED COMMENT 'Execution time in milliseconds',
+    exit_code INT COMMENT '0 = success, non-zero = error',
+    output MEDIUMTEXT COMMENT 'stdout / success messages',
+    error MEDIUMTEXT COMMENT 'stderr / exception messages',
+    stack_trace TEXT COMMENT 'Full PHP stack trace on error',
+    memory_peak_mb DECIMAL(10,2) COMMENT 'Peak memory usage',
+
+    -- Retry tracking
+    retry_count INT UNSIGNED DEFAULT 0,
+    is_retry TINYINT UNSIGNED DEFAULT 0,
+    parent_execution INT UNSIGNED NULL COMMENT 'FK to original execution if retry',
+    retry_scheduled_time INT UNSIGNED COMMENT 'When retry should happen',
+
+    -- Dependency tracking
+    skipped_reason VARCHAR(255) COMMENT 'Reason if skipped',
+    dependency_execution INT UNSIGNED NULL COMMENT 'FK to parent job execution checked',
+
+    -- Context
+    application INT,
+
+    -- Audit
+    kyte_account INT UNSIGNED NOT NULL,
+    created_by INT COMMENT 'NULL for automatic, set for manual triggers',
+    date_created INT UNSIGNED,
+
+    INDEX idx_cron_job (cron_job),
+    INDEX idx_status (status),
+    INDEX idx_next_run (next_run_time, status),
+    INDEX idx_locked_until (locked_until),
+    INDEX idx_scheduled_time (scheduled_time),
+    INDEX idx_parent_execution (parent_execution),
+    INDEX idx_retry_scheduled (retry_scheduled_time, status),
+    INDEX idx_application (application),
+
+    CONSTRAINT fk_cronjobexecution_cronjob
+        FOREIGN KEY (cron_job) REFERENCES CronJob(id) ON DELETE CASCADE,
+    CONSTRAINT fk_cronjobexecution_parent
+        FOREIGN KEY (parent_execution) REFERENCES CronJobExecution(id) ON DELETE SET NULL,
+    CONSTRAINT fk_cronjobexecution_dependency
+        FOREIGN KEY (dependency_execution) REFERENCES CronJobExecution(id) ON DELETE SET NULL,
+    CONSTRAINT fk_cronjobexecution_application
+        FOREIGN KEY (application) REFERENCES Application(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Step 3: Create CronJobFunction table (stores individual function bodies)
+CREATE TABLE IF NOT EXISTS CronJobFunction (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    cron_job INT UNSIGNED NOT NULL,
+    name VARCHAR(50) NOT NULL COMMENT 'execute, setUp, or tearDown',
+    content_hash VARCHAR(64) NULL COMMENT 'SHA256 hash of current content',
+    application INT NULL,
+    kyte_account INT UNSIGNED NOT NULL,
+    created_by INT NULL,
+    date_created INT UNSIGNED NOT NULL,
+    modified_by INT NULL,
+    date_modified INT UNSIGNED NULL,
+    deleted TINYINT(1) DEFAULT 0,
+
+    INDEX idx_cron_job (cron_job),
+    INDEX idx_name (name),
+    INDEX idx_content_hash (content_hash),
+    INDEX idx_application (application),
+    INDEX idx_account (kyte_account),
+    INDEX idx_deleted (deleted),
+    UNIQUE KEY unique_job_function (cron_job, name, deleted),
+
+    FOREIGN KEY (cron_job) REFERENCES CronJob(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Step 4: Create CronJobFunctionContent table (deduplicated function content storage)
+CREATE TABLE IF NOT EXISTS CronJobFunctionContent (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    content_hash VARCHAR(64) UNIQUE NOT NULL COMMENT 'SHA256 hash',
+    content LONGBLOB NOT NULL COMMENT 'Compressed function body (bzip2)',
+    reference_count INT UNSIGNED DEFAULT 0 COMMENT 'Number of versions using this content',
+    created_by INT NULL,
+    date_created INT UNSIGNED NOT NULL,
+
+    INDEX idx_hash (content_hash),
+    INDEX idx_ref_count (reference_count)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Step 5: Create CronJobFunctionVersion table (per-function version history)
+CREATE TABLE IF NOT EXISTS CronJobFunctionVersion (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    cron_job_function INT UNSIGNED NOT NULL,
+    version_number INT UNSIGNED NOT NULL,
+    content_hash VARCHAR(64) NOT NULL COMMENT 'FK to CronJobFunctionContent',
+    is_current TINYINT(1) DEFAULT 0,
+    change_description TEXT NULL COMMENT 'What changed in this version',
+    diff_json LONGTEXT NULL COMMENT 'JSON-encoded line-by-line diff from previous version',
+    created_by INT NULL,
+    date_created INT UNSIGNED NOT NULL,
+    deleted TINYINT(1) DEFAULT 0,
+
+    INDEX idx_function (cron_job_function),
+    INDEX idx_version (version_number),
+    INDEX idx_content_hash (content_hash),
+    INDEX idx_current (is_current),
+    INDEX idx_deleted (deleted),
+    UNIQUE KEY unique_function_version (cron_job_function, version_number),
+
+    FOREIGN KEY (cron_job_function) REFERENCES CronJobFunction(id) ON DELETE CASCADE,
+    FOREIGN KEY (content_hash) REFERENCES CronJobFunctionContent(content_hash) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================================
+-- Migration Complete!
+-- =========================================================================
+-- All tables created successfully. Next steps:
+-- 1. Deploy updated backend code (kyte-php)
+-- 2. Deploy updated frontend code (kyte-managed-front-end)
+-- 3. Run composer update (for dragonmantank/cron-expression dependency)
+-- 4. Start CronWorker daemon: php bin/cron-worker.php
+-- =========================================================================
+```
+
 **Key Improvements:**
 - **80-95% query reduction** through eager loading and caching
 - **10-50x faster** bulk operations with batch insert/update
@@ -137,7 +361,7 @@ This major version brings two transformative feature sets that fundamentally enh
 **Files Added:**
 * `src/Core/CronJobBase.php` - Base class for cron jobs (with heartbeat support)
 * `src/Cron/CronWorker.php` - Worker daemon with schedules, dependencies, retry, DLQ, notifications
-* `src/Cron/CronVersionControl.php` - Low-level version control operations with SHA256 deduplication
+* `src/Cron/CronJobCodeGenerator.php` - Assembles complete class from function bodies with validation
 * `src/Cron/CronJobManager.php` - High-level job management API with automatic versioning
 * `bin/cron-worker.php` - Daemon entry point
 * `bin/test-cron.php` - Testing script for validating cron system
@@ -145,242 +369,48 @@ This major version brings two transformative feature sets that fundamentally enh
 * `bin/test-retry.php` - Retry logic and DLQ testing script
 * `bin/test-schedules.php` - Schedule types and dependency chain testing
 * `bin/cron-locks.php` - Lock management utility (list/clear/stats)
-* `bin/cron-version.php` - Version control utility (history/compare/rollback/prune/stats)
 * `src/Mvc/Model/CronJob.php` - Job definition model
 * `src/Mvc/Model/CronJobExecution.php` - Execution history model
-* `src/Mvc/Model/KyteCronJobVersion.php` - Version tracking model
-* `src/Mvc/Model/KyteCronJobVersionContent.php` - Deduplicated content model
-* `src/Mvc/Controller/CronJobController.php` - REST API for job management
+* `src/Mvc/Model/CronJobFunction.php` - Individual function storage (execute, setUp, tearDown)
+* `src/Mvc/Model/CronJobFunctionContent.php` - Deduplicated function content with SHA256
+* `src/Mvc/Model/CronJobFunctionVersion.php` - Per-function version history
+* `src/Mvc/Controller/CronJobController.php` - REST API for job management (updated for function-based)
 * `src/Mvc/Controller/CronJobExecutionController.php` - REST API for execution history
-* `src/Mvc/Controller/KyteCronJobVersionController.php` - REST API for version history
-* `src/Mvc/Controller/KyteCronJobVersionContentController.php` - REST API for content deduplication
-* `migrations/cron-system.sql` - Complete database migration
+* `src/Mvc/Controller/CronJobFunctionController.php` - REST API for function CRUD with versioning
+* `src/Mvc/Controller/CronJobFunctionVersionController.php` - REST API for function version history
 * `examples/TestCronJob.php` - Example cron job for testing
 * `docs/cron/testing.md` - Comprehensive testing guide
 * `docs/cron/execution.md` - Locking and retry documentation
 * `docs/cron/scheduling.md` - Dependencies and scheduling documentation
-* `docs/cron/version-control.md` - Version control documentation
+* `docs/cron/FUNCTION-BASED-REFACTOR-GUIDE.md` - Function-based refactor implementation guide
+* `docs/cron/DEPLOYMENT-CHECKLIST-V4.md` - v4.0.0 deployment procedures
 * `docs/cron/api-reference.md` - Backend API documentation
 * `docs/cron/web-interface.md` - Frontend UI documentation
 
 **Frontend Files Added (kyte-managed-front-end):**
 * `app/cron-jobs.html` - Main cron jobs management page
+* `app/cron-job/index.html` - Job detail page with tabbed function editor
 * `assets/js/source/kyte-shipyard-cron-jobs.js` - Job management JavaScript controller
+* `assets/js/source/kyte-shipyard-cron-job-details.js` - Job detail page with function-based editing
 
 **Frontend Files Modified:**
 * `assets/js/source/kyte-shipyard-tables.js` - Added colDefCronJobs table definitions
+* `assets/js/source/kyte-shipyard-navigation.js` - Added cron jobs menu items
 
 **Dependencies Added:**
 * `dragonmantank/cron-expression: ^3.3` - For cron expression parsing and scheduling
 
 ---
 
-### Database Schema Changes
+### Notes on Cron System
 
-**Cron System Tables:**
+The cron job system uses function-based code for improved security. The main tables (`CronJob` and `CronJobExecution`) remain unchanged from previous cron system implementations, but job code is now assembled from individual functions stored in `CronJobFunction`, `CronJobFunctionContent`, and `CronJobFunctionVersion` tables (see migration SQL above).
 
-*CronJob - Job definitions with schedule and execution settings*
-```sql
-CREATE TABLE IF NOT EXISTS `CronJob` (
-    `id` INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `name` VARCHAR(255) NOT NULL,
-    `description` TEXT,
-    `code` LONGBLOB COMMENT 'bzip2 compressed PHP code',
-
-    -- Schedule configuration (supports multiple types)
-    `schedule_type` ENUM('cron', 'interval', 'daily', 'weekly', 'monthly') DEFAULT 'cron',
-    `cron_expression` VARCHAR(100) COMMENT 'Standard 5-field cron: 0 2 * * * (2am daily)',
-    `interval_seconds` INT(11) UNSIGNED COMMENT 'For interval type: 300 = every 5 minutes',
-    `time_of_day` TIME COMMENT 'For daily type: 02:00:00',
-    `day_of_week` TINYINT(1) UNSIGNED COMMENT 'For weekly type: 0=Sunday, 6=Saturday',
-    `day_of_month` TINYINT(2) UNSIGNED COMMENT 'For monthly type: 1-31',
-    `timezone` VARCHAR(50) DEFAULT 'UTC' COMMENT 'Job timezone',
-
-    -- Execution settings
-    `enabled` TINYINT(1) UNSIGNED DEFAULT 1,
-    `timeout_seconds` INT(11) UNSIGNED DEFAULT 300 COMMENT 'Default 5min, max 1800 (30min)',
-    `max_retries` TINYINT(1) UNSIGNED DEFAULT 3 COMMENT '0-5 range',
-    `retry_strategy` ENUM('immediate', 'fixed', 'exponential') DEFAULT 'exponential',
-    `retry_delay_seconds` INT(11) UNSIGNED DEFAULT 60 COMMENT 'For fixed strategy',
-    `allow_concurrent` TINYINT(1) UNSIGNED DEFAULT 0,
-
-    -- Dependencies (V1: Linear chain only)
-    `depends_on_job` INT(11) UNSIGNED NULL COMMENT 'FK to parent CronJob',
-
-    -- Notifications
-    `notify_on_failure` TINYINT(1) UNSIGNED DEFAULT 0,
-    `notify_after_failures` INT(11) UNSIGNED DEFAULT 3 COMMENT 'Alert after N consecutive failures',
-    `notify_on_dead_letter` TINYINT(1) UNSIGNED DEFAULT 1 COMMENT 'Alert when moved to DLQ',
-    `slack_webhook` VARCHAR(512) COMMENT 'Optional per-job webhook (overrides app default)',
-    `notification_email` VARCHAR(255),
-
-    -- Dead Letter Queue
-    `in_dead_letter_queue` TINYINT(1) UNSIGNED DEFAULT 0,
-    `dead_letter_reason` TEXT,
-    `dead_letter_since` INT(11) UNSIGNED,
-    `consecutive_failures` INT(11) UNSIGNED DEFAULT 0 COMMENT 'Track failure streak',
-
-    -- Context
-    `application` INT(11) COMMENT 'FK to Application',
-
-    -- Framework attributes
-    `kyte_locked` TINYINT(1) UNSIGNED DEFAULT 0,
-    `kyte_account` INT(11) UNSIGNED NOT NULL,
-
-    -- Audit attributes
-    `created_by` INT(11),
-    `date_created` INT(11) UNSIGNED,
-    `modified_by` INT(11),
-    `date_modified` INT(11) UNSIGNED,
-    `deleted_by` INT(11),
-    `date_deleted` INT(11) UNSIGNED,
-    `deleted` TINYINT(1) UNSIGNED DEFAULT 0,
-
-    INDEX `idx_application` (`application`),
-    INDEX `idx_enabled` (`enabled`),
-    INDEX `idx_depends_on` (`depends_on_job`),
-    INDEX `idx_dead_letter` (`in_dead_letter_queue`),
-    INDEX `idx_deleted` (`deleted`),
-
-    CONSTRAINT `fk_cronjob_application`
-        FOREIGN KEY (`application`) REFERENCES `Application`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_cronjob_depends_on`
-        FOREIGN KEY (`depends_on_job`) REFERENCES `CronJob`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-*CronJobExecution - Individual job runs with lease-based locking*
-```sql
-CREATE TABLE IF NOT EXISTS `CronJobExecution` (
-    `id` INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `cron_job` INT(11) UNSIGNED NOT NULL,
-
-    -- Scheduling
-    `scheduled_time` INT(11) UNSIGNED NOT NULL COMMENT 'Unix timestamp when job was supposed to run',
-    `next_run_time` INT(11) UNSIGNED COMMENT 'When this job should run next',
-
-    -- Locking (lease-based for idempotency)
-    `status` ENUM('pending', 'running', 'completed', 'failed', 'timeout', 'skipped') DEFAULT 'pending',
-    `locked_by` VARCHAR(255) COMMENT 'Server identifier: hostname:pid',
-    `locked_at` INT(11) UNSIGNED COMMENT 'When lock was acquired',
-    `locked_until` INT(11) UNSIGNED COMMENT 'Lease expiration timestamp',
-
-    -- Execution results
-    `started_at` INT(11) UNSIGNED,
-    `completed_at` INT(11) UNSIGNED,
-    `duration_ms` INT(11) UNSIGNED COMMENT 'Execution time in milliseconds',
-    `exit_code` INT(11) COMMENT '0 = success, non-zero = error',
-    `output` MEDIUMTEXT COMMENT 'stdout / success messages',
-    `error` MEDIUMTEXT COMMENT 'stderr / exception messages',
-    `stack_trace` TEXT COMMENT 'Full PHP stack trace on error',
-    `memory_peak_mb` DECIMAL(10,2) COMMENT 'Peak memory usage',
-
-    -- Retry tracking
-    `retry_count` INT(11) UNSIGNED DEFAULT 0,
-    `is_retry` TINYINT(1) UNSIGNED DEFAULT 0,
-    `parent_execution` INT(11) UNSIGNED NULL COMMENT 'FK to original execution if retry',
-    `retry_scheduled_time` INT(11) UNSIGNED COMMENT 'When retry should happen',
-
-    -- Dependency tracking
-    `skipped_reason` VARCHAR(255) COMMENT 'Reason if skipped',
-    `dependency_execution` INT(11) UNSIGNED NULL COMMENT 'FK to parent job execution checked',
-
-    -- Context
-    `application` INT(11),
-
-    -- Audit
-    `kyte_account` INT(11) UNSIGNED NOT NULL,
-    `created_by` INT(11) COMMENT 'NULL for automatic, set for manual triggers',
-    `date_created` INT(11) UNSIGNED,
-
-    INDEX `idx_cron_job` (`cron_job`),
-    INDEX `idx_status` (`status`),
-    INDEX `idx_next_run` (`next_run_time`, `status`),
-    INDEX `idx_locked_until` (`locked_until`),
-    INDEX `idx_scheduled_time` (`scheduled_time`),
-    INDEX `idx_parent_execution` (`parent_execution`),
-    INDEX `idx_retry_scheduled` (`retry_scheduled_time`, `status`),
-    INDEX `idx_application` (`application`),
-
-    CONSTRAINT `fk_cronjobexecution_cronjob`
-        FOREIGN KEY (`cron_job`) REFERENCES `CronJob`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_cronjobexecution_parent`
-        FOREIGN KEY (`parent_execution`) REFERENCES `CronJobExecution`(`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_cronjobexecution_dependency`
-        FOREIGN KEY (`dependency_execution`) REFERENCES `CronJobExecution`(`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_cronjobexecution_application`
-        FOREIGN KEY (`application`) REFERENCES `Application`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-*KyteCronJobVersion - Version tracking with metadata snapshots*
-```sql
-CREATE TABLE IF NOT EXISTS `KyteCronJobVersion` (
-    `id` INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `cron_job` INT(11) UNSIGNED NOT NULL,
-    `version_number` INT(11) UNSIGNED NOT NULL,
-    `version_type` VARCHAR(20) DEFAULT 'manual_save',
-    `change_summary` TEXT,
-    `changes_detected` TEXT COMMENT 'JSON diff',
-    `content_hash` VARCHAR(64) NOT NULL COMMENT 'SHA256 of code',
-
-    -- Metadata snapshot (captures changes to job configuration)
-    `name` VARCHAR(255),
-    `description` TEXT,
-    `schedule_type` VARCHAR(20),
-    `cron_expression` VARCHAR(100),
-    `interval_seconds` INT(11) UNSIGNED,
-    `timeout_seconds` INT(11) UNSIGNED,
-    `max_retries` TINYINT(1) UNSIGNED,
-    `enabled` TINYINT(1) UNSIGNED,
-
-    -- Version metadata
-    `is_current` TINYINT(1) UNSIGNED DEFAULT 0,
-    `parent_version` INT(11) UNSIGNED COMMENT 'FK to previous version',
-
-    -- Audit
-    `kyte_account` INT(11) UNSIGNED NOT NULL,
-    `created_by` INT(11),
-    `date_created` INT(11) UNSIGNED,
-    `modified_by` INT(11),
-    `date_modified` INT(11) UNSIGNED,
-    `deleted` TINYINT(1) UNSIGNED DEFAULT 0,
-
-    INDEX `idx_cron_job` (`cron_job`),
-    INDEX `idx_content_hash` (`content_hash`),
-    INDEX `idx_is_current` (`is_current`),
-    INDEX `idx_version_number` (`cron_job`, `version_number`),
-    INDEX `idx_deleted` (`deleted`),
-
-    CONSTRAINT `fk_cronjobversion_cronjob`
-        FOREIGN KEY (`cron_job`) REFERENCES `CronJob`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_cronjobversion_parent`
-        FOREIGN KEY (`parent_version`) REFERENCES `KyteCronJobVersion`(`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_cronjobversion_content`
-        FOREIGN KEY (`content_hash`) REFERENCES `KyteCronJobVersionContent`(`content_hash`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-*KyteCronJobVersionContent - Deduplicated version content storage*
-```sql
-CREATE TABLE IF NOT EXISTS `KyteCronJobVersionContent` (
-    `content_hash` VARCHAR(64) PRIMARY KEY COMMENT 'SHA256 of compressed code',
-    `code` LONGBLOB COMMENT 'bzip2 compressed PHP code',
-    `reference_count` INT(11) UNSIGNED DEFAULT 1,
-    `last_referenced` INT(11) UNSIGNED,
-
-    -- Audit
-    `kyte_account` INT(11) UNSIGNED NOT NULL,
-    `created_by` INT(11),
-    `date_created` INT(11) UNSIGNED,
-    `modified_by` INT(11),
-    `date_modified` INT(11) UNSIGNED,
-    `deleted` TINYINT(1) UNSIGNED DEFAULT 0,
-
-    INDEX `idx_reference_count` (`reference_count`),
-    INDEX `idx_deleted` (`deleted`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
+**CronJob Table**: Stores job definitions with schedule, execution settings, and generated code
+**CronJobExecution Table**: Stores individual job runs with lease-based locking
+**CronJobFunction Table**: Stores individual function bodies (execute, setUp, tearDown)
+**CronJobFunctionContent Table**: Deduplicated function content storage with SHA256 hashing
+**CronJobFunctionVersion Table**: Per-function version history
 
 **Installation:**
 ```bash

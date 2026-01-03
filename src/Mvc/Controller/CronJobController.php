@@ -104,6 +104,22 @@ class CronJobController extends ModelController
         }
     }
 
+    /**
+     * Hook after successful creation to set up default functions
+     */
+    public function hook_postprocess($method, &$r, &$o = null) {
+        switch ($method) {
+            case 'new':
+                if ($o && $o->id) {
+                    $this->createDefaultFunctions($o->id, $this->api->user ? $this->api->user->id : null);
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'new':
@@ -157,17 +173,9 @@ class CronJobController extends ModelController
      */
     private function processNewJob(array &$r): void
     {
-        // Validate code if provided
-        if (!empty($r['code'])) {
-            $validation = $this->getCronJobManager()->validateCode($r['code']);
-
-            if (!$validation['valid']) {
-                throw new \Exception("Invalid job code: " . $validation['error']);
-            }
-
-            // Compress code for storage
-            $r['code'] = bzcompress($r['code'], 9);
-        }
+        // Don't set code directly - it will be generated from functions
+        // Remove code if provided (old API compatibility)
+        unset($r['code']);
 
         // Set default values
         if (!isset($r['enabled'])) {
@@ -195,32 +203,9 @@ class CronJobController extends ModelController
      */
     private function processUpdateJob(array &$r, $o): void
     {
-        $codeChanged = false;
-
-        // Check if code changed and validate
-        if (isset($r['code'])) {
-            $currentCode = bzdecompress($o->code);
-
-            if ($currentCode !== $r['code']) {
-                $validation = $this->getCronJobManager()->validateCode($r['code']);
-
-                if (!$validation['valid']) {
-                    throw new \Exception("Invalid job code: " . $validation['error']);
-                }
-
-                // Create version before updating
-                $userId = $this->api->user ? $this->api->user->id : null;
-                $this->getCronJobManager()->updateCode($o->id, $r['code'], $userId);
-
-                $codeChanged = true;
-
-                // Compress code for storage
-                $r['code'] = bzcompress($r['code'], 9);
-            } else {
-                // Code hasn't changed, don't update it
-                unset($r['code']);
-            }
-        }
+        // Code updates now handled by CronJobFunctionController
+        // Remove code field if provided (old API compatibility)
+        unset($r['code']);
 
         // Recalculate next_run_time if schedule changed
         if (isset($r['schedule_type']) || isset($r['cron_expression']) ||
@@ -648,6 +633,101 @@ class CronJobController extends ModelController
             'overall_summary' => $overallSummary,
             'daily_stats' => $dailyStats ?: [],
         ]);
+    }
+
+    /**
+     * Create default functions for a new cron job
+     *
+     * Creates execute, setUp, and tearDown functions with default bodies.
+     */
+    private function createDefaultFunctions(int $jobId, ?int $userId): void
+    {
+        $job = Model::one('CronJob', $jobId);
+        if (!$job) {
+            return;
+        }
+
+        $defaultFunctions = [
+            'execute' => '$this->log("Job started");
+
+// Add your job logic here
+// Examples:
+// - Database cleanup
+// - Send scheduled emails
+// - Generate reports
+// - Process queued items
+
+$this->log("Job completed");
+return "Success";',
+
+            'setUp' => '// Initialize resources here (optional)',
+
+            'tearDown' => '// Cleanup resources here (optional)'
+        ];
+
+        foreach ($defaultFunctions as $functionName => $functionBody) {
+            // Calculate content hash
+            $contentHash = hash('sha256', $functionBody);
+
+            // Check if content exists (unlikely for defaults, but check anyway)
+            $existingContent = Model::one('CronJobFunctionContent', $contentHash, 'content_hash');
+
+            if (!$existingContent) {
+                // Create content record
+                $compressed = bzcompress($functionBody, 9);
+
+                $contentData = [
+                    'content_hash' => $contentHash,
+                    'content' => $compressed,
+                    'reference_count' => 1,
+                    'created_by' => $userId,
+                    'date_created' => time()
+                ];
+
+                $contentObj = new ModelObject('CronJobFunctionContent');
+                $contentObj->create($contentData, $userId);
+            } else {
+                // Increment reference count
+                $existingContent->reference_count++;
+                $existingContent->save();
+            }
+
+            // Create function record
+            $functionData = [
+                'cron_job' => $jobId,
+                'name' => $functionName,
+                'content_hash' => $contentHash,
+                'application' => $job->application,
+                'kyte_account' => $job->kyte_account,
+                'created_by' => $userId,
+                'date_created' => time()
+            ];
+
+            $functionObj = new ModelObject('CronJobFunction');
+            $functionObj->create($functionData, $userId);
+
+            // Create initial version (version 1)
+            $versionSql = "
+                INSERT INTO CronJobFunctionVersion (
+                    cron_job_function, version_number, content_hash, is_current,
+                    change_description, created_by, date_created, deleted
+                ) VALUES (?, 1, ?, 1, 'Initial version', ?, ?, 0)
+            ";
+
+            DBI::prepared_query($versionSql, 'isii', [
+                $functionObj->id,
+                $contentHash,
+                $userId,
+                time()
+            ]);
+
+            echo "[" . date('Y-m-d H:i:s') . "] Created default function {$functionName} for job {$jobId}\n";
+        }
+
+        // Generate complete class code
+        \Kyte\Cron\CronJobCodeGenerator::regenerateJobCode($jobId);
+
+        echo "[" . date('Y-m-d H:i:s') . "] Generated complete class for job {$jobId}\n";
     }
 
     /**

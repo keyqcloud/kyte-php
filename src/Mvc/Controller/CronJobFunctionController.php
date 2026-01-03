@@ -1,0 +1,288 @@
+<?php
+
+namespace Kyte\Mvc\Controller;
+
+use Kyte\Cron\CronJobCodeGenerator;
+use Kyte\Core\DBI;
+use Kyte\Core\Model;
+use Kyte\Core\ModelObject;
+
+/**
+ * Controller for CronJobFunction model
+ *
+ * Handles CRUD operations for individual cron job functions (execute, setUp, tearDown).
+ * Automatically handles:
+ * - Content validation
+ * - Content deduplication via SHA256 hashing
+ * - Compression with bzip2
+ * - Version control for each function
+ * - Class code regeneration after changes
+ */
+class CronJobFunctionController extends ModelController
+{
+    public function hook_init() {
+        $this->dateformat = 'm/d/Y H:i:s';
+    }
+
+    /**
+     * Override new() to handle function creation with version control
+     */
+    public function new($data)
+    {
+        // Validate function name
+        if (empty($data['name']) || !in_array($data['name'], ['execute', 'setUp', 'tearDown'])) {
+            $this->respondError('Function name must be execute, setUp, or tearDown', 400);
+            return;
+        }
+
+        // Validate cron_job exists
+        if (empty($data['cron_job'])) {
+            $this->respondError('cron_job ID is required', 400);
+            return;
+        }
+
+        $cronJob = Model::one('CronJob', $data['cron_job']);
+        if (!$cronJob) {
+            $this->respondError('Cron job not found', 404);
+            return;
+        }
+
+        // Get function body from request (temporary field, not stored in CronJobFunction)
+        $functionBody = $data['function_body'] ?? '';
+        unset($data['function_body']); // Don't store this field
+
+        // Validate function body
+        $validation = CronJobCodeGenerator::validateFunctionBody($functionBody, $data['name']);
+        if (!$validation['valid']) {
+            $this->respondError($validation['error'], 400);
+            return;
+        }
+
+        // Calculate content hash
+        $contentHash = hash('sha256', $functionBody);
+
+        // Check if content already exists
+        $existingContent = Model::one('CronJobFunctionContent', $contentHash, 'content_hash');
+
+        if ($existingContent) {
+            // Increment reference count
+            $existingContent->reference_count++;
+            $existingContent->save();
+        } else {
+            // Create new content record
+            $compressed = bzcompress($functionBody, 9);
+
+            $contentData = [
+                'content_hash' => $contentHash,
+                'content' => $compressed,
+                'reference_count' => 1,
+                'created_by' => $this->api->user ? $this->api->user->id : null,
+                'date_created' => time()
+            ];
+
+            $contentObj = new ModelObject('CronJobFunctionContent');
+            $contentObj->create($contentData, $this->api->user ? $this->api->user->id : null);
+        }
+
+        // Set content hash in function data
+        $data['content_hash'] = $contentHash;
+
+        // Set account/application from parent cron job
+        $data['kyte_account'] = $cronJob->kyte_account;
+        $data['application'] = $cronJob->application;
+
+        // Create the function record
+        parent::new($data);
+
+        if (!empty($this->response['data'][0])) {
+            $functionId = $this->response['data'][0]['id'];
+
+            // Create initial version (version 1)
+            $this->createVersion($functionId, $contentHash, 1, 'Initial version', $this->api->user ? $this->api->user->id : null);
+
+            // Regenerate complete job class
+            CronJobCodeGenerator::regenerateJobCode($data['cron_job']);
+
+            echo "[" . date('Y-m-d H:i:s') . "] Created function {$data['name']} for job {$data['cron_job']}\n";
+        }
+    }
+
+    /**
+     * Override update() to handle function updates with version control
+     */
+    public function update($data)
+    {
+        $functionId = $this->api->value;
+
+        $function = Model::one('CronJobFunction', $functionId);
+        if (!$function) {
+            $this->respondError('Function not found', 404);
+            return;
+        }
+
+        // Get function body from request
+        $functionBody = $data['function_body'] ?? null;
+        unset($data['function_body']);
+
+        if ($functionBody !== null) {
+            // Validate function body
+            $validation = CronJobCodeGenerator::validateFunctionBody($functionBody, $function->name);
+            if (!$validation['valid']) {
+                $this->respondError($validation['error'], 400);
+                return;
+            }
+
+            // Calculate new content hash
+            $newContentHash = hash('sha256', $functionBody);
+
+            // Check if content changed
+            if ($newContentHash !== $function->content_hash) {
+                // Get current version number
+                $currentVersionSql = "
+                    SELECT MAX(version_number) as max_version
+                    FROM CronJobFunctionVersion
+                    WHERE cron_job_function = ? AND deleted = 0
+                ";
+                $versionResult = DBI::prepared_query($currentVersionSql, 'i', [$functionId]);
+                $nextVersion = ($versionResult[0]['max_version'] ?? 0) + 1;
+
+                // Check if new content already exists
+                $existingContent = Model::one('CronJobFunctionContent', $newContentHash, 'content_hash');
+
+                if (!$existingContent) {
+                    // Create new content record
+                    $compressed = bzcompress($functionBody, 9);
+
+                    $contentData = [
+                        'content_hash' => $newContentHash,
+                        'content' => $compressed,
+                        'reference_count' => 1,
+                        'created_by' => $this->api->user ? $this->api->user->id : null,
+                        'date_created' => time()
+                    ];
+
+                    $contentObj = new ModelObject('CronJobFunctionContent');
+                    $contentObj->create($contentData, $this->api->user ? $this->api->user->id : null);
+                } else {
+                    // Increment reference count
+                    $existingContent->reference_count++;
+                    $existingContent->save();
+                }
+
+                // Decrement old content reference count
+                if ($function->content_hash) {
+                    $oldContent = Model::one('CronJobFunctionContent', $function->content_hash, 'content_hash');
+                    if ($oldContent && $oldContent->reference_count > 0) {
+                        $oldContent->reference_count--;
+                        $oldContent->save();
+                    }
+                }
+
+                // Update function with new content hash
+                $data['content_hash'] = $newContentHash;
+
+                // Create new version
+                $this->createVersion($functionId, $newContentHash, $nextVersion, 'Code updated', $this->api->user ? $this->api->user->id : null);
+
+                // Regenerate complete job class
+                CronJobCodeGenerator::regenerateJobCode($function->cron_job);
+
+                echo "[" . date('Y-m-d H:i:s') . "] Updated function {$function->name} (version {$nextVersion})\n";
+            }
+        }
+
+        // Update function record (if any other fields changed)
+        if (!empty($data)) {
+            parent::update($data);
+        }
+    }
+
+    /**
+     * Override get() to include decompressed function body
+     */
+    public function hook_response_data($method, $o, &$r = null, &$d = null)
+    {
+        if (($method === 'get' || $method === 'new' || $method === 'update') && isset($r['content_hash'])) {
+            // Load and decompress function body
+            $contentSql = "SELECT content FROM CronJobFunctionContent WHERE content_hash = ?";
+            $contentResult = DBI::prepared_query($contentSql, 's', [$r['content_hash']]);
+
+            if (!empty($contentResult)) {
+                $compressed = $contentResult[0]['content'];
+                $decompressed = bzdecompress($compressed);
+
+                if ($decompressed !== false) {
+                    $r['function_body'] = $decompressed;
+                }
+            }
+
+            // Add version info
+            $versionSql = "
+                SELECT version_number, is_current, date_created
+                FROM CronJobFunctionVersion
+                WHERE cron_job_function = ? AND is_current = 1 AND deleted = 0
+                LIMIT 1
+            ";
+            $versionResult = DBI::prepared_query($versionSql, 'i', [$o->id]);
+
+            if (!empty($versionResult)) {
+                $r['current_version'] = $versionResult[0];
+            }
+        }
+    }
+
+    /**
+     * Create a new version record
+     */
+    private function createVersion(int $functionId, string $contentHash, int $versionNumber, string $description, ?int $userId): void
+    {
+        // Mark all previous versions as not current
+        $updateSql = "
+            UPDATE CronJobFunctionVersion
+            SET is_current = 0
+            WHERE cron_job_function = ? AND deleted = 0
+        ";
+        DBI::prepared_query($updateSql, 'i', [$functionId]);
+
+        // Create new version
+        $versionData = [
+            'cron_job_function' => $functionId,
+            'version_number' => $versionNumber,
+            'content_hash' => $contentHash,
+            'is_current' => 1,
+            'change_description' => $description,
+            'created_by' => $userId,
+            'date_created' => time(),
+            'deleted' => 0
+        ];
+
+        $insertSql = "
+            INSERT INTO CronJobFunctionVersion (
+                cron_job_function, version_number, content_hash, is_current,
+                change_description, created_by, date_created, deleted
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ";
+
+        DBI::prepared_query($insertSql, 'iisisiii', [
+            $versionData['cron_job_function'],
+            $versionData['version_number'],
+            $versionData['content_hash'],
+            $versionData['is_current'],
+            $versionData['change_description'],
+            $versionData['created_by'],
+            $versionData['date_created'],
+            $versionData['deleted']
+        ]);
+    }
+
+    /**
+     * Send error response
+     */
+    private function respondError(string $message, int $statusCode = 400): void
+    {
+        http_response_code($statusCode);
+        $this->response['error'] = $message;
+        echo json_encode($this->response);
+        exit(0);
+    }
+}
