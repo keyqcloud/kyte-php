@@ -139,6 +139,9 @@ CREATE TABLE IF NOT EXISTS CronJobExecution (
     kyte_account INT UNSIGNED NOT NULL,
     created_by INT COMMENT 'NULL for automatic, set for manual triggers',
     date_created INT UNSIGNED,
+    deleted_by INT NULL,
+    date_deleted INT UNSIGNED NULL,
+    deleted TINYINT UNSIGNED DEFAULT 0,
 
     INDEX idx_cron_job (cron_job),
     INDEX idx_status (status),
@@ -148,6 +151,7 @@ CREATE TABLE IF NOT EXISTS CronJobExecution (
     INDEX idx_parent_execution (parent_execution),
     INDEX idx_retry_scheduled (retry_scheduled_time, status),
     INDEX idx_application (application),
+    INDEX idx_deleted (deleted),
 
     CONSTRAINT fk_cronjobexecution_cronjob
         FOREIGN KEY (cron_job) REFERENCES CronJob(id) ON DELETE CASCADE,
