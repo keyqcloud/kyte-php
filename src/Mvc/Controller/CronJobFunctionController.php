@@ -226,33 +226,53 @@ class CronJobFunctionController extends ModelController
      */
     public function hook_response_data($method, $o, &$r = null, &$d = null)
     {
+        error_log("CronJobFunctionController::hook_response_data called: method=$method, has content_hash=" . (isset($r['content_hash']) ? 'YES' : 'NO'));
+
         if (($method === 'get' || $method === 'new' || $method === 'update') && isset($r['content_hash'])) {
+            error_log("Processing decompression for content_hash: {$r['content_hash']}");
+
             // Load and decompress function body
             $contentSql = "SELECT content FROM CronJobFunctionContent WHERE content_hash = ?";
             $contentResult = DBI::prepared_query($contentSql, 's', [$r['content_hash']]);
 
             if (!empty($contentResult)) {
                 $compressed = $contentResult[0]['content'];
+                error_log("Found content, size: " . strlen($compressed) . " bytes, magic: " . bin2hex(substr($compressed, 0, 2)));
 
                 // Check if it's valid bzip2 data (same as FunctionController)
                 if (strlen($compressed) >= 2 && substr($compressed, 0, 2) === 'BZ') {
+                    error_log("Valid BZ2 header detected, decompressing...");
                     $decompressed = bzdecompress($compressed);
 
                     if ($decompressed === false) {
-                        error_log("CronJobFunctionController: Failed to decompress hash {$r['content_hash']}");
+                        error_log("ERROR: bzdecompress failed for hash {$r['content_hash']}");
                         $r['function_body'] = '';
                         $r['decompression_error'] = true;
                     } else {
+                        error_log("Decompressed successfully, size: " . strlen($decompressed) . " bytes");
+
+                        // Check for UTF-8 validity before cleaning
+                        $isValidUtf8 = mb_check_encoding($decompressed, 'UTF-8');
+                        error_log("UTF-8 validity check: " . ($isValidUtf8 ? 'VALID' : 'INVALID'));
+
                         // Clean UTF-8 for JSON compatibility (handle bad data from frontend saves)
                         $cleaned = @iconv('UTF-8', 'UTF-8//IGNORE', $decompressed);
-                        $r['function_body'] = ($cleaned !== false) ? $cleaned : $decompressed;
+                        if ($cleaned === false) {
+                            error_log("WARNING: iconv failed, using original");
+                            $r['function_body'] = $decompressed;
+                        } else {
+                            error_log("UTF-8 cleaned, final size: " . strlen($cleaned) . " bytes");
+                            $r['function_body'] = $cleaned;
+                        }
                     }
                 } else {
                     // Not bzip2 data, assume already decompressed
+                    error_log("No BZ2 header, treating as uncompressed");
                     $r['function_body'] = $compressed;
                 }
             } else {
                 // Content not found
+                error_log("ERROR: Content not found for hash {$r['content_hash']}");
                 $r['function_body'] = '';
                 $r['content_missing'] = true;
             }
