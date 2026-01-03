@@ -362,7 +362,7 @@ CREATE TABLE IF NOT EXISTS CronJobFunctionVersion (
 * Code editor styling - Monospace font with syntax-ready formatting
 * Kyte Shipyard integration - Seamless integration with existing admin panel
 
-**Files Added:**
+**Backend Files Added:**
 * `src/Core/CronJobBase.php` - Base class for cron jobs (with heartbeat support)
 * `src/Cron/CronWorker.php` - Worker daemon with schedules, dependencies, retry, DLQ, notifications
 * `src/Cron/CronJobCodeGenerator.php` - Assembles complete class from function bodies with validation
@@ -373,11 +373,15 @@ CREATE TABLE IF NOT EXISTS CronJobFunctionVersion (
 * `bin/test-retry.php` - Retry logic and DLQ testing script
 * `bin/test-schedules.php` - Schedule types and dependency chain testing
 * `bin/cron-locks.php` - Lock management utility (list/clear/stats)
-* `src/Mvc/Model/CronJob.php` - Job definition model
+
+**Models Added:**
+* `src/Mvc/Model/CronJob.php` - **Job definition model (REQUIRED)**
 * `src/Mvc/Model/CronJobExecution.php` - Execution history model
 * `src/Mvc/Model/CronJobFunction.php` - Individual function storage (execute, setUp, tearDown)
 * `src/Mvc/Model/CronJobFunctionContent.php` - Deduplicated function content with SHA256
 * `src/Mvc/Model/CronJobFunctionVersion.php` - Per-function version history
+
+**Controllers Added:**
 * `src/Mvc/Controller/CronJobController.php` - REST API for job management (updated for function-based)
 * `src/Mvc/Controller/CronJobExecutionController.php` - REST API for execution history
 * `src/Mvc/Controller/CronJobFunctionController.php` - REST API for function CRUD with versioning
