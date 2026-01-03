@@ -236,7 +236,8 @@ class CronJobFunctionController extends ModelController
                 $decompressed = @bzdecompress($compressed);
 
                 if ($decompressed !== false) {
-                    $r['function_body'] = $decompressed;
+                    // Ensure UTF-8 encoding for JSON compatibility
+                    $r['function_body'] = mb_convert_encoding($decompressed, 'UTF-8', 'UTF-8');
                 } else {
                     // Decompression failed - only log on error
                     error_log("CronJobFunctionController: Failed to decompress hash {$r['content_hash']}");
