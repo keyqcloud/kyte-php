@@ -146,8 +146,8 @@ class CronJobController extends ModelController
                 // Decompress code for response
                 $this->decompressCode($r);
 
-                // Add updated version information
-                $r['version_info'] = $this->getVersionInfo($o->id);
+                // Version info now per-function - access via CronJobFunctionVersion API
+                // $r['version_info'] = $this->getVersionInfo($o->id);
 
                 // Add execution summary
                 $r['execution_summary'] = $this->getExecutionSummary($o->id);
