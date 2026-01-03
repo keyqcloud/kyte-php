@@ -498,7 +498,7 @@ class CronJobFunctionController extends ModelController
         $version->create($versionData, $this->api->user ? $this->api->user->id : null);
 
         // Regenerate parent cron job code
-        $this->regenerateJobCode($function->cron_job);
+        CronJobCodeGenerator::regenerateJobCode($function->cron_job);
 
         // Get decompressed content to return
         $decompressed = bzdecompress($targetContent->content);
