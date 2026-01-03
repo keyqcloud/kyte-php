@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS CronJob (
     code LONGBLOB COMMENT 'bzip2 compressed PHP code (auto-generated from functions)',
 
     -- Schedule configuration (supports multiple types)
-    schedule_type ENUM('cron', 'interval', 'daily', 'weekly', 'monthly') DEFAULT 'cron',
+    schedule_type VARCHAR(20) DEFAULT 'cron' COMMENT 'Types: cron, interval, daily, weekly, monthly',
     cron_expression VARCHAR(100) COMMENT 'Standard 5-field cron: 0 2 * * * (2am daily)',
     interval_seconds INT UNSIGNED COMMENT 'For interval type: 300 = every 5 minutes',
     time_of_day TIME COMMENT 'For daily type: 02:00:00',
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS CronJob (
     enabled TINYINT UNSIGNED DEFAULT 1,
     timeout_seconds INT UNSIGNED DEFAULT 300 COMMENT 'Default 5min, max 1800 (30min)',
     max_retries TINYINT UNSIGNED DEFAULT 3 COMMENT '0-5 range',
-    retry_strategy ENUM('immediate', 'fixed', 'exponential') DEFAULT 'exponential',
+    retry_strategy VARCHAR(20) DEFAULT 'exponential' COMMENT 'Types: immediate, fixed, exponential',
     retry_delay_seconds INT UNSIGNED DEFAULT 60 COMMENT 'For fixed strategy',
     allow_concurrent TINYINT UNSIGNED DEFAULT 0,
 
@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS CronJobExecution (
     next_run_time INT UNSIGNED COMMENT 'When this job should run next',
 
     -- Locking (lease-based for idempotency)
-    status ENUM('pending', 'running', 'completed', 'failed', 'timeout', 'skipped') DEFAULT 'pending',
+    status VARCHAR(20) DEFAULT 'pending' COMMENT 'Types: pending, running, completed, failed, timeout, skipped',
     locked_by VARCHAR(255) COMMENT 'Server identifier: hostname:pid',
     locked_at INT UNSIGNED COMMENT 'When lock was acquired',
     locked_until INT UNSIGNED COMMENT 'Lease expiration timestamp',

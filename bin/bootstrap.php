@@ -123,6 +123,22 @@ $dbEngine = 'InnoDB'; // Default engine
 
 \Kyte\Core\DBI::dbInit($dbUser, $dbPass, $dbHost, $dbName, $dbCharset, $dbEngine);
 
+// Load Cron Job model definitions for CLI context
+// These need to be available as constants for the cron worker
+$modelBasePath = $basePath . '/src/Mvc/Model';
+require_once $modelBasePath . '/CronJob.php';
+require_once $modelBasePath . '/CronJobExecution.php';
+require_once $modelBasePath . '/CronJobFunction.php';
+require_once $modelBasePath . '/CronJobFunctionContent.php';
+require_once $modelBasePath . '/CronJobFunctionVersion.php';
+
+// Define model constants if not already defined
+if (!defined('CronJob')) define('CronJob', $CronJob);
+if (!defined('CronJobExecution')) define('CronJobExecution', $CronJobExecution);
+if (!defined('CronJobFunction')) define('CronJobFunction', $CronJobFunction);
+if (!defined('CronJobFunctionContent')) define('CronJobFunctionContent', $CronJobFunctionContent);
+if (!defined('CronJobFunctionVersion')) define('CronJobFunctionVersion', $CronJobFunctionVersion);
+
 // Export globals for scripts to use
 $GLOBALS['PROJECT_ROOT'] = $projectRoot;
 $GLOBALS['CONFIG_PATH'] = $configPath;

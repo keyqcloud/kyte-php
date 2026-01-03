@@ -35,7 +35,7 @@ class CronJobCodeGenerator
 
         // Load all functions for this job using proper Model pattern
         $functionModel = new Model(CronJobFunction);
-        $functions = $functionModel->retrieve(
+        $functionModel->retrieve(
             'cron_job',
             $cronJobId,
             false,
@@ -50,25 +50,26 @@ class CronJobCodeGenerator
             'tearDown' => null
         ];
 
-        if (!empty($functions)) {
-            foreach ($functions as $function) {
+        // Model::retrieve() returns boolean, objects are in $functionModel->objects
+        if (!empty($functionModel->objects)) {
+            foreach ($functionModel->objects as $function) {
                 $functionName = $function->name;
 
-            // Get current content
-            if ($function->content_hash) {
-                $contentSql = "SELECT content FROM CronJobFunctionContent WHERE content_hash = ?";
-                $contentResult = DBI::prepared_query($contentSql, 's', [$function->content_hash]);
+                // Get current content
+                if ($function->content_hash) {
+                    $contentSql = "SELECT content FROM CronJobFunctionContent WHERE content_hash = ?";
+                    $contentResult = DBI::prepared_query($contentSql, 's', [$function->content_hash]);
 
-                if (!empty($contentResult)) {
-                    $compressedContent = $contentResult[0]['content'];
-                    $decompressed = bzdecompress($compressedContent);
+                    if (!empty($contentResult)) {
+                        $compressedContent = $contentResult[0]['content'];
+                        $decompressed = bzdecompress($compressedContent);
 
-                    if ($decompressed !== false) {
-                        $functionBodies[$functionName] = $decompressed;
+                        if ($decompressed !== false) {
+                            $functionBodies[$functionName] = $decompressed;
+                        }
                     }
                 }
             }
-        }
         }
 
         // Generate class code

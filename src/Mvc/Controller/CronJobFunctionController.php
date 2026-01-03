@@ -240,17 +240,19 @@ class CronJobFunctionController extends ModelController
                 }
             }
 
-            // Add version info
-            $versionSql = "
-                SELECT version_number, is_current, date_created
-                FROM CronJobFunctionVersion
-                WHERE cron_job_function = ? AND is_current = 1 AND deleted = 0
-                LIMIT 1
-            ";
-            $versionResult = DBI::prepared_query($versionSql, 'i', [$o->id]);
+            // Add version info (check if $o has id property)
+            if (isset($o->id)) {
+                $versionSql = "
+                    SELECT version_number, is_current, date_created
+                    FROM CronJobFunctionVersion
+                    WHERE cron_job_function = ? AND is_current = 1 AND deleted = 0
+                    LIMIT 1
+                ";
+                $versionResult = DBI::prepared_query($versionSql, 'i', [$o->id]);
 
-            if (!empty($versionResult)) {
-                $r['current_version'] = $versionResult[0];
+                if (!empty($versionResult)) {
+                    $r['current_version'] = $versionResult[0];
+                }
             }
         }
     }
@@ -297,6 +299,50 @@ class CronJobFunctionController extends ModelController
             $versionData['date_created'],
             $versionData['deleted']
         ]);
+    }
+
+    /**
+     * Override delete() to handle reference counting
+     */
+    public function delete($field, $value)
+    {
+        // Load the function to get its content_hash and cron_job before deletion
+        $function = new ModelObject(CronJobFunction);
+
+        $conditions = null;
+        if ($this->model !== null) {
+            if (!isset($this->model['appId']) && $this->requireAccount) {
+                $conditions = [['field' => 'kyte_account', 'value' => $this->api->account->id]];
+            }
+        }
+
+        if ($function->retrieve($field, $value, $conditions)) {
+            $cronJobId = $function->cron_job;
+
+            // Decrement reference count in content table
+            if ($function->content_hash) {
+                $content = new ModelObject(CronJobFunctionContent);
+                if ($content->retrieve('content_hash', $function->content_hash)) {
+                    if ($content->reference_count > 0) {
+                        $content->reference_count--;
+                        $content->save([
+                            'reference_count' => $content->reference_count
+                        ], $this->api->user ? $this->api->user->id : null);
+                    }
+                }
+            }
+
+            // Call parent delete
+            parent::delete($field, $value);
+
+            // Regenerate parent job code after function deletion
+            if ($cronJobId) {
+                CronJobCodeGenerator::regenerateJobCode($cronJobId);
+            }
+        } else {
+            // Function not found or no permission
+            parent::delete($field, $value);
+        }
     }
 
     /**

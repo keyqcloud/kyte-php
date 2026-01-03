@@ -5,6 +5,7 @@ namespace Kyte\Mvc\Controller;
 // use Kyte\Cron\CronJobManager; // DEPRECATED: Using function-based versioning now
 use Kyte\Core\Api;
 use Kyte\Core\Model;
+use Kyte\Core\ModelObject;
 use Kyte\Core\DBI;
 
 /**
@@ -104,25 +105,14 @@ class CronJobController extends ModelController
         }
     }
 
-    /**
-     * Hook after successful creation to set up default functions
-     */
-    public function hook_postprocess($method, &$r, &$o = null) {
-        switch ($method) {
-            case 'new':
-                if ($o && $o->id) {
-                    $this->createDefaultFunctions($o->id, $this->api->user ? $this->api->user->id : null);
-                }
-                break;
-
-            default:
-                break;
-        }
-    }
-
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'new':
+                // Create default functions for new cron jobs
+                if ($o && $o->id) {
+                    $this->createDefaultFunctions($o->id, $this->api->user ? $this->api->user->id : null);
+                }
+
                 // Decompress code for response
                 $this->decompressCode($r);
 
