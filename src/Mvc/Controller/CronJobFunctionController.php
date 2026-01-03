@@ -233,16 +233,23 @@ class CronJobFunctionController extends ModelController
 
             if (!empty($contentResult)) {
                 $compressed = $contentResult[0]['content'];
-                $decompressed = @bzdecompress($compressed);
 
-                if ($decompressed !== false) {
-                    // Ensure UTF-8 encoding for JSON compatibility
-                    $r['function_body'] = mb_convert_encoding($decompressed, 'UTF-8', 'UTF-8');
+                // Check if it's valid bzip2 data (same as FunctionController)
+                if (strlen($compressed) >= 2 && substr($compressed, 0, 2) === 'BZ') {
+                    $decompressed = bzdecompress($compressed);
+
+                    if ($decompressed === false) {
+                        error_log("CronJobFunctionController: Failed to decompress hash {$r['content_hash']}");
+                        $r['function_body'] = '';
+                        $r['decompression_error'] = true;
+                    } else {
+                        // Clean UTF-8 for JSON compatibility (handle bad data from frontend saves)
+                        $cleaned = @iconv('UTF-8', 'UTF-8//IGNORE', $decompressed);
+                        $r['function_body'] = ($cleaned !== false) ? $cleaned : $decompressed;
+                    }
                 } else {
-                    // Decompression failed - only log on error
-                    error_log("CronJobFunctionController: Failed to decompress hash {$r['content_hash']}");
-                    $r['function_body'] = '';
-                    $r['decompression_error'] = true;
+                    // Not bzip2 data, assume already decompressed
+                    $r['function_body'] = $compressed;
                 }
             } else {
                 // Content not found
