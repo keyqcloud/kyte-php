@@ -402,6 +402,12 @@ class CronWorker
 			// PARENT PROCESS: Wait for worker to complete
 			$startTime = microtime(true);
 
+			// CRITICAL: Parent must also reconnect after fork
+			// When a process forks, both parent and child have copies of the MySQL
+			// connection handle, which confuses the MySQL library. The parent's
+			// connection becomes invalid and must be recreated.
+			DBI::reconnect();
+
 			// Wait for child process to finish
 			$status = 0;
 			pcntl_waitpid($pid, $status, 0);
