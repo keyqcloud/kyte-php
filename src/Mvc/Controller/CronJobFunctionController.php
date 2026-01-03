@@ -68,7 +68,9 @@ class CronJobFunctionController extends ModelController
         if ($contentFound && isset($existingContent->id)) {
             // Increment reference count
             $existingContent->reference_count++;
-            $existingContent->save([], $this->api->user ? $this->api->user->id : null);
+            $existingContent->save([
+                'reference_count' => $existingContent->reference_count
+            ], $this->api->user ? $this->api->user->id : null);
         } else {
             // Create new content record
             $compressed = bzcompress($functionBody, 9);
@@ -168,7 +170,9 @@ class CronJobFunctionController extends ModelController
                 } else {
                     // Increment reference count
                     $existingContent->reference_count++;
-                    $existingContent->save([], $this->api->user ? $this->api->user->id : null);
+                    $existingContent->save([
+                        'reference_count' => $existingContent->reference_count
+                    ], $this->api->user ? $this->api->user->id : null);
                 }
 
                 // Decrement old content reference count
@@ -176,7 +180,9 @@ class CronJobFunctionController extends ModelController
                     $oldContent = new ModelObject(CronJobFunctionContent);
                     if ($oldContent->retrieve('content_hash', $function->content_hash) && isset($oldContent->id) && $oldContent->reference_count > 0) {
                         $oldContent->reference_count--;
-                        $oldContent->save([], $this->api->user ? $this->api->user->id : null);
+                        $oldContent->save([
+                            'reference_count' => $oldContent->reference_count
+                        ], $this->api->user ? $this->api->user->id : null);
                     }
                 }
 
@@ -184,7 +190,13 @@ class CronJobFunctionController extends ModelController
                 $function->content_hash = $newContentHash;
                 $function->modified_by = $this->api->user ? $this->api->user->id : null;
                 $function->date_modified = time();
-                $function->save([], $this->api->user ? $this->api->user->id : null);
+
+                // Pass the fields that changed to save()
+                $function->save([
+                    'content_hash' => $newContentHash,
+                    'modified_by' => $this->api->user ? $this->api->user->id : null,
+                    'date_modified' => time()
+                ], $this->api->user ? $this->api->user->id : null);
 
                 // Create new version
                 $this->createVersion($functionId, $newContentHash, $nextVersion, 'Code updated', $this->api->user ? $this->api->user->id : null);

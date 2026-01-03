@@ -522,7 +522,15 @@ class CronJobController extends ModelController
         $job->enabled = 1;
         $job->modified_by = $this->api->user ? $this->api->user->id : null;
         $job->date_modified = time();
-        $job->save();
+        $job->save([
+            'in_dead_letter_queue' => 0,
+            'dead_letter_reason' => null,
+            'dead_letter_since' => null,
+            'consecutive_failures' => 0,
+            'enabled' => 1,
+            'modified_by' => $this->api->user ? $this->api->user->id : null,
+            'date_modified' => time()
+        ], $this->api->user ? $this->api->user->id : null);
 
         $this->respond([
             'success' => true,
@@ -656,7 +664,9 @@ return "Success";',
             } else {
                 // Increment reference count
                 $existingContent->reference_count++;
-                $existingContent->save([], $userId);
+                $existingContent->save([
+                    'reference_count' => $existingContent->reference_count
+                ], $userId);
             }
 
             // Create function record
