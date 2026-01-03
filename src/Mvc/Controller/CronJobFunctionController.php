@@ -111,12 +111,22 @@ class CronJobFunctionController extends ModelController
     }
 
     /**
-     * Override update() to handle function updates with version control
+     * Override update() to handle function updates with version control and custom actions
+     *
+     * Custom Actions:
+     * - PUT /CronJobFunction/rollback/5?version=2 - Rollback to specific version
      */
     public function update($field, $value, $data)
     {
+        // Check if this is a custom action
+        $action = $field;
         $functionId = $value;
 
+        if ($action === 'rollback') {
+            return $this->handleRollback($functionId, $data);
+        }
+
+        // Normal update flow
         $function = new ModelObject(CronJobFunction);
         if (!$function->retrieve('id', $functionId) || !isset($function->id)) {
             $this->respondError('Function not found', 404);
@@ -372,6 +382,128 @@ class CronJobFunctionController extends ModelController
             // Function not found or no permission
             parent::delete($field, $value);
         }
+    }
+
+    /**
+     * Handle rollback to a previous version
+     * URL: PUT /CronJobFunction/rollback/5?version=2
+     */
+    private function handleRollback(int $functionId, array $data): void
+    {
+        // Get version number from query param or data
+        $versionNumber = $_GET['version'] ?? $data['version'] ?? null;
+
+        if (!$versionNumber) {
+            $this->respondError('Version number is required', 400);
+            return;
+        }
+
+        // Get the function
+        $function = new ModelObject(CronJobFunction);
+        if (!$function->retrieve('id', $functionId) || !isset($function->id)) {
+            $this->respondError('Function not found', 404);
+            return;
+        }
+
+        // Find the version to rollback to
+        $versionSql = "
+            SELECT content_hash, version_number
+            FROM CronJobFunctionVersion
+            WHERE cron_job_function = ? AND version_number = ? AND deleted = 0
+        ";
+        $versionResult = DBI::prepared_query($versionSql, 'ii', [$functionId, (int)$versionNumber]);
+
+        if (empty($versionResult)) {
+            $this->respondError("Version $versionNumber not found for this function", 404);
+            return;
+        }
+
+        $targetContentHash = $versionResult[0]['content_hash'];
+
+        // Check if this is already the current version
+        if ($targetContentHash === $function->content_hash) {
+            $this->respondError("Function is already at version $versionNumber", 400);
+            return;
+        }
+
+        // Update content reference counts
+        // Increment target content
+        $targetContent = new ModelObject(CronJobFunctionContent);
+        if ($targetContent->retrieve('content_hash', $targetContentHash) && isset($targetContent->id)) {
+            $targetContent->reference_count++;
+            $targetContent->save([
+                'reference_count' => $targetContent->reference_count
+            ], $this->api->user ? $this->api->user->id : null);
+        } else {
+            $this->respondError('Target version content not found', 500);
+            return;
+        }
+
+        // Decrement current content
+        if ($function->content_hash) {
+            $currentContent = new ModelObject(CronJobFunctionContent);
+            if ($currentContent->retrieve('content_hash', $function->content_hash) && isset($currentContent->id) && $currentContent->reference_count > 0) {
+                $currentContent->reference_count--;
+                $currentContent->save([
+                    'reference_count' => $currentContent->reference_count
+                ], $this->api->user ? $this->api->user->id : null);
+            }
+        }
+
+        // Get next version number
+        $currentVersionSql = "
+            SELECT MAX(version_number) as max_version
+            FROM CronJobFunctionVersion
+            WHERE cron_job_function = ? AND deleted = 0
+        ";
+        $versionResult = DBI::prepared_query($currentVersionSql, 'i', [$functionId]);
+        $nextVersion = ($versionResult[0]['max_version'] ?? 0) + 1;
+
+        // Update function to point to target content
+        $function->content_hash = $targetContentHash;
+        $function->modified_by = $this->api->user ? $this->api->user->id : null;
+        $function->date_modified = time();
+        $function->save([
+            'content_hash' => $targetContentHash,
+            'modified_by' => $this->api->user ? $this->api->user->id : null,
+            'date_modified' => time()
+        ], $this->api->user ? $this->api->user->id : null);
+
+        // Create new version record (marking this as a rollback in history)
+        $versionData = [
+            'cron_job_function' => $functionId,
+            'version_number' => $nextVersion,
+            'content_hash' => $targetContentHash,
+            'change_description' => "Rolled back to version $versionNumber",
+            'is_current' => 1,
+            'kyte_account' => $function->kyte_account,
+            'application' => $function->application,
+            'created_by' => $this->api->user ? $this->api->user->id : null,
+            'date_created' => time()
+        ];
+
+        // Mark all previous versions as not current
+        $updateSql = "UPDATE CronJobFunctionVersion SET is_current = 0 WHERE cron_job_function = ?";
+        DBI::prepared_query($updateSql, 'i', [$functionId]);
+
+        $version = new ModelObject(CronJobFunctionVersion);
+        $version->create($versionData, $this->api->user ? $this->api->user->id : null);
+
+        // Regenerate parent cron job code
+        $this->regenerateJobCode($function->cron_job);
+
+        // Get decompressed content to return
+        $decompressed = bzdecompress($targetContent->content);
+
+        $this->response['data'] = [[
+            'success' => true,
+            'message' => "Successfully rolled back to version $versionNumber",
+            'function_id' => $functionId,
+            'function_name' => $function->name,
+            'rolled_back_to_version' => (int)$versionNumber,
+            'new_version_number' => $nextVersion,
+            'function_body' => $decompressed !== false ? $decompressed : null
+        ]];
     }
 
     /**
