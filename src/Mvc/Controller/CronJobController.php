@@ -451,7 +451,7 @@ class CronJobController extends ModelController
      */
     private function handleTrigger(int $jobId): void
     {
-        $job = new ModelObject('CronJob');
+        $job = new ModelObject(CronJob);
         $job->retrieve('id', $jobId);
 
         if (!$job->id) {
@@ -505,7 +505,7 @@ class CronJobController extends ModelController
      */
     private function handleRecover(int $jobId): void
     {
-        $job = new ModelObject('CronJob');
+        $job = new ModelObject(CronJob);
         $job->retrieve('id', $jobId);
 
         if (!$job->id) {
@@ -542,7 +542,7 @@ class CronJobController extends ModelController
      */
     private function handleRollback(int $jobId, array $data): void
     {
-        $job = new ModelObject('CronJob');
+        $job = new ModelObject(CronJob);
         $job->retrieve('id', $jobId);
 
         if (!$job->id) {
@@ -571,7 +571,7 @@ class CronJobController extends ModelController
      */
     private function handleStats(int $jobId): void
     {
-        $job = new ModelObject('CronJob');
+        $job = new ModelObject(CronJob);
         $job->retrieve('id', $jobId);
 
         if (!$job->id) {
@@ -616,7 +616,7 @@ class CronJobController extends ModelController
      */
     private function createDefaultFunctions(int $jobId, ?int $userId): void
     {
-        $job = new ModelObject('CronJob');
+        $job = new ModelObject(CronJob);
         $job->retrieve('id', $jobId);
         if (!$job->id) {
             return;
@@ -645,7 +645,7 @@ return "Success";',
             $contentHash = hash('sha256', $functionBody);
 
             // Check if content exists (unlikely for defaults, but check anyway)
-            $existingContent = new ModelObject('CronJobFunctionContent');
+            $existingContent = new ModelObject(CronJobFunctionContent);
             $existingContent->retrieve('content_hash', $contentHash);
 
             if (!$existingContent->id) {
@@ -660,7 +660,7 @@ return "Success";',
                     'date_created' => time()
                 ];
 
-                $contentObj = new ModelObject('CronJobFunctionContent');
+                $contentObj = new ModelObject(CronJobFunctionContent);
                 $contentObj->create($contentData, $userId);
             } else {
                 // Increment reference count
@@ -679,7 +679,7 @@ return "Success";',
                 'date_created' => time()
             ];
 
-            $functionObj = new ModelObject('CronJobFunction');
+            $functionObj = new ModelObject(CronJobFunction);
             $functionObj->create($functionData, $userId);
 
             // Create initial version (version 1)

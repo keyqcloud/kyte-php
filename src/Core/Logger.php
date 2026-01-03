@@ -139,7 +139,7 @@ class Logger
         }
 
         try {
-            $error = new ModelObject('KyteError');
+            $error = new ModelObject(KyteError);
 
             // Get caller information for file/line
             $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
