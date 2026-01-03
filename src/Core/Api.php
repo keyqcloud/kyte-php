@@ -803,10 +803,22 @@ class Api
 				foreach ($this->response['data'] as $idx => $item) {
 					error_log("Testing data[$idx]...");
 					foreach ($item as $key => $value) {
-						if (is_string($value)) {
-							$testEncode = json_encode([$key => $value]);
-							if ($testEncode === false || strlen($testEncode) == 0) {
-								error_log("  PROBLEM FIELD: $key = " . substr(bin2hex($value), 0, 100));
+						$testEncode = json_encode([$key => $value]);
+						if ($testEncode === false || strlen($testEncode) == 0) {
+							if (is_string($value)) {
+								error_log("  PROBLEM FIELD: $key (string) = " . substr(bin2hex($value), 0, 100));
+							} elseif (is_array($value)) {
+								error_log("  PROBLEM FIELD: $key (array), checking nested...");
+								foreach ($value as $subkey => $subvalue) {
+									if (is_string($subvalue)) {
+										$testSubEncode = json_encode([$subkey => $subvalue]);
+										if ($testSubEncode === false || strlen($testSubEncode) == 0) {
+											error_log("    NESTED PROBLEM: $key.$subkey = " . substr(bin2hex($subvalue), 0, 100));
+										}
+									}
+								}
+							} else {
+								error_log("  PROBLEM FIELD: $key (" . gettype($value) . ")");
 							}
 						}
 					}
