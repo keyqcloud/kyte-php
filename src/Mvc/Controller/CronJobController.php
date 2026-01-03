@@ -2,7 +2,7 @@
 
 namespace Kyte\Mvc\Controller;
 
-use Kyte\Cron\CronJobManager;
+// use Kyte\Cron\CronJobManager; // DEPRECATED: Using function-based versioning now
 use Kyte\Core\Api;
 use Kyte\Core\Model;
 use Kyte\Core\DBI;
@@ -21,23 +21,23 @@ use Kyte\Core\DBI;
  */
 class CronJobController extends ModelController
 {
-    private $cronJobManager;
+    // private $cronJobManager; // DEPRECATED: Using function-based versioning now
 
     public function hook_init() {
         $this->dateformat = 'm/d/Y H:i:s';
-        // Initialize CronJobManager lazily to ensure $this->api is available
     }
 
     /**
      * Get CronJobManager instance (lazy initialization)
+     * DEPRECATED: Using function-based versioning - rollback via CronJobFunctionVersion
      */
-    private function getCronJobManager(): CronJobManager
-    {
-        if ($this->cronJobManager === null) {
-            $this->cronJobManager = new CronJobManager($this->api);
-        }
-        return $this->cronJobManager;
-    }
+    // private function getCronJobManager(): CronJobManager
+    // {
+    //     if ($this->cronJobManager === null) {
+    //         $this->cronJobManager = new CronJobManager($this->api);
+    //     }
+    //     return $this->cronJobManager;
+    // }
 
     /**
      * Override new() to handle POST custom actions
@@ -126,8 +126,8 @@ class CronJobController extends ModelController
                 // Decompress code for response
                 $this->decompressCode($r);
 
-                // Add version information
-                $r['version_info'] = $this->getVersionInfo($o->id);
+                // Version info now per-function - access via CronJobFunctionVersion API
+                // $r['version_info'] = $this->getVersionInfo($o->id);
 
                 // Add execution summary
                 $r['execution_summary'] = $this->getExecutionSummary($o->id);
@@ -137,8 +137,8 @@ class CronJobController extends ModelController
                 // Decompress code for response
                 $this->decompressCode($r);
 
-                // Add version information
-                $r['version_info'] = $this->getVersionInfo($o->id);
+                // Version info now per-function - access via CronJobFunctionVersion API
+                // $r['version_info'] = $this->getVersionInfo($o->id);
 
                 // Add execution summary
                 $r['execution_summary'] = $this->getExecutionSummary($o->id);
@@ -364,25 +364,14 @@ class CronJobController extends ModelController
 
     /**
      * Get version information for a job
+     * DEPRECATED: Version info now tracked per-function in CronJobFunctionVersion
+     * Access via CronJobFunctionVersionController API
      */
-    private function getVersionInfo(int $jobId): ?array
-    {
-        $sql = "
-            SELECT
-                version_number,
-                content_hash,
-                is_current,
-                created_by,
-                date_created
-            FROM KyteCronJobVersion
-            WHERE cron_job = ? AND is_current = 1 AND deleted = 0
-            LIMIT 1
-        ";
-
-        $version = DBI::prepared_query($sql, 'i', [$jobId]);
-
-        return !empty($version) ? $version[0] : null;
-    }
+    // private function getVersionInfo(int $jobId): ?array
+    // {
+    //     // No longer used - see CronJobFunctionVersion for per-function versioning
+    //     return null;
+    // }
 
     /**
      * Get execution summary statistics
@@ -566,30 +555,11 @@ class CronJobController extends ModelController
             return;
         }
 
-        try {
-            $result = $this->getCronJobManager()->rollback(
-                $job->id,
-                (int)$versionNumber,
-                $this->api->user ? $this->api->user->id : null
-            );
-
-            if ($result['status'] === 'no_change') {
-                $this->respond(['message' => $result['message']], 200);
-                return;
-            }
-
-            $this->respond([
-                'success' => true,
-                'message' => 'Job rolled back successfully',
-                'from_version' => $result['from_version'],
-                'to_version' => $result['to_version'],
-                'job_id' => $job->id,
-                'job_name' => $job->name
-            ]);
-
-        } catch (\Exception $e) {
-            $this->respond(['error' => $e->getMessage()], 400);
-        }
+        // TODO: Implement rollback for function-based versioning
+        // Rollback now works at per-function level via CronJobFunctionVersionController
+        $this->respond([
+            'error' => 'Rollback not yet implemented for function-based versioning. Use CronJobFunctionVersion API to rollback individual functions.'
+        ], 501); // 501 Not Implemented
     }
 
     /**
