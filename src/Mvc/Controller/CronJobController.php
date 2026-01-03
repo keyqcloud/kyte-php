@@ -379,6 +379,7 @@ class CronJobController extends ModelController
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as successful,
                 SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
                 SUM(CASE WHEN status = 'timeout' THEN 1 ELSE 0 END) as timeouts,
+                SUM(CASE WHEN status IN ('completed', 'failed', 'timeout') THEN 1 ELSE 0 END) as total_completed,
                 AVG(CASE WHEN status = 'completed' THEN duration_ms ELSE NULL END) as avg_duration_ms,
                 MAX(completed_at) as last_execution
             FROM CronJobExecution
@@ -388,10 +389,11 @@ class CronJobController extends ModelController
         $stats = DBI::prepared_query($sql, 'i', [$jobId]);
 
         if (!empty($stats)) {
-            $total = (int)$stats[0]['total_executions'];
+            $totalCompleted = (int)$stats[0]['total_completed'];
             $successful = (int)$stats[0]['successful'];
 
-            $stats[0]['success_rate'] = $total > 0 ? round(($successful / $total) * 100, 2) : 0;
+            // Success rate based only on completed executions (excludes pending/running)
+            $stats[0]['success_rate'] = $totalCompleted > 0 ? round(($successful / $totalCompleted) * 100, 2) : 0;
 
             return $stats[0];
         }
@@ -401,6 +403,7 @@ class CronJobController extends ModelController
             'successful' => 0,
             'failed' => 0,
             'timeouts' => 0,
+            'total_completed' => 0,
             'success_rate' => 0,
             'avg_duration_ms' => null,
             'last_execution' => null
