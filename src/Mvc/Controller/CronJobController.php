@@ -409,6 +409,11 @@ class CronJobController extends ModelController
             // Success rate based only on completed executions (excludes pending/running)
             $stats[0]['success_rate'] = $totalCompleted > 0 ? round(($successful / $totalCompleted) * 100, 2) : 0;
 
+            // Format last_execution timestamp to match dateformat
+            if (!empty($stats[0]['last_execution'])) {
+                $stats[0]['last_execution'] = date($this->dateformat, $stats[0]['last_execution']);
+            }
+
             return $stats[0];
         }
 
