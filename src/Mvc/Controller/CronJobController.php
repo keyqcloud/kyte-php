@@ -529,15 +529,31 @@ class CronJobController extends ModelController
             set_time_limit(60);
 
             // Execute the job code
-            // The code should be a closure that returns void
-            $closure = eval('return ' . $code . ';');
+            // The code is a class definition with execute(), onSuccess(), onFailure() methods
+            eval($code);
 
-            if (!is_callable($closure)) {
-                throw new \Exception("Job code did not return a callable function");
+            // Determine the class name from the code
+            // Expected format: class CronJob_{id} { ... }
+            $className = 'CronJob_' . $job->id;
+
+            if (!class_exists($className, false)) {
+                throw new \Exception("Job class '$className' was not defined after evaluating code");
             }
 
-            // Execute the closure
-            $closure();
+            // Instantiate the job class
+            $jobInstance = new $className();
+
+            // Execute the job
+            if (!method_exists($jobInstance, 'execute')) {
+                throw new \Exception("Job class '$className' does not have an execute() method");
+            }
+
+            $jobInstance->execute();
+
+            // Call onSuccess callback if it exists
+            if (method_exists($jobInstance, 'onSuccess')) {
+                $jobInstance->onSuccess();
+            }
 
             // Capture output
             $output = ob_get_clean();
@@ -547,6 +563,18 @@ class CronJobController extends ModelController
             $error = $e->getMessage() . "\n" . $e->getTraceAsString();
             $status = 'failed';
             error_log("handleTrigger() - Job execution failed: " . $e->getMessage());
+
+            // Call onFailure callback if it exists and the class was instantiated
+            if (isset($jobInstance) && method_exists($jobInstance, 'onFailure')) {
+                try {
+                    ob_start();
+                    $jobInstance->onFailure($e);
+                    $output .= ob_get_clean();
+                } catch (\Throwable $callbackError) {
+                    ob_get_clean();
+                    $error .= "\n\nFailure callback error: " . $callbackError->getMessage();
+                }
+            }
         }
 
         $endTime = microtime(true);
