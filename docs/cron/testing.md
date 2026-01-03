@@ -336,7 +336,7 @@ class ApiContextJob extends \Kyte\Core\CronJobBase
 {
     public function execute() {
         // Access models via API
-        $model = new \Kyte\Core\Model('SomeModel');
+        $model = new \Kyte\Core\Model(SomeModel);
         $records = $model->get();
 
         $this->log("Found " . count($records) . " records");
