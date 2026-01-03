@@ -292,6 +292,11 @@ class CronJobFunctionController extends ModelController
                 }
             }
         }
+
+        // Remove compressed code field from FK object (contains binary data that breaks JSON encoding)
+        if (isset($r['cron_job']) && is_array($r['cron_job']) && isset($r['cron_job']['code'])) {
+            unset($r['cron_job']['code']);
+        }
     }
 
     /**
