@@ -175,7 +175,9 @@ CREATE TABLE IF NOT EXISTS CronJobFunction (
     date_created INT UNSIGNED NOT NULL,
     modified_by INT NULL,
     date_modified INT UNSIGNED NULL,
-    deleted TINYINT(1) DEFAULT 0,
+    deleted_by INT NULL,
+    date_deleted INT UNSIGNED NULL,
+    deleted TINYINT(1) UNSIGNED DEFAULT 0,
 
     INDEX idx_cron_job (cron_job),
     INDEX idx_name (name),
@@ -196,9 +198,13 @@ CREATE TABLE IF NOT EXISTS CronJobFunctionContent (
     reference_count INT UNSIGNED DEFAULT 0 COMMENT 'Number of versions using this content',
     created_by INT NULL,
     date_created INT UNSIGNED NOT NULL,
+    deleted_by INT NULL,
+    date_deleted INT UNSIGNED NULL,
+    deleted TINYINT(1) UNSIGNED DEFAULT 0,
 
     INDEX idx_hash (content_hash),
-    INDEX idx_ref_count (reference_count)
+    INDEX idx_ref_count (reference_count),
+    INDEX idx_deleted (deleted)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Step 5: Create CronJobFunctionVersion table (per-function version history)
@@ -207,12 +213,14 @@ CREATE TABLE IF NOT EXISTS CronJobFunctionVersion (
     cron_job_function INT UNSIGNED NOT NULL,
     version_number INT UNSIGNED NOT NULL,
     content_hash VARCHAR(64) NOT NULL COMMENT 'FK to CronJobFunctionContent',
-    is_current TINYINT(1) DEFAULT 0,
+    is_current TINYINT(1) UNSIGNED DEFAULT 0,
     change_description TEXT NULL COMMENT 'What changed in this version',
     diff_json LONGTEXT NULL COMMENT 'JSON-encoded line-by-line diff from previous version',
     created_by INT NULL,
     date_created INT UNSIGNED NOT NULL,
-    deleted TINYINT(1) DEFAULT 0,
+    deleted_by INT NULL,
+    date_deleted INT UNSIGNED NULL,
+    deleted TINYINT(1) UNSIGNED DEFAULT 0,
 
     INDEX idx_function (cron_job_function),
     INDEX idx_version (version_number),
