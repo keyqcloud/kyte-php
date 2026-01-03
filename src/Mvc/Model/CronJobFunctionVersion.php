@@ -49,6 +49,16 @@ $CronJobFunctionVersion = [
 			'date'		=> false,
 		],
 
+		// Framework attributes
+		'kyte_account' => [
+			'type'		=> 'i',
+			'required'	=> true,
+			'fk'		=> [
+				'model'	=> 'KyteAccount',
+				'field'	=> 'id',
+			],
+		],
+
 		// audit attributes
 
 		'created_by'		=> [
