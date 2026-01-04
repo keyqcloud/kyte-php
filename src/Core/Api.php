@@ -225,16 +225,13 @@ class Api
 		// determine localizations for non-cli requests
 		if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 			/* LOCALIZATION SUPPORT */
-			// default to English
-			$lang = 'en';
-			// determine browser local
-			if (array_key_exists('HTTP_ACCEPT_LANGUAGE', $_SERVER)) {
-				$lang = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
-			}
-			
-			// supported languages - add additional language support here
-			$acceptLang = ['ja', 'en']; 
-			define('APP_LANG', in_array($lang, $acceptLang) ? $lang : 'en');
+			// Initialize I18n with browser detection as fallback
+			// Priority: User preference > Account default > Browser > English
+			$browserLang = \Kyte\Util\I18n::detectLanguageFromHeader();
+			define('APP_LANG', $browserLang);
+
+			// Set initial language (will be updated after user/account load if needed)
+			\Kyte\Util\I18n::setLanguage($browserLang);
 		}
 	}
 
@@ -1020,6 +1017,23 @@ class Api
 					throw new \Exception("Unable to find account associated with the user");
 				}
 			}
+
+			// I18n: Determine final language based on user preference and account default
+			// Priority: User preference > Account default > Browser (APP_LANG) > English
+			$finalLanguage = APP_LANG; // Default to browser detection
+
+			// Check account default language (if account loaded)
+			if ($this->account && isset($this->account->default_language) && !empty($this->account->default_language)) {
+				$finalLanguage = $this->account->default_language;
+			}
+
+			// Check user language preference (highest priority)
+			if ($this->user && isset($this->user->language) && !empty($this->user->language)) {
+				$finalLanguage = $this->user->language;
+			}
+
+			// Set final language in I18n
+			\Kyte\Util\I18n::setLanguage($finalLanguage);
 		}
 	}
 

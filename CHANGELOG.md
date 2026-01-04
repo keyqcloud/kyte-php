@@ -238,6 +238,23 @@ CREATE TABLE IF NOT EXISTS CronJobFunctionVersion (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================================================================
+-- Step 6: Multi-Language Support (i18n)
+-- =========================================================================
+-- Add language preferences for users and accounts
+-- Supports: English (en), Japanese (ja), Spanish (es), Korean (ko)
+-- =========================================================================
+
+-- Add language preference to users (optional, NULL = use browser/account default)
+ALTER TABLE KyteUser ADD COLUMN language VARCHAR(5) DEFAULT NULL
+    COMMENT 'User language preference: en, ja, es, ko (NULL = auto-detect)'
+    AFTER email;
+
+-- Add default language to accounts (for account-wide default)
+ALTER TABLE KyteAccount ADD COLUMN default_language VARCHAR(5) DEFAULT 'en'
+    COMMENT 'Account default language: en, ja, es, ko'
+    AFTER name;
+
+-- =========================================================================
 -- Migration Complete!
 -- =========================================================================
 -- All tables created successfully. Next steps:
@@ -254,6 +271,7 @@ CREATE TABLE IF NOT EXISTS CronJobFunctionVersion (
 - **Zero downtime deployments** with lease-based job locking
 - **Production-ready logging** with 5 log levels and structured context
 - **Complete version control** for all cron jobs with rollback capability
+- **Multi-language support** (Japanese, Spanish, Korean) for frontend and backend
 - **100% backward compatible** - all new features are opt-in
 
 ---
@@ -856,6 +874,123 @@ WHERE log_type = 'system';
 * System logs (app_id IS NULL) are account-scoped
 * Frontend displays log level badges, source badges, and enhanced filtering
 * Documentation provides comprehensive configuration examples
+
+---
+
+### Multi-Language Support (i18n)
+
+* **Add internationalization framework** for Japanese (日本語), Spanish (Español), and Korean (한국어)
+  - User-level language preference with browser detection fallback
+  - Account-level default language configuration
+  - Backend I18n helper class for translating error messages and API responses
+  - Frontend i18n library with automatic page translation
+  - Translation files for all UI strings and error messages
+  - Lazy loading of translation files for performance
+  - 100% backward compatible - English remains default, translations are opt-in
+
+* **Backend Translation System** (`src/Util/I18n.php`)
+  - Static helper class with `t()` method for translation
+  - Automatic language detection from user preference or Accept-Language header
+  - Translation file caching for performance
+  - Parameter substitution in translated strings (`{param}` syntax)
+  - Fallback to English if translation missing
+  - Support for 4 languages: en (English), ja (Japanese), es (Spanish), ko (Korean)
+
+* **Frontend Translation System** (`assets/js/source/kyte-i18n.js`)
+  - Browser language detection with user preference override
+  - JSON translation file loading with caching
+  - DOM element translation via `data-i18n` attributes
+  - Placeholder translation via `data-i18n-placeholder` attributes
+  - Dynamic translation API: `KyteI18n.t('key', {params})`
+  - Automatic page translation on language change
+  - Integration with Kyte session for user preferences
+
+* **Language Detection Priority**
+  1. User preference from `KyteUser.language` field (primary)
+  2. Account default from `KyteAccount.default_language` (fallback for account)
+  3. Browser `Accept-Language` header or `navigator.language` (auto-detect)
+  4. Default to English (last resort)
+
+* **User Interface Enhancements**
+  - Language selector in user profile settings
+  - Optional language switcher in navigation bar
+  - Session-based language persistence
+  - Visual language indicators (flags/language codes)
+
+**Translation Coverage:**
+* Backend: ~400 error messages, API responses, validation messages
+* Frontend: ~800 UI strings (navigation, forms, buttons, modals, tables)
+* Total: ~1,200 translatable strings across 4 languages
+
+**Files Added:**
+* `src/Util/I18n.php` - Backend translation helper class
+* `translations/en.php` - English translations (default)
+* `translations/ja.php` - Japanese translations (日本語)
+* `translations/es.php` - Spanish translations (Español)
+* `translations/ko.php` - Korean translations (한국어)
+* `assets/js/source/kyte-i18n.js` - Frontend i18n library
+* `assets/i18n/en.json` - Frontend English translations
+* `assets/i18n/ja.json` - Frontend Japanese translations
+* `assets/i18n/es.json` - Frontend Spanish translations
+* `assets/i18n/ko.json` - Frontend Korean translations
+
+**Files Modified:**
+* `src/Core/Api.php` - Language detection and I18n initialization
+* `src/Mvc/Controller/UserController.php` - Language preference handling
+* `kyte-managed-front-end/app/*.html` - Add `data-i18n` attributes to UI elements
+* `kyte-managed-front-end/assets/js/source/*.js` - Replace hardcoded strings with `KyteI18n.t()`
+
+**Configuration:**
+```php
+// config.php - Optional i18n configuration
+define('DEFAULT_LANGUAGE', 'en');  // System default (optional, defaults to 'en')
+define('SUPPORTED_LANGUAGES', ['en', 'ja', 'es', 'ko']);  // Supported languages
+```
+
+**Usage Examples:**
+
+Backend:
+```php
+use Kyte\Util\I18n;
+
+// Simple translation
+$message = I18n::t('error.not_found');  // "Record not found"
+
+// Translation with parameters
+$message = I18n::t('success.created', ['model' => 'User']);  // "User created successfully"
+
+// In controller responses
+$this->response['error'] = I18n::t('error.validation_failed', ['field' => 'email']);
+```
+
+Frontend:
+```javascript
+// JavaScript translation
+alert(KyteI18n.t('msg.confirm_delete'));  // "Are you sure you want to delete this?"
+
+// Translation with parameters
+let msg = KyteI18n.t('msg.items_selected', {count: 5});  // "5 items selected"
+
+// HTML translation (automatic)
+<button data-i18n="btn.save">Save</button>  // Auto-translated on page load
+<input data-i18n-placeholder="placeholder.search" />  // Placeholder translated
+```
+
+**Database Schema Changes:**
+See "Database Migration SQL (v4.0.0)" section above for:
+- `KyteUser.language` field (user preference)
+- `KyteAccount.default_language` field (account default)
+
+**Notes:**
+* 100% backward compatible - no code changes required for existing deployments
+* English remains the default language if user has no preference set
+* Translations are lazy-loaded only when needed
+* Missing translations automatically fall back to English
+* Professional translation recommended for production use
+* Machine translation is NOT recommended for customer-facing text
+* All strings use UTF-8 encoding (utf8mb4 collation)
+* Date/time formatting respects user's locale (future enhancement)
+* Number formatting respects user's locale (future enhancement)
 
 ### Bug Fixes
 
