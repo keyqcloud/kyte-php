@@ -1018,13 +1018,18 @@ class Api
 				}
 			}
 
-			// I18n: Determine final language based on user preference and account default
-			// Priority: User preference > Account default > Browser (APP_LANG) > English
+			// I18n: Determine final language based on user preference, app, account, and browser
+			// Priority: User preference > Application language > Account default > Browser (APP_LANG) > English
 			$finalLanguage = APP_LANG; // Default to browser detection
 
 			// Check account default language (if account loaded)
 			if ($this->account && isset($this->account->default_language) && !empty($this->account->default_language)) {
 				$finalLanguage = $this->account->default_language;
+			}
+
+			// Check application language (if app context is set)
+			if ($this->app && isset($this->app->language) && !empty($this->app->language)) {
+				$finalLanguage = $this->app->language;
 			}
 
 			// Check user language preference (highest priority)

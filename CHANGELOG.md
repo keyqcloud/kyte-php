@@ -254,6 +254,11 @@ ALTER TABLE KyteAccount ADD COLUMN default_language VARCHAR(5) DEFAULT 'en'
     COMMENT 'Account default language: en, ja, es, ko'
     AFTER name;
 
+-- Add language preference to applications (optional, NULL = use account default)
+ALTER TABLE Application ADD COLUMN language VARCHAR(5) DEFAULT NULL
+    COMMENT 'Application language preference: en, ja, es, ko (NULL = use account default)'
+    AFTER identifier;
+
 -- =========================================================================
 -- Migration Complete!
 -- =========================================================================
@@ -882,6 +887,7 @@ WHERE log_type = 'system';
 * **Add internationalization framework** for Japanese (日本語), Spanish (Español), and Korean (한국어)
   - User-level language preference with browser detection fallback
   - Account-level default language configuration
+  - Application-level language configuration for app-specific API responses
   - Backend I18n helper class for translating error messages and API responses
   - Frontend i18n library with automatic page translation
   - Translation files for all UI strings and error messages

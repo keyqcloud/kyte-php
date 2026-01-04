@@ -17,6 +17,14 @@ $Application = [
 			'date'		=> false,
 		],
 
+		'language'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 5,
+			'date'		=> false,
+			'default'	=> null,
+		],
+
 		// slack notifications
 		'slack_error_webhook'	=> [
 			'type'		=> 's',
