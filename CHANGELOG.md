@@ -912,16 +912,19 @@ WHERE log_type = 'system';
   - Integration with Kyte session for user preferences
 
 * **Language Detection Priority**
-  1. User preference from `KyteUser.language` field (primary)
-  2. Account default from `KyteAccount.default_language` (fallback for account)
-  3. Browser `Accept-Language` header or `navigator.language` (auto-detect)
-  4. Default to English (last resort)
+  1. User preference from `KyteUser.language` field (highest priority)
+  2. Application language from `Application.language` (app-specific API responses)
+  3. Account default from `KyteAccount.default_language` (account-wide fallback)
+  4. Browser `Accept-Language` header or `navigator.language` (auto-detect)
+  5. Default to English (last resort)
 
 * **User Interface Enhancements**
-  - Language selector in user profile settings
+  - Language selector in user profile settings (user-level preference)
+  - Account-level language selector in account settings (affects all users)
   - Optional language switcher in navigation bar
   - Session-based language persistence
   - Visual language indicators (flags/language codes)
+  - Real-time UI translation without page refresh
 
 **Translation Coverage:**
 * Backend: ~400 error messages, API responses, validation messages
