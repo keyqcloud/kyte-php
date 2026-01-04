@@ -9,7 +9,7 @@ This major version brings two transformative feature sets that fundamentally enh
 2. **Enterprise-Grade Distributed Cron System** - Production-ready job scheduling with cron expressions, intervals, and calendar-based schedules. Features lease-based locking for multi-server environments, automatic retry with exponential backoff, dead letter queue, job dependencies, complete version control with SHA256 deduplication, execution history, Slack/email notifications, and a full REST API with web-based management interface.
    - **Worker Process Forking** - Industry-standard execution pattern using `pcntl_fork()` to spawn separate processes for each job. Ensures fresh code loading on every execution (no class caching issues), prevents memory bloat (workers exit after completion), and provides isolation (one job can't crash others). Matches proven patterns from Laravel Queue, Sidekiq, and Celery. Falls back to inline execution if pcntl extension unavailable.
 
-**BREAKING CHANGE - Cron Job Code Structure:**
+**Cron Job Code Structure:**
 * Refactored cron jobs to use function-based code (matching controller pattern) instead of full class definitions
 * Users now write only method bodies (`execute`, `setUp`, `tearDown`) instead of full PHP classes
 * Backend assembles complete class at runtime from function bodies
