@@ -39,6 +39,14 @@ $KyteUser = [
 			'date'		=> true,
 		],
 
+		'language'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 5,
+			'date'		=> false,
+			'default'	=> null,
+		],
+
 		// framework attributes
 
 		'kyte_account'	=> [

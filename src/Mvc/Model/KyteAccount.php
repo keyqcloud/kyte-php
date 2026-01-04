@@ -18,6 +18,14 @@ $KyteAccount = [
 			// 'protected' => true,
 		],
 
+		'default_language'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 5,
+			'date'		=> false,
+			'default'	=> 'en',
+		],
+
 		// audit attributes
 
 		'created_by'		=> [
