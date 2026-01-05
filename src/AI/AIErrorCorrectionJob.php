@@ -368,9 +368,12 @@ class AIErrorCorrectionJob extends CronJobBase
 
 		foreach ($analyses as $analysisData) {
 			try {
-				// Create ModelObject from array
+				// Load analysis object
 				$analysis = new ModelObject(AIErrorAnalysis);
-				$analysis->populate($analysisData);
+				if (!$analysis->retrieve('id', $analysisData['id'])) {
+					$this->log("  Analysis #{$analysisData['id']} not found, skipping");
+					continue;
+				}
 
 				// Process the analysis
 				$analyzer->analyze($analysis);
