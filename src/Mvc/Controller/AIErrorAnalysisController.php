@@ -94,11 +94,23 @@ class AIErrorAnalysisController extends ModelController
 	 * Enhance get responses with additional context
 	 */
 	public function hook_process_get_response(&$r) {
-		// Add human-readable timestamps
-		if (isset($r['queued_at'])) {
+		// Preserve raw Unix timestamps for JavaScript (before they get converted to formatted dates)
+		// This allows reliable timezone-independent date handling in the frontend
+		$dateFields = ['date_created', 'date_modified', 'date_deleted', 'queued_at',
+		               'processing_started_at', 'processing_completed_at', 'applied_at'];
+
+		foreach ($dateFields as $field) {
+			if (isset($r[$field]) && is_numeric($r[$field])) {
+				// Store raw Unix timestamp with _raw suffix for JavaScript
+				$r[$field . '_raw'] = (int)$r[$field];
+			}
+		}
+
+		// Add human-readable timestamps for display
+		if (isset($r['queued_at']) && is_numeric($r['queued_at'])) {
 			$r['queued_at_formatted'] = date('Y-m-d H:i:s', $r['queued_at']);
 		}
-		if (isset($r['applied_at'])) {
+		if (isset($r['applied_at']) && is_numeric($r['applied_at'])) {
 			$r['applied_at_formatted'] = date('Y-m-d H:i:s', $r['applied_at']);
 		}
 
