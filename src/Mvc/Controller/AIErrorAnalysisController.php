@@ -23,7 +23,7 @@ use Kyte\AI\AIErrorAnalyzer;
  */
 class AIErrorAnalysisController extends ModelController
 {
-	protected $model = 'AIErrorAnalysis';
+	public $model = 'AIErrorAnalysis';
 	protected $allowableActions = ['get', 'delete', 'applyFix', 'rejectFix', 'reanalyze', 'rollback', 'getByError', 'getPending', 'getApplied'];
 	protected $requireAuth = true;
 	protected $requireAccount = true;

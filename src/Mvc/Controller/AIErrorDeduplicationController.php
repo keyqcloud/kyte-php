@@ -19,7 +19,7 @@ use Kyte\Core\Model;
  */
 class AIErrorDeduplicationController extends ModelController
 {
-	protected $model = 'AIErrorDeduplication';
+	public $model = 'AIErrorDeduplication';
 	protected $allowableActions = ['get', 'delete', 'markResolved', 'markUnresolved', 'resetCooldown', 'getTopErrors', 'getUnresolved'];
 	protected $requireAuth = true;
 	protected $requireAccount = true;

@@ -17,7 +17,7 @@ use Kyte\Core\ModelObject;
  */
 class AIErrorCorrectionConfigController extends ModelController
 {
-	protected $model = 'AIErrorCorrectionConfig';
+	public $model = 'AIErrorCorrectionConfig';
 	protected $allowableActions = ['new', 'update', 'get', 'delete', 'enable', 'disable', 'resetStats', 'getStats'];
 	protected $requireAuth = true;
 	protected $requireAccount = true;
