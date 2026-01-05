@@ -318,6 +318,12 @@ class AIErrorCorrectionJob extends CronJobBase
 		// Try to identify controller and function from error
 		$controllerInfo = $this->identifyControllerAndFunction($error, $config['application']);
 
+		// DEBUG: Log what we're about to insert
+		error_log("DEBUG queueErrorForAnalysis - controllerInfo: " . print_r($controllerInfo, true));
+		error_log("DEBUG - controller_id: " . var_export($controllerInfo['controller_id'], true));
+		error_log("DEBUG - controller_name: " . var_export($controllerInfo['controller_name'], true));
+		error_log("DEBUG - function_id: " . var_export($controllerInfo['function_id'], true));
+
 		$sql = "
 			INSERT INTO AIErrorAnalysis (
 				error_id, error_signature, application, kyte_account,
