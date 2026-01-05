@@ -23,13 +23,15 @@ use Kyte\AI\AIErrorAnalyzer;
  */
 class AIErrorAnalysisController extends ModelController
 {
-	public $model = AIErrorAnalysis;
-	protected $allowableActions = ['get', 'delete', 'applyFix', 'rejectFix', 'reanalyze', 'rollback', 'getByError', 'getPending', 'getApplied'];
-	protected $requireAuth = true;
-	protected $requireAccount = true;
-	protected $getFKTables = true;
-	protected $getExternalTables = false;
 
+	public function hook_init() {
+		// Initialization logic if needed
+		$this->allowableActions = ['get', 'delete', 'applyFix', 'rejectFix', 'reanalyze', 'rollback', 'getByError', 'getPending', 'getApplied'];
+		$this->requireAuth = true;
+		$this->requireAccount = true;
+		$this->getFKTables = true;
+		$this->getExternalTables = false;
+	}
 	/**
 	 * Prevent modification of analysis records via standard update
 	 * Analyses should only be modified through custom actions

@@ -19,11 +19,13 @@ use Kyte\Core\Model;
  */
 class AIErrorDeduplicationController extends ModelController
 {
-	public $model = AIErrorDeduplication;
-	protected $allowableActions = ['get', 'delete', 'markResolved', 'markUnresolved', 'resetCooldown', 'getTopErrors', 'getUnresolved'];
-	protected $requireAuth = true;
-	protected $requireAccount = true;
-	protected $getFKTables = false;
+	public function hook_init() {
+		// Initialization logic if needed
+		$this->allowableActions = ['get', 'delete', 'markResolved', 'markUnresolved', 'resetCooldown', 'getTopErrors', 'getUnresolved'];
+		$this->requireAuth = true;
+		$this->requireAccount = true;
+		$this->getFKTables = false;
+	}
 
 	/**
 	 * Prevent direct modification of deduplication records

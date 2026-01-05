@@ -17,19 +17,13 @@ use Kyte\Core\ModelObject;
  */
 class AIErrorCorrectionConfigController extends ModelController
 {
-	public $model = AIErrorCorrectionConfig;
-	protected $allowableActions = ['new', 'update', 'get', 'delete', 'enable', 'disable', 'resetStats', 'getStats'];
-	protected $requireAuth = true;
-	protected $requireAccount = true;
-	protected $checkExisting = ['application']; // One config per application
-	protected $getFKTables = true;
-
-	/**
-	 * Initialize controller
-	 */
 	public function hook_init() {
-		// Ensure user has permission to manage AI settings
-		// This could be expanded to check specific roles/permissions
+		// Initialization logic if needed
+		$this->allowableActions = ['new', 'update', 'get', 'delete', 'enable', 'disable', 'resetStats', 'getStats'];
+		$this->requireAuth = true;
+		$this->requireAccount = true;
+		$this->checkExisting = ['application']; // One config per application
+		$this->getFKTables = true;
 	}
 
 	/**
