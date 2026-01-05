@@ -441,7 +441,7 @@ class AIErrorCorrectionJob extends CronJobBase
 
 		// Look up function in database
 		$sql = "
-			SELECT id, type FROM Function
+			SELECT id, type FROM `Function`
 			WHERE name = ?
 			AND controller = ?
 			AND deleted = 0
