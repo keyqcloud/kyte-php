@@ -23,7 +23,7 @@ use Kyte\AI\AIErrorAnalyzer;
  */
 class AIErrorAnalysisController extends ModelController
 {
-	public $model = 'AIErrorAnalysis';
+	public $model = AIErrorAnalysis;
 	protected $allowableActions = ['get', 'delete', 'applyFix', 'rejectFix', 'reanalyze', 'rollback', 'getByError', 'getPending', 'getApplied'];
 	protected $requireAuth = true;
 	protected $requireAccount = true;
@@ -97,7 +97,7 @@ class AIErrorAnalysisController extends ModelController
 			return $this->error("Analysis ID required");
 		}
 
-		$analysis = new ModelObject(constant($this->model));
+		$analysis = new ModelObject($this->model);
 		if (!$analysis->retrieve($this->api->field, $this->api->value, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		])) {
@@ -145,7 +145,7 @@ class AIErrorAnalysisController extends ModelController
 			return $this->error("Analysis ID required");
 		}
 
-		$analysis = new ModelObject(constant($this->model));
+		$analysis = new ModelObject($this->model);
 		if (!$analysis->retrieve($this->api->field, $this->api->value, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		])) {
@@ -179,7 +179,7 @@ class AIErrorAnalysisController extends ModelController
 			return $this->error("Analysis ID required");
 		}
 
-		$analysis = new ModelObject(constant($this->model));
+		$analysis = new ModelObject($this->model);
 		if (!$analysis->retrieve($this->api->field, $this->api->value, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		])) {
@@ -219,7 +219,7 @@ class AIErrorAnalysisController extends ModelController
 			return $this->error("Analysis ID required");
 		}
 
-		$analysis = new ModelObject(constant($this->model));
+		$analysis = new ModelObject($this->model);
 		if (!$analysis->retrieve($this->api->field, $this->api->value, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		])) {
@@ -259,7 +259,7 @@ class AIErrorAnalysisController extends ModelController
 			return $this->error("Error ID required");
 		}
 
-		$model = new Model(constant($this->model));
+		$model = new Model($this->model);
 		$model->retrieve($this->api->field, $this->api->value, false, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		], false, [['field' => 'date_created', 'direction' => 'DESC']]);
@@ -291,7 +291,7 @@ class AIErrorAnalysisController extends ModelController
 			return $this->error("Application ID required");
 		}
 
-		$model = new Model(constant($this->model));
+		$model = new Model($this->model);
 		$model->retrieve($this->api->field, $this->api->value, false, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id],
 			['field' => 'analysis_status', 'value' => 'completed'],
@@ -322,7 +322,7 @@ class AIErrorAnalysisController extends ModelController
 			return $this->error("Application ID required");
 		}
 
-		$model = new Model(constant($this->model));
+		$model = new Model($this->model);
 		$model->retrieve($this->api->field, $this->api->value, false, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id],
 			['field' => 'fix_status', 'value' => ['applied_manual', 'applied_auto'], 'operator' => 'IN']

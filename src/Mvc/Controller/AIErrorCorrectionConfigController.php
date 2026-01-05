@@ -17,7 +17,7 @@ use Kyte\Core\ModelObject;
  */
 class AIErrorCorrectionConfigController extends ModelController
 {
-	public $model = 'AIErrorCorrectionConfig';
+	public $model = AIErrorCorrectionConfig;
 	protected $allowableActions = ['new', 'update', 'get', 'delete', 'enable', 'disable', 'resetStats', 'getStats'];
 	protected $requireAuth = true;
 	protected $requireAccount = true;
@@ -96,7 +96,7 @@ class AIErrorCorrectionConfigController extends ModelController
 			return $this->error("Config ID required");
 		}
 
-		$config = new ModelObject(constant($this->model));
+		$config = new ModelObject($this->model);
 		if (!$config->retrieve($this->api->field, $this->api->value, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		])) {
@@ -121,7 +121,7 @@ class AIErrorCorrectionConfigController extends ModelController
 			return $this->error("Config ID required");
 		}
 
-		$config = new ModelObject(constant($this->model));
+		$config = new ModelObject($this->model);
 		if (!$config->retrieve($this->api->field, $this->api->value, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		])) {
@@ -149,7 +149,7 @@ class AIErrorCorrectionConfigController extends ModelController
 			return $this->error("Config ID required");
 		}
 
-		$config = new ModelObject(constant($this->model));
+		$config = new ModelObject($this->model);
 		if (!$config->retrieve($this->api->field, $this->api->value, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		])) {
@@ -184,7 +184,7 @@ class AIErrorCorrectionConfigController extends ModelController
 		}
 
 		// Get config
-		$config = new ModelObject(constant($this->model));
+		$config = new ModelObject($this->model);
 		if (!$config->retrieve($this->api->field, $this->api->value, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		])) {

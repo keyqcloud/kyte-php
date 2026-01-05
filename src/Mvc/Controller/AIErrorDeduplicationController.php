@@ -19,7 +19,7 @@ use Kyte\Core\Model;
  */
 class AIErrorDeduplicationController extends ModelController
 {
-	public $model = 'AIErrorDeduplication';
+	public $model = AIErrorDeduplication;
 	protected $allowableActions = ['get', 'delete', 'markResolved', 'markUnresolved', 'resetCooldown', 'getTopErrors', 'getUnresolved'];
 	protected $requireAuth = true;
 	protected $requireAccount = true;
@@ -47,7 +47,7 @@ class AIErrorDeduplicationController extends ModelController
 			return $this->error("Deduplication ID required");
 		}
 
-		$dedup = new ModelObject(constant($this->model));
+		$dedup = new ModelObject($this->model);
 		if (!$dedup->retrieve($this->api->field, $this->api->value, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		])) {
@@ -78,7 +78,7 @@ class AIErrorDeduplicationController extends ModelController
 			return $this->error("Deduplication ID required");
 		}
 
-		$dedup = new ModelObject(constant($this->model));
+		$dedup = new ModelObject($this->model);
 		if (!$dedup->retrieve($this->api->field, $this->api->value, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		])) {
@@ -109,7 +109,7 @@ class AIErrorDeduplicationController extends ModelController
 			return $this->error("Deduplication ID required");
 		}
 
-		$dedup = new ModelObject(constant($this->model));
+		$dedup = new ModelObject($this->model);
 		if (!$dedup->retrieve($this->api->field, $this->api->value, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		])) {
@@ -155,7 +155,7 @@ class AIErrorDeduplicationController extends ModelController
 			$conditions[] = ['field' => 'application', 'value' => $applicationId];
 		}
 
-		$model = new Model(constant($this->model));
+		$model = new Model($this->model);
 		$model->retrieve('deleted', 0, false, $conditions, false,
 			[['field' => 'occurrence_count', 'direction' => 'DESC']], $limit);
 
@@ -209,7 +209,7 @@ class AIErrorDeduplicationController extends ModelController
 			$conditions[] = ['field' => 'application', 'value' => $applicationId];
 		}
 
-		$model = new Model(constant($this->model));
+		$model = new Model($this->model);
 		$model->retrieve('deleted', 0, false, $conditions, false,
 			[['field' => 'last_seen', 'direction' => 'DESC']], $limit);
 
