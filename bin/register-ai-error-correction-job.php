@@ -104,7 +104,7 @@ try {
 			$accountId
 		]);
 
-		$jobId = DBI::$dbConn->insert_id;
+		$jobId = DBI::insert_id();
 		echo "✓ Job created (ID: {$jobId})\n";
 	}
 
