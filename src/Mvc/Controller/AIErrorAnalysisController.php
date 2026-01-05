@@ -26,7 +26,7 @@ class AIErrorAnalysisController extends ModelController
 
 	public function hook_init() {
 		$this->model = AIErrorAnalysis;
-		$this->allowableActions = ['get', 'delete'];
+		$this->allowableActions = ['get', 'update', 'delete']; 
 		$this->requireAuth = true;
 		$this->requireAccount = true;
 		$this->getFKTables = true; // Load foreign key data (KyteError now uses kyte_account)
