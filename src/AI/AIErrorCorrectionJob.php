@@ -423,7 +423,12 @@ class AIErrorCorrectionJob extends CronJobBase
 
 		// Parse stack trace to find function name
 		// Example: "#0 /path/file.php(15): HelloWorldController->helloWorld()"
+		// Try with controller name as-is
 		if (preg_match('/' . preg_quote($controllerName, '/') . '->([a-zA-Z_][a-zA-Z0-9_]*)\(/', $trace, $matches)) {
+			$functionName = $matches[1];
+		}
+		// If not found, try with "Controller" suffix added (trace might have full class name)
+		elseif (preg_match('/' . preg_quote($controllerName . 'Controller', '/') . '->([a-zA-Z_][a-zA-Z0-9_]*)\(/', $trace, $matches)) {
 			$functionName = $matches[1];
 		}
 
