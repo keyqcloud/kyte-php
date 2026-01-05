@@ -97,7 +97,7 @@ try {
 		$jobName = 'AI Error Correction';
 		$jobDescription = 'Processes errors from KyteError table and creates AI analysis tasks. Queues new errors and processes queued analyses using AWS Bedrock.';
 
-		DBI::prepared_query($sql, 'sssii', [
+		DBI::prepared_query($sql, 'sssi', [
 			$jobName,
 			$jobDescription,
 			$compressed,
