@@ -287,21 +287,133 @@ class AIErrorCorrectionJob extends CronJobBase
 		// Generate error signature
 		$signature = $this->generateErrorSignature($error);
 
+		// Try to identify controller and function from error
+		$controllerInfo = $this->identifyControllerAndFunction($error, $config['application']);
+
 		$sql = "
 			INSERT INTO AIErrorAnalysis (
 				error_id, error_signature, application, kyte_account,
+				controller_id, controller_name, function_id, function_name, function_type,
 				analysis_status, analysis_stage, queued_at, date_created
-			) VALUES (?, ?, ?, ?, 'queued', 'pending', UNIX_TIMESTAMP(), UNIX_TIMESTAMP())
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 'pending', UNIX_TIMESTAMP(), UNIX_TIMESTAMP())
 		";
 
-		DBI::prepared_query($sql, 'isii', [
+		DBI::prepared_query($sql, 'isiisiss', [
 			$error['id'],
 			$signature,
 			$config['application'],
-			$config['kyte_account']
+			$config['kyte_account'],
+			$controllerInfo['controller_id'],
+			$controllerInfo['controller_name'],
+			$controllerInfo['function_id'],
+			$controllerInfo['function_name'],
+			$controllerInfo['function_type']
 		]);
 
-		$this->log("  Queued error #{$error['id']} for analysis");
+		$this->log("  Queued error #{$error['id']} for analysis (Controller: {$controllerInfo['controller_name']}, Function: {$controllerInfo['function_name']})");
+	}
+
+	/**
+	 * Identify controller and function from error details
+	 *
+	 * @param array $error Error record
+	 * @param int $appId Application ID
+	 * @return array Controller and function info
+	 */
+	private function identifyControllerAndFunction($error, $appId)
+	{
+		$result = [
+			'controller_id' => null,
+			'controller_name' => '',
+			'function_id' => null,
+			'function_name' => '',
+			'function_type' => ''
+		];
+
+		// Extract controller name from file path
+		$filePath = $error['file'] ?? '';
+		$controllerName = '';
+
+		// Pattern 1: eval()'d code pattern (typical for Kyte dynamic controllers)
+		// e.g., "/var/www/html/vendor/keyqcloud/kyte-php/src/Core/Api.php(533) : eval()'d code"
+		if (preg_match('/Api\.php\(\d+\)\s*:\s*eval/', $filePath)) {
+			// This is dynamically loaded controller code
+			// Use the model name from error to find controller
+			$modelName = $error['model'] ?? '';
+			if ($modelName) {
+				$controllerName = $modelName . 'Controller';
+			}
+		}
+		// Pattern 2: Direct controller file path
+		// e.g., "Controller/UserController.php" -> "UserController"
+		elseif (preg_match('/([A-Z][a-zA-Z0-9]+Controller)\.php/', $filePath, $matches)) {
+			$controllerName = $matches[1];
+		}
+		// Pattern 3: Generic PHP file
+		elseif (preg_match('/\/([^\/]+)\.php$/', $filePath, $matches)) {
+			$controllerName = $matches[1] . 'Controller';
+		}
+
+		if (!$controllerName) {
+			$this->log("  WARNING: Could not determine controller name from file: {$filePath}");
+			return $result;
+		}
+
+		$result['controller_name'] = $controllerName;
+
+		// Look up controller in database
+		$sql = "
+			SELECT id FROM Controller
+			WHERE name = ?
+			AND application = ?
+			AND deleted = 0
+			LIMIT 1
+		";
+
+		$controllers = DBI::prepared_query($sql, 'si', [$controllerName, $appId]);
+		if (empty($controllers)) {
+			$this->log("  WARNING: Controller '{$controllerName}' not found in database");
+			return $result;
+		}
+
+		$result['controller_id'] = $controllers[0]['id'];
+
+		// Try to identify function from stack trace
+		$trace = $error['trace'] ?? '';
+		$functionName = '';
+
+		// Parse stack trace to find function name
+		// Example: "#0 /path/file.php(15): HelloWorldController->helloWorld()"
+		if (preg_match('/' . preg_quote($controllerName, '/') . '->([a-zA-Z_][a-zA-Z0-9_]*)\(/', $trace, $matches)) {
+			$functionName = $matches[1];
+		}
+
+		if (!$functionName) {
+			$this->log("  WARNING: Could not determine function name from trace");
+			return $result;
+		}
+
+		$result['function_name'] = $functionName;
+
+		// Look up function in database
+		$sql = "
+			SELECT id, type FROM Function
+			WHERE name = ?
+			AND controller = ?
+			AND deleted = 0
+			LIMIT 1
+		";
+
+		$functions = DBI::prepared_query($sql, 'si', [$functionName, $result['controller_id']]);
+		if (empty($functions)) {
+			$this->log("  WARNING: Function '{$functionName}' not found in database for controller #{$result['controller_id']}");
+			return $result;
+		}
+
+		$result['function_id'] = $functions[0]['id'];
+		$result['function_type'] = $functions[0]['type'];
+
+		return $result;
 	}
 
 	/**
