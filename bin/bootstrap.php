@@ -147,6 +147,13 @@ require_once $modelBasePath . '/AIErrorDeduplication.php';
 require_once $modelBasePath . '/AIErrorCorrectionConfig.php';
 require_once $modelBasePath . '/Application.php';
 
+// Add primary keys to models (required for ModelObject to work correctly)
+\Kyte\Core\Api::addPrimaryKey($KyteError);
+\Kyte\Core\Api::addPrimaryKey($AIErrorAnalysis);
+\Kyte\Core\Api::addPrimaryKey($AIErrorDeduplication);
+\Kyte\Core\Api::addPrimaryKey($AIErrorCorrectionConfig);
+\Kyte\Core\Api::addPrimaryKey($Application);
+
 if (!defined('KyteError')) define('KyteError', $KyteError);
 if (!defined('AIErrorAnalysis')) define('AIErrorAnalysis', $AIErrorAnalysis);
 if (!defined('AIErrorDeduplication')) define('AIErrorDeduplication', $AIErrorDeduplication);
