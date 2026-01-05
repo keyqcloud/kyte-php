@@ -385,9 +385,25 @@ USER;
             return ['valid' => true, 'errors' => null]; // Skip validation
         }
 
+        // Detect if code is a method (needs class wrapper) or standalone code
+        $trimmedCode = trim($code);
+        $isMethod = preg_match('/^\s*(public|protected|private|function)\s+/', $trimmedCode);
+
+        // Wrap code appropriately
+        if ($isMethod) {
+            // Wrap method in a dummy class for validation
+            $validationCode = '<?php' . PHP_EOL .
+                'class DummyValidationClass {' . PHP_EOL .
+                $code . PHP_EOL .
+                '}';
+        } else {
+            // Standalone code - just prepend <?php
+            $validationCode = '<?php' . PHP_EOL . $code;
+        }
+
         // Create temporary file
         $tmpFile = tempnam(sys_get_temp_dir(), 'kyte_ai_fix_');
-        file_put_contents($tmpFile, '<?php' . PHP_EOL . $code);
+        file_put_contents($tmpFile, $validationCode);
 
         // Run php -l
         $output = [];
