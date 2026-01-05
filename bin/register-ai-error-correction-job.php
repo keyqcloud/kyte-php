@@ -40,7 +40,7 @@ try {
 
 	// Check if job already exists (system-level jobs have kyte_account = 0)
 	$sql = "SELECT id FROM CronJob WHERE name = ? AND application IS NULL AND (kyte_account = 0 OR kyte_account = 1) AND deleted = 0";
-	$existing = DBI::prepared_query($sql, 's', ['AI Error Correction']);
+	$existing = DBI::prepared_query($sql, 's', ['AIErrorCorrectionJob']);
 
 	if (!empty($existing)) {
 		echo "\n⚠ Job already exists (ID: {$existing[0]['id']})\n";
@@ -88,7 +88,7 @@ try {
 			)
 		";
 
-		$jobName = 'AI Error Correction';
+		$jobName = 'AIErrorCorrectionJob';
 		$jobDescription = 'Processes errors from KyteError table and creates AI analysis tasks. Queues new errors and processes queued analyses using AWS Bedrock.';
 
 		DBI::prepared_query($sql, 'sssi', [
