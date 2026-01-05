@@ -410,12 +410,20 @@ USER;
         $returnCode = 0;
         exec($phpBinary . " -l " . escapeshellarg($tmpFile) . " 2>&1", $output, $returnCode);
 
+        // Log validation results for debugging
+        $outputStr = implode("\n", $output);
+        error_log("AIErrorAnalyzer: Syntax validation - Return code: $returnCode, Output: $outputStr");
+        if ($returnCode !== 0 && empty($outputStr)) {
+            error_log("AIErrorAnalyzer: WARNING - Validation failed but no error message captured");
+            error_log("AIErrorAnalyzer: Validation code:\n" . $validationCode);
+        }
+
         // Clean up
         unlink($tmpFile);
 
         return [
             'valid' => ($returnCode === 0),
-            'errors' => $returnCode === 0 ? null : implode("\n", $output)
+            'errors' => $returnCode === 0 ? null : ($outputStr ?: 'Syntax validation failed (no error message captured)')
         ];
     }
 

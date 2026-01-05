@@ -26,7 +26,7 @@ class AIErrorAnalysisController extends ModelController
 
 	public function hook_init() {
 		$this->model = AIErrorAnalysis;
-		$this->allowableActions = ['get', 'update', 'delete']; 
+		$this->allowableActions = ['get', 'update', 'delete'];
 		$this->requireAuth = true;
 		$this->requireAccount = true;
 		$this->getFKTables = true; // Load foreign key data (KyteError now uses kyte_account)
@@ -162,12 +162,12 @@ class AIErrorAnalysisController extends ModelController
 	 * URL: /AIErrorAnalysis/applyFix/id/{analysis_id}
 	 */
 	public function applyFix() {
-		if (!isset($this->api->field) || !isset($this->api->value)) {
+		if (!isset($this->api->value)) {
 			return $this->error("Analysis ID required");
 		}
 
 		$analysis = new ModelObject($this->model);
-		if (!$analysis->retrieve($this->api->field, $this->api->value, [
+		if (!$analysis->retrieve('id', $this->api->value, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		])) {
 			return $this->error("Analysis not found");
@@ -210,12 +210,12 @@ class AIErrorAnalysisController extends ModelController
 	 * URL: /AIErrorAnalysis/rejectFix/id/{analysis_id}
 	 */
 	public function rejectFix() {
-		if (!isset($this->api->field) || !isset($this->api->value)) {
+		if (!isset($this->api->value)) {
 			return $this->error("Analysis ID required");
 		}
 
 		$analysis = new ModelObject($this->model);
-		if (!$analysis->retrieve($this->api->field, $this->api->value, [
+		if (!$analysis->retrieve('id', $this->api->value, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		])) {
 			return $this->error("Analysis not found");
@@ -244,12 +244,12 @@ class AIErrorAnalysisController extends ModelController
 	 * Queues the error for re-analysis (useful if first analysis failed or was rejected)
 	 */
 	public function reanalyze() {
-		if (!isset($this->api->field) || !isset($this->api->value)) {
+		if (!isset($this->api->value)) {
 			return $this->error("Analysis ID required");
 		}
 
 		$analysis = new ModelObject($this->model);
-		if (!$analysis->retrieve($this->api->field, $this->api->value, [
+		if (!$analysis->retrieve('id', $this->api->value, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		])) {
 			return $this->error("Analysis not found");
@@ -284,12 +284,12 @@ class AIErrorAnalysisController extends ModelController
 	 * Rolls back an applied fix to the previous function version
 	 */
 	public function rollback() {
-		if (!isset($this->api->field) || !isset($this->api->value)) {
+		if (!isset($this->api->value)) {
 			return $this->error("Analysis ID required");
 		}
 
 		$analysis = new ModelObject($this->model);
-		if (!$analysis->retrieve($this->api->field, $this->api->value, [
+		if (!$analysis->retrieve('id', $this->api->value, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		])) {
 			return $this->error("Analysis not found");
