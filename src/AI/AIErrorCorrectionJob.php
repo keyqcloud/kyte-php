@@ -148,9 +148,18 @@ class AIErrorCorrectionJob extends CronJobBase
 		foreach ($errors as $error) {
 			$this->processedCount++;
 
-			if ($this->shouldAnalyzeError($error, $config)) {
+			$dedupId = $this->shouldAnalyzeError($error, $config);
+			if ($dedupId !== false) {
 				$this->queueErrorForAnalysis($error, $config);
 				$this->queuedCount++;
+
+				// Update last_analyzed timestamp AFTER successful queueing
+				$sql = "
+					UPDATE AIErrorDeduplication
+					SET last_analyzed = UNIX_TIMESTAMP()
+					WHERE id = ?
+				";
+				DBI::prepared_query($sql, 'i', [$dedupId]);
 			} else {
 				$this->skippedCount++;
 			}
@@ -164,6 +173,8 @@ class AIErrorCorrectionJob extends CronJobBase
 
 	/**
 	 * Check if error should be analyzed based on deduplication and cooldown
+	 *
+	 * @return int|false Deduplication record ID if should analyze, false otherwise
 	 */
 	private function shouldAnalyzeError($error, $config)
 	{
@@ -182,14 +193,28 @@ class AIErrorCorrectionJob extends CronJobBase
 
 		if (empty($dedup)) {
 			// New error signature - create deduplication record
-			// Extract controller name from file path (e.g., "Controller/UserController.php" -> "UserController")
+			// Extract controller name using same logic as identifyControllerAndFunction
 			$controllerName = '';
 			$filePath = $error['file'] ?? '';
-			if (preg_match('/([A-Z][a-zA-Z0-9]+Controller)\.php/', $filePath, $matches)) {
+
+			// Pattern 1: eval()'d code pattern (typical for Kyte dynamic controllers)
+			if (preg_match('/Api\.php\(\d+\)\s*:\s*eval/', $filePath)) {
+				// Use the model name from error to find controller
+				$modelName = $error['model'] ?? '';
+				if ($modelName) {
+					$controllerName = $modelName . 'Controller';
+				}
+			}
+			// Pattern 2: Direct controller file path
+			elseif (preg_match('/([A-Z][a-zA-Z0-9]+Controller)\.php/', $filePath, $matches)) {
 				$controllerName = $matches[1];
-			} elseif (preg_match('/\/([^\/]+)\.php$/', $filePath, $matches)) {
+			}
+			// Pattern 3: Generic PHP file
+			elseif (preg_match('/\/([^\/]+)\.php$/', $filePath, $matches)) {
 				$controllerName = $matches[1];
-			} else {
+			}
+
+			if (!$controllerName) {
 				$controllerName = 'Unknown';
 			}
 
@@ -200,7 +225,7 @@ class AIErrorCorrectionJob extends CronJobBase
 				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
 			";
 
-			DBI::prepared_query($sql, 'iisssssii', [
+			$dedupId = DBI::prepared_query($sql, 'iisssssii', [
 				$config['application'],
 				$config['kyte_account'],
 				$signature,
@@ -212,7 +237,7 @@ class AIErrorCorrectionJob extends CronJobBase
 				$error['date_created']
 			]);
 
-			return true; // Analyze new error
+			return $dedupId; // Return new dedup record ID
 		}
 
 		$dedup = $dedup[0];
@@ -244,16 +269,7 @@ class AIErrorCorrectionJob extends CronJobBase
 			}
 		}
 
-		// Update last analyzed timestamp
-		$sql = "
-			UPDATE AIErrorDeduplication
-			SET last_analyzed = UNIX_TIMESTAMP()
-			WHERE id = ?
-		";
-
-		DBI::prepared_query($sql, 'i', [$dedup['id']]);
-
-		return true; // Analyze (cooldown expired)
+		return $dedup['id']; // Return dedup ID to update after successful queueing
 	}
 
 	/**
