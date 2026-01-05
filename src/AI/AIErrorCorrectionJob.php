@@ -216,6 +216,18 @@ class AIErrorCorrectionJob extends CronJobBase
 
 			if (!$controllerName) {
 				$controllerName = 'Unknown';
+			} else {
+				// Verify controller name exists in database, try without 'Controller' suffix if needed
+				$sql = "SELECT id FROM Controller WHERE name = ? AND application = ? AND deleted = 0 LIMIT 1";
+				$checkController = DBI::prepared_query($sql, 'si', [$controllerName, $config['application']]);
+
+				if (empty($checkController) && substr($controllerName, -10) === 'Controller') {
+					$controllerNameWithoutSuffix = substr($controllerName, 0, -10);
+					$checkController = DBI::prepared_query($sql, 'si', [$controllerNameWithoutSuffix, $config['application']]);
+					if (!empty($checkController)) {
+						$controllerName = $controllerNameWithoutSuffix;
+					}
+				}
 			}
 
 			$sql = "
@@ -387,12 +399,23 @@ class AIErrorCorrectionJob extends CronJobBase
 		";
 
 		$controllers = DBI::prepared_query($sql, 'si', [$controllerName, $appId]);
+
+		// If not found and name ends with 'Controller', try without suffix
+		if (empty($controllers) && substr($controllerName, -10) === 'Controller') {
+			$controllerNameWithoutSuffix = substr($controllerName, 0, -10);
+			$controllers = DBI::prepared_query($sql, 'si', [$controllerNameWithoutSuffix, $appId]);
+			if (!empty($controllers)) {
+				$controllerName = $controllerNameWithoutSuffix; // Update for logging
+			}
+		}
+
 		if (empty($controllers)) {
 			$this->log("  WARNING: Controller '{$controllerName}' not found in database");
 			return $result;
 		}
 
 		$result['controller_id'] = $controllers[0]['id'];
+		$result['controller_name'] = $controllerName;
 
 		// Try to identify function from stack trace
 		$trace = $error['trace'] ?? '';
