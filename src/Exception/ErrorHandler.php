@@ -89,6 +89,11 @@ class ErrorHandler
         if ($this->apiContext->appId && isset($this->apiContext->app->slack_error_webhook)) {
             $this->sendSlackNotification($this->apiContext->app->slack_error_webhook, $slackMessage);
         }
+
+        // AI Error Correction - Queue for analysis (non-blocking, async)
+        if (defined('AI_ERROR_CORRECTION') && AI_ERROR_CORRECTION) {
+            \Kyte\AI\AIErrorCorrection::queueForAnalysis($error, $this->apiContext);
+        }
     }
 
     /**
@@ -140,6 +145,11 @@ class ErrorHandler
             if ($this->apiContext->appId && isset($this->apiContext->app->slack_error_webhook)) {
                 $this->sendSlackNotification($this->apiContext->app->slack_error_webhook, $slackMessage);
             }
+        }
+
+        // AI Error Correction - Queue for analysis (non-blocking, async)
+        if (defined('AI_ERROR_CORRECTION') && AI_ERROR_CORRECTION) {
+            \Kyte\AI\AIErrorCorrection::queueForAnalysis($error, $this->apiContext);
         }
 
         return true; // Don't execute PHP internal error handler

@@ -63,6 +63,20 @@
     /* Optional Slack Integration for APM */
     // define('SLACK_ERROR_WEBHOOK', '<YOUR SLACK WEBHOOK>');
 
+    /* AI Error Correction System (v4.0.0+) */
+    // Master enable/disable for AI-powered error correction
+    // Requires USE_KYTE_ERROR_HANDLER = true and cron worker running
+    define('AI_ERROR_CORRECTION', false); // Disabled by default
+
+    // AWS Bedrock Configuration for AI Error Correction
+    // Uses existing AWS_ACCESS_KEY_ID and AWS_SECRET_KEY constants above
+    define('AI_BEDROCK_REGION', 'us-east-1'); // AWS Bedrock region
+    define('AI_BEDROCK_MODEL', 'anthropic.claude-sonnet-4-5-20250929-v1:0'); // Claude Sonnet 4.5
+
+    // Note: Per-application configuration is managed via Kyte Shipyard
+    // Settings include: auto-fix mode, rate limits, cost budgets, loop detection
+    // See CHANGELOG.md for full feature documentation and database migration SQL
+
 	/* Application Timezone */
 	date_default_timezone_set("Asia/Tokyo"); // Set the default timezone for the application
 	/* List of Available Timezones */

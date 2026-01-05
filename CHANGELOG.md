@@ -476,6 +476,342 @@ sudo systemctl enable kyte-cron-worker
 
 ---
 
+### AI-Powered Error Correction System
+
+* **NEW**: Intelligent error analysis and automatic code fixing using AWS Bedrock (Claude Sonnet 4.5)
+  - Automatically analyzes application-level errors and exceptions logged to database
+  - Uses AI to diagnose problems, suggest fixes, and optionally auto-apply corrections
+  - Async processing via cron job system (non-blocking, production-ready)
+  - Analyzes controller functions, models, request context, and framework patterns
+  - Generates PHP code fixes with confidence scoring
+  - PHP syntax validation before applying fixes
+  - Automatic loop detection prevents infinite fix cycles
+  - Leverages existing function version control for rollback capability
+  - Per-application configuration with rate limiting and cost controls
+  - Comprehensive deduplication to avoid re-analyzing same errors
+
+**Key Features:**
+* **Smart Error Classification** - AI determines if error is fixable by modifying code
+* **Context-Aware Fixes** - Analyzes all controller functions, model definitions, and framework docs
+* **Confidence Scoring** - AI rates fix confidence 0-100%, auto-fix only applies high-confidence fixes
+* **Loop Detection** - Multiple strategies detect recurring errors after fix:
+  - Same error signature recurring after fix applied
+  - N consecutive fixes without resolution (threshold: 5 attempts)
+  - Error count increasing after fix
+  - Auto-disables auto-fix mode if loop detected
+* **Cost Controls** - Rate limiting (per hour/day), cooldown periods, monthly budget caps
+* **Async Processing** - Errors queued and analyzed by cron job (every 5 minutes), no blocking
+* **Version Control Integration** - Creates new function versions, full rollback support
+* **Syntax Validation** - Uses `php -l` to validate fixes before application
+
+**Configuration Options** (per-application):
+* Master enable/disable toggle
+* Auto-fix mode (apply fixes automatically vs. suggest for review)
+* Minimum confidence threshold for auto-fix (default: 90%)
+* Max analyses per hour/day
+* Monthly cost budget (USD)
+* Cooldown period between analyses of same error (default: 30 min)
+* Max fix attempts before disabling (default: 5)
+* Loop detection time window (default: 60 min)
+* Analysis preferences: include warnings, models, request data, framework docs
+
+**Frontend Features:**
+* Configuration page in app settings (app/configuration.html)
+* AI analysis column in error log viewer with status badges
+* AI Analysis modal with code diff viewer (Monaco Editor)
+* Dedicated AI Error Assistant dashboard (app/ai-error-assistant.html)
+* Active suggestions table with apply/reject actions
+* Applied fixes history with rollback capability
+* Loop detection alerts panel
+* Real-time status updates (queued, processing, completed, failed)
+
+**Database Tables Added:**
+
+```sql
+-- =========================================================================
+-- AI Error Correction System Tables (v4.0.0)
+-- =========================================================================
+-- IMPORTANT: Requires USE_KYTE_ERROR_HANDLER = true for error logging
+-- This feature integrates with the existing KyteError logging system
+-- and the new CronJob system for async processing
+-- =========================================================================
+
+-- Table 1: AIErrorAnalysis - Tracks AI analysis of each error
+CREATE TABLE AIErrorAnalysis (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    -- Error linkage
+    error_id INT NOT NULL COMMENT 'FK to KyteError.id',
+    error_signature VARCHAR(64) NOT NULL COMMENT 'SHA256 hash: controller+function+error_msg+file+line',
+
+    -- Classification
+    is_fixable TINYINT(1) UNSIGNED DEFAULT 0 COMMENT 'AI determined if fixable',
+    fixable_confidence DECIMAL(5,2) DEFAULT NULL COMMENT 'AI confidence 0.00-100.00',
+
+    -- Affected code
+    controller_id INT NULL COMMENT 'FK to Controller.id',
+    controller_name VARCHAR(255) NULL,
+    function_id INT NULL COMMENT 'FK to Function.id',
+    function_name VARCHAR(255) NULL,
+    function_type VARCHAR(50) NULL COMMENT 'hook_init, hook_preprocess, etc.',
+
+    -- AI analysis results
+    analysis_stage ENUM('pending', 'classifying', 'analyzing', 'generating_fix', 'validating', 'completed', 'failed') DEFAULT 'pending',
+    ai_diagnosis TEXT COMMENT 'AI explanation of the problem',
+    ai_suggested_fix LONGTEXT COMMENT 'AI proposed code fix',
+    fix_confidence DECIMAL(5,2) DEFAULT NULL COMMENT 'Fix confidence 0.00-100.00',
+    fix_rationale TEXT COMMENT 'AI explanation of the fix',
+
+    -- Context captured
+    context_snapshot LONGTEXT COMMENT 'JSON: all controller functions, models, request data',
+
+    -- Queue status tracking
+    analysis_status ENUM('queued', 'processing', 'completed', 'failed') DEFAULT 'queued',
+    queued_at BIGINT UNSIGNED NOT NULL,
+    processing_started_at BIGINT UNSIGNED NULL,
+    processing_completed_at BIGINT UNSIGNED NULL,
+    retry_count INT UNSIGNED DEFAULT 0,
+    last_error TEXT NULL,
+
+    -- Fix application tracking
+    fix_status ENUM('suggested', 'applied_manual', 'applied_auto', 'rejected', 'failed_validation', 'caused_error') DEFAULT 'suggested',
+    applied_at BIGINT UNSIGNED NULL COMMENT 'Unix timestamp when fix was applied',
+    applied_by INT UNSIGNED NULL COMMENT 'User who applied (NULL if auto)',
+    applied_function_version INT NULL COMMENT 'FK to KyteFunctionVersion.id created',
+
+    -- Validation results
+    syntax_valid TINYINT(1) UNSIGNED DEFAULT NULL COMMENT 'PHP syntax check result',
+    syntax_error TEXT NULL COMMENT 'Syntax validation error if any',
+
+    -- Loop detection
+    attempt_number INT UNSIGNED DEFAULT 1 COMMENT 'Retry attempt for this error signature',
+    previous_analysis_id BIGINT UNSIGNED NULL COMMENT 'FK to parent analysis if retry',
+    caused_new_error TINYINT(1) UNSIGNED DEFAULT 0 COMMENT 'Did this fix cause a new error?',
+    new_error_id INT NULL COMMENT 'FK to new KyteError if caused',
+
+    -- Cost tracking
+    bedrock_request_id VARCHAR(255) NULL,
+    bedrock_input_tokens INT UNSIGNED NULL,
+    bedrock_output_tokens INT UNSIGNED NULL,
+    estimated_cost_usd DECIMAL(10,4) NULL,
+    processing_time_ms INT UNSIGNED NULL COMMENT 'Total analysis time',
+
+    -- Framework fields
+    application INT NULL COMMENT 'FK to Application',
+    kyte_account INT NOT NULL,
+
+    -- Audit fields
+    created_by INT NULL,
+    date_created BIGINT UNSIGNED NOT NULL,
+    modified_by INT NULL,
+    date_modified BIGINT UNSIGNED NULL,
+    deleted_by INT NULL,
+    date_deleted BIGINT UNSIGNED NULL,
+    deleted TINYINT(1) UNSIGNED DEFAULT 0,
+
+    INDEX idx_error_id (error_id),
+    INDEX idx_error_signature (error_signature),
+    INDEX idx_controller_function (controller_id, function_id),
+    INDEX idx_fix_status (fix_status),
+    INDEX idx_attempt_number (attempt_number),
+    INDEX idx_analysis_stage (analysis_stage),
+    INDEX idx_analysis_status (analysis_status, queued_at),
+    INDEX idx_application (application),
+    INDEX idx_account (kyte_account),
+    INDEX idx_date_created (date_created),
+    INDEX idx_deleted (deleted),
+    UNIQUE KEY unique_error_analysis (error_id, deleted),
+
+    FOREIGN KEY (error_id) REFERENCES KyteError(id) ON DELETE CASCADE,
+    FOREIGN KEY (controller_id) REFERENCES Controller(id) ON DELETE SET NULL,
+    FOREIGN KEY (function_id) REFERENCES `Function`(id) ON DELETE SET NULL,
+    FOREIGN KEY (previous_analysis_id) REFERENCES AIErrorAnalysis(id) ON DELETE SET NULL,
+    FOREIGN KEY (new_error_id) REFERENCES KyteError(id) ON DELETE SET NULL,
+    FOREIGN KEY (applied_function_version) REFERENCES KyteFunctionVersion(id) ON DELETE SET NULL,
+    FOREIGN KEY (application) REFERENCES Application(id) ON DELETE CASCADE,
+    FOREIGN KEY (kyte_account) REFERENCES KyteAccount(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table 2: AIErrorCorrectionConfig - Per-application settings
+CREATE TABLE AIErrorCorrectionConfig (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    -- Application linkage
+    application INT NOT NULL COMMENT 'FK to Application',
+
+    -- Feature flags
+    enabled TINYINT(1) UNSIGNED DEFAULT 0 COMMENT 'Master enable/disable',
+    auto_fix_enabled TINYINT(1) UNSIGNED DEFAULT 0 COMMENT 'Auto-apply fixes without user approval',
+    auto_fix_min_confidence DECIMAL(5,2) DEFAULT 90.00 COMMENT 'Minimum confidence for auto-fix (0-100)',
+
+    -- Rate limiting & cost control
+    max_analyses_per_hour INT UNSIGNED DEFAULT 10 COMMENT 'Max analyses per hour',
+    max_analyses_per_day INT UNSIGNED DEFAULT 50 COMMENT 'Max analyses per day',
+    max_monthly_cost_usd DECIMAL(10,2) DEFAULT 100.00 COMMENT 'Budget cap',
+    cooldown_minutes INT UNSIGNED DEFAULT 30 COMMENT 'Minutes between analyses of same signature',
+
+    -- Loop detection thresholds
+    max_fix_attempts INT UNSIGNED DEFAULT 5 COMMENT 'Max attempts before disabling',
+    loop_detection_window_minutes INT UNSIGNED DEFAULT 60 COMMENT 'Time window for loop detection',
+    auto_disable_on_loop TINYINT(1) UNSIGNED DEFAULT 1 COMMENT 'Disable auto-fix if loop detected',
+
+    -- Cron scheduling preferences
+    analysis_frequency_minutes INT UNSIGNED DEFAULT 5 COMMENT 'How often cron runs (1-60)',
+    batch_size INT UNSIGNED DEFAULT 10 COMMENT 'Max analyses per cron run',
+    max_concurrent_bedrock_calls INT UNSIGNED DEFAULT 3 COMMENT 'Max parallel API calls',
+
+    -- Analysis preferences
+    include_warnings TINYINT(1) UNSIGNED DEFAULT 0 COMMENT 'Analyze warnings (not just errors/critical)',
+    include_model_definitions TINYINT(1) UNSIGNED DEFAULT 1 COMMENT 'Include model schemas in context',
+    include_request_data TINYINT(1) UNSIGNED DEFAULT 1 COMMENT 'Include request data in context',
+    include_framework_docs TINYINT(1) UNSIGNED DEFAULT 1 COMMENT 'Include ModelController docs',
+
+    -- Notification preferences (PLACEHOLDER for future implementation)
+    notify_on_suggestion TINYINT(1) UNSIGNED DEFAULT 0 COMMENT 'FUTURE: Notify when AI suggests fix',
+    notify_on_auto_fix TINYINT(1) UNSIGNED DEFAULT 1 COMMENT 'FUTURE: Notify when auto-fix applied',
+    notify_on_loop_detection TINYINT(1) UNSIGNED DEFAULT 1 COMMENT 'FUTURE: Notify when loop detected',
+    notification_email VARCHAR(255) NULL COMMENT 'FUTURE: Email for notifications',
+    notification_slack_webhook VARCHAR(512) NULL COMMENT 'FUTURE: Slack webhook override',
+
+    -- Statistics
+    total_analyses INT UNSIGNED DEFAULT 0,
+    total_fixes_applied INT UNSIGNED DEFAULT 0,
+    total_successful_fixes INT UNSIGNED DEFAULT 0,
+    total_failed_fixes INT UNSIGNED DEFAULT 0,
+    total_cost_usd DECIMAL(10,2) DEFAULT 0.00,
+    last_analysis_date BIGINT UNSIGNED NULL,
+
+    -- Framework fields
+    kyte_account INT NOT NULL,
+
+    -- Audit fields
+    created_by INT NULL,
+    date_created BIGINT UNSIGNED NOT NULL,
+    modified_by INT NULL,
+    date_modified BIGINT UNSIGNED NULL,
+    deleted_by INT NULL,
+    date_deleted BIGINT UNSIGNED NULL,
+    deleted TINYINT(1) UNSIGNED DEFAULT 0,
+
+    UNIQUE KEY unique_app_config (application, deleted),
+    INDEX idx_application (application),
+    INDEX idx_enabled (enabled),
+    INDEX idx_account (kyte_account),
+    INDEX idx_deleted (deleted),
+
+    FOREIGN KEY (application) REFERENCES Application(id) ON DELETE CASCADE,
+    FOREIGN KEY (kyte_account) REFERENCES KyteAccount(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table 3: AIErrorDeduplication - Track analyzed error signatures
+CREATE TABLE AIErrorDeduplication (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    error_signature VARCHAR(64) NOT NULL COMMENT 'SHA256 hash',
+    controller_name VARCHAR(255) NOT NULL,
+    function_name VARCHAR(255) NULL,
+    error_message TEXT NOT NULL,
+    error_file VARCHAR(255) NOT NULL,
+    error_line INT UNSIGNED NOT NULL,
+
+    -- Tracking
+    first_seen BIGINT UNSIGNED NOT NULL,
+    last_seen BIGINT UNSIGNED NOT NULL,
+    last_analyzed BIGINT UNSIGNED NULL,
+    occurrence_count INT UNSIGNED DEFAULT 1,
+    analysis_count INT UNSIGNED DEFAULT 0,
+
+    -- Status
+    is_resolved TINYINT(1) UNSIGNED DEFAULT 0,
+    resolved_at BIGINT UNSIGNED NULL,
+    resolved_by INT UNSIGNED NULL,
+
+    -- Application context
+    application INT NULL,
+    kyte_account INT NOT NULL,
+
+    deleted TINYINT(1) UNSIGNED DEFAULT 0,
+
+    UNIQUE KEY unique_signature_app (error_signature, application, deleted),
+    INDEX idx_last_analyzed (last_analyzed),
+    INDEX idx_is_resolved (is_resolved),
+    INDEX idx_application (application),
+    INDEX idx_account (kyte_account),
+    INDEX idx_deleted (deleted),
+
+    FOREIGN KEY (application) REFERENCES Application(id) ON DELETE CASCADE,
+    FOREIGN KEY (kyte_account) REFERENCES KyteAccount(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================================
+-- End of AI Error Correction System Tables
+-- =========================================================================
+```
+
+**Backend Components Added:**
+* `src/AI/AIErrorCorrection.php` - Main orchestrator, queues errors for analysis
+* `src/AI/AIErrorAnalyzer.php` - AI analysis engine with AWS Bedrock integration
+* `src/AI/AIErrorContextBuilder.php` - Gathers context for AI (functions, models, docs)
+* `src/AI/AIErrorFixApplier.php` - Applies fixes and creates function versions
+* `src/AI/AILoopDetector.php` - Detects infinite fix loops and auto-disables
+* `src/Cron/AIErrorAnalysisCron.php` - Cron job for async error processing
+* `src/Mvc/Controller/AIErrorCorrectionConfigController.php` - Config API
+* `src/Mvc/Controller/AIErrorAnalysisController.php` - Analysis management API
+* `src/Mvc/Controller/AIErrorDeduplicationController.php` - Deduplication API
+* `src/Mvc/Model/AIErrorAnalysis.php` - Analysis model definition
+* `src/Mvc/Model/AIErrorCorrectionConfig.php` - Config model definition
+* `src/Mvc/Model/AIErrorDeduplication.php` - Deduplication model definition
+
+**Frontend Components Added (kyte-managed-front-end):**
+* `app/ai-error-assistant.html` - Dedicated AI error management dashboard
+* `app/configuration.html` - Added "AI Error Correction" tab with settings
+* `app/log.html` - Enhanced with AI analysis column and status badges
+* `assets/js/source/kyte-shipyard-ai-error-correction.js` - Configuration UI
+* `assets/js/source/kyte-shipyard-ai-error-analysis.js` - Analysis management UI
+* `assets/js/source/kyte-shipyard-log.js` - Updated with AI analysis integration
+
+**Configuration Constants Added (config.php):**
+```php
+// AI Error Correction - Master Enable (requires USE_KYTE_ERROR_HANDLER = true)
+define('AI_ERROR_CORRECTION', false);  // Disabled by default
+
+// AWS Bedrock Configuration (reuse existing AWS constants)
+// define('AWS_ACCESS_KEY_ID', 'your_key');
+// define('AWS_SECRET_KEY', 'your_secret');
+define('AI_BEDROCK_REGION', 'us-east-1');
+define('AI_BEDROCK_MODEL', 'global.anthropic.claude-sonnet-4-5-20250929-v1:0');
+```
+
+**Integration Points:**
+* `ErrorHandler.php` - Modified to queue errors for AI analysis (conditional, non-blocking)
+* `FunctionController.php` - Extended to track AI-applied fixes in version metadata
+
+**Cost Estimation:**
+* Classification: ~$0.01 per error
+* Fix generation: ~$0.25 per error
+* Total: ~$0.25-0.30 per analyzed error
+* Default monthly budget: $100 (300-400 error analyses)
+
+**Notification System (FUTURE):**
+* Email/Slack notifications on fix suggestions (placeholder - disabled in v1.0)
+* Notifications on auto-fix applied (placeholder - disabled in v1.0)
+* Notifications on loop detection (placeholder - disabled in v1.0)
+* UI shows these options as "Coming in future release"
+
+**Notes:**
+* Feature is **disabled by default** - requires explicit opt-in per application
+* 100% backward compatible - no breaking changes
+* Requires AWS Bedrock credentials (uses existing AWS_ACCESS_KEY_ID/AWS_SECRET_KEY)
+* Requires cron worker running for async processing
+* Only analyzes application-level errors (not system/framework errors)
+* Only analyzes error and critical log levels (not warnings by default)
+* PHP syntax validation requires PHP CLI (`php -l` command)
+* Loop detection uses multiple strategies to prevent infinite cycles
+* All fixes create new function versions - full rollback support
+* Frontend provides clear visibility with real-time status updates
+
+---
+
 ### Core Backend Performance Improvements
 
 * Add transaction support to DBI for ACID guarantees in multi-step operations
