@@ -225,7 +225,7 @@ class AIErrorCorrectionJob extends CronJobBase
 				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
 			";
 
-			$dedupId = DBI::prepared_query($sql, 'iisssssii', [
+			DBI::prepared_query($sql, 'iisssssii', [
 				$config['application'],
 				$config['kyte_account'],
 				$signature,
@@ -237,7 +237,7 @@ class AIErrorCorrectionJob extends CronJobBase
 				$error['date_created']
 			]);
 
-			return $dedupId; // Return new dedup record ID
+			return DBI::insert_id(); // Return new dedup record ID
 		}
 
 		$dedup = $dedup[0];
