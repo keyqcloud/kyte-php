@@ -29,7 +29,7 @@ class AIErrorAnalysisController extends ModelController
 		$this->allowableActions = ['get', 'delete'];
 		$this->requireAuth = true;
 		$this->requireAccount = true;
-		$this->getFKTables = true;
+		$this->getFKTables = true; // Load foreign key data (KyteError now uses kyte_account)
 		$this->getExternalTables = false;
 	}
 

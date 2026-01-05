@@ -3,7 +3,7 @@
 $KyteError = [
 	'name' => 'KyteError',
 	'struct' => [
-		'account_id'		=> [
+		'kyte_account'		=> [
 			'type'		=> 'i',
 			'required'	=> false,
 			'size'		=> 11,

@@ -260,6 +260,17 @@ ALTER TABLE Application ADD COLUMN language VARCHAR(5) DEFAULT NULL
     AFTER identifier;
 
 -- =========================================================================
+-- Step 7: Standardize KyteError Account Scoping Column Name
+-- =========================================================================
+-- Rename account_id to kyte_account to match framework naming convention
+-- This fixes foreign key JOIN issues with other tables that use kyte_account
+-- =========================================================================
+
+ALTER TABLE KyteError
+    CHANGE COLUMN account_id kyte_account INT(11) UNSIGNED NULL
+    COMMENT 'Account scoping - standardized to match framework convention';
+
+-- =========================================================================
 -- Migration Complete!
 -- =========================================================================
 -- All tables created successfully. Next steps:

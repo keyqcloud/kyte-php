@@ -120,7 +120,7 @@ class KyteErrorController extends ModelController
 
         // Account scoping for system logs
         if (isset($this->api->account->id)) {
-            $query[] = ['field' => 'account_id', 'value' => $this->api->account->id];
+            $query[] = ['field' => 'kyte_account', 'value' => $this->api->account->id];
         }
 
         return $query;

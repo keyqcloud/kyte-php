@@ -146,7 +146,7 @@ class Logger
             $caller = isset($backtrace[2]) ? $backtrace[2] : $backtrace[0];
 
             $log_detail = [
-                'account_id' => isset(self::$apiContext->account->id) ? self::$apiContext->account->id : null,
+                'kyte_account' => isset(self::$apiContext->account->id) ? self::$apiContext->account->id : null,
                 'user_id' => isset(self::$apiContext->user->id) ? self::$apiContext->user->id : null,
                 'app_id' => isset(self::$apiContext->appId) ? self::$apiContext->appId : null,
                 'api_key' => isset(self::$apiContext->key) ? self::$apiContext->key : null,

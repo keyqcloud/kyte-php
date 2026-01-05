@@ -47,7 +47,7 @@ class ErrorHandler
         $error = new \Kyte\Core\ModelObject(KyteError);
 
         $log_detail = [
-            'account_id' => isset($this->apiContext->account->id) ? $this->apiContext->account->id : null,
+            'kyte_account' => isset($this->apiContext->account->id) ? $this->apiContext->account->id : null,
             'user_id' => isset($this->apiContext->user->id) ? $this->apiContext->user->id : null,
             'app_id' => isset($this->apiContext->appId) ? $this->apiContext->appId : null,
             'api_key' => isset($this->apiContext->key) ? $this->apiContext->key : null,
@@ -111,7 +111,7 @@ class ErrorHandler
         $error = new \Kyte\Core\ModelObject(KyteError);
 
         $log_detail = [
-            'account_id' => isset($this->apiContext->account->id) ? $this->apiContext->account->id : null,
+            'kyte_account' => isset($this->apiContext->account->id) ? $this->apiContext->account->id : null,
             'user_id' => isset($this->apiContext->user->id) ? $this->apiContext->user->id : null,
             'app_id' => isset($this->apiContext->appId) ? $this->apiContext->appId : null,
             'api_key' => isset($this->apiContext->key) ? $this->apiContext->key : null,
@@ -296,7 +296,7 @@ class ErrorHandler
                 $error = new \Kyte\Core\ModelObject(KyteError);
 
                 $log_detail = [
-                    'account_id' => isset($this->apiContext->account->id) ? $this->apiContext->account->id : null,
+                    'kyte_account' => isset($this->apiContext->account->id) ? $this->apiContext->account->id : null,
                     'user_id' => isset($this->apiContext->user->id) ? $this->apiContext->user->id : null,
                     'app_id' => isset($this->apiContext->appId) ? $this->apiContext->appId : null,
                     'request' => isset($this->apiContext->request) ? $this->apiContext->request : null,
