@@ -29,7 +29,7 @@ class AIErrorDeduplicationController extends ModelController
 	 * Prevent direct modification of deduplication records
 	 * These are managed automatically by AIErrorCorrection system
 	 */
-	protected function hook_preprocess($data) {
+	public function hook_preprocess($data) {
 		if ($this->api->request === 'PUT' || $this->api->request === 'POST') {
 			throw new \Exception("Deduplication records are managed automatically. Use custom actions to modify.");
 		}

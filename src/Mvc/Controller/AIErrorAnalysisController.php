@@ -34,7 +34,7 @@ class AIErrorAnalysisController extends ModelController
 	 * Prevent modification of analysis records via standard update
 	 * Analyses should only be modified through custom actions
 	 */
-	protected function hook_preprocess($data) {
+	public function hook_preprocess($data) {
 		// Only allow updates through custom actions
 		if ($this->api->request === 'PUT') {
 			throw new \Exception("Analysis records cannot be updated directly. Use custom actions (applyFix, rejectFix, etc.)");
@@ -45,7 +45,7 @@ class AIErrorAnalysisController extends ModelController
 	/**
 	 * Enhance get responses with additional context
 	 */
-	protected function hook_process_get_response($response) {
+	public function hook_process_get_response($response) {
 		// Add human-readable timestamps
 		if (isset($response['queued_at'])) {
 			$response['queued_at_formatted'] = date('Y-m-d H:i:s', $response['queued_at']);

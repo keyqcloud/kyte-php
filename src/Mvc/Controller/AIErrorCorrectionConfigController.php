@@ -27,7 +27,7 @@ class AIErrorCorrectionConfigController extends ModelController
 	/**
 	 * Initialize controller
 	 */
-	protected function hook_init() {
+	public function hook_init() {
 		// Ensure user has permission to manage AI settings
 		// This could be expanded to check specific roles/permissions
 	}
@@ -35,7 +35,7 @@ class AIErrorCorrectionConfigController extends ModelController
 	/**
 	 * Validate configuration values before save
 	 */
-	protected function hook_preprocess($data) {
+	public function hook_preprocess($data) {
 		// Validate confidence threshold
 		if (isset($data['auto_fix_min_confidence'])) {
 			$confidence = floatval($data['auto_fix_min_confidence']);
