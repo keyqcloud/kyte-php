@@ -910,19 +910,25 @@ class CronWorker
 	 * Extract class name from evaluated code
 	 */
 	private function extractClassName($code) {
+		// Extract namespace if present
+		$namespace = '';
+		if (preg_match('/namespace\s+([^;]+);/i', $code, $nsMatches)) {
+			$namespace = trim($nsMatches[1]) . '\\';
+		}
+
 		// Try to find class name with 'extends' keyword (most common)
 		if (preg_match('/class\s+(\w+)\s+extends/i', $code, $matches)) {
-			return $matches[1];
+			return $namespace . $matches[1];
 		}
 
 		// Try to find standalone class declaration
 		if (preg_match('/class\s+(\w+)\s*[{\n]/i', $code, $matches)) {
-			return $matches[1];
+			return $namespace . $matches[1];
 		}
 
 		// Try to find namespaced class
 		if (preg_match('/class\s+(\w+)/i', $code, $matches)) {
-			return $matches[1];
+			return $namespace . $matches[1];
 		}
 
 		error_log("[CronWorker DEBUG] Failed to extract class name. Code preview:");
