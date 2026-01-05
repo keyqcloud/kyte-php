@@ -52,6 +52,9 @@ class CronWorker
 		echo "Shutdown Grace Period: {$this->shutdownGracePeriod}s\n";
 		echo "---\n";
 
+		// Clean up orphaned executions from previous worker crashes/restarts
+		$this->cleanupOrphanedExecutions();
+
 		// Handle graceful shutdown
 		if (function_exists('pcntl_signal')) {
 			pcntl_signal(SIGTERM, [$this, 'handleShutdown']);
@@ -89,6 +92,54 @@ class CronWorker
 	public function handleShutdown($signal) {
 		echo "\n[" . date('Y-m-d H:i:s') . "] Received shutdown signal ({$signal})\n";
 		$this->running = false;
+	}
+
+	/**
+	 * Clean up orphaned executions from previous worker crashes/restarts
+	 *
+	 * Orphaned executions occur when:
+	 * - Worker crashes mid-execution
+	 * - Worker is killed/restarted while job is running
+	 * - Server crashes
+	 *
+	 * These executions get stuck in 'running' status with expired leases,
+	 * preventing new executions from starting.
+	 */
+	private function cleanupOrphanedExecutions() {
+		$now = time();
+
+		// Find executions that are "running" but have expired leases
+		$sql = "
+			SELECT id, cron_job, locked_by, locked_until
+			FROM CronJobExecution
+			WHERE status = 'running'
+			AND locked_until IS NOT NULL
+			AND locked_until < ?
+			AND deleted = 0
+		";
+
+		$orphaned = DBI::prepared_query($sql, 'i', [$now]);
+
+		if (empty($orphaned)) {
+			echo "[" . date('Y-m-d H:i:s') . "] No orphaned executions found\n";
+			return;
+		}
+
+		echo "[" . date('Y-m-d H:i:s') . "] Found " . count($orphaned) . " orphaned execution(s), cleaning up...\n";
+
+		foreach ($orphaned as $exec) {
+			$sql = "
+				UPDATE CronJobExecution
+				SET status = 'failed',
+					completed_at = ?,
+					error = 'Worker restarted - execution orphaned'
+				WHERE id = ?
+			";
+
+			DBI::prepared_query($sql, 'ii', [$now, $exec['id']]);
+
+			echo "[" . date('Y-m-d H:i:s') . "] Cleaned up orphaned execution #{$exec['id']} (job #{$exec['cron_job']}, locked by {$exec['locked_by']})\n";
+		}
 	}
 
 	/**
