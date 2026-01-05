@@ -139,6 +139,20 @@ if (!defined('CronJobFunction')) define('CronJobFunction', $CronJobFunction);
 if (!defined('CronJobFunctionContent')) define('CronJobFunctionContent', $CronJobFunctionContent);
 if (!defined('CronJobFunctionVersion')) define('CronJobFunctionVersion', $CronJobFunctionVersion);
 
+// Load AI Error Correction model definitions for CLI context
+// Required by AIErrorCorrectionJob and AIErrorAnalyzer
+require_once $modelBasePath . '/KyteError.php';
+require_once $modelBasePath . '/AIErrorAnalysis.php';
+require_once $modelBasePath . '/AIErrorDeduplication.php';
+require_once $modelBasePath . '/AIErrorCorrectionConfig.php';
+require_once $modelBasePath . '/Application.php';
+
+if (!defined('KyteError')) define('KyteError', $KyteError);
+if (!defined('AIErrorAnalysis')) define('AIErrorAnalysis', $AIErrorAnalysis);
+if (!defined('AIErrorDeduplication')) define('AIErrorDeduplication', $AIErrorDeduplication);
+if (!defined('AIErrorCorrectionConfig')) define('AIErrorCorrectionConfig', $AIErrorCorrectionConfig);
+if (!defined('Application')) define('Application', $Application);
+
 // Export globals for scripts to use
 $GLOBALS['PROJECT_ROOT'] = $projectRoot;
 $GLOBALS['CONFIG_PATH'] = $configPath;
