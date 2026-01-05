@@ -34,6 +34,24 @@ class AIErrorAnalysisController extends ModelController
 	}
 
 	/**
+	 * Helper method to return success response
+	 */
+	private function success($data) {
+		$this->response['success'] = true;
+		$this->response['data'] = $data;
+		return;
+	}
+
+	/**
+	 * Helper method to return error response
+	 */
+	private function error($message) {
+		$this->response['success'] = false;
+		$this->response['error'] = $message;
+		return;
+	}
+
+	/**
 	 * Override getObject to preserve raw Unix timestamps before date conversion
 	 * This ensures timezone-independent date handling in JavaScript
 	 */
@@ -159,44 +177,59 @@ class AIErrorAnalysisController extends ModelController
 	 * URL: /AIErrorAnalysis/applyFix/id/{analysis_id}
 	 */
 	public function applyFix() {
+		error_log("AIErrorAnalysisController::applyFix() called");
+
 		if (!isset($this->api->value)) {
+			error_log("AIErrorAnalysisController::applyFix() - No analysis ID provided");
 			return $this->error("Analysis ID required");
 		}
+
+		error_log("AIErrorAnalysisController::applyFix() - Analysis ID: " . $this->api->value);
 
 		$analysis = new ModelObject($this->model);
 		if (!$analysis->retrieve('id', $this->api->value, [
 			['field' => 'kyte_account', 'value' => $this->api->account->id]
 		])) {
+			error_log("AIErrorAnalysisController::applyFix() - Analysis not found");
 			return $this->error("Analysis not found");
 		}
 
+		error_log("AIErrorAnalysisController::applyFix() - Analysis retrieved: ID={$analysis->id}, status={$analysis->analysis_status}, fix_status={$analysis->fix_status}");
+
 		// Validate state
 		if ($analysis->analysis_status !== 'completed') {
+			error_log("AIErrorAnalysisController::applyFix() - Analysis not completed");
 			return $this->error("Analysis must be completed before applying fix");
 		}
 
 		if ($analysis->is_fixable != 1) {
+			error_log("AIErrorAnalysisController::applyFix() - Error not fixable");
 			return $this->error("This error is not fixable");
 		}
 
 		if ($analysis->fix_status === 'applied_manual' || $analysis->fix_status === 'applied_auto') {
+			error_log("AIErrorAnalysisController::applyFix() - Fix already applied");
 			return $this->error("Fix has already been applied");
 		}
 
 		// Apply the fix
 		try {
+			error_log("AIErrorAnalysisController::applyFix() - Calling AIErrorFixApplier");
 			$applier = new AIErrorFixApplier($this->api);
 			$success = $applier->apply($analysis, $this->user->id);
 
 			if ($success) {
+				error_log("AIErrorAnalysisController::applyFix() - Fix applied successfully");
 				return $this->success([
 					'message' => 'Fix applied successfully',
 					'analysis' => $analysis->getAllParams()
 				]);
 			} else {
+				error_log("AIErrorAnalysisController::applyFix() - Apply failed (returned false)");
 				return $this->error("Failed to apply fix. Check logs for details.");
 			}
 		} catch (\Exception $e) {
+			error_log("AIErrorAnalysisController::applyFix() - Exception: " . $e->getMessage());
 			return $this->error("Error applying fix: " . $e->getMessage());
 		}
 	}
