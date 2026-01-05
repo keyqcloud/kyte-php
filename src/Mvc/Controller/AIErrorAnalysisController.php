@@ -69,9 +69,6 @@ class AIErrorAnalysisController extends ModelController
 	 */
 	public function get($field, $value)
 	{
-
-		error_log("AIErrorAnalysisController::get() called with field=$field, value=$value");
-		
 		// Check if this is a custom action
 		if ($field === 'getByError' && $value) {
 			return $this->getByError();
