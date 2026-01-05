@@ -215,14 +215,24 @@ USER;
 
         $response = $this->callBedrock($systemPrompt, $userPrompt);
 
-        // Parse JSON response
+        // Parse JSON response - handle various formatting from Claude
         $response = trim($response);
-        $response = preg_replace('/```json\s*|\s*```/', '', $response);
 
+        // Try to extract JSON from markdown code blocks
+        if (preg_match('/```(?:json)?\s*(\{.*?\})\s*```/s', $response, $matches)) {
+            $response = $matches[1];
+        } else {
+            // No code block - try to find JSON object directly
+            if (preg_match('/(\{.*\})/s', $response, $matches)) {
+                $response = $matches[1];
+            }
+        }
+
+        $response = trim($response);
         $result = json_decode($response, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            error_log("Failed to parse classification response: $response");
+            error_log("AIErrorAnalyzer: Failed to parse classification response: " . substr($response, 0, 500));
             // Default to fixable with low confidence
             return [
                 'fixable' => true,
@@ -331,13 +341,25 @@ USER;
 
         $response = $this->callBedrock($systemPrompt, $userPrompt);
 
-        // Parse JSON response
+        // Parse JSON response - handle various formatting from Claude
         $response = trim($response);
-        $response = preg_replace('/```json\s*|\s*```/', '', $response);
 
+        // Try to extract JSON from markdown code blocks
+        if (preg_match('/```(?:json)?\s*(\{.*?\})\s*```/s', $response, $matches)) {
+            $response = $matches[1];
+        } else {
+            // No code block - try to find JSON object directly
+            if (preg_match('/(\{.*\})/s', $response, $matches)) {
+                $response = $matches[1];
+            }
+        }
+
+        $response = trim($response);
         $result = json_decode($response, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
+            // Log the problematic response for debugging
+            error_log("AIErrorAnalyzer: Failed to parse response: " . substr($response, 0, 500));
             throw new \Exception("Failed to parse fix generation response: " . json_last_error_msg());
         }
 
