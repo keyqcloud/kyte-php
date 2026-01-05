@@ -34,6 +34,33 @@ class AIErrorAnalysisController extends ModelController
 	}
 
 	/**
+	 * Override getObject to preserve raw Unix timestamps before date conversion
+	 * This ensures timezone-independent date handling in JavaScript
+	 */
+	protected function getObject($obj) {
+		// First, capture raw Unix timestamps from the object before parent converts them
+		$dateFields = ['date_created', 'date_modified', 'date_deleted', 'queued_at',
+		               'processing_started_at', 'processing_completed_at', 'applied_at'];
+
+		$rawValues = [];
+		foreach ($dateFields as $field) {
+			if (isset($obj->{$field}) && is_numeric($obj->{$field}) && $obj->{$field} > 0) {
+				$rawValues[$field . '_raw'] = (int)$obj->{$field};
+			}
+		}
+
+		// Call parent to get the formatted response
+		$response = parent::getObject($obj);
+
+		// Inject raw timestamps into response
+		foreach ($rawValues as $key => $value) {
+			$response[$key] = $value;
+		}
+
+		return $response;
+	}
+
+	/**
 	 * Override get() to handle GET custom actions
 	 *
 	 * URL: GET /AIErrorAnalysis/getByError/123
@@ -92,28 +119,9 @@ class AIErrorAnalysisController extends ModelController
 
 	/**
 	 * Enhance get responses with additional context
+	 * Note: Raw timestamps are already preserved in getObject() override
 	 */
 	public function hook_process_get_response(&$r) {
-		// Preserve raw Unix timestamps for JavaScript (before they get converted to formatted dates)
-		// This allows reliable timezone-independent date handling in the frontend
-		$dateFields = ['date_created', 'date_modified', 'date_deleted', 'queued_at',
-		               'processing_started_at', 'processing_completed_at', 'applied_at'];
-
-		foreach ($dateFields as $field) {
-			if (isset($r[$field]) && is_numeric($r[$field])) {
-				// Store raw Unix timestamp with _raw suffix for JavaScript
-				$r[$field . '_raw'] = (int)$r[$field];
-			}
-		}
-
-		// Add human-readable timestamps for display
-		if (isset($r['queued_at']) && is_numeric($r['queued_at'])) {
-			$r['queued_at_formatted'] = date('Y-m-d H:i:s', $r['queued_at']);
-		}
-		if (isset($r['applied_at']) && is_numeric($r['applied_at'])) {
-			$r['applied_at_formatted'] = date('Y-m-d H:i:s', $r['applied_at']);
-		}
-
 		// Add status badge info for frontend
 		$r['status_badge'] = $this->getStatusBadge($r);
 	}
