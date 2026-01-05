@@ -486,7 +486,11 @@ USER;
         if ($stage === 'classifying') {
             $analysis->save(['processing_started_at' => time()]);
         } elseif ($stage === 'completed' || $stage === 'failed') {
-            $analysis->save(['processing_completed_at' => time()]);
+            // Update both stage and status when complete
+            $analysis->save([
+                'analysis_status' => 'completed',
+                'processing_completed_at' => time()
+            ]);
 
             // Save token usage and cost
             if (isset($this->lastInputTokens)) {
