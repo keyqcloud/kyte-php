@@ -29,43 +29,67 @@ class AIErrorFixApplier
      * @return bool Success
      */
     public function apply($analysis, $userId = null) {
+        error_log("AIErrorFixApplier::apply() - Starting for analysis ID: {$analysis->id}");
+        error_log("  fix_status: {$analysis->fix_status}, syntax_valid: {$analysis->syntax_valid}, function_id: {$analysis->function_id}");
+
         try {
             // Validate analysis
-            if ($analysis->fix_status !== 'suggested' || !$analysis->syntax_valid) {
-                throw new \Exception("Fix is not in applicable state");
+            // Allow 'suggested' or 'failed_validation' (manual override) if syntax is valid
+            $allowedStatuses = ['suggested', 'failed_validation'];
+            if (!in_array($analysis->fix_status, $allowedStatuses)) {
+                error_log("  ERROR: Invalid fix status: {$analysis->fix_status}");
+                throw new \Exception("Fix is not in applicable state (status: {$analysis->fix_status})");
+            }
+
+            if (!$analysis->syntax_valid) {
+                error_log("  ERROR: Syntax not valid");
+                throw new \Exception("Fix has syntax errors and cannot be applied");
             }
 
             if (empty($analysis->ai_suggested_fix)) {
+                error_log("  ERROR: No suggested fix code");
                 throw new \Exception("No fix code available");
             }
 
             // Get the function to update
             if (!$analysis->function_id) {
+                error_log("  ERROR: No function_id in analysis");
                 throw new \Exception("No function ID associated with analysis");
             }
 
+            error_log("  Validation passed, retrieving function ID: {$analysis->function_id}");
+
             $function = new ModelObject(constant("Function"));
             if (!$function->retrieve('id', $analysis->function_id)) {
+                error_log("  ERROR: Function not found with ID: {$analysis->function_id}");
                 throw new \Exception("Function not found: {$analysis->function_id}");
             }
 
+            error_log("  Function retrieved successfully: {$function->name} (ID: {$function->id}, Controller: {$function->controller})");
+
             // Create new function version with AI fix
+            error_log("  Creating function version...");
             $versionId = $this->createFunctionVersion($function, $analysis, $userId);
+            error_log("  Function version created: {$versionId}");
 
             // Update function with new code
+            error_log("  Updating function code...");
             $function->save([
                 'code' => bzcompress($analysis->ai_suggested_fix, 9),
                 'modified_by' => $userId ?? 0,
                 'date_modified' => time(),
             ]);
+            error_log("  Function code updated");
 
             // Mark analysis as applied
+            error_log("  Marking analysis as applied...");
             $analysis->save([
                 'fix_status' => $userId ? 'applied_manual' : 'applied_auto',
                 'applied_at' => time(),
                 'applied_by' => $userId,
                 'applied_function_version' => $versionId,
             ]);
+            error_log("  Analysis marked as applied");
 
             // Update config statistics
             $config = AIErrorCorrection::getConfig($analysis->application, $analysis->kyte_account);
@@ -76,14 +100,17 @@ class AIErrorFixApplier
             }
 
             // Regenerate controller code
+            error_log("  Regenerating controller code...");
             $this->regenerateControllerCode($function->controller);
+            error_log("  Controller code regenerated");
 
-            error_log("AI Fix Applied: Analysis {$analysis->id}, Function {$function->id}, Version {$versionId}");
+            error_log("AI Fix Applied Successfully: Analysis {$analysis->id}, Function {$function->id}, Version {$versionId}");
 
             return true;
 
         } catch (\Exception $e) {
             error_log("AI Fix Application Failed for analysis {$analysis->id}: " . $e->getMessage());
+            error_log("  Stack trace: " . $e->getTraceAsString());
 
             // Mark as failed
             $analysis->save([
