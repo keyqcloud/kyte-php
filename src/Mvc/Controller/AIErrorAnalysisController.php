@@ -34,30 +34,27 @@ class AIErrorAnalysisController extends ModelController
 	 * Prevent modification of analysis records via standard update
 	 * Analyses should only be modified through custom actions
 	 */
-	public function hook_preprocess($data) {
+	public function hook_preprocess($method, &$r, &$o = null) {
 		// Only allow updates through custom actions
-		if ($this->api->request === 'PUT') {
+		if ($method === 'PUT') {
 			throw new \Exception("Analysis records cannot be updated directly. Use custom actions (applyFix, rejectFix, etc.)");
 		}
-		return $data;
 	}
 
 	/**
 	 * Enhance get responses with additional context
 	 */
-	public function hook_process_get_response($response) {
+	public function hook_process_get_response(&$r) {
 		// Add human-readable timestamps
-		if (isset($response['queued_at'])) {
-			$response['queued_at_formatted'] = date('Y-m-d H:i:s', $response['queued_at']);
+		if (isset($r['queued_at'])) {
+			$r['queued_at_formatted'] = date('Y-m-d H:i:s', $r['queued_at']);
 		}
-		if (isset($response['applied_at'])) {
-			$response['applied_at_formatted'] = date('Y-m-d H:i:s', $response['applied_at']);
+		if (isset($r['applied_at'])) {
+			$r['applied_at_formatted'] = date('Y-m-d H:i:s', $r['applied_at']);
 		}
 
 		// Add status badge info for frontend
-		$response['status_badge'] = $this->getStatusBadge($response);
-
-		return $response;
+		$r['status_badge'] = $this->getStatusBadge($r);
 	}
 
 	/**
@@ -276,7 +273,7 @@ class AIErrorAnalysisController extends ModelController
 
 		$analysis = $model->objects[0];
 		$response = $analysis->getAllParams();
-		$response = $this->hook_process_get_response($response);
+		$this->hook_process_get_response($response);
 
 		return $this->success([
 			'exists' => true,
@@ -305,7 +302,7 @@ class AIErrorAnalysisController extends ModelController
 		$pending = [];
 		foreach ($model->objects as $analysis) {
 			$data = $analysis->getAllParams();
-			$data = $this->hook_process_get_response($data);
+			$this->hook_process_get_response($data);
 			$pending[] = $data;
 		}
 
@@ -334,7 +331,7 @@ class AIErrorAnalysisController extends ModelController
 		$applied = [];
 		foreach ($model->objects as $analysis) {
 			$data = $analysis->getAllParams();
-			$data = $this->hook_process_get_response($data);
+			$this->hook_process_get_response($data);
 			$applied[] = $data;
 		}
 

@@ -35,52 +35,55 @@ class AIErrorCorrectionConfigController extends ModelController
 	/**
 	 * Validate configuration values before save
 	 */
-	public function hook_preprocess($data) {
+	public function hook_preprocess($method, &$r, &$o = null) {
+		// Only validate on POST and PUT
+		if ($method !== 'POST' && $method !== 'PUT') {
+			return;
+		}
+
 		// Validate confidence threshold
-		if (isset($data['auto_fix_min_confidence'])) {
-			$confidence = floatval($data['auto_fix_min_confidence']);
+		if (isset($r['auto_fix_min_confidence'])) {
+			$confidence = floatval($r['auto_fix_min_confidence']);
 			if ($confidence < 0 || $confidence > 100) {
 				throw new \Exception("Auto-fix minimum confidence must be between 0 and 100");
 			}
 		}
 
 		// Validate rate limits
-		if (isset($data['max_analyses_per_hour']) && $data['max_analyses_per_hour'] < 1) {
+		if (isset($r['max_analyses_per_hour']) && $r['max_analyses_per_hour'] < 1) {
 			throw new \Exception("Max analyses per hour must be at least 1");
 		}
 
-		if (isset($data['max_analyses_per_day']) && $data['max_analyses_per_day'] < 1) {
+		if (isset($r['max_analyses_per_day']) && $r['max_analyses_per_day'] < 1) {
 			throw new \Exception("Max analyses per day must be at least 1");
 		}
 
-		if (isset($data['max_monthly_cost_usd']) && $data['max_monthly_cost_usd'] < 0) {
+		if (isset($r['max_monthly_cost_usd']) && $r['max_monthly_cost_usd'] < 0) {
 			throw new \Exception("Max monthly cost cannot be negative");
 		}
 
 		// Validate cooldown
-		if (isset($data['cooldown_minutes']) && $data['cooldown_minutes'] < 0) {
+		if (isset($r['cooldown_minutes']) && $r['cooldown_minutes'] < 0) {
 			throw new \Exception("Cooldown minutes cannot be negative");
 		}
 
 		// Validate loop detection settings
-		if (isset($data['max_fix_attempts']) && $data['max_fix_attempts'] < 1) {
+		if (isset($r['max_fix_attempts']) && $r['max_fix_attempts'] < 1) {
 			throw new \Exception("Max fix attempts must be at least 1");
 		}
 
-		if (isset($data['loop_detection_window_minutes']) && $data['loop_detection_window_minutes'] < 1) {
+		if (isset($r['loop_detection_window_minutes']) && $r['loop_detection_window_minutes'] < 1) {
 			throw new \Exception("Loop detection window must be at least 1 minute");
 		}
 
 		// Validate batch settings
-		if (isset($data['batch_size']) && ($data['batch_size'] < 1 || $data['batch_size'] > 100)) {
+		if (isset($r['batch_size']) && ($r['batch_size'] < 1 || $r['batch_size'] > 100)) {
 			throw new \Exception("Batch size must be between 1 and 100");
 		}
 
-		if (isset($data['max_concurrent_bedrock_calls']) && ($data['max_concurrent_bedrock_calls'] < 1 || $data['max_concurrent_bedrock_calls'] > 10)) {
+		if (isset($r['max_concurrent_bedrock_calls']) && ($r['max_concurrent_bedrock_calls'] < 1 || $r['max_concurrent_bedrock_calls'] > 10)) {
 			throw new \Exception("Max concurrent Bedrock calls must be between 1 and 10");
 		}
-
-		return $data;
 	}
 
 	/**
