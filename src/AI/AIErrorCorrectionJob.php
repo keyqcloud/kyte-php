@@ -121,19 +121,19 @@ class AIErrorCorrectionJob extends CronJobBase
 			SELECT e.*
 			FROM KyteError e
 			LEFT JOIN AIErrorAnalysis a ON e.id = a.error_id
-			WHERE e.application = ?
+			WHERE e.app_id = ?
 			AND e.deleted = 0
 			AND a.id IS NULL
 		";
 
 		// Filter by error types if configured
 		if (!$config['include_warnings']) {
-			$sql .= " AND e.error_type NOT IN ('Warning', 'Notice', 'Deprecated')";
+			$sql .= " AND e.log_level NOT IN ('warning', 'notice', 'deprecated')";
 		}
 
 		$sql .= " ORDER BY e.date_created DESC LIMIT 100";
 
-		$errors = DBI::prepared_query($sql, 'i', [$appId]);
+		$errors = DBI::prepared_query($sql, 's', [$config['app_identifier']]);
 
 		if (empty($errors)) {
 			$this->log("  No new errors to process");
@@ -179,18 +179,30 @@ class AIErrorCorrectionJob extends CronJobBase
 
 		if (empty($dedup)) {
 			// New error signature - create deduplication record
+			// Extract controller name from file path (e.g., "Controller/UserController.php" -> "UserController")
+			$controllerName = '';
+			$filePath = $error['file'] ?? '';
+			if (preg_match('/([A-Z][a-zA-Z0-9]+Controller)\.php/', $filePath, $matches)) {
+				$controllerName = $matches[1];
+			} elseif (preg_match('/\/([^\/]+)\.php$/', $filePath, $matches)) {
+				$controllerName = $matches[1];
+			} else {
+				$controllerName = 'Unknown';
+			}
+
 			$sql = "
 				INSERT INTO AIErrorDeduplication (
-					application, kyte_account, error_signature, error_message, error_file,
-					error_line, first_seen, last_seen, occurrence_count, date_created
-				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, UNIX_TIMESTAMP())
+					application, kyte_account, error_signature, controller_name, error_message, error_file,
+					error_line, first_seen, last_seen, occurrence_count
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
 			";
 
-			DBI::prepared_query($sql, 'iisssiii', [
+			DBI::prepared_query($sql, 'iisssssii', [
 				$config['application'],
 				$config['kyte_account'],
 				$signature,
-				$error['error_message'],
+				$controllerName,
+				$error['message'],
 				$error['file'] ?? '',
 				$error['line'] ?? 0,
 				$error['date_created'],
@@ -247,7 +259,7 @@ class AIErrorCorrectionJob extends CronJobBase
 	private function generateErrorSignature($error)
 	{
 		// Combine error type, message (normalized), file, and line
-		$message = $error['error_message'];
+		$message = $error['message'];
 
 		// Normalize message (remove variable values, IDs, etc.)
 		$message = preg_replace('/\d+/', 'N', $message); // Replace numbers
@@ -255,7 +267,7 @@ class AIErrorCorrectionJob extends CronJobBase
 		$message = preg_replace('/0x[a-f0-9]+/i', 'HEX', $message); // Replace hex values
 
 		$sigParts = [
-			$error['error_type'] ?? 'Error',
+			$error['log_level'] ?? 'error',
 			$message,
 			$error['file'] ?? '',
 			$error['line'] ?? 0
@@ -269,24 +281,21 @@ class AIErrorCorrectionJob extends CronJobBase
 	 */
 	private function queueErrorForAnalysis($error, $config)
 	{
+		// Generate error signature
+		$signature = $this->generateErrorSignature($error);
+
 		$sql = "
 			INSERT INTO AIErrorAnalysis (
-				error_id, application, kyte_account, error_type, error_message,
-				file_path, line_number, stack_trace, request_data, analysis_status,
-				analysis_stage, queued_at, date_created
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 'pending', UNIX_TIMESTAMP(), UNIX_TIMESTAMP())
+				error_id, error_signature, application, kyte_account,
+				analysis_status, analysis_stage, queued_at, date_created
+			) VALUES (?, ?, ?, ?, 'queued', 'pending', UNIX_TIMESTAMP(), UNIX_TIMESTAMP())
 		";
 
-		DBI::prepared_query($sql, 'iiisssiss', [
+		DBI::prepared_query($sql, 'isii', [
 			$error['id'],
+			$signature,
 			$config['application'],
-			$config['kyte_account'],
-			$error['error_type'] ?? 'Error',
-			$error['error_message'],
-			$error['file'] ?? '',
-			$error['line'] ?? 0,
-			$error['stack_trace'] ?? '',
-			$error['request_data'] ?? ''
+			$config['kyte_account']
 		]);
 
 		$this->log("  Queued error #{$error['id']} for analysis");
@@ -373,7 +382,7 @@ class AIErrorCorrectionJob extends CronJobBase
 				$sql = "
 					UPDATE AIErrorAnalysis
 					SET analysis_status = 'failed',
-						error_analysis = ?,
+						last_error = ?,
 						processing_completed_at = UNIX_TIMESTAMP()
 					WHERE id = ?
 				";
