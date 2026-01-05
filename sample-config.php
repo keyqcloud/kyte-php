@@ -71,7 +71,7 @@
     // AWS Bedrock Configuration for AI Error Correction
     // Uses existing AWS_ACCESS_KEY_ID and AWS_SECRET_KEY constants above
     define('AI_BEDROCK_REGION', 'us-east-1'); // AWS Bedrock region
-    define('AI_BEDROCK_MODEL', 'anthropic.claude-sonnet-4-5-20250929-v1:0'); // Claude Sonnet 4.5
+    define('AI_BEDROCK_MODEL', 'global.anthropic.claude-sonnet-4-5-20250929-v1:0'); // Claude Sonnet 4.5 (use inference profile, not direct model ID)
 
     // Note: Per-application configuration is managed via Kyte Shipyard
     // Settings include: auto-fix mode, rate limits, cost budgets, loop detection
