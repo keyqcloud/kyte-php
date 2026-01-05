@@ -117,11 +117,14 @@ class AIErrorCorrectionJob extends CronJobBase
 		}
 
 		// Find unanalyzed errors for this application
+		// Exclude system errors (app_id NULL or empty string)
 		$sql = "
 			SELECT e.*
 			FROM KyteError e
 			LEFT JOIN AIErrorAnalysis a ON e.id = a.error_id
 			WHERE e.app_id = ?
+			AND e.app_id IS NOT NULL
+			AND e.app_id != ''
 			AND e.deleted = 0
 			AND a.id IS NULL
 		";
