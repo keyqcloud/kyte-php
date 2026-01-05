@@ -113,6 +113,7 @@ class AIErrorAnalyzer
             ]);
 
             if (!$validation['valid']) {
+                error_log("AIErrorAnalyzer: Validation FAILED for analysis #{$analysis->id}");
                 $analysis->save([
                     'analysis_stage' => 'completed',
                     'fix_status' => 'failed_validation',
@@ -125,9 +126,11 @@ class AIErrorAnalyzer
             }
 
             // Validation passed - update fix_status to 'suggested'
+            error_log("AIErrorAnalyzer: Validation PASSED for analysis #{$analysis->id}, setting fix_status='suggested'");
             $analysis->save([
                 'fix_status' => 'suggested',
             ]);
+            error_log("AIErrorAnalyzer: fix_status saved, current value in object: " . $analysis->fix_status);
 
             // Analysis complete
             $this->updateStage($analysis, 'completed');
