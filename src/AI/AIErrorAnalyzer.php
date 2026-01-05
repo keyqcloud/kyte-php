@@ -124,6 +124,11 @@ class AIErrorAnalyzer
                 return ['success' => true, 'should_auto_fix' => false];
             }
 
+            // Validation passed - update fix_status to 'suggested'
+            $analysis->save([
+                'fix_status' => 'suggested',
+            ]);
+
             // Analysis complete
             $this->updateStage($analysis, 'completed');
 
