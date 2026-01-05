@@ -422,7 +422,7 @@ class AIErrorCorrectionJob extends CronJobBase
 		// Check monthly cost limit
 		$monthStart = strtotime('first day of this month 00:00:00');
 		$sql = "
-			SELECT SUM(cost_usd) as total_cost
+			SELECT SUM(estimated_cost_usd) as total_cost
 			FROM AIErrorAnalysis
 			WHERE application = ?
 			AND date_created >= ?

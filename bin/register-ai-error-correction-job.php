@@ -38,8 +38,8 @@ try {
 	$compressed = bzcompress($code);
 	echo "✓ Code compressed (" . strlen($compressed) . " bytes)\n";
 
-	// Check if job already exists
-	$sql = "SELECT id FROM CronJob WHERE name = ? AND application IS NULL AND deleted = 0";
+	// Check if job already exists (system-level jobs have kyte_account = 0)
+	$sql = "SELECT id FROM CronJob WHERE name = ? AND application IS NULL AND (kyte_account = 0 OR kyte_account = 1) AND deleted = 0";
 	$existing = DBI::prepared_query($sql, 's', ['AI Error Correction']);
 
 	if (!empty($existing)) {
@@ -58,24 +58,18 @@ try {
 		$sql = "
 			UPDATE CronJob
 			SET code = ?,
+				kyte_account = 0,
 				date_modified = UNIX_TIMESTAMP()
 			WHERE id = ?
 		";
 
 		DBI::prepared_query($sql, 'si', [$compressed, $existing[0]['id']]);
-		echo "✓ Job updated (ID: {$existing[0]['id']})\n";
+		echo "✓ Job updated (ID: {$existing[0]['id']}) - Migrated to system account (0)\n";
 
 	} else {
-		// Get default account (first account in system)
-		$sql = "SELECT id FROM KyteAccount WHERE deleted = 0 ORDER BY id ASC LIMIT 1";
-		$account = DBI::query($sql);
-
-		if (empty($account)) {
-			throw new \Exception("No accounts found in system");
-		}
-
-		$accountId = $account[0]['id'];
-		echo "✓ Using account ID: {$accountId}\n";
+		// Use system account (0) for system-wide jobs
+		$accountId = 0;
+		echo "✓ Using system account (ID: 0)\n";
 
 		// Insert new job
 		$sql = "
