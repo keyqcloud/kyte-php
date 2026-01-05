@@ -1162,7 +1162,8 @@ class DBI {
 
 		$result = $con->query($query);
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
+  			$tableName = self::extractTableName($query);
+ 			throw new \Exception("Error with mysql query on table '$tableName'. [Error]: ".htmlspecialchars($con->error));
 		}
 
 		$data = array();
@@ -1243,7 +1244,8 @@ class DBI {
 
 		$result = $con->query($query);
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
+  			$tableName = self::extractTableName($query);
+ 			throw new \Exception("Error with mysql query on table '$tableName'. [Error]: ".htmlspecialchars($con->error));
 		}
 
 		$data = array();
@@ -1291,7 +1293,8 @@ class DBI {
 
 		$result = $con->query($query);
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
+  			$tableName = self::extractTableName($query);
+ 			throw new \Exception("Error with mysql query on table '$tableName'. [Error]: ".htmlspecialchars($con->error));
 		}
 
 		$data = array();
@@ -1302,6 +1305,30 @@ class DBI {
 		$result->free();
 		
 		return $data;
+	}
+
+	/**
+	 * Extract table name from SQL query for error messages
+	 *
+	 * @param string $query SQL query
+	 * @return string Table name or "unknown"
+	 */
+	private static function extractTableName($query)
+	{
+		// Match common SQL patterns
+		if (preg_match('/FROM\s+`?(\w+)`?/i', $query, $matches)) {
+			return $matches[1];
+		}
+		if (preg_match('/INTO\s+`?(\w+)`?/i', $query, $matches)) {
+			return $matches[1];
+		}
+		if (preg_match('/UPDATE\s+`?(\w+)`?/i', $query, $matches)) {
+			return $matches[1];
+		}
+		if (preg_match('/TABLE\s+`?(\w+)`?/i', $query, $matches)) {
+			return $matches[1];
+		}
+		return 'unknown';
 	}
 
 	/*
@@ -1321,7 +1348,8 @@ class DBI {
 
 		$result = $con->query($query);
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
+  			$tableName = self::extractTableName($query);
+ 			throw new \Exception("Error with mysql query on table '$tableName'. [Error]: ".htmlspecialchars($con->error));
 		}
 
 		if (is_bool($result)) {
@@ -1364,7 +1392,8 @@ class DBI {
 
 		$stmt = $con->prepare($query);
 		if ($stmt === false) {
-			throw new \Exception("Error preparing mysql statement '$query'; " . htmlspecialchars($con->error));
+			$tableName = self::extractTableName($query);
+			throw new \Exception("Error preparing mysql statement on table '$tableName'; " . htmlspecialchars($con->error));
 		}
 
 		// Bind parameters
@@ -1376,7 +1405,8 @@ class DBI {
 		if (!$stmt->execute()) {
 			$error = $stmt->error;
 			$stmt->close();
-			throw new \Exception("Error executing mysql statement '$query'; " . htmlspecialchars($error));
+			$tableName = self::extractTableName($query);
+			throw new \Exception("Error executing mysql statement on table '$tableName'; " . htmlspecialchars($error));
 		}
 
 		// Try get_result() first (works with mysqlnd)
@@ -1488,7 +1518,8 @@ class DBI {
 
 		$result = $con->query($query);
 		if($result === false) {
-  			throw new \Exception("Error with mysql query '$query'. [Error]:  ".htmlspecialchars($con->error));
+  			$tableName = self::extractTableName($query);
+ 			throw new \Exception("Error with mysql query on table '$tableName'. [Error]: ".htmlspecialchars($con->error));
 		}
 
 		$data = array();
