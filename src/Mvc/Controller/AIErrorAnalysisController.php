@@ -25,22 +25,66 @@ class AIErrorAnalysisController extends ModelController
 {
 
 	public function hook_init() {
-		// Initialization logic if needed
-		$this->allowableActions = ['get', 'delete', 'applyFix', 'rejectFix', 'reanalyze', 'rollback', 'getByError', 'getPending', 'getApplied'];
+		$this->model = AIErrorAnalysis;
+		$this->allowableActions = ['get', 'delete'];
 		$this->requireAuth = true;
 		$this->requireAccount = true;
 		$this->getFKTables = true;
 		$this->getExternalTables = false;
 	}
+
 	/**
-	 * Prevent modification of analysis records via standard update
-	 * Analyses should only be modified through custom actions
+	 * Override get() to handle GET custom actions
+	 *
+	 * URL: GET /AIErrorAnalysis/getByError/123
+	 * URL: GET /AIErrorAnalysis/getPending/7
+	 * URL: GET /AIErrorAnalysis/getApplied/7
 	 */
-	public function hook_preprocess($method, &$r, &$o = null) {
-		// Only allow updates through custom actions
-		if ($method === 'PUT') {
-			throw new \Exception("Analysis records cannot be updated directly. Use custom actions (applyFix, rejectFix, etc.)");
+	public function get($field, $value)
+	{
+		// Check if this is a custom action
+		if ($field === 'getByError' && $value) {
+			return $this->getByError();
 		}
+		if ($field === 'getPending' && $value) {
+			return $this->getPending();
+		}
+		if ($field === 'getApplied' && $value) {
+			return $this->getApplied();
+		}
+
+		// Normal get operation
+		parent::get($field, $value);
+	}
+
+	/**
+	 * Override update() to handle PUT custom actions
+	 *
+	 * URL: PUT /AIErrorAnalysis/applyFix/123
+	 * URL: PUT /AIErrorAnalysis/rejectFix/123
+	 * URL: PUT /AIErrorAnalysis/reanalyze/123
+	 * URL: PUT /AIErrorAnalysis/rollback/123
+	 */
+	public function update($field, $value, $data)
+	{
+		$action = $field;
+		$analysisId = $value;
+
+		if ($action && $analysisId) {
+			switch ($action) {
+				case 'applyFix':
+					return $this->applyFix();
+				case 'rejectFix':
+					return $this->rejectFix();
+				case 'reanalyze':
+					return $this->reanalyze();
+				case 'rollback':
+					return $this->rollback();
+			}
+		}
+
+		// Prevent normal updates
+		throw new \Exception("Analysis records cannot be updated directly. Use custom actions (applyFix, rejectFix, etc.)");
 	}
 
 	/**

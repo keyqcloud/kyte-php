@@ -18,12 +18,55 @@ use Kyte\Core\ModelObject;
 class AIErrorCorrectionConfigController extends ModelController
 {
 	public function hook_init() {
-		// Initialization logic if needed
-		$this->allowableActions = ['new', 'update', 'get', 'delete', 'enable', 'disable', 'resetStats', 'getStats'];
+		$this->model = AIErrorCorrectionConfig;
+		$this->allowableActions = ['new', 'update', 'get', 'delete'];
 		$this->requireAuth = true;
 		$this->requireAccount = true;
 		$this->checkExisting = ['application']; // One config per application
 		$this->getFKTables = true;
+	}
+
+	/**
+	 * Override get() to handle GET custom actions
+	 *
+	 * URL: GET /AIErrorCorrectionConfig/getStats/123
+	 */
+	public function get($field, $value)
+	{
+		// Check if this is a custom action
+		if ($field === 'getStats' && $value) {
+			return $this->getStats();
+		}
+
+		// Normal get operation
+		parent::get($field, $value);
+	}
+
+	/**
+	 * Override update() to handle PUT custom actions
+	 *
+	 * URL: PUT /AIErrorCorrectionConfig/enable/123
+	 * URL: PUT /AIErrorCorrectionConfig/disable/123
+	 * URL: PUT /AIErrorCorrectionConfig/resetStats/123
+	 */
+	public function update($field, $value, $data)
+	{
+		$action = $field;
+		$configId = $value;
+
+		if ($action && $configId) {
+			switch ($action) {
+				case 'enable':
+					return $this->enable();
+				case 'disable':
+					return $this->disable();
+				case 'resetStats':
+					return $this->resetStats();
+			}
+		}
+
+		// Normal update
+		parent::update($field, $value, $data);
 	}
 
 	/**

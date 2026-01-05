@@ -20,21 +20,58 @@ use Kyte\Core\Model;
 class AIErrorDeduplicationController extends ModelController
 {
 	public function hook_init() {
-		// Initialization logic if needed
-		$this->allowableActions = ['get', 'delete', 'markResolved', 'markUnresolved', 'resetCooldown', 'getTopErrors', 'getUnresolved'];
+		$this->model = AIErrorDeduplication;
+		$this->allowableActions = ['get', 'delete'];
 		$this->requireAuth = true;
 		$this->requireAccount = true;
 		$this->getFKTables = false;
 	}
 
 	/**
-	 * Prevent direct modification of deduplication records
-	 * These are managed automatically by AIErrorCorrection system
+	 * Override get() to handle GET custom actions
+	 *
+	 * URL: GET /AIErrorDeduplication/getTopErrors/7
+	 * URL: GET /AIErrorDeduplication/getUnresolved/7
 	 */
-	public function hook_preprocess($method, &$r, &$o = null) {
-		if ($method === 'PUT' || $method === 'POST') {
-			throw new \Exception("Deduplication records are managed automatically. Use custom actions to modify.");
+	public function get($field, $value)
+	{
+		// Check if this is a custom action
+		if ($field === 'getTopErrors' && $value) {
+			return $this->getTopErrors();
 		}
+		if ($field === 'getUnresolved' && $value) {
+			return $this->getUnresolved();
+		}
+
+		// Normal get operation
+		parent::get($field, $value);
+	}
+
+	/**
+	 * Override update() to handle PUT custom actions
+	 *
+	 * URL: PUT /AIErrorDeduplication/markResolved/123
+	 * URL: PUT /AIErrorDeduplication/markUnresolved/123
+	 * URL: PUT /AIErrorDeduplication/resetCooldown/123
+	 */
+	public function update($field, $value, $data)
+	{
+		$action = $field;
+		$dedupId = $value;
+
+		if ($action && $dedupId) {
+			switch ($action) {
+				case 'markResolved':
+					return $this->markResolved();
+				case 'markUnresolved':
+					return $this->markUnresolved();
+				case 'resetCooldown':
+					return $this->resetCooldown();
+			}
+		}
+
+		// Prevent normal updates
+		throw new \Exception("Deduplication records are managed automatically. Use custom actions to modify.");
 	}
 
 	/**
