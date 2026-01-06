@@ -318,23 +318,6 @@ class AIErrorCorrectionJob extends CronJobBase
 		// Try to identify controller and function from error
 		$controllerInfo = $this->identifyControllerAndFunction($error, $config['application']);
 
-		// DEBUG: Send to Teams
-		$teamsMessage = [
-			'text' => "**DEBUG queueErrorForAnalysis**\n\n" .
-				"controller_id: " . var_export($controllerInfo['controller_id'], true) . "\n\n" .
-				"controller_name: '" . $controllerInfo['controller_name'] . "' (type: " . gettype($controllerInfo['controller_name']) . ")\n\n" .
-				"function_id: " . var_export($controllerInfo['function_id'], true) . "\n\n" .
-				"function_name: '" . $controllerInfo['function_name'] . "'\n\n" .
-				"Full array: " . json_encode($controllerInfo)
-		];
-		$ch = curl_init('https://keyqcloud.webhook.office.com/webhookb2/84e3f10e-5ef8-4582-800c-3074109b5cf0@e87b0ae4-7f21-482c-adf1-82eb14436ef9/IncomingWebhook/b64c356677cb4253814bab9ce89acece/6affbfa2-853d-466b-8fc8-659791e12be3/V2RPMpJ0Fqe3Vo3UVYGgWtRheAdXvjbVY_BABFoPIUK5k1');
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($teamsMessage));
-		curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_exec($ch);
-		curl_close($ch);
-
 		$sql = "
 			INSERT INTO AIErrorAnalysis (
 				error_id, error_signature, application, kyte_account,
@@ -343,100 +326,17 @@ class AIErrorCorrectionJob extends CronJobBase
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 'pending', UNIX_TIMESTAMP(), UNIX_TIMESTAMP())
 		";
 
-		$params = [
-			(int)$error['id'],
-			(string)$signature,
-			(int)$config['application'],
-			(int)$config['kyte_account'],
-			$controllerInfo['controller_id'] === null ? null : (int)$controllerInfo['controller_id'],
-			(string)$controllerInfo['controller_name'],
-			$controllerInfo['function_id'] === null ? null : (int)$controllerInfo['function_id'],
-			(string)$controllerInfo['function_name'],
-			(string)$controllerInfo['function_type']
-		];
-
-		// DEBUG: Send params to Teams
-		$paramTypes = array_map('gettype', $params);
-		$teamsDebug = [
-			'text' => "**DEBUG prepared_query params**\n\n" .
-				"Type string: 'isiisisss'\n\n" .
-				"Param types: " . json_encode($paramTypes) . "\n\n" .
-				"Param[5] (controller_name): '" . $params[5] . "'\n\n" .
-				"All params: " . json_encode($params)
-		];
-		$ch2 = curl_init('https://keyqcloud.webhook.office.com/webhookb2/84e3f10e-5ef8-4582-800c-3074109b5cf0@e87b0ae4-7f21-482c-adf1-82eb14436ef9/IncomingWebhook/b64c356677cb4253814bab9ce89acece/6affbfa2-853d-466b-8fc8-659791e12be3/V2RPMpJ0Fqe3Vo3UVYGgWtRheAdXvjbVY_BABFoPIUK5k1');
-		curl_setopt($ch2, CURLOPT_POST, 1);
-		curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode($teamsDebug));
-		curl_setopt($ch2, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-		curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
-		curl_exec($ch2);
-		curl_close($ch2);
-
-		// TEMPORARY: Bypass DBI and use raw mysqli to debug
-		$conn = \Kyte\Core\DBI::getConnection();
-		$stmt = $conn->prepare($sql);
-		if (!$stmt) {
-			$errorMsg = "Prepare failed: " . $conn->error;
-			$this->log("ERROR: " . $errorMsg);
-			// Send to Teams
-			$ch3 = curl_init('https://keyqcloud.webhook.office.com/webhookb2/84e3f10e-5ef8-4582-800c-3074109b5cf0@e87b0ae4-7f21-482c-adf1-82eb14436ef9/IncomingWebhook/b64c356677cb4253814bab9ce89acece/6affbfa2-853d-466b-8fc8-659791e12be3/V2RPMpJ0Fqe3Vo3UVYGgWtRheAdXvjbVY_BABFoPIUK5k1');
-			curl_setopt($ch3, CURLOPT_POST, 1);
-			curl_setopt($ch3, CURLOPT_POSTFIELDS, json_encode(['text' => "**ERROR**: " . $errorMsg]));
-			curl_setopt($ch3, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-			curl_setopt($ch3, CURLOPT_RETURNTRANSFER, true);
-			curl_exec($ch3);
-			curl_close($ch3);
-			return;
-		}
-		// DEBUG: About to bind_param
-		$ch5 = curl_init('https://keyqcloud.webhook.office.com/webhookb2/84e3f10e-5ef8-4582-800c-3074109b5cf0@e87b0ae4-7f21-482c-adf1-82eb14436ef9/IncomingWebhook/b64c356677cb4253814bab9ce89acece/6affbfa2-853d-466b-8fc8-659791e12be3/V2RPMpJ0Fqe3Vo3UVYGgWtRheAdXvjbVY_BABFoPIUK5k1');
-		curl_setopt($ch5, CURLOPT_POST, 1);
-		curl_setopt($ch5, CURLOPT_POSTFIELDS, json_encode(['text' => "About to call bind_param()"]));
-		curl_setopt($ch5, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-		curl_setopt($ch5, CURLOPT_RETURNTRANSFER, true);
-		curl_exec($ch5);
-		curl_close($ch5);
-
-		$stmt->bind_param('isiisisss',
-			$params[0], $params[1], $params[2], $params[3], $params[4],
-			$params[5], $params[6], $params[7], $params[8]
-		);
-
-		// DEBUG: About to execute
-		$ch4 = curl_init('https://keyqcloud.webhook.office.com/webhookb2/84e3f10e-5ef8-4582-800c-3074109b5cf0@e87b0ae4-7f21-482c-adf1-82eb14436ef9/IncomingWebhook/b64c356677cb4253814bab9ce89acece/6affbfa2-853d-466b-8fc8-659791e12be3/V2RPMpJ0Fqe3Vo3UVYGgWtRheAdXvjbVY_BABFoPIUK5k1');
-		curl_setopt($ch4, CURLOPT_POST, 1);
-		curl_setopt($ch4, CURLOPT_POSTFIELDS, json_encode(['text' => "About to call stmt->execute()"]));
-		curl_setopt($ch4, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-		curl_setopt($ch4, CURLOPT_RETURNTRANSFER, true);
-		curl_exec($ch4);
-		curl_close($ch4);
-
-		if (!$stmt->execute()) {
-			$errorMsg = "Execute failed: " . $stmt->error;
-			$this->log("ERROR: " . $errorMsg);
-			// Send to Teams
-			$ch3 = curl_init('https://keyqcloud.webhook.office.com/webhookb2/84e3f10e-5ef8-4582-800c-3074109b5cf0@e87b0ae4-7f21-482c-adf1-82eb14436ef9/IncomingWebhook/b64c356677cb4253814bab9ce89acece/6affbfa2-853d-466b-8fc8-659791e12be3/V2RPMpJ0Fqe3Vo3UVYGgWtRheAdXvjbVY_BABFoPIUK5k1');
-			curl_setopt($ch3, CURLOPT_POST, 1);
-			curl_setopt($ch3, CURLOPT_POSTFIELDS, json_encode(['text' => "**ERROR**: " . $errorMsg]));
-			curl_setopt($ch3, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-			curl_setopt($ch3, CURLOPT_RETURNTRANSFER, true);
-			curl_exec($ch3);
-			curl_close($ch3);
-		} else {
-			// Success - send confirmation
-			$insertId = $conn->insert_id;
-			$affectedRows = $stmt->affected_rows;
-			$ch3 = curl_init('https://keyqcloud.webhook.office.com/webhookb2/84e3f10e-5ef8-4582-800c-3074109b5cf0@e87b0ae4-7f21-482c-adf1-82eb14436ef9/IncomingWebhook/b64c356677cb4253814bab9ce89acece/6affbfa2-853d-466b-8fc8-659791e12be3/V2RPMpJ0Fqe3Vo3UVYGgWtRheAdXvjbVY_BABFoPIUK5k1');
-			curl_setopt($ch3, CURLOPT_POST, 1);
-			curl_setopt($ch3, CURLOPT_POSTFIELDS, json_encode(['text' => "**SUCCESS**: Insert ID=$insertId, Affected=$affectedRows, DB=" . $conn->server_info]));
-			curl_setopt($ch3, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-			curl_setopt($ch3, CURLOPT_RETURNTRANSFER, true);
-			curl_exec($ch3);
-			curl_close($ch3);
-		}
-		$stmt->close();
-
-		//DBI::prepared_query($sql, 'isiisisss', $params);
+		DBI::prepared_query($sql, 'isiisisss', [
+			$error['id'],
+			$signature,
+			$config['application'],
+			$config['kyte_account'],
+			$controllerInfo['controller_id'],
+			$controllerInfo['controller_name'],
+			$controllerInfo['function_id'],
+			$controllerInfo['function_name'],
+			$controllerInfo['function_type']
+		]);
 
 		$this->log("  Queued error #{$error['id']} for analysis (Controller: {$controllerInfo['controller_name']}, Function: {$controllerInfo['function_name']})");
 	}
