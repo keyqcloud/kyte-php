@@ -372,7 +372,17 @@ class AIErrorCorrectionJob extends CronJobBase
 		curl_exec($ch2);
 		curl_close($ch2);
 
-		DBI::prepared_query($sql, 'isiisisss', $params);
+		// TEMPORARY: Bypass DBI and use raw mysqli to debug
+		$conn = \Kyte\Core\DBI::getConnection();
+		$stmt = $conn->prepare($sql);
+		$stmt->bind_param('isiisisss',
+			$params[0], $params[1], $params[2], $params[3], $params[4],
+			$params[5], $params[6], $params[7], $params[8]
+		);
+		$stmt->execute();
+		$stmt->close();
+
+		//DBI::prepared_query($sql, 'isiisisss', $params);
 
 		$this->log("  Queued error #{$error['id']} for analysis (Controller: {$controllerInfo['controller_name']}, Function: {$controllerInfo['function_name']})");
 	}
