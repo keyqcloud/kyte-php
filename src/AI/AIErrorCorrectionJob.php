@@ -375,11 +375,35 @@ class AIErrorCorrectionJob extends CronJobBase
 		// TEMPORARY: Bypass DBI and use raw mysqli to debug
 		$conn = \Kyte\Core\DBI::getConnection();
 		$stmt = $conn->prepare($sql);
+		if (!$stmt) {
+			$errorMsg = "Prepare failed: " . $conn->error;
+			$this->log("ERROR: " . $errorMsg);
+			// Send to Teams
+			$ch3 = curl_init('https://keyqcloud.webhook.office.com/webhookb2/84e3f10e-5ef8-4582-800c-3074109b5cf0@e87b0ae4-7f21-482c-adf1-82eb14436ef9/IncomingWebhook/b64c356677cb4253814bab9ce89acece/6affbfa2-853d-466b-8fc8-659791e12be3/V2RPMpJ0Fqe3Vo3UVYGgWtRheAdXvjbVY_BABFoPIUK5k1');
+			curl_setopt($ch3, CURLOPT_POST, 1);
+			curl_setopt($ch3, CURLOPT_POSTFIELDS, json_encode(['text' => "**ERROR**: " . $errorMsg]));
+			curl_setopt($ch3, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+			curl_setopt($ch3, CURLOPT_RETURNTRANSFER, true);
+			curl_exec($ch3);
+			curl_close($ch3);
+			return;
+		}
 		$stmt->bind_param('isiisisss',
 			$params[0], $params[1], $params[2], $params[3], $params[4],
 			$params[5], $params[6], $params[7], $params[8]
 		);
-		$stmt->execute();
+		if (!$stmt->execute()) {
+			$errorMsg = "Execute failed: " . $stmt->error;
+			$this->log("ERROR: " . $errorMsg);
+			// Send to Teams
+			$ch3 = curl_init('https://keyqcloud.webhook.office.com/webhookb2/84e3f10e-5ef8-4582-800c-3074109b5cf0@e87b0ae4-7f21-482c-adf1-82eb14436ef9/IncomingWebhook/b64c356677cb4253814bab9ce89acece/6affbfa2-853d-466b-8fc8-659791e12be3/V2RPMpJ0Fqe3Vo3UVYGgWtRheAdXvjbVY_BABFoPIUK5k1');
+			curl_setopt($ch3, CURLOPT_POST, 1);
+			curl_setopt($ch3, CURLOPT_POSTFIELDS, json_encode(['text' => "**ERROR**: " . $errorMsg]));
+			curl_setopt($ch3, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+			curl_setopt($ch3, CURLOPT_RETURNTRANSFER, true);
+			curl_exec($ch3);
+			curl_close($ch3);
+		}
 		$stmt->close();
 
 		//DBI::prepared_query($sql, 'isiisisss', $params);
