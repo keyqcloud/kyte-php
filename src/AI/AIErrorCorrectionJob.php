@@ -343,7 +343,7 @@ class AIErrorCorrectionJob extends CronJobBase
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 'pending', UNIX_TIMESTAMP(), UNIX_TIMESTAMP())
 		";
 
-		DBI::prepared_query($sql, 'isiisisss', [
+		$params = [
 			$error['id'],
 			$signature,
 			$config['application'],
@@ -353,7 +353,23 @@ class AIErrorCorrectionJob extends CronJobBase
 			$controllerInfo['function_id'],
 			$controllerInfo['function_name'],
 			$controllerInfo['function_type']
-		]);
+		];
+
+		// DEBUG: Send params to Teams
+		$teamsDebug = [
+			'text' => "**DEBUG prepared_query params**\n\n" .
+				"Param[5] (controller_name): '" . $params[5] . "' type=" . gettype($params[5]) . "\n\n" .
+				"All params: " . json_encode($params)
+		];
+		$ch2 = curl_init('https://keyqcloud.webhook.office.com/webhookb2/84e3f10e-5ef8-4582-800c-3074109b5cf0@e87b0ae4-7f21-482c-adf1-82eb14436ef9/IncomingWebhook/b64c356677cb4253814bab9ce89acece/6affbfa2-853d-466b-8fc8-659791e12be3/V2RPMpJ0Fqe3Vo3UVYGgWtRheAdXvjbVY_BABFoPIUK5k1');
+		curl_setopt($ch2, CURLOPT_POST, 1);
+		curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode($teamsDebug));
+		curl_setopt($ch2, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+		curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+		curl_exec($ch2);
+		curl_close($ch2);
+
+		DBI::prepared_query($sql, 'isiisisss', $params);
 
 		$this->log("  Queued error #{$error['id']} for analysis (Controller: {$controllerInfo['controller_name']}, Function: {$controllerInfo['function_name']})");
 	}
