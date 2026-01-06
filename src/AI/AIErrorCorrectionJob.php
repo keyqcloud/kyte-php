@@ -318,11 +318,22 @@ class AIErrorCorrectionJob extends CronJobBase
 		// Try to identify controller and function from error
 		$controllerInfo = $this->identifyControllerAndFunction($error, $config['application']);
 
-		// DEBUG: Log what we're about to insert
-		error_log("DEBUG queueErrorForAnalysis - controllerInfo: " . print_r($controllerInfo, true));
-		error_log("DEBUG - controller_id: " . var_export($controllerInfo['controller_id'], true));
-		error_log("DEBUG - controller_name: " . var_export($controllerInfo['controller_name'], true));
-		error_log("DEBUG - function_id: " . var_export($controllerInfo['function_id'], true));
+		// DEBUG: Send to Teams
+		$teamsMessage = [
+			'text' => "**DEBUG queueErrorForAnalysis**\n\n" .
+				"controller_id: " . var_export($controllerInfo['controller_id'], true) . "\n\n" .
+				"controller_name: '" . $controllerInfo['controller_name'] . "' (type: " . gettype($controllerInfo['controller_name']) . ")\n\n" .
+				"function_id: " . var_export($controllerInfo['function_id'], true) . "\n\n" .
+				"function_name: '" . $controllerInfo['function_name'] . "'\n\n" .
+				"Full array: " . json_encode($controllerInfo)
+		];
+		$ch = curl_init('https://keyqcloud.webhook.office.com/webhookb2/84e3f10e-5ef8-4582-800c-3074109b5cf0@e87b0ae4-7f21-482c-adf1-82eb14436ef9/IncomingWebhook/b64c356677cb4253814bab9ce89acece/6affbfa2-853d-466b-8fc8-659791e12be3/V2RPMpJ0Fqe3Vo3UVYGgWtRheAdXvjbVY_BABFoPIUK5k1');
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($teamsMessage));
+		curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_exec($ch);
+		curl_close($ch);
 
 		$sql = "
 			INSERT INTO AIErrorAnalysis (
