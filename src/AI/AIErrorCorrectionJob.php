@@ -344,10 +344,10 @@ class AIErrorCorrectionJob extends CronJobBase
 		";
 
 		$params = [
-			$error['id'],
+			(int)$error['id'],
 			$signature,
-			$config['application'],
-			$config['kyte_account'],
+			(int)$config['application'],
+			(int)$config['kyte_account'],
 			$controllerInfo['controller_id'],
 			$controllerInfo['controller_name'],
 			$controllerInfo['function_id'],
