@@ -6,6 +6,7 @@ use Kyte\Core\CronJobBase;
 use Kyte\Core\DBI;
 use Kyte\Core\ModelObject;
 use Kyte\Core\Model;
+use Kyte\AI\AIErrorFixApplier;
 
 /**
  * AI Error Correction Cron Job
@@ -532,10 +533,23 @@ class AIErrorCorrectionJob extends CronJobBase
 				}
 
 				// Process the analysis
-				$analyzer->analyze($analysis);
+				$result = $analyzer->analyze($analysis);
 				$this->analyzedCount++;
 
 				$this->log("  Completed analysis #{$analysis->id}");
+
+				// Check if we should auto-apply the fix
+				if ($result['success'] && isset($result['should_auto_fix']) && $result['should_auto_fix']) {
+					$this->log("  Auto-fix enabled and confidence threshold met, applying fix...");
+					$applier = new AIErrorFixApplier($api);
+					$applied = $applier->apply($analysis, null); // null = auto-applied (not manual)
+
+					if ($applied) {
+						$this->log("  Auto-fix applied successfully for analysis #{$analysis->id}");
+					} else {
+						$this->log("  Auto-fix application failed for analysis #{$analysis->id}");
+					}
+				}
 
 			} catch (\Exception $e) {
 				$this->log("  Error analyzing #{$analysisData['id']}: " . $e->getMessage());
