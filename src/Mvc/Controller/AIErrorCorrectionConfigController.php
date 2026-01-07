@@ -22,7 +22,7 @@ class AIErrorCorrectionConfigController extends ModelController
 		$this->allowableActions = ['new', 'update', 'get', 'delete'];
 		$this->requireAuth = true;
 		$this->requireAccount = true;
-		$this->checkExisting = ['application']; // One config per application
+		// $this->checkExisting = ['application']; // One config per application
 		$this->getFKTables = true;
 	}
 
