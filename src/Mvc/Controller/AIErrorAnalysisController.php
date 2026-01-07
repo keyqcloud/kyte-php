@@ -148,11 +148,8 @@ class AIErrorAnalysisController extends ModelController
 				if (isset($r['function_id']) && is_array($r['function_id']) && isset($r['function_id']['controller'])) {
                     unset($r['function_id']['controller']);
                 }
-				if (isset($r['applied_function_version']) && is_array($r['applied_function_version']) && isset($r['applied_function_version']['function'])) {
-                    unset($r['applied_function_version']['function']);
-                }
-				if (isset($r['applied_function_version']) && is_array($r['applied_function_version']) && isset($r['applied_function_version']['controller'])) {
-                    unset($r['applied_function_version']['controller']);
+				if (isset($r['applied_function_version']) && is_array($r['applied_function_version'])) {
+                    $this->cleanFunctionVersionObject($r['applied_function_version']);
                 }
 				if (isset($r['previous_analysis_id']) && is_array($r['previous_analysis_id'])) {
                     // Recursively clean nested analysis
@@ -169,7 +166,7 @@ class AIErrorAnalysisController extends ModelController
       * Helper to recursively clean binary data from nested analysis objects
 	  */
 	private function cleanAnalysisObject(&$analysis) {
-      	if (isset($analysis['controller_id']['code'])) {
+		if (isset($analysis['controller_id']['code'])) {
       		unset($analysis['controller_id']['code']);
 		}
 		if (isset($analysis['controller_id']['dataModel'])) {
@@ -190,6 +187,19 @@ class AIErrorAnalysisController extends ModelController
 		if (isset($analysis['previous_analysis_id'])) {
 			// Recursively clean nested analysis
 			unset($analysis['previous_analysis_id']);
+		}
+	}
+
+	/**
+      * Helper to recursively clean binary data from nested function version objects
+	  */
+	private function cleanFunctionVersionObject(&$analysis) {
+      	if (isset($analysis['function'])) {
+      		unset($analysis['function']);
+		}
+		if (isset($analysis['parent_version'])) {
+			// Recursively clean nested analysis
+			unset($analysis['parent_version']);
 		}
 	}
 

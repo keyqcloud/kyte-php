@@ -99,7 +99,7 @@ $KyteFunctionVersion = [
             'unsigned' => true,
             'date' => false,
             'fk' => [
-                'model' => 'KytePageVersion',
+                'model' => 'KyteFunctionVersion',
                 'field' => 'id',
             ],
         ],

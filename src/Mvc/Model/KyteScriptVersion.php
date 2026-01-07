@@ -130,7 +130,7 @@ $KyteScriptVersion = [
             'unsigned' => true,
             'date' => false,
             'fk' => [
-                'model' => 'KytePageVersion',
+                'model' => 'KyteScriptVersion',
                 'field' => 'id',
             ],
         ],
