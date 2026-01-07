@@ -139,6 +139,9 @@ class AIErrorAnalysisController extends ModelController
                 if (isset($r['controller_id']) && is_array($r['controller_id']) && isset($r['controller_id']['code'])) {
                     unset($r['controller_id']['code']);
                 }
+				if (isset($r['controller_id']) && is_array($r['controller_id']) && isset($r['dataModel']['code'])) {
+                    unset($r['controller_id']['dataModel']);
+                }
 				if (isset($r['function_id']) && is_array($r['function_id']) && isset($r['function_id']['code'])) {
                     unset($r['function_id']['code']);
                 }
@@ -163,16 +166,19 @@ class AIErrorAnalysisController extends ModelController
       * Helper to recursively clean binary data from nested analysis objects
 	  */
 	private function cleanAnalysisObject(&$analysis) {
-      	if (isset($analysis['controller_id']['code'])) {                            
+      	if (isset($analysis['controller_id']['code'])) {
       		unset($analysis['controller_id']['code']);
 		}
-		if (isset($analysis['function_id']['code'])) {                            
+		if (isset($analysis['controller_id']['dataModel'])) {
+      		unset($analysis['controller_id']['dataModel']);
+		}
+		if (isset($analysis['function_id']['code'])) {
       		unset($analysis['function_id']['code']);
 		}
-		if (isset($analysis['function_id']['controller'])) {                            
+		if (isset($analysis['function_id']['controller'])) {
       		unset($analysis['function_id']['controller']);
 		}
-		if (isset($analysis['applied_function_version']['function'])) {                            
+		if (isset($analysis['applied_function_version']['function'])) {
       		unset($analysis['applied_function_version']['function']);
 		}
 		if (isset($analysis['previous_analysis_id'])) {
