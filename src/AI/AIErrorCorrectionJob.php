@@ -326,7 +326,7 @@ class AIErrorCorrectionJob extends CronJobBase
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 'pending', UNIX_TIMESTAMP(), UNIX_TIMESTAMP())
 		";
 
-		DBI::prepared_query($sql, 'isiisisss', [
+		DBI::prepared_query($sql, 'isiiisiss', [
 			$error['id'],
 			$signature,
 			$config['application'],
