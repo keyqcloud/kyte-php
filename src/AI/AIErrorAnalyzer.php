@@ -73,6 +73,8 @@ class AIErrorAnalyzer
                 // Not fixable - mark as completed
                 $analysis->save([
                     'analysis_stage' => 'completed',
+                    'analysis_status' => 'completed',
+                    'processing_completed_at' => time(),
                     'ai_diagnosis' => $classification['reason'],
                 ]);
 
@@ -116,6 +118,8 @@ class AIErrorAnalyzer
                 error_log("AIErrorAnalyzer: Validation FAILED for analysis #{$analysis->id}");
                 $analysis->save([
                     'analysis_stage' => 'completed',
+                    'analysis_status' => 'completed',
+                    'processing_completed_at' => time(),
                     'fix_status' => 'failed_validation',
                 ]);
 
@@ -182,6 +186,8 @@ class AIErrorAnalyzer
             // Analysis failed
             $analysis->save([
                 'analysis_stage' => 'failed',
+                'analysis_status' => 'failed',
+                'processing_completed_at' => time(),
                 'last_error' => $e->getMessage(),
             ]);
 
