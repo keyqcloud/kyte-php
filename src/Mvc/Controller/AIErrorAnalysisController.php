@@ -149,7 +149,10 @@ class AIErrorAnalysisController extends ModelController
                     unset($r['function_id']['controller']);
                 }
 				if (isset($r['applied_function_version']) && is_array($r['applied_function_version']) && isset($r['applied_function_version']['function'])) {
-                    unset($r['function_id']['function']);
+                    unset($r['applied_function_version']['function']);
+                }
+				if (isset($r['applied_function_version']) && is_array($r['applied_function_version']) && isset($r['applied_function_version']['controller'])) {
+                    unset($r['applied_function_version']['controller']);
                 }
 				if (isset($r['previous_analysis_id']) && is_array($r['previous_analysis_id'])) {
                     // Recursively clean nested analysis
@@ -180,6 +183,9 @@ class AIErrorAnalysisController extends ModelController
 		}
 		if (isset($analysis['applied_function_version']['function'])) {
       		unset($analysis['applied_function_version']['function']);
+		}
+		if (isset($analysis['applied_function_version']['controller'])) {
+      		unset($analysis['applied_function_version']['controller']);
 		}
 		if (isset($analysis['previous_analysis_id'])) {
 			// Recursively clean nested analysis
