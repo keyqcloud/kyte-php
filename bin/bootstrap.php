@@ -140,12 +140,17 @@ if (!defined('CronJobFunctionContent')) define('CronJobFunctionContent', $CronJo
 if (!defined('CronJobFunctionVersion')) define('CronJobFunctionVersion', $CronJobFunctionVersion);
 
 // Load AI Error Correction model definitions for CLI context
-// Required by AIErrorCorrectionJob and AIErrorAnalyzer
+// Required by AIErrorCorrectionJob, AIErrorAnalyzer, and AIErrorFixApplier
 require_once $modelBasePath . '/KyteError.php';
 require_once $modelBasePath . '/AIErrorAnalysis.php';
 require_once $modelBasePath . '/AIErrorDeduplication.php';
 require_once $modelBasePath . '/AIErrorCorrectionConfig.php';
 require_once $modelBasePath . '/Application.php';
+require_once $modelBasePath . '/Function.php';
+require_once $modelBasePath . '/Controller.php';
+require_once $modelBasePath . '/DataModel.php';
+require_once $modelBasePath . '/KyteFunctionVersion.php';
+require_once $modelBasePath . '/KyteFunctionVersionContent.php';
 
 // Add primary keys to models (required for ModelObject to work correctly)
 \Kyte\Core\Api::addPrimaryKey($KyteError);
@@ -153,12 +158,22 @@ require_once $modelBasePath . '/Application.php';
 \Kyte\Core\Api::addPrimaryKey($AIErrorDeduplication);
 \Kyte\Core\Api::addPrimaryKey($AIErrorCorrectionConfig);
 \Kyte\Core\Api::addPrimaryKey($Application);
+\Kyte\Core\Api::addPrimaryKey($Function);
+\Kyte\Core\Api::addPrimaryKey($Controller);
+\Kyte\Core\Api::addPrimaryKey($DataModel);
+\Kyte\Core\Api::addPrimaryKey($KyteFunctionVersion);
+\Kyte\Core\Api::addPrimaryKey($KyteFunctionVersionContent);
 
 if (!defined('KyteError')) define('KyteError', $KyteError);
 if (!defined('AIErrorAnalysis')) define('AIErrorAnalysis', $AIErrorAnalysis);
 if (!defined('AIErrorDeduplication')) define('AIErrorDeduplication', $AIErrorDeduplication);
 if (!defined('AIErrorCorrectionConfig')) define('AIErrorCorrectionConfig', $AIErrorCorrectionConfig);
 if (!defined('Application')) define('Application', $Application);
+if (!defined('Function')) define('Function', $Function);
+if (!defined('Controller')) define('Controller', $Controller);
+if (!defined('DataModel')) define('DataModel', $DataModel);
+if (!defined('KyteFunctionVersion')) define('KyteFunctionVersion', $KyteFunctionVersion);
+if (!defined('KyteFunctionVersionContent')) define('KyteFunctionVersionContent', $KyteFunctionVersionContent);
 
 // Export globals for scripts to use
 $GLOBALS['PROJECT_ROOT'] = $projectRoot;
