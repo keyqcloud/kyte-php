@@ -27,6 +27,24 @@ class AIErrorCorrectionConfigController extends ModelController
 	}
 
 	/**
+	 * Helper method to return success response
+	 */
+	private function success($data) {
+		$this->response['success'] = true;
+		$this->response['data'] = $data;
+		return;
+	}
+
+	/**
+	 * Helper method to return error response
+	 */
+	private function error($message) {
+		$this->response['success'] = false;
+		$this->response['error'] = $message;
+		return;
+	}
+
+	/**
 	 * Override get() to handle GET custom actions
 	 *
 	 * URL: GET /AIErrorCorrectionConfig/getStats/123
@@ -53,7 +71,7 @@ class AIErrorCorrectionConfigController extends ModelController
 	{
 		$action = $field;
 		$configId = $value;
-
+error_log("*********** $action , $configId ");
 		if ($action && $configId) {
 			switch ($action) {
 				case 'enable':
