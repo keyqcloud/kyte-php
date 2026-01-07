@@ -132,6 +132,26 @@ class AIErrorAnalysisController extends ModelController
 		throw new \Exception("Analysis records cannot be updated directly. Use custom actions (applyFix, rejectFix, etc.)");
 	}
 
+	public function hook_response_data($method, $o, &$r = null, &$d = null) {
+        switch ($method) {
+            case 'get':
+                // Remove compressed code field from FK object (contains binary data that breaks JSON encoding)
+                if (isset($r['controller_id']) && is_array($r['controller_id']) && isset($r['controller_id']['code'])) {
+                    unset($r['controller_id']['code']);
+                }
+				if (isset($r['function_id']) && is_array($r['function_id']) && isset($r['function_id']['code'])) {
+                    unset($r['function_id']['code']);
+                }
+				if (isset($r['function_id']) && is_array($r['function_id']) && isset($r['function_id']['controller'])) {
+                    unset($r['function_id']['controller']);
+                }
+				break;
+
+			default:
+                break;
+		}
+	}
+
 	/**
 	 * Enhance get responses with additional context
 	 * Note: Raw timestamps are already preserved in getObject() override
