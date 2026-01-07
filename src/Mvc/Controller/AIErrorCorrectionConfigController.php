@@ -91,12 +91,12 @@ class AIErrorCorrectionConfigController extends ModelController
 	 * Validate configuration values before save
 	 */
 	public function hook_preprocess($method, &$r, &$o = null) {
-		if ($method === 'PUT') {
+		if ($method === 'update') {
         	$this->checkExisting = null;
       	}
 
 		// Only validate on POST and PUT
-		if ($method !== 'POST' && $method !== 'PUT') {
+		if ($method !== 'new' && $method !== 'update') {
 			return;
 		}
 
