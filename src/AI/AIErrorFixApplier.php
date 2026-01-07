@@ -96,6 +96,7 @@ class AIErrorFixApplier
             if ($config) {
                 $config->save([
                     'total_fixes_applied' => $config->total_fixes_applied + 1,
+                    'total_successful_fixes' => $config->total_successful_fixes + 1,
                 ]);
             }
 
@@ -312,6 +313,7 @@ class AIErrorFixApplier
             $config = AIErrorCorrection::getConfig($analysis->application, $analysis->kyte_account);
             if ($config) {
                 $config->save([
+                    'total_successful_fixes' => max(0, $config->total_successful_fixes - 1), // Decrement (was counted as successful when applied)
                     'total_failed_fixes' => $config->total_failed_fixes + 1,
                 ]);
             }
