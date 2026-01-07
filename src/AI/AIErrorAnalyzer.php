@@ -127,6 +127,25 @@ class AIErrorAnalyzer
 
             // Validation passed - update fix_status to 'suggested'
             error_log("AIErrorAnalyzer: Validation PASSED for analysis #{$analysis->id}, setting fix_status='suggested'");
+
+            // Identify which Function record contains the code to fix
+            // This handles: mismatched names, "helper functions" containers, action overrides
+            if (!empty($analysis->controller_id)) {
+                error_log("AIErrorAnalyzer: Attempting to identify Function record from suggested fix");
+                $matchResult = \Kyte\AI\AIFunctionMatcher::findMatchingFunction($fix['fix'], $analysis->controller_id);
+
+                if ($matchResult) {
+                    error_log("AIErrorAnalyzer: Function identified - ID: {$matchResult['function_id']}, Name: {$matchResult['function_name']}, Type: {$matchResult['function_type']}");
+                    $analysis->save([
+                        'function_id' => $matchResult['function_id'],
+                        'function_name' => $matchResult['function_name'],
+                        'function_type' => $matchResult['function_type'],
+                    ]);
+                } else {
+                    error_log("AIErrorAnalyzer: Could not identify Function record from suggested fix");
+                }
+            }
+
             $analysis->save([
                 'fix_status' => 'suggested',
             ]);

@@ -72,14 +72,33 @@ class AIErrorFixApplier
             $versionId = $this->createFunctionVersion($function, $analysis, $userId);
             error_log("  Function version created: {$versionId}");
 
-            // Update function with new code
+            // Update function with new code (surgical replacement)
             error_log("  Updating function code...");
+
+            // Decompress existing code
+            $existingCode = bzdecompress($function->code);
+            if ($existingCode === false) {
+                throw new \Exception("Failed to decompress existing function code");
+            }
+
+            // Parse signature from AI fix to know what we're replacing
+            $signature = \Kyte\AI\AIFunctionMatcher::parseFunctionSignature($analysis->ai_suggested_fix);
+
+            if (!$signature) {
+                error_log("  WARNING: Could not parse signature from AI fix, replacing entire Function record code");
+                $newCode = $analysis->ai_suggested_fix;
+            } else {
+                // Surgically replace just the matching function
+                error_log("  Performing surgical replacement of function: {$signature['name']}");
+                $newCode = \Kyte\AI\AIFunctionMatcher::replaceFunctionInCode($existingCode, $analysis->ai_suggested_fix, $signature);
+            }
+
             $function->save([
-                'code' => bzcompress($analysis->ai_suggested_fix, 9),
+                'code' => bzcompress($newCode, 9),
                 'modified_by' => $userId ?? 0,
                 'date_modified' => time(),
             ]);
-            error_log("  Function code updated");
+            error_log("  Function code updated (surgical replacement complete)");
 
             // Mark analysis as applied
             error_log("  Marking analysis as applied...");

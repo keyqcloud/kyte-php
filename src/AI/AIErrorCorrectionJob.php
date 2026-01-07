@@ -435,6 +435,32 @@ class AIErrorCorrectionJob extends CronJobBase
 
 		if (!$functionName) {
 			$this->log("  WARNING: Could not determine function name from trace");
+
+			// Special case: Syntax errors in eval'd code during controller loading
+			// Try to find the affected function by checking if error is in eval'd code
+			if (strpos($filePath, "eval()'d code") !== false) {
+				$this->log("  Syntax error in eval'd code - attempting to identify function");
+
+				// Get all functions for this controller
+				$sql = "
+					SELECT id, name, type FROM `Function`
+					WHERE controller = ?
+					AND deleted = 0
+					AND type IN ('custom', 'new', 'update', 'get', 'delete')
+					ORDER BY type = 'custom' DESC, id ASC
+					LIMIT 1
+				";
+
+				$functions = DBI::prepared_query($sql, 'i', [$result['controller_id']]);
+				if (!empty($functions)) {
+					$this->log("  Defaulting to first custom/action function: {$functions[0]['name']}");
+					$result['function_name'] = $functions[0]['name'];
+					$result['function_id'] = $functions[0]['id'];
+					$result['function_type'] = $functions[0]['type'];
+					return $result;
+				}
+			}
+
 			return $result;
 		}
 
