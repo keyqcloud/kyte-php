@@ -62,7 +62,7 @@ class AIErrorAnalyzer
 
             // Stage 1: Classify error (is it fixable?)
             $this->updateStage($analysis, 'classifying');
-            $classification = $this->classifyError($error);
+            $classification = $this->classifyError($error, $analysis);
 
             $analysis->save([
                 'is_fixable' => $classification['fixable'] ? 1 : 0,
@@ -205,11 +205,19 @@ class AIErrorAnalyzer
      * Classify error (is it fixable by code changes?)
      *
      * @param ModelObject $error KyteError object
+     * @param ModelObject $analysis AIErrorAnalysis object
      * @return array ['fixable' => bool, 'confidence' => float, 'reason' => string]
      */
-    private function classifyError($error) {
+    private function classifyError($error, $analysis) {
         $systemPrompt = <<<SYS
 You are an expert PHP error analyzer for the Kyte framework. Your task is to determine if an error can be fixed by modifying controller code.
+
+**IMPORTANT: Understanding Kyte's Dynamic Controller System**
+Kyte loads controller code dynamically at runtime using eval(). If you see a file path like:
+  `/path/to/Api.php(533) : eval()'d code`
+
+This means the error occurred in USER CONTROLLER CODE that was dynamically loaded, NOT in the framework itself.
+These eval()'d code errors are ALWAYS in user-written controller functions and ARE fixable.
 
 Analyze the error and respond ONLY with a JSON object:
 {
@@ -222,11 +230,11 @@ Consider NOT fixable if:
 - Database connection errors
 - Missing PHP extensions or dependencies
 - Server configuration issues (memory, permissions, etc.)
-- Framework core bugs
-- Syntax errors in framework files (not user code)
+- Framework core bugs (in actual framework files, NOT eval'd code)
 - Third-party library errors (not user code)
 
 Consider fixable if:
+- Syntax errors in eval()'d code (user controller code)
 - Logic errors in controller functions
 - Incorrect API usage in user code
 - Missing validation in user code
@@ -237,8 +245,17 @@ Consider fixable if:
 - Undefined variables or properties
 SYS;
 
+        // Build user prompt with controller context
+        $controllerInfo = "";
+        if (!empty($analysis->controller_name)) {
+            $controllerInfo = "Controller: {$analysis->controller_name}\n";
+            if (!empty($analysis->function_name)) {
+                $controllerInfo .= "Function: {$analysis->function_name}\n";
+            }
+        }
+
         $userPrompt = <<<USER
-Error: {$error->message}
+{$controllerInfo}Error: {$error->message}
 File: {$error->file}
 Line: {$error->line}
 Log Level: {$error->log_level}
