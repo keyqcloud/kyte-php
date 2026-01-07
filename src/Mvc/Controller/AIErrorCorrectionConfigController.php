@@ -22,7 +22,7 @@ class AIErrorCorrectionConfigController extends ModelController
 		$this->allowableActions = ['new', 'update', 'get', 'delete'];
 		$this->requireAuth = true;
 		$this->requireAccount = true;
-		// $this->checkExisting = ['application']; // One config per application
+		$this->checkExisting = ['application']; // One config per application
 		$this->getFKTables = true;
 	}
 
@@ -71,7 +71,7 @@ class AIErrorCorrectionConfigController extends ModelController
 	{
 		$action = $field;
 		$configId = $value;
-error_log("*********** $action , $configId ");
+
 		if ($action && $configId) {
 			switch ($action) {
 				case 'enable':
@@ -83,18 +83,18 @@ error_log("*********** $action , $configId ");
 			}
 		}
 
-error_log("########## $action , $configId ");
-
 		// Normal update
 		parent::update($field, $value, $data);
-
-error_log("%%%%%%%%%%% $action , $configId ");
 	}
 
 	/**
 	 * Validate configuration values before save
 	 */
 	public function hook_preprocess($method, &$r, &$o = null) {
+		if ($method === 'PUT') {
+        	$this->checkExisting = null;
+      	}
+
 		// Only validate on POST and PUT
 		if ($method !== 'POST' && $method !== 'PUT') {
 			return;
