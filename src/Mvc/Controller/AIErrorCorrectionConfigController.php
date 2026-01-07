@@ -83,8 +83,12 @@ error_log("*********** $action , $configId ");
 			}
 		}
 
+error_log("########## $action , $configId ");
+
 		// Normal update
 		parent::update($field, $value, $data);
+
+error_log("%%%%%%%%%%% $action , $configId ");
 	}
 
 	/**
