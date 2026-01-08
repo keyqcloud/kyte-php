@@ -1,4 +1,4 @@
-## 4.0.0 (In Progress)
+## 4.0.0
 
 **Major Release: Performance Overhaul & Distributed Cron Job System**
 

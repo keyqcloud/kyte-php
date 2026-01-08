@@ -3,9 +3,9 @@ namespace Kyte\Core;
 
 class Version
 {
-    const MAJOR=3;
-    const MINOR=8;
-    const PATCH=2;
+    const MAJOR=4;
+    const MINOR=0;
+    const PATCH=0;
 
     public static function get()
     {
