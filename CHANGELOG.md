@@ -1,3 +1,8 @@
+## 4.0.1
+
+### Bug Fixes:
+- **KyteProfileController**: Fixed `"Field and Values params not set"` error on PUT requests (password and email updates). The `hook_prequery` now defaults `$field` to `'id'` and `$value` to the authenticated user's ID when null, since KyteProfile always operates on the current user's own record
+
 ## 4.0.0
 
 **Major Release: Performance Overhaul & Distributed Cron Job System**
