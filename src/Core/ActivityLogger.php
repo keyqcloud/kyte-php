@@ -76,11 +76,15 @@ class ActivityLogger
         if (!self::isEnabled()) return;
 
         try {
+            if (!defined($model)) {
+                $this->preUpdateState = null;
+                return;
+            }
             $obj = new \Kyte\Core\ModelObject(constant($model));
             if ($obj->retrieve($field, $value)) {
                 $this->preUpdateState = $obj->getAllParams();
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // Silently fail - don't break updates if pre-capture fails
             $this->preUpdateState = null;
         }
@@ -152,7 +156,7 @@ class ActivityLogger
             }
 
             $log->create($logData);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_log("ActivityLogger: Failed to log activity - " . $e->getMessage());
         }
 
@@ -200,7 +204,7 @@ class ActivityLogger
             ];
 
             $log->create($logData);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_log("ActivityLogger: Failed to log auth event - " . $e->getMessage());
         }
 

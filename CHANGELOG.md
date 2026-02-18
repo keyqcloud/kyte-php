@@ -1,3 +1,12 @@
+## 4.1.1
+
+### Bug Fix: ActivityLogger blocking exception on dynamically-loaded app models
+
+- **`capturePreUpdateState()`**: Added `defined()` check before calling `constant($model)`. For dynamically-loaded app models (e.g. custom models stored in `DataModel` table), the PHP constant may not be available, causing a fatal `Error` that blocked the original PUT/DELETE request from executing.
+- **All catch blocks**: Changed `catch (\Exception $e)` to `catch (\Throwable $e)` in `capturePreUpdateState()`, `log()`, and `logAuth()`. PHP 8.x `constant()` throws an `Error` (not `Exception`) for undefined constants, which bypassed the safety net entirely. The ActivityLogger should never block normal API operations.
+
+---
+
 ## 4.1.0
 
 ### New Feature: Activity/Audit Logging System
