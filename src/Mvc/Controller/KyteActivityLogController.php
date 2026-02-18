@@ -89,7 +89,7 @@ class KyteActivityLogController extends ModelController
 
         // Default ordering: newest first
         if (empty($order)) {
-            $order = ['field' => 'date_created', 'direction' => 'DESC'];
+            $order = [['field' => 'date_created', 'direction' => 'DESC']];
         }
     }
 
