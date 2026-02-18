@@ -77,6 +77,13 @@
     // Settings include: auto-fix mode, rate limits, cost budgets, loop detection
     // See CHANGELOG.md for full feature documentation and database migration SQL
 
+    /* Activity/Audit Logging (v4.1.0+) */
+    // Comprehensive activity tracking for all API requests
+    define('KYTE_ACTIVITY_LOG_ENABLED', true);       // Master enable/disable
+    define('KYTE_ACTIVITY_LOG_GET', false);           // Log GET requests (high volume - disabled by default)
+    define('KYTE_ACTIVITY_LOG_EXCLUDED_MODELS', []);  // Models to exclude (KyteActivityLog is always auto-excluded)
+    define('KYTE_ACTIVITY_LOG_RETENTION_DAYS', 90);   // Log retention period in days
+
 	/* Application Timezone */
 	date_default_timezone_set("Asia/Tokyo"); // Set the default timezone for the application
 	/* List of Available Timezones */

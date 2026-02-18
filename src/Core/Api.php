@@ -660,6 +660,10 @@ class Api
 				}
 				}
 
+				// Initialize Activity Logger
+				$activityLogger = \Kyte\Core\ActivityLogger::getInstance();
+				$activityLogger->setContext($this);
+
 				if ($this->appId != null) {
 					self::loadAppController($this->app, $this->model);
 				}
@@ -672,6 +676,11 @@ class Api
 				// create new controller with model, app date format (i.e. Ymd), and new transaction token (to be verified again if private api)
 				$controller = new $controllerClass(defined($this->model) ? constant($this->model) : null, $this, APP_DATE_FORMAT, $this->response);
 				if (!$controller) throw new \Exception("[ERROR] Unable to create controller for model: $controllerClass.");
+
+				// Capture pre-update state for PUT change tracking
+				if ($this->request === 'PUT' && $this->model !== 'KyteActivityLog') {
+					$activityLogger->capturePreUpdateState($this->model, $this->field, $this->value);
+				}
 
 				switch ($this->request) {
 					case 'POST':
@@ -695,11 +704,22 @@ class Api
 						// delete   :   {field}, {value}
 						$controller->delete($this->field, $this->value);
 						break;
-					
+
 					default:
 						throw new \Exception("[ERROR] Unknown HTTP request type: $this->request.");
 						break;
 				}
+
+				// Log successful activity
+				$activityLogger->log(
+					$this->request,
+					$this->model,
+					$this->field,
+					$this->value,
+					$this->data,
+					200,
+					'success'
+				);
 
 				// return back to regular error reporting
 				if (defined('USE_KYTE_ERROR_HANDLER') && USE_KYTE_ERROR_HANDLER) {
@@ -728,6 +748,25 @@ class Api
 			http_response_code(403);
 			$this->response['error'] = $e->getMessage();
 			$this->response = ['response_code' => 403] + $this->response;
+
+			// Log failed request
+			try {
+				$activityLogger = \Kyte\Core\ActivityLogger::getInstance();
+				$activityLogger->setContext($this);
+				$activityLogger->log(
+					$this->request ?? 'UNKNOWN',
+					$this->model ?? 'Unknown',
+					$this->field,
+					$this->value,
+					$this->data,
+					403,
+					'error',
+					$e->getMessage()
+				);
+			} catch (\Exception $logEx) {
+				error_log("ActivityLogger: Failed to log session exception - " . $logEx->getMessage());
+			}
+
 			if (defined('LOG_RESPONSE')) {
 				error_log(json_encode($this->response, JSON_PRETTY_PRINT));
 			}
@@ -737,6 +776,25 @@ class Api
 			http_response_code(400);
 			$this->response = ['response_code' => 400] + $this->response;
 			$this->response['error'] = $e->getMessage();
+
+			// Log failed request
+			try {
+				$activityLogger = \Kyte\Core\ActivityLogger::getInstance();
+				$activityLogger->setContext($this);
+				$activityLogger->log(
+					$this->request ?? 'UNKNOWN',
+					$this->model ?? 'Unknown',
+					$this->field,
+					$this->value,
+					$this->data,
+					400,
+					'error',
+					$e->getMessage()
+				);
+			} catch (\Exception $logEx) {
+				error_log("ActivityLogger: Failed to log exception - " . $logEx->getMessage());
+			}
+
 			if (defined('LOG_RESPONSE')) {
 				error_log(json_encode($this->response, JSON_PRETTY_PRINT));
 			}
