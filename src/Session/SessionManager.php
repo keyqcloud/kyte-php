@@ -124,7 +124,7 @@ class SessionManager
 				// Log failed login attempt
 				try {
 					\Kyte\Core\ActivityLogger::getInstance()->logAuth('LOGIN_FAIL', $username, false, 'Invalid username');
-				} catch (\Exception $e) {}
+				} catch (\Throwable $e) {}
 				throw new \Kyte\Exception\SessionException("Invalid username or password.");
 			}
 
@@ -133,7 +133,7 @@ class SessionManager
 				// Log failed login attempt
 				try {
 					\Kyte\Core\ActivityLogger::getInstance()->logAuth('LOGIN_FAIL', $username, false, 'Invalid password');
-				} catch (\Exception $e) {}
+				} catch (\Throwable $e) {}
 				throw new \Kyte\Exception\SessionException("Invalid username or password.");
 			}
 
@@ -168,7 +168,7 @@ class SessionManager
 			// Log successful login
 			try {
 				\Kyte\Core\ActivityLogger::getInstance()->logAuth('LOGIN', $username, true);
-			} catch (\Exception $e) {}
+			} catch (\Throwable $e) {}
 
 			// return params for new session after successful creation
 			return $this->session->getAllParams();
@@ -245,7 +245,7 @@ class SessionManager
 		try {
 			$email = isset($this->user->email) ? $this->user->email : (isset($this->user->{$this->username_field}) ? $this->user->{$this->username_field} : null);
 			\Kyte\Core\ActivityLogger::getInstance()->logAuth('LOGOUT', $email, true);
-		} catch (\Exception $e) {}
+		} catch (\Throwable $e) {}
 
 		$this->session->delete();
 		return true;

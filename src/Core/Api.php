@@ -763,7 +763,7 @@ class Api
 					'error',
 					$e->getMessage()
 				);
-			} catch (\Exception $logEx) {
+			} catch (\Throwable $logEx) {
 				error_log("ActivityLogger: Failed to log session exception - " . $logEx->getMessage());
 			}
 
@@ -791,7 +791,7 @@ class Api
 					'error',
 					$e->getMessage()
 				);
-			} catch (\Exception $logEx) {
+			} catch (\Throwable $logEx) {
 				error_log("ActivityLogger: Failed to log exception - " . $logEx->getMessage());
 			}
 
