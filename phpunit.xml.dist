@@ -7,6 +7,7 @@
             <file>tests/DatabaseTest.php</file>
             <file>tests/FunctionTest.php</file>
             <file>tests/ModelTest.php</file>
+            <file>tests/SignatureTest.php</file>
         </testsuite>
         <testsuite name="aws">
             <file>tests/AwsAcmTest.php</file>
