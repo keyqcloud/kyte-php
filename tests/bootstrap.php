@@ -2,17 +2,14 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-// init db
+if (!defined('KYTE_DB_HOST'))     define('KYTE_DB_HOST',     getenv('KYTE_DB_HOST')     ?: 'localhost');
+if (!defined('KYTE_DB_USERNAME')) define('KYTE_DB_USERNAME', getenv('KYTE_DB_USERNAME') ?: 'root');
+if (!defined('KYTE_DB_PASSWORD')) define('KYTE_DB_PASSWORD', getenv('KYTE_DB_PASSWORD') ?: '');
+if (!defined('KYTE_DB_DATABASE')) define('KYTE_DB_DATABASE', getenv('KYTE_DB_DATABASE') ?: 'kytedev');
+if (!defined('KYTE_DB_CHARSET'))  define('KYTE_DB_CHARSET',  getenv('KYTE_DB_CHARSET')  ?: 'utf8');
+
 \Kyte\Core\DBI::setDbUser(KYTE_DB_USERNAME);
 \Kyte\Core\DBI::setDbPassword(KYTE_DB_PASSWORD);
 \Kyte\Core\DBI::setDbHost(KYTE_DB_HOST);
 \Kyte\Core\DBI::setDbName(KYTE_DB_DATABASE);
 \Kyte\Core\DBI::setCharset(KYTE_DB_CHARSET);
-
-// get AWS Keys from env
-define('AWS_ACCESS_KEY_ID', getenv('AWS_ACCESS_KEY_ID'));
-define('AWS_SECRET_KEY', getenv('AWS_SECRET_KEY'));
-// define('AWS_KMS_KEYID', getenv('AWS_KMS_KEYID'));
-define('AWS_PRIVATE_BUCKET_NAME', 'kyte-travisci-test-private-bucket-'.time());
-define('AWS_PUBLIC_BUCKET_NAME', 'kyte-travisci-test-public-bucket-'.time());
-define('AWS_TEST_SITE_NAME', 'kyte-travisci-test-static-site-bucket-'.time());

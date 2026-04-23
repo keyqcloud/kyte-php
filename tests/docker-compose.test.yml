@@ -1,0 +1,34 @@
+services:
+  mariadb:
+    image: mariadb:10.5.29
+    environment:
+      MARIADB_ROOT_PASSWORD: ""
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "yes"
+      MARIADB_DATABASE: kytedev
+    ports:
+      - "33306:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    tmpfs:
+      - /var/lib/mysql
+
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /app
+    volumes:
+      - ../:/app
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      KYTE_DB_HOST: mariadb
+      KYTE_DB_USERNAME: root
+      KYTE_DB_PASSWORD: ""
+      KYTE_DB_DATABASE: kytedev
+      KYTE_DB_CHARSET: utf8
+    command: ["tail", "-f", "/dev/null"]
