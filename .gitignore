@@ -16,5 +16,9 @@ composer.lock
 config.php
 models.php
 
+# PHPUnit runtime artifacts
+.phpunit.result.cache
+clover.xml
+
 # Snyk Security Extension - AI Rules (auto-generated)
 .github/instructions/snyk_rules.instructions.md
