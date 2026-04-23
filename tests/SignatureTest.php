@@ -166,30 +166,13 @@ class SignatureTest extends TestCase
     }
 
     /**
-     * parseIdentityString rejects an expired timestamp.
-     * SIGNATURE_TIMEOUT default is 3600s; use an epoch well outside that window.
+     * parseIdentityString rejects an expired timestamp (well past the boundary).
      */
     public function testParseIdentityStringRejectsExpiredTimestamp() {
-        $ref = new \ReflectionClass(\Kyte\Core\Api::class);
-
-        $accountProp = $ref->getProperty('account');
-        $accountProp->setAccessible(true);
-        $accountProp->setValue($this->api, new \Kyte\Core\ModelObject(KyteAccount));
-
-        $keyProp = $ref->getProperty('key');
-        $keyProp->setAccessible(true);
-        $keyProp->setValue($this->api, new \Kyte\Core\ModelObject(KyteAPIKey));
-
         $staleDate = gmdate('D, d M Y H:i:s', time() - 7200) . ' GMT';
         $identity = base64_encode(self::FIXED_PUBLIC_KEY . '%0%' . $staleDate . '%' . self::FIXED_ACCOUNT);
 
-        $method = $ref->getMethod('parseIdentityString');
-        $method->setAccessible(true);
-
-        $this->expectException(\Kyte\Exception\SessionException::class);
-        $this->expectExceptionMessage('API request has expired');
-
-        $method->invoke($this->api, urlencode($identity));
+        $this->invokeParseIdentity($identity, \Kyte\Exception\SessionException::class, 'API request has expired');
     }
 
     /**
@@ -197,6 +180,105 @@ class SignatureTest extends TestCase
      * exactly four parts on '%'.
      */
     public function testParseIdentityStringRejectsMalformedString() {
+        $this->invokeParseIdentity(base64_encode('only%three%parts'), \Kyte\Exception\SessionException::class, 'Invalid identity string');
+    }
+
+    /**
+     * parseIdentityString accepts a timestamp that is exactly at the
+     * SIGNATURE_TIMEOUT boundary (inclusive). Uses time() - SIGNATURE_TIMEOUT.
+     *
+     * Locks in the current boundary semantics: the check is `time() > utcDate + SIGNATURE_TIMEOUT`,
+     * so `time() == utcDate + SIGNATURE_TIMEOUT` must pass.
+     */
+    public function testParseIdentityStringAcceptsTimestampAtBoundary() {
+        $boundaryEpoch = time() - SIGNATURE_TIMEOUT;
+        $boundaryDate = gmdate('D, d M Y H:i:s', $boundaryEpoch) . ' GMT';
+        $identity = base64_encode(self::FIXED_PUBLIC_KEY . '%0%' . $boundaryDate . '%' . self::FIXED_ACCOUNT);
+
+        $this->invokeParseIdentity($identity);
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * parseIdentityString rejects a timestamp one second past the
+     * SIGNATURE_TIMEOUT boundary.
+     */
+    public function testParseIdentityStringRejectsTimestampOneSecondPastBoundary() {
+        $staleEpoch = time() - SIGNATURE_TIMEOUT - 1;
+        $staleDate = gmdate('D, d M Y H:i:s', $staleEpoch) . ' GMT';
+        $identity = base64_encode(self::FIXED_PUBLIC_KEY . '%0%' . $staleDate . '%' . self::FIXED_ACCOUNT);
+
+        $this->invokeParseIdentity($identity, \Kyte\Exception\SessionException::class, 'API request has expired');
+    }
+
+    /**
+     * parseIdentityString throws a plain \Exception with "API key not found"
+     * when the public key in the identity string doesn't match any row
+     * in KyteAPIKey.
+     *
+     * Note: this is \Exception, not SessionException — a distinction worth
+     * preserving through the refactor.
+     */
+    public function testParseIdentityStringRejectsUnknownApiKey() {
+        $now = gmdate('D, d M Y H:i:s') . ' GMT';
+        $identity = base64_encode('nonexistent-key%0%' . $now . '%' . self::FIXED_ACCOUNT);
+
+        $this->invokeParseIdentity($identity, \Exception::class, 'API key not found');
+    }
+
+    /**
+     * parseIdentityString throws a plain \Exception when the account number
+     * in the identity string doesn't match any row in KyteAccount.
+     */
+    public function testParseIdentityStringRejectsUnknownAccount() {
+        $now = gmdate('D, d M Y H:i:s') . ' GMT';
+        $identity = base64_encode(self::FIXED_PUBLIC_KEY . '%0%' . $now . '%nonexistent-account');
+
+        $this->invokeParseIdentity($identity, \Exception::class, 'Unable to find account');
+    }
+
+    /**
+     * A session token of the literal string "undefined" is coerced to "0"
+     * (anonymous). This quirk exists because some front-end clients send
+     * the JavaScript value `undefined` as a string.
+     */
+    public function testParseIdentityStringTreatsUndefinedSessionAsZero() {
+        $now = gmdate('D, d M Y H:i:s') . ' GMT';
+        $identity = base64_encode(self::FIXED_PUBLIC_KEY . '%undefined%' . $now . '%' . self::FIXED_ACCOUNT);
+
+        $this->invokeParseIdentity($identity);
+
+        $ref = new \ReflectionClass(\Kyte\Core\Api::class);
+        $responseProp = $ref->getProperty('response');
+        $responseProp->setAccessible(true);
+        $response = $responseProp->getValue($this->api);
+
+        $this->assertSame('0', $response['session']);
+    }
+
+    /**
+     * A session token of "0" means anonymous (pre-login). No session
+     * validation is performed; $this->user is not populated.
+     */
+    public function testParseIdentityStringWithZeroSessionDoesNotPopulateUser() {
+        $now = gmdate('D, d M Y H:i:s') . ' GMT';
+        $identity = base64_encode(self::FIXED_PUBLIC_KEY . '%0%' . $now . '%' . self::FIXED_ACCOUNT);
+
+        $this->invokeParseIdentity($identity);
+
+        $ref = new \ReflectionClass(\Kyte\Core\Api::class);
+        $userProp = $ref->getProperty('user');
+        $userProp->setAccessible(true);
+        $user = $userProp->getValue($this->api);
+
+        $this->assertNull($user, 'Anonymous session should not populate $this->user');
+    }
+
+    /**
+     * Shared helper: sets up the minimum Api state and invokes
+     * parseIdentityString. Optionally asserts an expected exception.
+     */
+    private function invokeParseIdentity(string $rawIdentity, ?string $exceptionClass = null, ?string $exceptionMessage = null): void {
         $ref = new \ReflectionClass(\Kyte\Core\Api::class);
 
         $accountProp = $ref->getProperty('account');
@@ -207,12 +289,20 @@ class SignatureTest extends TestCase
         $keyProp->setAccessible(true);
         $keyProp->setValue($this->api, new \Kyte\Core\ModelObject(KyteAPIKey));
 
+        $responseProp = $ref->getProperty('response');
+        $responseProp->setAccessible(true);
+        $responseProp->setValue($this->api, []);
+
         $method = $ref->getMethod('parseIdentityString');
         $method->setAccessible(true);
 
-        $this->expectException(\Kyte\Exception\SessionException::class);
-        $this->expectExceptionMessage('Invalid identity string');
+        if ($exceptionClass !== null) {
+            $this->expectException($exceptionClass);
+            if ($exceptionMessage !== null) {
+                $this->expectExceptionMessage($exceptionMessage);
+            }
+        }
 
-        $method->invoke($this->api, urlencode(base64_encode('only%three%parts')));
+        $method->invoke($this->api, urlencode($rawIdentity));
     }
 }
