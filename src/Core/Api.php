@@ -958,6 +958,9 @@ class Api
 			// New strategy-dispatcher path. Functionally equivalent to the
 			// legacy branch below when HmacSessionStrategy matches.
 			$this->authStrategy = \Kyte\Core\Auth\AuthDispatcher::buildDefault()->select();
+			if (VERBOSE_LOG > 0) {
+				error_log('auth: strategy_selected=' . ($this->authStrategy ? $this->authStrategy->name() : 'null'));
+			}
 			if ($this->authStrategy === null) {
 				return false;
 			}
