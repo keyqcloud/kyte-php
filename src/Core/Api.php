@@ -573,10 +573,14 @@ class Api
 			}
 			self::addPrimaryKey($$model_name);
 			// define model constanct
-			define($model_name, $$model_name);
+			if (!defined($model_name)) {
+				define($model_name, $$model_name);
+			}
 			$kyte_models[] = $$model_name;
 		}
-		define('KYTE_MODELS', $kyte_models);
+		if (!defined('KYTE_MODELS')) {
+			define('KYTE_MODELS', $kyte_models);
+		}
 	}
 
 	/**

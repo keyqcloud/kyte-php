@@ -1,6 +1,7 @@
 <?php
 namespace Kyte\Test;
 
+use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\TestCase;
 
 class FunctionTest extends TestCase
@@ -12,9 +13,7 @@ class FunctionTest extends TestCase
         return $encoding;
     }
 
-    /**
-     * @depends test_base64url_encode
-     */
+    #[Depends('test_base64url_encode')]
     public function test_base64url_decode($encoding) {
         $decoded = base64url_decode($encoding);
 
