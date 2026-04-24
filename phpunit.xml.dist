@@ -6,6 +6,7 @@
       <file>tests/DatabaseTest.php</file>
       <file>tests/FunctionTest.php</file>
       <file>tests/HmacSessionStrategyTest.php</file>
+      <file>tests/McpEndpointTest.php</file>
       <file>tests/McpTokenStrategyTest.php</file>
       <file>tests/ModelTest.php</file>
       <file>tests/SignatureTest.php</file>

@@ -42,12 +42,19 @@ class AuthDispatcher
 
     /**
      * Convenience constructor wiring the default strategy stack for the
-     * current migration state. Phase 1: Hmac only. Phase 2 adds McpToken.
-     * Phase 3 adds JwtSession.
+     * current migration state. Phase 2: McpToken first (matches only on
+     * `Authorization: Bearer kmcp_live_...`, leaves all other traffic to
+     * Hmac), then Hmac for everything else. Phase 3 will add JwtSession
+     * between them.
+     *
+     * Order matters: McpToken's matches() is strict-prefix and rejects any
+     * non-MCP request, so putting it first is safe — Hmac still wins for
+     * every existing customer flow.
      */
     public static function buildDefault(): self
     {
         return new self([
+            new McpTokenStrategy(),
             new HmacSessionStrategy(),
         ]);
     }

@@ -3,13 +3,17 @@
     "description": "Light-weight framework for developing versatile PHP applications.",
     "license": "MIT",
     "require": {
-        "php": ">=7.2",
+        "php": ">=8.1",
         "ext-curl": "*",
         "ext-json": "*",
         "ext-mbstring": "*",
         "aws/aws-sdk-php": "^3.101",
         "stripe/stripe-php": "^7.2",
-        "dragonmantank/cron-expression": "^3.3"
+        "dragonmantank/cron-expression": "^3.3",
+        "mcp/sdk": "^0.4",
+        "nyholm/psr7": "^1.8",
+        "nyholm/psr7-server": "^1.1",
+        "laminas/laminas-httphandlerrunner": "^2.12"
     },
     "require-dev": {
         "phpunit/phpunit": "*"
