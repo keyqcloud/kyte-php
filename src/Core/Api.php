@@ -947,6 +947,13 @@ class Api
 			error_log(print_r($this->data, true));
 		}
 
+		// Shadow mode snapshots the pre-auth response so the new strategy
+		// can be re-run from the same starting state after legacy completes.
+		$shadowEntryResponse = null;
+		if (AUTH_STRATEGY_DISPATCHER === 'shadow') {
+			$shadowEntryResponse = $this->response;
+		}
+
 		if (AUTH_STRATEGY_DISPATCHER === 'on') {
 			// New strategy-dispatcher path. Functionally equivalent to the
 			// legacy branch below when HmacSessionStrategy matches.
@@ -1035,6 +1042,12 @@ class Api
 			} elseif (IS_PRIVATE) {
 				// VERIFY SIGNATURE
 				$this->verifySignature();
+			}
+
+			// Shadow: legacy auth is fully applied at this point. Re-run the
+			// new dispatcher against a reset state and log any divergence.
+			if (AUTH_STRATEGY_DISPATCHER === 'shadow') {
+				\Kyte\Core\Auth\AuthShadowHarness::runAndCompare($this, $shadowEntryResponse);
 			}
 
 			return true;
