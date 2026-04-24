@@ -20,8 +20,9 @@ class Api
 
 	/**
      * @var \Kyte\Core\ModelObject The KyteAPIKey model object.
+     * Public to allow AuthStrategy implementations to populate during auth.
      */
-    private $key = null;
+    public $key = null;
     
     /**
      * * @var \Kyte\Core\ModelObject The KyteAccount model object.
@@ -52,15 +53,17 @@ class Api
      * The API signature.
      *
      * @var string|null
+     * Public to allow AuthStrategy implementations to populate during auth.
      */
-    private $signature = null;
-    
+    public $signature = null;
+
     /**
      * The UTC date.
      *
      * @var mixed|null
+     * Public to allow AuthStrategy implementations to populate during auth.
      */
-    private $utcDate = null;
+    public $utcDate = null;
     
     /**
      * The HTTP request model.
