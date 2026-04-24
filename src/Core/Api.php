@@ -174,7 +174,16 @@ class Api
 		'CHECK_SYNTAX_ON_IMPORT' => false,
 		'STRICT_TYPING' => true,
 		'KYTE_USE_SNS' => false,
+		'AUTH_STRATEGY_DISPATCHER' => 'off',
 	];
+
+	/**
+	 * Auth strategy selected for the current request (set by validateRequest
+	 * when AUTH_STRATEGY_DISPATCHER != 'off'). Null on the legacy path.
+	 *
+	 * @var \Kyte\Core\Auth\AuthStrategy|null
+	 */
+	public $authStrategy = null;
 
 	/**
 	 * Model definition cache
@@ -938,16 +947,29 @@ class Api
 			error_log(print_r($this->data, true));
 		}
 
-		if (IS_PRIVATE) {
-			$this->signature = isset($_SERVER['HTTP_X_KYTE_SIGNATURE']) ? $_SERVER['HTTP_X_KYTE_SIGNATURE'] : null;
-			if (!$this->signature) {
+		if (AUTH_STRATEGY_DISPATCHER === 'on') {
+			// New strategy-dispatcher path. Functionally equivalent to the
+			// legacy branch below when HmacSessionStrategy matches.
+			$this->authStrategy = \Kyte\Core\Auth\AuthDispatcher::buildDefault()->select();
+			if ($this->authStrategy === null) {
 				return false;
 			}
-		}
+			$this->authStrategy->preAuth($this);
+			if (!$this->account) {
+				return false;
+			}
+		} else {
+			if (IS_PRIVATE) {
+				$this->signature = isset($_SERVER['HTTP_X_KYTE_SIGNATURE']) ? $_SERVER['HTTP_X_KYTE_SIGNATURE'] : null;
+				if (!$this->signature) {
+					return false;
+				}
+			}
 
-		$this->parseIdentityString(isset($_SERVER['HTTP_X_KYTE_IDENTITY']) ? $_SERVER['HTTP_X_KYTE_IDENTITY'] : null);
-		if (!$this->account) {
-			return false;
+			$this->parseIdentityString(isset($_SERVER['HTTP_X_KYTE_IDENTITY']) ? $_SERVER['HTTP_X_KYTE_IDENTITY'] : null);
+			if (!$this->account) {
+				return false;
+			}
 		}
 
 		// set page size
@@ -1008,7 +1030,9 @@ class Api
 
 			// default is always public.
 			// this can be bypassed for public APIs but is highly discouraged
-			if (IS_PRIVATE) {
+			if (AUTH_STRATEGY_DISPATCHER === 'on') {
+				$this->authStrategy->verify($this);
+			} elseif (IS_PRIVATE) {
 				// VERIFY SIGNATURE
 				$this->verifySignature();
 			}
