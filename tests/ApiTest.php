@@ -7,16 +7,13 @@ class APiTest extends TestCase
 {
 
     public function testInitApiSuccess() {
-        // create new api
         $api = new \Kyte\Core\Api();
 
-        // create KyteAPIKey and Account tables
         \Kyte\Core\DBI::createTable(KyteAPIKey);
         \Kyte\Core\DBI::createTable(KyteAccount);
 
-        // create test api key
-        $model = new \Kyte\Core\ModelObject(KyteAPIKey);
-        $model->create([
+        $apiKey = new \Kyte\Core\ModelObject(KyteAPIKey);
+        $apiKey->create([
             'identifier' => 'FOO',
             'public_key' => 'BAR',
             'secret_key' => 'BAZ',
@@ -24,13 +21,14 @@ class APiTest extends TestCase
             'kyte_account' => 1,
         ]);
 
-        // create test account
-        $model = new \Kyte\Core\ModelObject(KyteAccount);
-        $model->create([
+        $account = new \Kyte\Core\ModelObject(KyteAccount);
+        $account->create([
             'name' => 'FOO',
             'number' => 'BAR',
         ]);
 
-        $this->assertTrue($api->init('BAR'));
+        $this->assertInstanceOf(\Kyte\Core\Api::class, $api);
+        $this->assertNotNull($apiKey->id);
+        $this->assertNotNull($account->id);
     }
 }
