@@ -20,8 +20,9 @@ class Api
 
 	/**
      * @var \Kyte\Core\ModelObject The KyteAPIKey model object.
+     * Public to allow AuthStrategy implementations to populate during auth.
      */
-    private $key = null;
+    public $key = null;
     
     /**
      * * @var \Kyte\Core\ModelObject The KyteAccount model object.
@@ -52,15 +53,17 @@ class Api
      * The API signature.
      *
      * @var string|null
+     * Public to allow AuthStrategy implementations to populate during auth.
      */
-    private $signature = null;
-    
+    public $signature = null;
+
     /**
      * The UTC date.
      *
      * @var mixed|null
+     * Public to allow AuthStrategy implementations to populate during auth.
      */
-    private $utcDate = null;
+    public $utcDate = null;
     
     /**
      * The HTTP request model.
@@ -171,7 +174,16 @@ class Api
 		'CHECK_SYNTAX_ON_IMPORT' => false,
 		'STRICT_TYPING' => true,
 		'KYTE_USE_SNS' => false,
+		'AUTH_STRATEGY_DISPATCHER' => 'off',
 	];
+
+	/**
+	 * Auth strategy selected for the current request (set by validateRequest
+	 * when AUTH_STRATEGY_DISPATCHER != 'off'). Null on the legacy path.
+	 *
+	 * @var \Kyte\Core\Auth\AuthStrategy|null
+	 */
+	public $authStrategy = null;
 
 	/**
 	 * Model definition cache
@@ -935,16 +947,39 @@ class Api
 			error_log(print_r($this->data, true));
 		}
 
-		if (IS_PRIVATE) {
-			$this->signature = isset($_SERVER['HTTP_X_KYTE_SIGNATURE']) ? $_SERVER['HTTP_X_KYTE_SIGNATURE'] : null;
-			if (!$this->signature) {
-				return false;
-			}
+		// Shadow mode snapshots the pre-auth response so the new strategy
+		// can be re-run from the same starting state after legacy completes.
+		$shadowEntryResponse = null;
+		if (AUTH_STRATEGY_DISPATCHER === 'shadow') {
+			$shadowEntryResponse = $this->response;
 		}
 
-		$this->parseIdentityString(isset($_SERVER['HTTP_X_KYTE_IDENTITY']) ? $_SERVER['HTTP_X_KYTE_IDENTITY'] : null);
-		if (!$this->account) {
-			return false;
+		if (AUTH_STRATEGY_DISPATCHER === 'on') {
+			// New strategy-dispatcher path. Functionally equivalent to the
+			// legacy branch below when HmacSessionStrategy matches.
+			$this->authStrategy = \Kyte\Core\Auth\AuthDispatcher::buildDefault()->select();
+			if (VERBOSE_LOG > 0) {
+				error_log('auth: strategy_selected=' . ($this->authStrategy ? $this->authStrategy->name() : 'null'));
+			}
+			if ($this->authStrategy === null) {
+				return false;
+			}
+			$this->authStrategy->preAuth($this);
+			if (!$this->account) {
+				return false;
+			}
+		} else {
+			if (IS_PRIVATE) {
+				$this->signature = isset($_SERVER['HTTP_X_KYTE_SIGNATURE']) ? $_SERVER['HTTP_X_KYTE_SIGNATURE'] : null;
+				if (!$this->signature) {
+					return false;
+				}
+			}
+
+			$this->parseIdentityString(isset($_SERVER['HTTP_X_KYTE_IDENTITY']) ? $_SERVER['HTTP_X_KYTE_IDENTITY'] : null);
+			if (!$this->account) {
+				return false;
+			}
 		}
 
 		// set page size
@@ -1005,9 +1040,17 @@ class Api
 
 			// default is always public.
 			// this can be bypassed for public APIs but is highly discouraged
-			if (IS_PRIVATE) {
+			if (AUTH_STRATEGY_DISPATCHER === 'on') {
+				$this->authStrategy->verify($this);
+			} elseif (IS_PRIVATE) {
 				// VERIFY SIGNATURE
 				$this->verifySignature();
+			}
+
+			// Shadow: legacy auth is fully applied at this point. Re-run the
+			// new dispatcher against a reset state and log any divergence.
+			if (AUTH_STRATEGY_DISPATCHER === 'shadow') {
+				\Kyte\Core\Auth\AuthShadowHarness::runAndCompare($this, $shadowEntryResponse);
 			}
 
 			return true;
