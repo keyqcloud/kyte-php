@@ -568,7 +568,11 @@ class DBI {
 		// Default value
 		if (array_key_exists('default', $attrs)) {
 			$field .= ' DEFAULT ';
-			$field .= (is_string($attrs['default']) ? "'" . $attrs['default'] . "'" : $attrs['default']);
+			if (is_null($attrs['default'])) {
+				$field .= 'NULL';
+			} else {
+				$field .= (is_string($attrs['default']) ? "'" . $attrs['default'] . "'" : $attrs['default']);
+			}
 		}
 
 		// Required/NOT NULL
