@@ -21,6 +21,7 @@ class McpEndpointTest extends TestCase
 {
     private const RAW_TOKEN     = 'kmcp_live_endpoint_test_xyz1234567890';
     private const FIXED_ACCOUNT = 'test-account-mcp-endpoint';
+    private const APP_IDENT     = 'mcp-endpoint-test-app';
 
     /** @var \Kyte\Core\Api */
     private $api;
@@ -40,9 +41,11 @@ class McpEndpointTest extends TestCase
 
         \Kyte\Core\DBI::createTable(KyteAccount);
         \Kyte\Core\DBI::createTable(KyteMCPToken);
+        \Kyte\Core\DBI::createTable(Application);
 
         \Kyte\Core\DBI::query("DELETE FROM `KyteAccount` WHERE number = '" . self::FIXED_ACCOUNT . "'");
         \Kyte\Core\DBI::query("DELETE FROM `KyteMCPToken` WHERE token_prefix LIKE 'kmcp_live_%'");
+        \Kyte\Core\DBI::query("DELETE FROM `Application` WHERE identifier = '" . self::APP_IDENT . "'");
 
         $account = new \Kyte\Core\ModelObject(KyteAccount);
         $account->create([
@@ -59,6 +62,13 @@ class McpEndpointTest extends TestCase
             'scopes'       => 'read,draft',
             'expires_at'   => time() + 3600,
             'revoked_at'   => 0,
+            'kyte_account' => $this->accountId,
+        ]);
+
+        $app = new \Kyte\Core\ModelObject(Application);
+        $app->create([
+            'name'         => 'Endpoint Test App',
+            'identifier'   => self::APP_IDENT,
             'kyte_account' => $this->accountId,
         ]);
 
@@ -179,14 +189,26 @@ class McpEndpointTest extends TestCase
 
     public function testListApplicationsReturnsEmptyForUnknownAccount(): void
     {
-        // AccountTools::listApplications happy-path test (against a populated
-        // Application table) is deferred — the Application model has a
-        // 'default' => null on its language column that DBI::createTable
-        // generates broken SQL for, which is a pre-existing DBI bug unrelated
-        // to MCP. This empty-account test still proves the tool can be
-        // instantiated, takes Api by injection, and short-circuits cleanly
-        // when there's no account context.
         $tools = new \Kyte\Mcp\Tools\AccountTools($this->api);
+        // $api->account is the empty ModelObject from setUp — id is unset
         $this->assertSame([], $tools->listApplications());
+    }
+
+    public function testListApplicationsToolReturnsAccountScopedApps(): void
+    {
+        // Populate $api->account as McpTokenStrategy::preAuth would in a real
+        // request, then drive AccountTools directly. Equivalent to the
+        // tool-dispatch path the SDK takes after initialize → tools/call, but
+        // skips the multi-step session handshake — that was already verified
+        // end-to-end during the SDK evaluation on dev.
+        $this->api->account->retrieve('id', $this->accountId);
+
+        $tools = new \Kyte\Mcp\Tools\AccountTools($this->api);
+        $apps = $tools->listApplications();
+
+        $this->assertCount(1, $apps);
+        $this->assertSame(self::APP_IDENT, $apps[0]['identifier']);
+        $this->assertSame('Endpoint Test App', $apps[0]['name']);
+        $this->assertIsInt($apps[0]['id']);
     }
 }
