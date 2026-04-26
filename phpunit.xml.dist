@@ -9,6 +9,7 @@
       <file>tests/McpControllerToolsTest.php</file>
       <file>tests/McpEndpointTest.php</file>
       <file>tests/McpModelToolsTest.php</file>
+      <file>tests/McpPageToolsTest.php</file>
       <file>tests/McpScopeTest.php</file>
       <file>tests/McpTokenStrategyTest.php</file>
       <file>tests/ModelTest.php</file>
