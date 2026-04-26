@@ -6,8 +6,11 @@ use Kyte\Core\Auth\AuthDispatcher;
 use Kyte\Core\Auth\McpTokenStrategy;
 use Kyte\Exception\SessionException;
 use Laminas\HttpHandlerRunner\Emitter\SapiEmitter;
+use Mcp\Capability\Registry as McpRegistry;
 use Mcp\Capability\Registry\Container as McpContainer;
+use Mcp\Capability\Registry\ReferenceHandler;
 use Mcp\Server;
+use Mcp\Server\Handler\Request\CallToolHandler;
 use Mcp\Server\Session\FileSessionStore;
 use Mcp\Server\Transport\StreamableHttpTransport;
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -76,6 +79,18 @@ final class Endpoint
 
         $sessionDir = self::sessionDirectory();
 
+        // Build registry + inner CallToolHandler ourselves so we can wrap the
+        // dispatch with ScopedCallToolHandler. The Builder otherwise creates
+        // these privately inside build(); registering our own registry via
+        // setRegistry() lets the SDK's loaders populate the same instance our
+        // wrapper later reads from. addRequestHandler() prepends to the
+        // handler list, so our wrapper wins the first-supports-wins dispatch
+        // in Server\Protocol over the SDK's default CallToolHandler.
+        $registry        = new McpRegistry();
+        $referenceHandler = new ReferenceHandler($container);
+        $innerCallTool   = new CallToolHandler($registry, $referenceHandler);
+        $scopedCallTool  = new ScopedCallToolHandler($innerCallTool, new ScopeRegistry($registry), $api);
+
         $server = Server::builder()
             ->setServerInfo(
                 'Kyte MCP',
@@ -89,6 +104,8 @@ final class Endpoint
                 'Phase 2 commits.'
             )
             ->setContainer($container)
+            ->setRegistry($registry)
+            ->addRequestHandler($scopedCallTool)
             ->setSession(new FileSessionStore($sessionDir))
             ->setDiscovery(__DIR__ . '/Tools')
             ->build();

@@ -2,6 +2,7 @@
 namespace Kyte\Mcp\Tools;
 
 use Kyte\Core\Api;
+use Kyte\Mcp\Attribute\RequiresScope;
 use Mcp\Capability\Attribute\McpTool;
 
 /**
@@ -28,6 +29,7 @@ final class AccountTools
      * @return array<int, array{id:int, name:string, identifier:string}>
      */
     #[McpTool(name: 'list_applications', description: 'List Kyte applications for the authenticated account.')]
+    #[RequiresScope('read')]
     public function listApplications(): array
     {
         $accountId = isset($this->api->account->id) ? (int)$this->api->account->id : 0;
