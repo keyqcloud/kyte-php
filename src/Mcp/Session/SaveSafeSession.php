@@ -6,6 +6,24 @@ use Mcp\Server\Session\Session;
 /**
  * Session subclass that fixes an upstream mcp/sdk v0.4.x bug.
  *
+ * ============================================================
+ * CLEANUP TRACKER — DELETE THIS WHOLE FILE WHEN:
+ *   - the upstream PR for Session::save() lazy-init lands, AND
+ *   - composer.json bumps `mcp/sdk` to the version that includes it.
+ *
+ * When you delete this file, also delete:
+ *   - src/Mcp/Session/SaveSafeSessionFactory.php
+ *   - tests/SaveSafeSessionTest.php
+ *   - the corresponding entry in phpunit.xml.dist
+ *   - the `setSession(..., new SaveSafeSessionFactory())` 2nd arg in
+ *     src/Mcp/Endpoint.php — revert to one-arg setSession($store)
+ *   - the `use Kyte\Mcp\Session\SaveSafeSessionFactory;` import in Endpoint
+ *
+ * Tracked in docs/design/upstream-sdk-followups.md alongside the PR/issue
+ * drafts. No /schedule reminder by Kenneth's call (2026-04-27); rediscover
+ * via the followups doc or by editing this file.
+ * ============================================================
+ *
  * `Mcp\Server\Session\Session::save()` accesses the typed property
  * `$this->data` directly:
  *
