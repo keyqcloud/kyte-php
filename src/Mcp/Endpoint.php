@@ -5,6 +5,7 @@ use Kyte\Core\Api;
 use Kyte\Core\Auth\AuthDispatcher;
 use Kyte\Core\Auth\McpTokenStrategy;
 use Kyte\Exception\SessionException;
+use Kyte\Mcp\Session\SaveSafeSessionFactory;
 use Laminas\HttpHandlerRunner\Emitter\SapiEmitter;
 use Mcp\Capability\Registry as McpRegistry;
 use Mcp\Capability\Registry\Container as McpContainer;
@@ -113,7 +114,7 @@ final class Endpoint
             ->setContainer($container)
             ->setRegistry($registry)
             ->addRequestHandler($scopedCallTool)
-            ->setSession(new FileSessionStore($sessionDir))
+            ->setSession(new FileSessionStore($sessionDir), new SaveSafeSessionFactory())
             ->setDiscovery(__DIR__ . '/Tools')
             ->build();
 

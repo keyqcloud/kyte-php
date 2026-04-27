@@ -14,6 +14,7 @@
       <file>tests/McpScopeTest.php</file>
       <file>tests/McpTokenStrategyTest.php</file>
       <file>tests/ModelTest.php</file>
+      <file>tests/SaveSafeSessionTest.php</file>
       <file>tests/SignatureTest.php</file>
       <file>tests/VersionTest.php</file>
     </testsuite>
