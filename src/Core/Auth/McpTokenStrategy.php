@@ -163,9 +163,17 @@ class McpTokenStrategy implements AuthStrategy
         return $token === '' ? null : $token;
     }
 
+    /**
+     * Real client IP for IP allowlist + audit fields. When the install
+     * sits behind Cloudflare/an LB, REMOTE_ADDR is the proxy's edge IP
+     * — useless for the allowlist and misleading in audit rows. The
+     * helper resolves the real client IP behind a per-install trust
+     * gate (KYTE_TRUST_PROXY_IP_HEADERS). See Kyte\Mcp\Util\ClientIp
+     * for the resolution policy and security rationale.
+     */
     private function clientIp(): string
     {
-        return $_SERVER['REMOTE_ADDR'] ?? '';
+        return \Kyte\Mcp\Util\ClientIp::resolve();
     }
 
     /**
