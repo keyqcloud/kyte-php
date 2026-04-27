@@ -107,6 +107,29 @@ class McpTokenStrategy implements AuthStrategy
             'last_used_at' => $now,
             'last_used_ip' => $this->clientIp(),
         ]);
+
+        // MCP_TOKEN_USE audit row per design doc R7. Best-effort — the auth
+        // decision still stands if the log write fails. The token's id goes
+        // in record_id (not request_data) to dodge the redactSensitive
+        // "token" substring match that would blank a token_id field.
+        try {
+            \Kyte\Core\ActivityLogger::getInstance()->log(
+                'MCP_TOKEN_USE',
+                'KyteMCPToken',
+                'token_prefix',
+                (string)$token->token_prefix,
+                [
+                    'scopes'   => $this->scopes,
+                    'ip'       => $this->clientIp(),
+                ],
+                200,
+                'authenticated',
+                null,
+                (int)$token->id
+            );
+        } catch (\Throwable $e) {
+            error_log('McpTokenStrategy: failed to log MCP_TOKEN_USE - ' . $e->getMessage());
+        }
     }
 
     /**

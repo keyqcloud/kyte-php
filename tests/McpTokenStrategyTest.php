@@ -38,9 +38,11 @@ class McpTokenStrategyTest extends TestCase
 
         \Kyte\Core\DBI::createTable(KyteAccount);
         \Kyte\Core\DBI::createTable(KyteMCPToken);
+        \Kyte\Core\DBI::createTable(KyteActivityLog);
 
         \Kyte\Core\DBI::query("DELETE FROM `KyteAccount` WHERE number = '" . self::FIXED_ACCOUNT . "'");
         \Kyte\Core\DBI::query("DELETE FROM `KyteMCPToken` WHERE token_prefix LIKE 'kmcp_live_%'");
+        \Kyte\Core\DBI::query("DELETE FROM `KyteActivityLog` WHERE action = 'MCP_TOKEN_USE'");
 
         $account = new \Kyte\Core\ModelObject(KyteAccount);
         $account->create([
@@ -137,6 +139,29 @@ class McpTokenStrategyTest extends TestCase
         $fresh->retrieve('token_hash', hash('sha256', self::RAW_TOKEN));
         $this->assertGreaterThanOrEqual($before, (int)$fresh->last_used_at);
         $this->assertSame(self::CLIENT_IP, $fresh->last_used_ip);
+    }
+
+    public function testPreAuthLogsMcpTokenUseAuditRow(): void
+    {
+        $this->setAuthHeader(self::RAW_TOKEN);
+        $this->strategy->preAuth($this->api);
+
+        $rows = \Kyte\Core\DBI::query(
+            "SELECT * FROM `KyteActivityLog` WHERE action = 'MCP_TOKEN_USE' ORDER BY id DESC LIMIT 1"
+        );
+        $this->assertNotEmpty($rows, 'Expected an MCP_TOKEN_USE row after successful auth');
+
+        $row = $rows[0];
+        $this->assertSame('KyteMCPToken', $row['model_name']);
+        $this->assertSame('token_prefix', $row['field']);
+        $this->assertSame(substr(self::RAW_TOKEN, 0, 16), $row['value']);
+        $this->assertSame('200', (string)$row['response_code']);
+        $this->assertSame('authenticated', $row['response_status']);
+        $this->assertSame((int)$this->strategy->token->id, (int)$row['record_id']);
+
+        $payload = json_decode($row['request_data'], true);
+        $this->assertSame(['read', 'draft'], $payload['scopes']);
+        $this->assertSame(self::CLIENT_IP, $payload['ip']);
     }
 
     public function testPreAuthRejectsUnknownToken(): void
