@@ -5,6 +5,16 @@ use PHPUnit\Framework\TestCase;
 
 class ModelTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        // Instantiating Api defines the constants ModelObject reads at write
+        // time (STRICT_TYPING etc.). Previously this test only worked when
+        // run as part of the full suite — some other test class would have
+        // already constructed Api. Doing it here makes the file runnable in
+        // isolation (e.g. `phpunit --filter ModelTest`).
+        new \Kyte\Core\Api();
+    }
+
     public function testInitDB() {
         $this->assertIsObject(\Kyte\Core\DBI::dbInit(KYTE_DB_USERNAME, KYTE_DB_PASSWORD, KYTE_DB_HOST, KYTE_DB_DATABASE, KYTE_DB_CHARSET, 'InnoDB'));
     }
@@ -107,6 +117,13 @@ class ModelTest extends TestCase
         ];
 
         define('TestTable', $TestTable);
+
+        // Drop any prior TestTable so re-runs against the same MariaDB
+        // container start clean. Without this, rows from previous runs
+        // accumulate and the count assertions below (2, 3, etc.) start
+        // failing off-by-N. Surfaced when ModelTest is re-run without
+        // tearing down the docker container.
+        \Kyte\Core\DBI::query("DROP TABLE IF EXISTS `TestTable`");
 
         $this->assertTrue(\Kyte\Core\DBI::createTable(TestTable));
 
