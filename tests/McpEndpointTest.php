@@ -76,6 +76,18 @@ class McpEndpointTest extends TestCase
         $this->api->account = new \Kyte\Core\ModelObject(KyteAccount);
 
         $_SERVER = ['REMOTE_ADDR' => '127.0.0.1'];
+
+        // Each test starts with a clean MCP session directory. The SDK's
+        // session machinery rejects a second initialize for the same client
+        // when prior session files linger; wiping in setUp avoids
+        // cross-test interference now that multiple tests do a real
+        // initialize round-trip (the Origin tests added below).
+        $sessionDir = sys_get_temp_dir() . '/kyte-mcp-sessions';
+        if (is_dir($sessionDir)) {
+            foreach (glob($sessionDir . '/*') as $f) {
+                @unlink($f);
+            }
+        }
     }
 
     private function rpcRequest(string $authHeader, array $body): ServerRequestInterface
@@ -96,6 +108,57 @@ class McpEndpointTest extends TestCase
             ->withHeader('Content-Type', 'application/json')
             ->withHeader('Accept', 'application/json, text/event-stream')
             ->withBody($this->psr17->createStream($json));
+    }
+
+    public function testRequestWithoutOriginPasses(): void
+    {
+        // CLI clients (Claude Code, curl) don't send Origin. We must not
+        // require it — see Endpoint::checkOrigin docblock for the full
+        // rationale. This is the canonical happy-path; the existing
+        // initialize tests below also exercise it transitively.
+        $request = $this->rpcRequest('Bearer ' . self::RAW_TOKEN, [
+            'jsonrpc' => '2.0', 'id' => 1, 'method' => 'initialize',
+            'params' => ['protocolVersion' => '2025-11-25', 'capabilities' => new \stdClass(), 'clientInfo' => ['name' => 'no-origin', 'version' => '0.0.1']],
+        ]);
+
+        $response = \Kyte\Mcp\Endpoint::process($this->api, $request);
+        $this->assertSame(200, $response->getStatusCode());
+    }
+
+    public function testRequestWithUnknownOriginRejectedWith403(): void
+    {
+        // Default state: MCP_ALLOWED_ORIGINS undefined → empty allowlist →
+        // every browser Origin gets denied.
+        $request = $this->rpcRequest('Bearer ' . self::RAW_TOKEN, [
+            'jsonrpc' => '2.0', 'id' => 1, 'method' => 'initialize',
+            'params' => ['protocolVersion' => '2025-11-25', 'capabilities' => new \stdClass(), 'clientInfo' => ['name' => 'malicious', 'version' => '0.0.1']],
+        ])->withHeader('Origin', 'https://attacker.example');
+
+        $response = \Kyte\Mcp\Endpoint::process($this->api, $request);
+
+        $this->assertSame(403, $response->getStatusCode());
+        $payload = json_decode((string)$response->getBody(), true);
+        $this->assertSame(-32011, $payload['error']['code']);
+        $this->assertStringContainsString('attacker.example', $payload['error']['message']);
+    }
+
+    public function testRequestWithAllowlistedOriginPasses(): void
+    {
+        // Define the constant for this test only. PHP doesn't allow undefining
+        // constants, so subsequent tests in the same run will see this allowlist
+        // — but each test that cares either sets a non-overlapping origin or
+        // sends no Origin at all, so there's no cross-test interference.
+        if (!defined('MCP_ALLOWED_ORIGINS')) {
+            define('MCP_ALLOWED_ORIGINS', 'https://claude.ai,https://app.example.com');
+        }
+
+        $request = $this->rpcRequest('Bearer ' . self::RAW_TOKEN, [
+            'jsonrpc' => '2.0', 'id' => 1, 'method' => 'initialize',
+            'params' => ['protocolVersion' => '2025-11-25', 'capabilities' => new \stdClass(), 'clientInfo' => ['name' => 'browser', 'version' => '0.0.1']],
+        ])->withHeader('Origin', 'https://claude.ai');
+
+        $response = \Kyte\Mcp\Endpoint::process($this->api, $request);
+        $this->assertSame(200, $response->getStatusCode());
     }
 
     public function testInitializeReturnsServerCapabilitiesAndSessionId(): void

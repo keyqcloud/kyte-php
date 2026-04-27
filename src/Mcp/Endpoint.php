@@ -60,6 +60,13 @@ final class Endpoint
     {
         $psr17 = new Psr17Factory();
 
+        // Origin check runs before auth — DNS rebinding doesn't care about
+        // tokens, and rejecting fast saves a DB hit on the bearer lookup.
+        $originError = self::checkOrigin($request);
+        if ($originError !== null) {
+            return self::jsonRpcError($psr17, 403, -32011, $originError);
+        }
+
         try {
             self::authenticate($api, $request);
         } catch (SessionException $e) {
@@ -146,6 +153,48 @@ final class Endpoint
 
         $api->mcpToken  = $strategy->token;
         $api->mcpScopes = $strategy->scopes;
+    }
+
+    /**
+     * MCP spec § Security requires servers to validate the Origin header to
+     * prevent DNS rebinding attacks. The attack vector is browser-only:
+     * malicious JavaScript on attacker.com tricks the victim's browser into
+     * POSTing to a Kyte instance, exploiting the bearer-token auth that the
+     * browser may have cached. CLI clients (Claude Code) are not affected
+     * because there is no shared-cookie / shared-credential context for an
+     * attacker to exploit.
+     *
+     * Policy:
+     *   - No Origin header → allow. CLI clients (Claude Code, curl, gust)
+     *     don't send Origin. Forcing one would break every non-browser
+     *     integration without a security benefit.
+     *   - Origin present + matches allowlist → allow.
+     *   - Origin present + no match → 403 + JSON-RPC -32011.
+     *
+     * Allowlist source: the per-install `MCP_ALLOWED_ORIGINS` PHP constant
+     * (CSV of full origins, e.g. `"https://claude.ai,https://app.example.com"`).
+     * Empty / undefined means "no browser origins are allowed" — Claude.ai
+     * custom-connector users must opt in by setting the constant in their
+     * config.php. Restrictive default is the right call for healthcare
+     * deployments where a permissive allowlist would be a compliance finding.
+     *
+     * Returns the rejection reason string on failure, or null on pass.
+     */
+    private static function checkOrigin(ServerRequestInterface $request): ?string
+    {
+        $origin = trim($request->getHeaderLine('Origin'));
+        if ($origin === '') {
+            return null;
+        }
+
+        $allowed = defined('MCP_ALLOWED_ORIGINS') ? (string)MCP_ALLOWED_ORIGINS : '';
+        $list = array_values(array_filter(array_map('trim', explode(',', $allowed)), fn ($v) => $v !== ''));
+
+        if (in_array($origin, $list, true)) {
+            return null;
+        }
+
+        return "Origin '{$origin}' is not in the MCP_ALLOWED_ORIGINS allowlist.";
     }
 
     private static function sessionDirectory(): string
