@@ -34,7 +34,7 @@ final class ControllerTools
      * inspect. Virtual controllers (no dataModel) appear too.
      *
      * @param int $application_id Application id from list_applications.
-     * @return array<int, array{id:int, name:string, description:?string, dataModel:?int, kyte_locked:bool}>
+     * @return array{controllers: array<int, array{id:int, name:string, description:?string, dataModel:?int, kyte_locked:bool}>}
      */
     #[McpTool(name: 'list_controllers', description: 'List controllers in a Kyte application. Returns metadata only — call read_controller for code.')]
     #[RequiresScope('read')]
@@ -42,7 +42,7 @@ final class ControllerTools
     {
         $accountId = $this->accountIdOrZero();
         if ($accountId === 0 || !$this->applicationBelongsToAccount($application_id, $accountId)) {
-            return [];
+            return ['controllers' => []];
         }
 
         $model = new \Kyte\Core\Model(\Controller);
@@ -60,7 +60,7 @@ final class ControllerTools
                 'kyte_locked' => (int)$controller->kyte_locked === 1,
             ];
         }
-        return $out;
+        return ['controllers' => $out];
     }
 
     /**
@@ -106,7 +106,7 @@ final class ControllerTools
      * exist and what they do; this tool just surfaces what's there.
      *
      * @param int $controller_id Controller id from list_controllers.
-     * @return array<int, array{id:int, name:string, type:string, description:?string, kyte_locked:bool}>
+     * @return array{functions: array<int, array{id:int, name:string, type:string, description:?string, kyte_locked:bool}>}
      */
     #[McpTool(name: 'list_functions', description: 'List functions (hooks + custom) attached to a Kyte controller.')]
     #[RequiresScope('read')]
@@ -114,7 +114,7 @@ final class ControllerTools
     {
         $accountId = $this->accountIdOrZero();
         if ($accountId === 0 || !$this->controllerBelongsToAccount($controller_id, $accountId)) {
-            return [];
+            return ['functions' => []];
         }
 
         $model = new \Kyte\Core\Model(constant('Function'));
@@ -132,7 +132,7 @@ final class ControllerTools
                 'kyte_locked' => (int)$fn->kyte_locked === 1,
             ];
         }
-        return $out;
+        return ['functions' => $out];
     }
 
     /**

@@ -35,7 +35,7 @@ final class ModelTools
      * full structure via read_model when it picks one to inspect.
      *
      * @param int $application_id Application id from list_applications.
-     * @return array<int, array{id:int, name:string, kyte_locked:bool}>
+     * @return array{models: array<int, array{id:int, name:string, kyte_locked:bool}>}
      */
     #[McpTool(name: 'list_models', description: 'List data models in a Kyte application. Returns metadata only — call read_model for the full schema.')]
     #[RequiresScope('read')]
@@ -43,7 +43,7 @@ final class ModelTools
     {
         $accountId = $this->accountIdOrZero();
         if ($accountId === 0 || !$this->applicationBelongsToAccount($application_id, $accountId)) {
-            return [];
+            return ['models' => []];
         }
 
         $model = new \Kyte\Core\Model(\DataModel);
@@ -59,7 +59,7 @@ final class ModelTools
                 'kyte_locked' => (int)$dm->kyte_locked === 1,
             ];
         }
-        return $out;
+        return ['models' => $out];
     }
 
     /**

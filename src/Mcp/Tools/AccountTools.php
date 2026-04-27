@@ -26,7 +26,13 @@ final class AccountTools
      * X-Kyte-AppId for traditional API calls if cross-protocol bridging is
      * needed.
      *
-     * @return array<int, array{id:int, name:string, identifier:string}>
+     * Wrapped in {applications: [...]} rather than returning a bare list:
+     * MCP spec requires structured tool output to be a JSON object (record),
+     * not a list. The mcp/sdk's extractStructuredContent passes any returned
+     * array through verbatim, so a bare list violates client-side schema
+     * validation. Same wrapping pattern across every list_* tool.
+     *
+     * @return array{applications: array<int, array{id:int, name:string, identifier:string}>}
      */
     #[McpTool(name: 'list_applications', description: 'List Kyte applications for the authenticated account.')]
     #[RequiresScope('read')]
@@ -34,7 +40,7 @@ final class AccountTools
     {
         $accountId = isset($this->api->account->id) ? (int)$this->api->account->id : 0;
         if ($accountId === 0) {
-            return [];
+            return ['applications' => []];
         }
 
         $model = new \Kyte\Core\Model(\Application);
@@ -48,6 +54,6 @@ final class AccountTools
                 'identifier' => (string)($app->identifier ?? ''),
             ];
         }
-        return $out;
+        return ['applications' => $out];
     }
 }

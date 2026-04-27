@@ -114,7 +114,8 @@ class McpControllerToolsTest extends TestCase
 
     public function testListControllersReturnsControllersForOwnApp(): void
     {
-        $rows = $this->tools->listControllers($this->ownAppId);
+        $result = $this->tools->listControllers($this->ownAppId);
+        $rows = $result['controllers'];
 
         $this->assertCount(1, $rows);
         $this->assertSame($this->ownControllerId, $rows[0]['id']);
@@ -124,8 +125,8 @@ class McpControllerToolsTest extends TestCase
 
     public function testListControllersRejectsForeignApplicationId(): void
     {
-        $rows = $this->tools->listControllers($this->otherAppId);
-        $this->assertSame([], $rows, 'list_controllers must not return controllers for an application owned by another account');
+        $result = $this->tools->listControllers($this->otherAppId);
+        $this->assertSame(['controllers' => []], $result, 'list_controllers must not return controllers for an application owned by another account');
     }
 
     public function testReadControllerReturnsFullRecordWithCode(): void
@@ -147,7 +148,8 @@ class McpControllerToolsTest extends TestCase
 
     public function testListFunctionsReturnsFunctionsForOwnController(): void
     {
-        $rows = $this->tools->listFunctions($this->ownControllerId);
+        $result = $this->tools->listFunctions($this->ownControllerId);
+        $rows = $result['functions'];
 
         $this->assertCount(1, $rows);
         $this->assertSame($this->ownFunctionId, $rows[0]['id']);
@@ -156,8 +158,8 @@ class McpControllerToolsTest extends TestCase
 
     public function testListFunctionsRejectsForeignControllerId(): void
     {
-        $rows = $this->tools->listFunctions($this->otherControllerId);
-        $this->assertSame([], $rows);
+        $result = $this->tools->listFunctions($this->otherControllerId);
+        $this->assertSame(['functions' => []], $result);
     }
 
     public function testReadFunctionWithoutVersionReturnsLiveSource(): void

@@ -83,7 +83,8 @@ class McpModelToolsTest extends TestCase
 
     public function testListModelsReturnsModelsForOwnApp(): void
     {
-        $rows = $this->tools->listModels($this->ownAppId);
+        $result = $this->tools->listModels($this->ownAppId);
+        $rows = $result['models'];
 
         // Two own models in this app: one well-formed, one malformed.
         $this->assertCount(2, $rows);
@@ -94,8 +95,8 @@ class McpModelToolsTest extends TestCase
 
     public function testListModelsRejectsForeignApplicationId(): void
     {
-        $rows = $this->tools->listModels($this->otherAppId);
-        $this->assertSame([], $rows);
+        $result = $this->tools->listModels($this->otherAppId);
+        $this->assertSame(['models' => []], $result);
     }
 
     public function testReadModelDecodesJsonDefinition(): void

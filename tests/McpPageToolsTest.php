@@ -103,19 +103,21 @@ class McpPageToolsTest extends TestCase
 
     public function testListSitesReturnsSitesForOwnApp(): void
     {
-        $rows = $this->tools->listSites($this->ownAppId);
+        $result = $this->tools->listSites($this->ownAppId);
+        $rows = $result['sites'];
         $this->assertCount(1, $rows);
         $this->assertSame('McpPageTestOwnSite', $rows[0]['name']);
     }
 
     public function testListSitesRejectsForeignApplicationId(): void
     {
-        $this->assertSame([], $this->tools->listSites($this->otherAppId));
+        $this->assertSame(['sites' => []], $this->tools->listSites($this->otherAppId));
     }
 
     public function testListPagesReturnsPagesOnOwnSite(): void
     {
-        $rows = $this->tools->listPages($this->ownSiteId);
+        $result = $this->tools->listPages($this->ownSiteId);
+        $rows = $result['pages'];
         $this->assertCount(2, $rows, 'Should include own page and the no-versions page');
         $titles = array_column($rows, 'title');
         $this->assertContains('McpPageTestOwnHome', $titles);
@@ -124,7 +126,7 @@ class McpPageToolsTest extends TestCase
 
     public function testListPagesRejectsForeignSiteId(): void
     {
-        $this->assertSame([], $this->tools->listPages($this->otherSiteId), 'Foreign site_id must not return its pages');
+        $this->assertSame(['pages' => []], $this->tools->listPages($this->otherSiteId), 'Foreign site_id must not return its pages');
     }
 
     public function testReadPageWithoutVersionReturnsCurrentContent(): void

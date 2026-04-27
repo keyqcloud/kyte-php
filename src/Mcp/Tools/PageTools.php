@@ -45,7 +45,7 @@ final class PageTools
      * — see class docblock for rationale.
      *
      * @param int $application_id Application id from list_applications.
-     * @return array<int, array{id:int, name:string, status:string, region:?string, default_lang:?string, description:?string}>
+     * @return array{sites: array<int, array{id:int, name:string, status:string, region:?string, default_lang:?string, description:?string}>}
      */
     #[McpTool(name: 'list_sites', description: 'List sites in a Kyte application.')]
     #[RequiresScope('read')]
@@ -53,7 +53,7 @@ final class PageTools
     {
         $accountId = $this->accountIdOrZero();
         if ($accountId === 0 || !$this->applicationBelongsToAccount($application_id, $accountId)) {
-            return [];
+            return ['sites' => []];
         }
 
         $model = new \Kyte\Core\Model(\KyteSite);
@@ -72,14 +72,14 @@ final class PageTools
                 'description'  => $site->description !== null ? (string)$site->description : null,
             ];
         }
-        return $out;
+        return ['sites' => $out];
     }
 
     /**
      * List pages on a site.
      *
      * @param int $site_id Site id from list_sites.
-     * @return array<int, array{id:int, title:string, page_type:string, state:int, lang:?string, sitemap_include:bool}>
+     * @return array{pages: array<int, array{id:int, title:string, page_type:string, state:int, lang:?string, sitemap_include:bool}>}
      */
     #[McpTool(name: 'list_pages', description: 'List pages on a Kyte site. Returns metadata only — call read_page for HTML/CSS/JS content.')]
     #[RequiresScope('read')]
@@ -87,7 +87,7 @@ final class PageTools
     {
         $accountId = $this->accountIdOrZero();
         if ($accountId === 0 || !$this->siteBelongsToAccount($site_id, $accountId)) {
-            return [];
+            return ['pages' => []];
         }
 
         $model = new \Kyte\Core\Model(\KytePage);
@@ -106,7 +106,7 @@ final class PageTools
                 'sitemap_include' => (int)$page->sitemap_include === 1,
             ];
         }
-        return $out;
+        return ['pages' => $out];
     }
 
     /**

@@ -191,7 +191,7 @@ class McpEndpointTest extends TestCase
     {
         $tools = new \Kyte\Mcp\Tools\AccountTools($this->api);
         // $api->account is the empty ModelObject from setUp — id is unset
-        $this->assertSame([], $tools->listApplications());
+        $this->assertSame(['applications' => []], $tools->listApplications());
     }
 
     public function testListApplicationsToolReturnsAccountScopedApps(): void
@@ -204,7 +204,8 @@ class McpEndpointTest extends TestCase
         $this->api->account->retrieve('id', $this->accountId);
 
         $tools = new \Kyte\Mcp\Tools\AccountTools($this->api);
-        $apps = $tools->listApplications();
+        $result = $tools->listApplications();
+        $apps = $result['applications'];
 
         $this->assertCount(1, $apps);
         $this->assertSame(self::APP_IDENT, $apps[0]['identifier']);
