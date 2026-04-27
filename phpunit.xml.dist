@@ -12,6 +12,7 @@
       <file>tests/McpModelToolsTest.php</file>
       <file>tests/McpPageToolsTest.php</file>
       <file>tests/McpScopeTest.php</file>
+      <file>tests/McpTokenControllerTest.php</file>
       <file>tests/McpTokenStrategyTest.php</file>
       <file>tests/ModelTest.php</file>
       <file>tests/SaveSafeSessionTest.php</file>

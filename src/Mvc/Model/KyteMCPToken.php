@@ -30,11 +30,15 @@ $KyteMCPToken = [
 	'struct' => [
 		// The sha256 of the raw token (hex, 64 chars). Only the hash is stored;
 		// the raw token is shown once at creation and never recoverable.
+		// `protected` keeps the hash out of list/get responses — knowing the
+		// hash doesn't grant access (it's a hash, not a key) but there's no
+		// reason to surface it; UI shows the prefix instead.
 		'token_hash'		=> [
 			'type'		=> 's',
 			'required'	=> true,
 			'size'		=> 64,
 			'date'		=> false,
+			'protected'	=> true,
 		],
 
 		// First ~12 chars of raw token (e.g. "kmcp_live_abcd"). Displayed in
