@@ -3,6 +3,7 @@
   <testsuites>
     <testsuite name="unit">
       <file>tests/ApiTest.php</file>
+      <file>tests/Bz2CodecTest.php</file>
       <file>tests/DatabaseTest.php</file>
       <file>tests/FunctionTest.php</file>
       <file>tests/HmacSessionStrategyTest.php</file>

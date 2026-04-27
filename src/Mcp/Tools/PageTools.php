@@ -3,6 +3,7 @@ namespace Kyte\Mcp\Tools;
 
 use Kyte\Core\Api;
 use Kyte\Mcp\Attribute\RequiresScope;
+use Kyte\Mcp\Util\Bz2Codec;
 use Mcp\Capability\Attribute\McpTool;
 
 /**
@@ -196,9 +197,9 @@ final class PageTools
         }
 
         return array_merge($base, [
-            'html'         => (string)($content->html ?? ''),
-            'stylesheet'   => (string)($content->stylesheet ?? ''),
-            'javascript'   => (string)($content->javascript ?? ''),
+            'html'         => Bz2Codec::decompressIfBz2($content->html),
+            'stylesheet'   => Bz2Codec::decompressIfBz2($content->stylesheet),
+            'javascript'   => Bz2Codec::decompressIfBz2($content->javascript),
             'version'      => (int)$version->version_number,
             'version_type' => (string)($version->version_type ?? ''),
         ]);

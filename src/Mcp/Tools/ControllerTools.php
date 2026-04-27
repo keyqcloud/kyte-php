@@ -3,6 +3,7 @@ namespace Kyte\Mcp\Tools;
 
 use Kyte\Core\Api;
 use Kyte\Mcp\Attribute\RequiresScope;
+use Kyte\Mcp\Util\Bz2Codec;
 use Mcp\Capability\Attribute\McpTool;
 
 /**
@@ -92,7 +93,7 @@ final class ControllerTools
             'description' => $controller->description !== null ? (string)$controller->description : null,
             'dataModel'   => $controller->dataModel !== null ? (int)$controller->dataModel : null,
             'application' => $controller->application !== null ? (int)$controller->application : null,
-            'code'        => (string)($controller->code ?? ''),
+            'code'        => Bz2Codec::decompressIfBz2($controller->code),
             'kyte_locked' => (int)$controller->kyte_locked === 1,
         ];
     }
@@ -176,7 +177,7 @@ final class ControllerTools
         ];
 
         if ($version_number === null) {
-            return array_merge($base, ['code' => (string)($fn->code ?? '')]);
+            return array_merge($base, ['code' => Bz2Codec::decompressIfBz2($fn->code)]);
         }
 
         $version = new \Kyte\Core\ModelObject(\KyteFunctionVersion);
@@ -198,7 +199,7 @@ final class ControllerTools
         // left-hand value on key collision, which would silently drop the
         // version metadata.
         return array_merge($base, [
-            'code'         => (string)($content->code ?? ''),
+            'code'         => Bz2Codec::decompressIfBz2($content->code),
             'version'      => (int)$version->version_number,
             'version_type' => (string)($version->version_type ?? ''),
         ]);

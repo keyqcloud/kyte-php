@@ -6,7 +6,8 @@ RUN apt-get update \
         unzip \
         libcurl4-openssl-dev \
         libonig-dev \
-    && docker-php-ext-install mysqli curl mbstring \
+        libbz2-dev \
+    && docker-php-ext-install mysqli curl mbstring bz2 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
