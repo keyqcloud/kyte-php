@@ -16,7 +16,8 @@
         "laminas/laminas-httphandlerrunner": "^2.12"
     },
     "require-dev": {
-        "phpunit/phpunit": "*"
+        "phpunit/phpunit": "*",
+        "phpstan/phpstan": "^2.1"
     },
     "authors": [
         {

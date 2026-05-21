@@ -10,8 +10,14 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  test:
+    name: Unit tests (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
 
     services:
       mariadb:
@@ -30,10 +36,10 @@ jobs:
     steps:
     - uses: actions/checkout@v5
 
-    - name: Set up PHP
+    - name: Set up PHP ${{ matrix.php }}
       uses: shivammathur/setup-php@v2
       with:
-        php-version: '8.2'
+        php-version: ${{ matrix.php }}
         extensions: mysqli, curl, mbstring, json, bz2
         coverage: none
 
@@ -45,12 +51,15 @@ jobs:
       uses: actions/cache@v5
       with:
         path: vendor
-        key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+        key: ${{ runner.os }}-php${{ matrix.php }}-${{ hashFiles('**/composer.lock') }}
         restore-keys: |
-          ${{ runner.os }}-php-
+          ${{ runner.os }}-php${{ matrix.php }}-
 
     - name: Install dependencies
       run: composer install --prefer-dist --no-progress
+
+    - name: Composer audit (security advisories)
+      run: composer audit --no-dev
 
     - name: Run unit tests
       env:
@@ -60,3 +69,36 @@ jobs:
         KYTE_DB_DATABASE: kytedev
         KYTE_DB_CHARSET: utf8
       run: vendor/bin/phpunit --testsuite unit
+
+  static-analysis:
+    name: PHPStan static analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Set up PHP 8.2
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mysqli, curl, mbstring, json, bz2
+        coverage: none
+
+    - name: Cache Composer packages
+      uses: actions/cache@v5
+      with:
+        path: vendor
+        key: ${{ runner.os }}-php8.2-phpstan-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-php8.2-phpstan-
+          ${{ runner.os }}-php8.2-
+
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress
+
+    - name: Run PHPStan
+      # Level 1 with a baseline of the existing codebase's pre-existing
+      # findings (phpstan-baseline.neon). Going forward this enforces
+      # "no new level-1 violations"; the baseline shrinks as legacy
+      # patterns get cleaned up over time.
+      run: vendor/bin/phpstan analyse --memory-limit=512M --no-progress
