@@ -100,6 +100,19 @@ $DataModel = [
 			],
 		],
 
+		// Sensitive-data flag. When 1, any row of this model triggers
+		// body+response drop in activity/error logs and MCP read_model omits
+		// the model definition (or returns redacted). Distinct from per-field
+		// ModelAttribute.sensitive which redacts named fields only.
+		'sensitive'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 0,
+			'date'		=> false,
+		],
+
 		// framework attributes
 
 		'kyte_locked'	=> [
