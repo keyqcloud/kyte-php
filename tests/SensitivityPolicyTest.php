@@ -109,7 +109,7 @@ class SensitivityPolicyTest extends TestCase
         $policy = SensitivityPolicy::getInstance();
         $fields = $policy->getSensitiveFields('SensTestModelPlain', $this->ownAccountId);
         sort($fields);
-        $this->assertSame(['sens_test_beta', 'sens_test_alpha'], $fields);
+        $this->assertSame(['sens_test_alpha', 'sens_test_beta'], $fields);
     }
 
     public function testShouldDropPayloadTrueWhenControllerSensitive(): void
