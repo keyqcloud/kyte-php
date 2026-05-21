@@ -123,9 +123,12 @@ class JwtSessionStrategyTest extends TestCase
     public function testPreAuthRejectsTamperedSignature(): void
     {
         $jwt = $this->mintToken();
-        // Flip a character in the signature segment.
+        // Append a character to the signature segment — guaranteed to change
+        // the decoded bytes and fail HS256 verification regardless of which
+        // chars the signature happens to contain (strtr-based tamper was
+        // flaky when the random signature didn't contain the swap char).
         $parts = explode('.', $jwt);
-        $parts[2] = strtr($parts[2], 'a', 'b');
+        $parts[2] = $parts[2] . 'x';
         $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . implode('.', $parts);
 
         $strategy = new JwtSessionStrategy();
