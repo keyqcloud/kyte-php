@@ -113,6 +113,26 @@ class ActivityLogger
 
             $duration = round((microtime(true) - $this->requestStartTime) * 1000);
 
+            // Consult SensitivityPolicy. If the controller or model is flagged
+            // sensitive, drop the request body and the changes diff entirely.
+            // Otherwise apply per-field policy redaction in addition to the
+            // hardcoded SENSITIVE_FIELDS baseline. The model name is used for
+            // both the controller-tier and model-tier lookups — for model-
+            // bound controllers it matches both Controller.name and
+            // DataModel.name; for no-model controllers only the controller
+            // tier resolves, which is the intended scope.
+            $shouldDrop = SensitivityPolicy::getInstance()->shouldDropPayload(
+                $modelName, $modelName, $this->accountId
+            );
+
+            $requestDataForLog = null;
+            if (!$shouldDrop && $requestData) {
+                $redacted = is_array($requestData)
+                    ? SensitivityPolicy::getInstance()->redactFields($requestData, $modelName, $this->accountId)
+                    : $requestData;
+                $requestDataForLog = json_encode($this->redactSensitive($redacted));
+            }
+
             $logData = [
                 // WHO
                 'user_id' => $this->userId,
@@ -128,7 +148,7 @@ class ActivityLogger
                 'record_id' => $recordId,
                 'field' => $field,
                 'value' => $value ? substr((string)$value, 0, 255) : null,
-                'request_data' => $requestData ? json_encode($this->redactSensitive($requestData)) : null,
+                'request_data' => $requestDataForLog,
                 'changes' => null,
                 // RESULT
                 'response_code' => $responseCode,
@@ -147,9 +167,10 @@ class ActivityLogger
                 'kyte_account' => $this->accountId,
             ];
 
-            // For PUT actions, compute changes diff
-            if ($action === 'PUT' && $this->preUpdateState !== null && is_array($requestData)) {
-                $changes = $this->computeChanges($this->preUpdateState, $requestData);
+            // For PUT actions, compute changes diff — but only when the
+            // payload isn't being dropped entirely.
+            if ($action === 'PUT' && !$shouldDrop && $this->preUpdateState !== null && is_array($requestData)) {
+                $changes = $this->computeChanges($this->preUpdateState, $requestData, $modelName);
                 if (!empty($changes)) {
                     $logData['changes'] = json_encode($changes);
                 }
@@ -242,10 +263,20 @@ class ActivityLogger
     }
 
     /**
-     * Compute changes between old state and new data
+     * Compute changes between old state and new data.
+     *
+     * Per-field redaction consults SensitivityPolicy first (model-aware,
+     * configurable via ModelAttribute.sensitive) and the hardcoded
+     * SENSITIVE_FIELDS list as a baseline. Either marks a field for
+     * '[REDACTED]' in both old and new positions.
      */
-    private function computeChanges($oldState, $newData) {
+    private function computeChanges($oldState, $newData, $modelName = null) {
         $changes = [];
+
+        $policyFields = $modelName !== null
+            ? SensitivityPolicy::getInstance()->getSensitiveFields($modelName, $this->accountId)
+            : [];
+        $policyFieldsLower = array_map('strtolower', $policyFields);
 
         foreach ($newData as $field => $newValue) {
             // Skip internal/audit fields
@@ -254,11 +285,13 @@ class ActivityLogger
             }
 
             $keyLower = strtolower($field);
-            $isSensitive = false;
-            foreach (self::SENSITIVE_FIELDS as $sensitiveField) {
-                if (strpos($keyLower, strtolower($sensitiveField)) !== false) {
-                    $isSensitive = true;
-                    break;
+            $isSensitive = in_array($keyLower, $policyFieldsLower, true);
+            if (!$isSensitive) {
+                foreach (self::SENSITIVE_FIELDS as $sensitiveField) {
+                    if (strpos($keyLower, strtolower($sensitiveField)) !== false) {
+                        $isSensitive = true;
+                        break;
+                    }
                 }
             }
 
