@@ -59,6 +59,11 @@ final class ControllerTools
                 'description' => $controller->description !== null ? (string)$controller->description : null,
                 'dataModel'   => $controller->dataModel !== null ? (int)$controller->dataModel : null,
                 'kyte_locked' => (int)$controller->kyte_locked === 1,
+                // Surface the sensitive flag so callers (including AI clients)
+                // know up front which controllers will have source withheld
+                // by read_controller. Names and metadata are not themselves
+                // sensitive — only code is gated.
+                'sensitive'   => (int)($controller->sensitive ?? 0) === 1,
             ];
         }
         return ['controllers' => $out];
@@ -73,7 +78,7 @@ final class ControllerTools
      * @param int $controller_id Controller id from list_controllers.
      * @return array{id:int, name:string, description:?string, dataModel:?int, application:?int, code:string, kyte_locked:bool}|null
      */
-    #[McpTool(name: 'read_controller', description: 'Read a controller including its PHP source code.')]
+    #[McpTool(name: 'read_controller', description: 'Read a controller including its PHP source code. Code is withheld when the controller is flagged sensitive — the metadata still returns and the `sensitive` field is true.')]
     #[RequiresScope('read')]
     public function readController(int $controller_id): ?array
     {
@@ -87,14 +92,20 @@ final class ControllerTools
             return null;
         }
 
+        $isSensitive = (int)($controller->sensitive ?? 0) === 1;
+
         return [
             'id'          => (int)$controller->id,
             'name'        => (string)($controller->name ?? ''),
             'description' => $controller->description !== null ? (string)$controller->description : null,
             'dataModel'   => $controller->dataModel !== null ? (int)$controller->dataModel : null,
             'application' => $controller->application !== null ? (int)$controller->application : null,
-            'code'        => Bz2Codec::decompressIfBz2($controller->code),
+            // Source withheld when sensitive — same logic that drops body
+            // from activity/error logs. AI clients should treat a null code
+            // with sensitive:true as "exists, source intentionally gated."
+            'code'        => $isSensitive ? null : Bz2Codec::decompressIfBz2($controller->code),
             'kyte_locked' => (int)$controller->kyte_locked === 1,
+            'sensitive'   => $isSensitive,
         ];
     }
 
@@ -153,7 +164,7 @@ final class ControllerTools
      * @param int|null $version_number Optional KyteFunctionVersion.version_number.
      * @return array{id:int, name:string, type:string, description:?string, code:string, version:?int, version_type:?string}|null
      */
-    #[McpTool(name: 'read_function', description: 'Read a function source. Pass version_number to retrieve a specific historical snapshot, or omit for the live source.')]
+    #[McpTool(name: 'read_function', description: 'Read a function source. Pass version_number to retrieve a specific historical snapshot, or omit for the live source. Code is withheld when the parent controller is flagged sensitive.')]
     #[RequiresScope('read')]
     public function readFunction(int $function_id, ?int $version_number = null): ?array
     {
@@ -167,6 +178,19 @@ final class ControllerTools
             return null;
         }
 
+        // If the parent controller is sensitive the function source is
+        // gated regardless of which version is requested. Historical
+        // snapshots that pre-date the flag would still be off-limits;
+        // the flag applies to current policy, not the row state at
+        // snapshot time.
+        $parentSensitive = false;
+        if ($fn->controller !== null) {
+            $parent = new \Kyte\Core\ModelObject(\Controller);
+            if ($parent->retrieve('id', (int)$fn->controller) && (int)$parent->kyte_account === $accountId) {
+                $parentSensitive = (int)($parent->sensitive ?? 0) === 1;
+            }
+        }
+
         $base = [
             'id'           => (int)$fn->id,
             'name'         => (string)($fn->name ?? ''),
@@ -174,10 +198,13 @@ final class ControllerTools
             'description'  => $fn->description !== null ? (string)$fn->description : null,
             'version'      => null,
             'version_type' => null,
+            'sensitive'    => $parentSensitive,
         ];
 
         if ($version_number === null) {
-            return array_merge($base, ['code' => Bz2Codec::decompressIfBz2($fn->code)]);
+            return array_merge($base, [
+                'code' => $parentSensitive ? null : Bz2Codec::decompressIfBz2($fn->code),
+            ]);
         }
 
         $version = new \Kyte\Core\ModelObject(\KyteFunctionVersion);
@@ -199,7 +226,7 @@ final class ControllerTools
         // left-hand value on key collision, which would silently drop the
         // version metadata.
         return array_merge($base, [
-            'code'         => Bz2Codec::decompressIfBz2($content->code),
+            'code'         => $parentSensitive ? null : Bz2Codec::decompressIfBz2($content->code),
             'version'      => (int)$version->version_number,
             'version_type' => (string)($version->version_type ?? ''),
         ]);

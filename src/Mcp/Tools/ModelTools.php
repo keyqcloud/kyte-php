@@ -2,6 +2,7 @@
 namespace Kyte\Mcp\Tools;
 
 use Kyte\Core\Api;
+use Kyte\Core\SensitivityPolicy;
 use Kyte\Mcp\Attribute\RequiresScope;
 use Mcp\Capability\Attribute\McpTool;
 
@@ -57,6 +58,9 @@ final class ModelTools
                 'id'          => (int)$dm->id,
                 'name'        => (string)($dm->name ?? ''),
                 'kyte_locked' => (int)$dm->kyte_locked === 1,
+                // Surface the sensitive flag so callers know up front
+                // which models will have definition gated by read_model.
+                'sensitive'   => (int)($dm->sensitive ?? 0) === 1,
             ];
         }
         return ['models' => $out];
@@ -74,7 +78,7 @@ final class ModelTools
      * @param int $model_id DataModel id from list_models.
      * @return array{id:int, name:string, application:?int, kyte_locked:bool, definition:?array, raw_definition:?string}|null
      */
-    #[McpTool(name: 'read_model', description: 'Read a data model including its full schema definition (decoded from JSON).')]
+    #[McpTool(name: 'read_model', description: 'Read a data model including its schema definition. When the model is flagged sensitive the definition is withheld; when individual fields are flagged sensitive they are stripped from the returned struct.')]
     #[RequiresScope('read')]
     public function readModel(int $model_id): ?array
     {
@@ -88,6 +92,25 @@ final class ModelTools
             return null;
         }
 
+        $modelName = (string)($dm->name ?? '');
+        $isSensitive = (int)($dm->sensitive ?? 0) === 1;
+
+        // Model flagged sensitive → definition entirely withheld. Metadata
+        // (id, name, application) still returns so the caller can discover
+        // that the model exists; the definition itself is gated.
+        if ($isSensitive) {
+            return [
+                'id'              => (int)$dm->id,
+                'name'            => $modelName,
+                'application'     => $dm->application !== null ? (int)$dm->application : null,
+                'kyte_locked'     => (int)$dm->kyte_locked === 1,
+                'definition'      => null,
+                'raw_definition'  => null,
+                'sensitive'       => true,
+                'sensitive_fields' => [],
+            ];
+        }
+
         $raw = $dm->model_definition !== null ? (string)$dm->model_definition : null;
         $decoded = null;
         if ($raw !== null && $raw !== '') {
@@ -97,13 +120,29 @@ final class ModelTools
             }
         }
 
+        // Field-level: strip any field flagged sensitive from definition.struct.
+        // The caller still sees that those fields exist via the returned
+        // sensitive_fields list, but their type / size / FK metadata is
+        // withheld so it can't be reasoned over.
+        $sensitiveFields = SensitivityPolicy::getInstance()->getSensitiveFields($modelName, $accountId);
+        if ($decoded !== null && !empty($sensitiveFields) && isset($decoded['struct']) && is_array($decoded['struct'])) {
+            $sensitiveLower = array_map('strtolower', $sensitiveFields);
+            foreach (array_keys($decoded['struct']) as $fieldName) {
+                if (is_string($fieldName) && in_array(strtolower($fieldName), $sensitiveLower, true)) {
+                    unset($decoded['struct'][$fieldName]);
+                }
+            }
+        }
+
         return [
-            'id'             => (int)$dm->id,
-            'name'           => (string)($dm->name ?? ''),
-            'application'    => $dm->application !== null ? (int)$dm->application : null,
-            'kyte_locked'    => (int)$dm->kyte_locked === 1,
-            'definition'     => $decoded,
-            'raw_definition' => $decoded === null ? $raw : null,
+            'id'               => (int)$dm->id,
+            'name'             => $modelName,
+            'application'      => $dm->application !== null ? (int)$dm->application : null,
+            'kyte_locked'      => (int)$dm->kyte_locked === 1,
+            'definition'       => $decoded,
+            'raw_definition'   => $decoded === null ? $raw : null,
+            'sensitive'        => false,
+            'sensitive_fields' => $sensitiveFields,
         ];
     }
 
