@@ -10,6 +10,7 @@
       <file>tests/ErrorHandlerSensitivityTest.php</file>
       <file>tests/FunctionTest.php</file>
       <file>tests/HmacSessionStrategyTest.php</file>
+      <file>tests/JwtEndpointTest.php</file>
       <file>tests/JwtSessionStrategyTest.php</file>
       <file>tests/McpControllerToolsTest.php</file>
       <file>tests/McpEndpointTest.php</file>

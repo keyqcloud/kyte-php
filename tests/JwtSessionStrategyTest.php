@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
 class JwtSessionStrategyTest extends TestCase
 {
     private const ACCOUNT = 'jwt-strat-test';
-    private const SECRET  = 'jwt-strat-test-secret-with-enough-entropy-12345';
+    private const FALLBACK_SECRET = 'jwt-strat-test-secret-with-enough-entropy-12345';
     private const ISSUER  = 'kyte';
 
     private Api $api;
@@ -62,8 +62,11 @@ class JwtSessionStrategyTest extends TestCase
         ]);
         $this->userId = (int)$user->id;
 
+        // PHP constants are immutable — whichever test file runs first
+        // pins KYTE_JWT_SECRET. Read the actual value when minting so
+        // signature verification works regardless of test ordering.
         if (!defined('KYTE_JWT_SECRET')) {
-            define('KYTE_JWT_SECRET', self::SECRET);
+            define('KYTE_JWT_SECRET', self::FALLBACK_SECRET);
         }
 
         $_SERVER = ['REMOTE_ADDR' => '127.0.0.1'];
@@ -222,6 +225,6 @@ class JwtSessionStrategyTest extends TestCase
             'jti'   => bin2hex(random_bytes(8)),
             'email' => 'jwt-strat-test@example.com',
         ], $overrides);
-        return JWT::encode($payload, self::SECRET, 'HS256');
+        return JWT::encode($payload, KYTE_JWT_SECRET, 'HS256');
     }
 }
