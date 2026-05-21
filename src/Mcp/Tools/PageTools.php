@@ -105,6 +105,9 @@ final class PageTools
                 'state'           => (int)$page->state,
                 'lang'            => $page->lang !== null ? (string)$page->lang : null,
                 'sitemap_include' => (int)$page->sitemap_include === 1,
+                // Surface the sensitive flag so callers know up front
+                // which pages will have html/css/js withheld by read_page.
+                'sensitive'       => (int)($page->sensitive ?? 0) === 1,
             ];
         }
         return ['pages' => $out];
@@ -138,6 +141,8 @@ final class PageTools
             return null;
         }
 
+        $isSensitive = (int)($page->sensitive ?? 0) === 1;
+
         $base = [
             'id'           => (int)$page->id,
             'title'        => (string)($page->title ?? ''),
@@ -147,7 +152,19 @@ final class PageTools
             'site'         => $page->site !== null ? (int)$page->site : null,
             'version'      => null,
             'version_type' => null,
+            'sensitive'    => $isSensitive,
         ];
+
+        // Page flagged sensitive → withhold content regardless of which
+        // version was requested. Same policy semantics as read_controller:
+        // metadata returns, source/content does not.
+        if ($isSensitive) {
+            return array_merge($base, [
+                'html'       => null,
+                'stylesheet' => null,
+                'javascript' => null,
+            ]);
+        }
 
         $version = new \Kyte\Core\ModelObject(\KytePageVersion);
         $found = false;

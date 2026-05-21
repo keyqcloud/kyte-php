@@ -5,6 +5,7 @@ use Kyte\Core\Api;
 use Kyte\Core\SensitivityPolicy;
 use Kyte\Mcp\Tools\ControllerTools;
 use Kyte\Mcp\Tools\ModelTools;
+use Kyte\Mcp\Tools\PageTools;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -30,14 +31,18 @@ class McpSensitivityTest extends TestCase
     private Api $api;
     private ControllerTools $controllerTools;
     private ModelTools $modelTools;
+    private PageTools $pageTools;
     private int $accountId;
     private int $appId;
+    private int $siteId;
     private int $sensCtrlId;
     private int $plainCtrlId;
     private int $sensFnId;
     private int $plainFnId;
     private int $sensModelId;
     private int $plainModelWithFieldsId;
+    private int $sensPageId;
+    private int $plainPageId;
 
     protected function setUp(): void
     {
@@ -51,6 +56,8 @@ class McpSensitivityTest extends TestCase
         \Kyte\Core\DBI::createTable(DataModel);
         \Kyte\Core\DBI::createTable(ModelAttribute);
         \Kyte\Core\DBI::createTable(constant('Function'));
+        \Kyte\Core\DBI::createTable(KyteSite);
+        \Kyte\Core\DBI::createTable(KytePage);
 
         \Kyte\Core\DBI::query("DELETE FROM `KyteAccount` WHERE number = '" . self::ACCOUNT . "'");
         \Kyte\Core\DBI::query("DELETE FROM `Application` WHERE identifier = 'mcp-sens-test-app'");
@@ -58,6 +65,8 @@ class McpSensitivityTest extends TestCase
         \Kyte\Core\DBI::query("DELETE FROM `DataModel` WHERE name LIKE 'McpSensTest%'");
         \Kyte\Core\DBI::query("DELETE FROM `ModelAttribute` WHERE name LIKE 'mcp_sens_test_%'");
         \Kyte\Core\DBI::query("DELETE FROM `Function` WHERE name LIKE 'McpSensTestFn%'");
+        \Kyte\Core\DBI::query("DELETE FROM `KyteSite` WHERE name LIKE 'McpSensTest%'");
+        \Kyte\Core\DBI::query("DELETE FROM `KytePage` WHERE title LIKE 'McpSensTest%'");
 
         $acct = new \Kyte\Core\ModelObject(KyteAccount);
         $acct->create(['number' => self::ACCOUNT, 'name' => 'MCP Sens Test']);
@@ -165,6 +174,36 @@ class McpSensitivityTest extends TestCase
             'kyte_account' => $this->accountId,
         ]);
 
+        // Site + sensitive / plain page setup.
+        $site = new \Kyte\Core\ModelObject(KyteSite);
+        $site->create([
+            'name'         => 'McpSensTestSite',
+            'status'       => 'active',
+            'application'  => $this->appId,
+            'kyte_account' => $this->accountId,
+        ]);
+        $this->siteId = (int)$site->id;
+
+        $sensPage = new \Kyte\Core\ModelObject(KytePage);
+        $sensPage->create([
+            'title'        => 'McpSensTestSensitivePage',
+            's3key'        => 'sens-page',
+            'site'         => $this->siteId,
+            'sensitive'    => 1,
+            'kyte_account' => $this->accountId,
+        ]);
+        $this->sensPageId = (int)$sensPage->id;
+
+        $plainPage = new \Kyte\Core\ModelObject(KytePage);
+        $plainPage->create([
+            'title'        => 'McpSensTestPlainPage',
+            's3key'        => 'plain-page',
+            'site'         => $this->siteId,
+            'sensitive'    => 0,
+            'kyte_account' => $this->accountId,
+        ]);
+        $this->plainPageId = (int)$plainPage->id;
+
         SensitivityPolicy::resetForTests();
 
         $this->api->account = new \Kyte\Core\ModelObject(KyteAccount);
@@ -173,6 +212,7 @@ class McpSensitivityTest extends TestCase
 
         $this->controllerTools = new ControllerTools($this->api);
         $this->modelTools = new ModelTools($this->api);
+        $this->pageTools = new PageTools($this->api);
 
         $_SERVER = ['REMOTE_ADDR' => '127.0.0.1'];
     }
@@ -265,5 +305,45 @@ class McpSensitivityTest extends TestCase
             'field-sensitive attribute stripped from returned struct');
         $this->assertArrayHasKey('mcp_sens_test_locale', $struct,
             'non-sensitive field still present');
+    }
+
+    public function testListPagesIncludesSensitiveFlag(): void
+    {
+        $result = $this->pageTools->listPages($this->siteId);
+        $rows = $result['pages'];
+
+        $byTitle = [];
+        foreach ($rows as $r) {
+            $byTitle[$r['title']] = $r;
+        }
+        $this->assertArrayHasKey('McpSensTestSensitivePage', $byTitle);
+        $this->assertArrayHasKey('McpSensTestPlainPage', $byTitle);
+        $this->assertTrue($byTitle['McpSensTestSensitivePage']['sensitive']);
+        $this->assertFalse($byTitle['McpSensTestPlainPage']['sensitive']);
+    }
+
+    public function testReadPageWithholdsContentWhenSensitive(): void
+    {
+        $row = $this->pageTools->readPage($this->sensPageId);
+        $this->assertNotNull($row);
+        $this->assertTrue($row['sensitive']);
+        $this->assertNull($row['html']);
+        $this->assertNull($row['stylesheet']);
+        $this->assertNull($row['javascript']);
+        $this->assertSame('McpSensTestSensitivePage', $row['title']);
+    }
+
+    public function testReadPageReturnsMetadataWhenNotSensitive(): void
+    {
+        // The plain page has no version content, so html/stylesheet/javascript
+        // come back as empty strings (existing behavior), NOT null. This
+        // distinguishes "exists but no content yet" (empty strings) from
+        // "exists but gated" (nulls).
+        $row = $this->pageTools->readPage($this->plainPageId);
+        $this->assertNotNull($row);
+        $this->assertFalse($row['sensitive']);
+        $this->assertSame('', $row['html']);
+        $this->assertSame('', $row['stylesheet']);
+        $this->assertSame('', $row['javascript']);
     }
 }
