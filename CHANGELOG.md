@@ -1,3 +1,85 @@
+## 4.4.0
+
+> Phase 2 (MCP server) + Phase 2.5 (sensitive-data flag) + Phase 3 (JWT auth) all ship together. **No breaking changes** — every addition is opt-in, defaults preserve v4.3.x behavior bit-for-bit. Existing customers can upgrade in place without code changes.
+
+### New Feature: Embedded MCP server (Phase 2)
+
+Each Kyte install can now expose a Model Context Protocol endpoint that lets AI clients (Claude Code, Claude.ai) inspect controllers, models, pages, and functions over a tenant-scoped bearer.
+
+- **New endpoint**: `POST /mcp` — handled by `Mcp\Endpoint` outside the standard MVC pipeline. JSON-RPC over HTTP, protocol version `2025-06-18`. Bypasses Kyte's HMAC envelope.
+- **New strategy**: `McpTokenStrategy` registered with the auth dispatcher. Strict `Authorization: Bearer kmcp_live_…` prefix match.
+- **New model**: `KyteMCPToken` — opaque bearer tokens. Stored as sha256 hash, displayed as 16-char prefix for identification. Scoped (`read` / `draft` / `commit`), revokable, optional expiry, optional CIDR allowlist, optional application-binding.
+- **New controller**: `KyteMCPTokenController` — issue, list, revoke. Generates the raw token at issuance (returned once, never recoverable). Force-overrides `kyte_account` from auth context to close a privilege-escalation vector. Emits `MCP_TOKEN_ISSUE` / `MCP_TOKEN_REVOKE` / `MCP_TOKEN_USE` / `MCP_SCOPE_VIOLATION` audit rows.
+- **10 read tools shipped**: `list_applications`, `list_controllers`, `read_controller`, `list_functions`, `read_function` (with optional `version_number`), `list_models`, `read_model`, `list_sites`, `list_pages`, `read_page` (with optional `version_number`).
+- **Scope enforcement**: `ScopedCallToolHandler` registered ahead of the SDK's default handler. Tools declare required scope via `#[RequiresScope('read'|'draft'|'commit')]` attribute. Fail-closed default — a tool without the attribute is unreachable.
+- **Account isolation**: every tool re-asserts `entity.kyte_account === api.account.id`. Foreign ids return `null` / `[]`, never the foreign record.
+- **bzip2 decompression**: `Controller.code`, `Function.code`, and `KytePageVersionContent.{html,stylesheet,javascript}` are stored compressed; `Bz2Codec::decompressIfBz2` wraps the read tools so source is returned in plaintext to the client.
+- **Origin validation** on `/mcp`: per spec § Security, mitigates DNS rebinding. Policy is "no Origin → allow, Origin present → check `MCP_ALLOWED_ORIGINS` constant (CSV)". CLI clients (Claude Code) unaffected; restrictive default forces operator opt-in for browser origins.
+- **Proxy-aware client IP**: `Kyte\Mcp\Util\ClientIp` reads `CF-Connecting-IP` then `X-Forwarded-For` first hop then falls back to `REMOTE_ADDR`. Gated on `KYTE_TRUST_PROXY_IP_HEADERS` constant — default-off so installs without a proxy aren't exposed to header spoofing. Wired into `McpTokenStrategy::clientIp()` for IP allowlist enforcement and audit fields.
+
+### New Feature: Sensitive-data flag (Phase 2.5)
+
+A three-tier opt-in flag that prevents activity/error logs from capturing request bodies, and gates MCP read tools from exposing source for flagged entities. Designed for pass-through controllers whose payload contents are regulated data the platform should not store.
+
+- **New columns** (default `0`, no behavior change unless flipped):
+  - `Controller.sensitive` — blanket flag. When `1`, drops body+response from logs entirely. Handles virtual (no-model) pass-through controllers.
+  - `DataModel.sensitive` — same blanket treatment when the model is the request target.
+  - `ModelAttribute.sensitive` — per-field redaction. Distinct from existing `.protected` (which only blanks values in GET responses). Set both for both behaviors.
+  - `KytePage.sensitive` — MCP-only; withholds `html`/`stylesheet`/`javascript` from `read_page`. Pages don't write to activity logs.
+- **New service**: `SensitivityPolicy` (`src/Core/SensitivityPolicy.php`) — single source of truth, per-request singleton with in-memory cache keyed by `(scope, name, account)`. One DB hit per tuple per request. Fail-permissive on lookup error so transient DB issues degrade to existing `SENSITIVE_FIELDS` baseline rather than to no redaction at all.
+- **ActivityLogger** consults the policy before persisting `request_data` and the PUT changes diff. Blanket-sensitive → both fields null. Field-sensitive → flagged fields replaced with `[REDACTED]`, other fields pass through. The hardcoded `SENSITIVE_FIELDS` list (password / token / secret_key / etc.) still runs as a baseline on top.
+- **ErrorHandler** previously captured request body AND response payload into `KyteError` with zero redaction — closed in this release. `handleException`, `handleError`, and `outputBufferCallback` all consult the policy now. AI error-correction queue (`AIErrorCorrection::queueForAnalysis`) gains its own defense-in-depth check at the top: skips any sensitive-origin row, with audit-log breadcrumb. Regulated data never reaches Anthropic for analysis.
+- **MCP read tools** gated by the same flag: sensitive controller → `read_controller` returns `code: null` + `sensitive: true`; sensitive function (via parent controller) → same; sensitive model → `read_model` returns `definition: null` + `sensitive: true`; sensitive field → stripped from `definition.struct`, listed separately in `sensitive_fields`; sensitive page → content fields null. List tools (`list_controllers`, `list_models`, `list_pages`) surface a `sensitive: bool` on each row so AI clients see up front which entities are gated.
+- **Runtime API responses unaffected** — a sensitive controller still returns its normal response to the caller. The flag governs log / MCP / AI exposure only, not the live contract.
+
+### New Feature: JWT bearer authentication (Phase 3)
+
+Modern auth path that coexists with the legacy HMAC sign/rotate. Customers can run a mix of HMAC apps and JWT apps on the same install.
+
+- **New strategy**: `JwtSessionStrategy` — HS256 access tokens with a configurable secret, claims `{iss, sub, aud, exp, iat, nbf, jti, email, app}`. Strict `Authorization: Bearer eyJ…` prefix match (won't clash with MCP's `kmcp_live_…`). Decode + verify in `preAuth`, sets `$api->user`, `$api->account`, and `$api->session->hasSession = true` so the standard ModelController auth gate accepts the request.
+- **New endpoint family**: `POST /jwt/login`, `POST /jwt/refresh`, `POST /jwt/logout`, `POST /jwt/logout-all` — handled by `JwtEndpoint` (same pattern as `Mcp\Endpoint`, bypasses the MVC pipeline so login can run pre-auth). Login posts `{email, password, app_identifier?}` and returns `{access_token, refresh_token, expires_in, token_type:'Bearer', refresh_expires_at}`.
+- **Refresh tokens**: opaque (`kref_v1_…` prefix), stored as sha256 hash in new `KyteRefreshToken` table. Single-use rotation per RFC 6819 — every successful refresh revokes the presented token and issues a new one in the same family. **Reuse detection**: presenting a revoked token revokes the entire family (likely leak signal). Expiration without revocation does not trigger family kill.
+- **Multilogon**: separate logins always create separate families. A user signing in from laptop and phone gets two independent families — revoking one device does not affect the other. Distinct from HMAC's `ALLOW_MULTILOGON` flag.
+- **`AuthDispatcher::buildDefault()`** now registers three strategies: McpToken → JwtSession → Hmac. Each `matches()` is strict so order doesn't affect correctness; order is documented for review clarity. HMAC clients continue working unchanged via `HmacSessionStrategy`.
+- **`Application.auth_mode`** column added: `'hmac'` (default) or `'jwt'`. Drives whether Shipyard's page generator emits the v1.x HMAC constructor or the v2 JWT constructor for kyte-api-js consumers.
+- **Configuration constants** (define in `config.php` to enable JWT):
+  - `KYTE_JWT_SECRET` — required for JWT mode. At least 256 bits of entropy. Never commit to version control.
+  - `KYTE_JWT_ISSUER` — optional, defaults to `'kyte'`. Mismatched tokens are rejected at preAuth.
+  - `KYTE_JWT_ACCESS_TTL` — optional, default 900 seconds.
+  - `KYTE_JWT_REFRESH_TTL` — optional, default 604800 seconds (7 days).
+- **Dependency**: `firebase/php-jwt ^7.0` — lightweight, well-known, no transitive deps.
+
+### Bundled migrations
+
+Three new SQL files in `migrations/`. Apply in order. All are additive (new columns / new table) — safe to apply ahead of code; new columns default to `0` / `'hmac'` so legacy code sees no behavior change until the matching feature is opted into.
+
+```
+migrations/4.4.0_sensitive_columns.sql       # Controller / DataModel / ModelAttribute / KytePage .sensitive
+migrations/4.4.0_jwt_refresh_tokens.sql      # KyteRefreshToken table
+migrations/4.4.0_application_auth_mode.sql   # Application.auth_mode
+```
+
+### CI hardening
+
+- **PHP matrix** in `.github/workflows/php.yml`: tests now run on PHP 8.2 AND 8.3 against MariaDB 10.5.29. Catches version-specific syntax / deprecation issues.
+- **PHPStan** static analysis at level 1 with a baseline of pre-existing findings (`phpstan-baseline.neon`). New code is held to zero level-1 violations; baseline only shrinks.
+- **Composer audit** step on every push — fails CI on a new advisory in production dependencies.
+
+### Test coverage
+
+- 180 unit tests, 531 assertions. Up from 109 at end of Phase 2.
+- New test files: `SensitivityPolicyTest`, `ActivityLoggerSensitivityTest`, `ErrorHandlerSensitivityTest`, `McpSensitivityTest`, `JwtSessionStrategyTest`, `JwtEndpointTest`, `RefreshTokenStoreTest`.
+- Includes a regression test for the `hasSession` integration bug surfaced during dev rollout: JwtSessionStrategy must mark `$api->session->hasSession = true` after validating the bearer, otherwise `ModelController::authenticate()` rejects every protected endpoint despite a valid JWT.
+
+### Upgrade notes
+
+1. Apply the three migrations above to your database.
+2. If using JWT mode: define `KYTE_JWT_SECRET` in `config.php` (generate with `openssl rand -base64 48`). HMAC-only installs need no config change.
+3. If you were running with `AUTH_STRATEGY_DISPATCHER='shadow'` from v4.3.0, you can now safely flip to `'on'` to activate the dispatcher. HMAC traffic routes through the new `HmacSessionStrategy` which has been shadow-verified bit-identical to the inline auth.
+4. kyte-api-js v2.0+ is required on the client side for JWT apps. v1.x continues to work unchanged for HMAC apps.
+
+---
+
 ## 4.1.1
 
 ### Bug Fix: ActivityLogger blocking exception on dynamically-loaded app models
