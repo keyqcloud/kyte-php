@@ -635,6 +635,16 @@ class Api
 				return;
 			}
 
+			// /jwt/{login,refresh,logout,logout-all} are served by
+			// JwtEndpoint. Same rationale as /mcp — these aren't model
+			// CRUD endpoints, they emit their own JSON shapes, and they
+			// must run BEFORE auth (login can't require auth, refresh
+			// uses a refresh token not an access token, etc.).
+			if (strcasecmp($firstSegment, 'jwt') === 0) {
+				\Kyte\Core\Auth\JwtEndpoint::handle($this);
+				return;
+			}
+
 			if (isset($_SERVER['HTTP_X_KYTE_APPID'])) {
 				$this->appId = $_SERVER['HTTP_X_KYTE_APPID'];
 			}
