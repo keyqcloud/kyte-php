@@ -1,0 +1,72 @@
+name: Release
+
+# Tag-triggered. Extracts the matching `## <version>` section from
+# CHANGELOG.md and creates a GitHub Release. Unlike kyte-api-js, no
+# S3 / CloudFront step is needed — kyte-php is composer-distributed,
+# and Packagist auto-detects the new tag from GitHub within minutes.
+#
+# Version comes from the tag (refs/tags/v4.4.0 → 4.4.0). CHANGELOG.md
+# must have a `## <version>` H2 anywhere in the file — the script
+# extracts everything between that header and the next `## ` as
+# release notes.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # needed for softprops/action-gh-release
+
+# Opt into Node.js 24 ahead of the 2026-06-02 force-migration.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out source
+      uses: actions/checkout@v5
+
+    - name: Extract version from tag
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+
+    - name: Verify CHANGELOG.md has matching section
+      run: |
+        VERSION="${{ steps.version.outputs.VERSION }}"
+        if ! grep -q "^## ${VERSION}$" CHANGELOG.md; then
+          echo "::error::Tag v$VERSION but CHANGELOG.md has no '## $VERSION' section."
+          echo "::error::Add a CHANGELOG entry before tagging."
+          exit 1
+        fi
+
+    - name: Extract release notes from CHANGELOG.md
+      id: notes
+      run: |
+        VERSION="${{ steps.version.outputs.VERSION }}"
+        # Capture everything between `## $VERSION` and the next `## ` line.
+        awk -v v="^## ${VERSION}$" '
+          $0 ~ v { capture=1; next }
+          /^## / && capture { exit }
+          capture { print }
+        ' CHANGELOG.md > release-notes.md
+
+        if [ ! -s release-notes.md ]; then
+          echo "::error::Could not extract release notes for v$VERSION from CHANGELOG.md"
+          exit 1
+        fi
+
+        echo "Release notes preview (first 20 lines):"
+        head -20 release-notes.md
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: kyte-php v${{ steps.version.outputs.VERSION }}
+        body_path: release-notes.md
+        draft: false
+        prerelease: false
