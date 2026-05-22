@@ -176,8 +176,9 @@ final class Endpoint
      * (CSV of full origins, e.g. `"https://claude.ai,https://app.example.com"`).
      * Empty / undefined means "no browser origins are allowed" — Claude.ai
      * custom-connector users must opt in by setting the constant in their
-     * config.php. Restrictive default is the right call for healthcare
-     * deployments where a permissive allowlist would be a compliance finding.
+     * config.php. Restrictive default is intentional: a permissive
+     * allowlist would broaden the attack surface for browser-borne
+     * requests without an explicit opt-in signal from the operator.
      *
      * Returns the rejection reason string on failure, or null on pass.
      */

@@ -16,7 +16,8 @@ namespace Kyte\Mcp\Util;
  *
  *   2. Audit rows (`MCP_TOKEN_USE`, `MCP_TOKEN_REVOKE`,
  *      `MCP_SCOPE_VIOLATION`, `last_used_ip`) record the proxy IP,
- *      which destroys forensic value during a compliance review.
+ *      which destroys forensic value when reviewing security events
+ *      after the fact.
  *
  * Resolution policy:
  *   - If `KYTE_TRUST_PROXY_IP_HEADERS` is true, prefer
