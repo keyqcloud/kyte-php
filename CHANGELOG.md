@@ -1,3 +1,19 @@
+## 4.4.5
+
+### Bug Fix + Feature: JWT login parity with HMAC session response
+
+Three changes for JWT login on apps with custom `user_model`:
+
+1. **Account fallback for app-scoped users.** `JwtEndpoint::login` bailed with 401 when `user->kyte_account` was 0. App-scoped User models don't carry that FK directly — the user belongs to the Application, and the Application carries the account FK. Fall back to `$app->kyte_account` when the user has no direct account.
+
+2. **HMAC-parity response shape.** Adds `uid`, `account_id`, and `data` (user payload, with protected fields stripped, wrapped per `USE_SESSION_MAP`) to the JWT login response. Customer frontends consuming `session.data[0].fieldname` or `session.uid` were silently failing under JWT because the payload was tokens-only.
+
+3. **FK expansion in `data`.** Mirrors HMAC's `SESSION_RETURN_FK` behavior — `user.org` is now expanded into the full Org object (`{id:2, org_type:'LP', ...}`) instead of returned as the raw integer FK. Bounded recursion at depth 3 to handle (rare) cyclic FKs. Frontends doing `user.org.org_type` now work.
+
+Known follow-up: FK expansion is N+1 — see Tempo card #171 for optimization.
+
+No schema changes. Composer upgrade is sufficient.
+
 ## 4.4.4
 
 ### Bug Fix: `/jwt/login` still 500s on apps with custom `user_model` (continuation of 4.4.3)
