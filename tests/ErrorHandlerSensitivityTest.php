@@ -9,6 +9,30 @@ use PHPUnit\Framework\TestCase;
 /**
  * Integration tests for ErrorHandler consulting SensitivityPolicy.
  *
+ * Companion coverage to ActivityLoggerSensitivityTest. Where that file
+ * covers the success-path activity log, this file covers the
+ * exception-path error log — same SensitivityPolicy contract, applied
+ * at a different write site.
+ *
+ * Why both files are needed: pre-Phase-2.5, ErrorHandler captured the
+ * request body and response payload into KyteError WITHOUT consulting
+ * the hardcoded SENSITIVE_FIELDS list that ActivityLogger used. A
+ * pass-through controller that threw an exception would land its body
+ * in KyteError unredacted even when the same controller's success path
+ * was partially redacted by ActivityLogger. Closing this gap was a
+ * second leak vector the policy needed to address.
+ *
+ * The AI defense-in-depth gate (AIErrorCorrection::queueForAnalysis)
+ * is exercised here too — see testAIDefenseInDepthGateBlocksSensitive-
+ * Context. That gate ensures regulated payloads never reach the
+ * Anthropic API for error analysis, regardless of whether the caller
+ * remembered to check the policy.
+ *
+ * Why integration tests rather than an end-to-end Api drive: see the
+ * matching note in ActivityLoggerSensitivityTest. The leak surface is
+ * ErrorHandler::handleException(); driving from Api would test only
+ * a single line of forwarding code at material additional cost.
+ *
  * Matrix (handleException write path):
  *   - Controller flagged sensitive          → KyteError.data and .response null
  *   - Model flagged sensitive               → same

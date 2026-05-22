@@ -9,6 +9,35 @@ use PHPUnit\Framework\TestCase;
 /**
  * Integration tests for ActivityLogger consulting SensitivityPolicy.
  *
+ * This file is the canonical coverage for the pass-through-controller
+ * pattern: a Kyte controller (often virtual, with no associated
+ * DataModel) accepts an opaque request body intended for forwarding to
+ * a downstream system. Without the sensitive flag, ActivityLogger
+ * captures `$this->data` into `KyteActivityLog.request_data` — fine
+ * for most controllers, but undesirable when the controller is
+ * declared as a non-storing pass-through. The Controller.sensitive
+ * flag exists to opt those controllers out of body capture.
+ *
+ * The test below replays exactly that scenario:
+ *   testSensitiveControllerDropsRequestBody — virtual controller named
+ *     'AlSensTestVirtualCtrl' with sensitive=1, a request body
+ *     containing 'regulated text that must not be stored',
+ *     asserts the resulting KyteActivityLog row has request_data NULL.
+ *
+ * The remaining tests cover the other three SensitivityPolicy tiers
+ * (DataModel.sensitive, ModelAttribute.sensitive, the baseline
+ * SENSITIVE_FIELDS hardcoded list), plus the PUT changes diff which
+ * is a second redaction path that needs the same gating.
+ *
+ * Why these tests rather than an end-to-end Api::route() drive:
+ *   The leak surface is ActivityLogger::log(); Api::route() at line
+ *   ~763 is a one-line pass-through that forwards $this->model and
+ *   $this->data to it. The integration here exercises the actual
+ *   policy + log code paths against the real KyteActivityLog table.
+ *   A full Api::route() drive would require HMAC auth scaffolding,
+ *   add brittleness against router refactors, and exercise only that
+ *   single extra line of forwarding code — bad ROI.
+ *
  * Matrix:
  *   - Controller-only flag (no-model controller case) → request_data null
  *   - Model flag set                                  → request_data null
