@@ -1,3 +1,17 @@
+## 4.4.2
+
+### Bug Fix: ErrorHandler crash when `apiContext->key` is a ModelObject
+
+The enhanced v4.4 ErrorHandler bound `$this->apiContext->key` directly into the `KyteError.api_key` string column. `$this->key` is set in `Api.php` as `new \Kyte\Core\ModelObject(KyteAPIKey)` — an object, not a string. `mysqli_stmt::execute()` then threw `Object of class Kyte\Core\ModelObject could not be converted to string` *inside* the error handler. That secondary fatal swallowed the original error and surfaced to clients as a **blank HTTP 500** with no log row written and no stack trace recoverable.
+
+Customer-visible impact: any request that triggered the error handler — including expected exceptions on routes like POST `/Session`, GET on a controller hitting a runtime error, etc. — returned 500 with no body. Production traffic at ETOM was affected from the v4.4.0 deploy onward.
+
+Fix: `'api_key' => isset($this->apiContext->key->public_key) ? (string)$this->apiContext->key->public_key : null` — extract the scalar `public_key` string (which is the audit-relevant value anyway). Falls back to `null` when the ModelObject hasn't been retrieved or when there's no key context at all.
+
+Regression test `ErrorHandlerSensitivityTest::testApiContextKeyAsModelObjectLogsPublicKeyString` exercises the previously-broken ModelObject path end to end. Pre-existing tests set `$context->key = null` and never hit the crash, which is why the regression slipped through 4.4.0 and 4.4.1.
+
+No schema changes. Composer upgrade is sufficient.
+
 ## 4.4.1
 
 ### Bug Fix: CORS preflight on `/jwt/*` endpoints

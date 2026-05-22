@@ -189,6 +189,49 @@ class ErrorHandlerSensitivityTest extends TestCase
         $this->assertStringContainsString('ok', $row['response']);
     }
 
+    /**
+     * Regression: $apiContext->key is a ModelObject(KyteAPIKey) in real
+     * Api flow, but the enhanced v4.4 ErrorHandler bound it directly into
+     * the KyteError.api_key string column. mysqli_stmt::execute() then
+     * threw "Object of class Kyte\Core\ModelObject could not be converted
+     * to string" — a secondary fatal that swallowed the original error
+     * and surfaced as a blank HTTP 500 to the client.
+     *
+     * Pre-existing tests set $context->key = null, so they didn't catch
+     * the regression. This test exercises the ModelObject path and
+     * asserts the api_key column gets the scalar public_key value.
+     */
+    public function testApiContextKeyAsModelObjectLogsPublicKeyString(): void
+    {
+        \Kyte\Core\DBI::createTable(KyteAPIKey);
+        \Kyte\Core\DBI::query("DELETE FROM `KyteAPIKey` WHERE public_key = 'eh-key-test-pub-12345'");
+
+        $key = new \Kyte\Core\ModelObject(KyteAPIKey);
+        $key->create([
+            'identifier'   => 'eh-key-test-iden',
+            'public_key'   => 'eh-key-test-pub-12345',
+            'secret_key'   => 'eh-key-test-sec',
+            'epoch'        => time(),
+            'kyte_account' => $this->accountId,
+        ]);
+
+        $context = $this->buildContext(self::PLAIN_MODEL);
+        $context->key = $key;  // ← the real Api.php flow
+        $context->data = ['note' => 'whatever'];
+        $context->response = ['status' => 'ok'];
+
+        $handler = ErrorHandler::getInstance($context);
+        // Without the fix, this throws ValueError/TypeError from mysqli
+        // and the error row is never written.
+        $handler->handleException(new \RuntimeException('regression check'));
+
+        $row = $this->latestErrorRow(self::PLAIN_MODEL);
+        $this->assertNotNull($row, 'error row must be written even when context->key is a ModelObject');
+        $this->assertSame('eh-key-test-pub-12345', $row['api_key'],
+            'api_key column must hold the scalar public_key string, not a stringified ModelObject');
+        $this->assertSame('regression check', $row['message'], 'original error message must survive');
+    }
+
     public function testAIDefenseInDepthGateBlocksSensitiveContext(): void
     {
         // Drive AIErrorCorrection::queueForAnalysis directly with a

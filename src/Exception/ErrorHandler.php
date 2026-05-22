@@ -59,7 +59,14 @@ class ErrorHandler
             'kyte_account' => isset($this->apiContext->account->id) ? $this->apiContext->account->id : null,
             'user_id' => isset($this->apiContext->user->id) ? $this->apiContext->user->id : null,
             'app_id' => isset($this->apiContext->appId) ? $this->apiContext->appId : null,
-            'api_key' => isset($this->apiContext->key) ? $this->apiContext->key : null,
+            // $apiContext->key is a ModelObject(KyteAPIKey) — extract the
+            // scalar public_key string for logging. Binding the bare object
+            // would crash mysqli_stmt::execute() with
+            // "Object of class Kyte\Core\ModelObject could not be converted
+            // to string" because KyteError.api_key is a varchar column.
+            // That secondary fatal inside the error handler swallows the
+            // original error and surfaces as a blank HTTP 500 to the client.
+            'api_key' => isset($this->apiContext->key->public_key) ? (string)$this->apiContext->key->public_key : null,
             // Additional details
             'signature' => isset($this->apiContext->signature) ? $this->apiContext->signature : null,
             'contentType' => isset($this->apiContext->contentType) ? $this->apiContext->contentType : null,
@@ -133,7 +140,9 @@ class ErrorHandler
             'kyte_account' => isset($this->apiContext->account->id) ? $this->apiContext->account->id : null,
             'user_id' => isset($this->apiContext->user->id) ? $this->apiContext->user->id : null,
             'app_id' => isset($this->apiContext->appId) ? $this->apiContext->appId : null,
-            'api_key' => isset($this->apiContext->key) ? $this->apiContext->key : null,
+            // See handleException — $apiContext->key is a ModelObject;
+            // extract the scalar public_key string to avoid the same crash.
+            'api_key' => isset($this->apiContext->key->public_key) ? (string)$this->apiContext->key->public_key : null,
             'request' => isset($this->apiContext->request) ? $this->apiContext->request : null,
             'model' => $modelName,
             'message' => $errstr,
