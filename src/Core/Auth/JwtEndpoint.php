@@ -335,12 +335,27 @@ final class JwtEndpoint
         }
 
         if ($app->user_model !== null && $app->username_colname !== null && $app->password_colname !== null) {
-            // App-specific DataModel constants ("User", "Customer", etc.) are
-            // registered lazily by Api::loadAppModels when an app context is
-            // detected in the normal MVC pipeline. JwtEndpoint dispatches
-            // BEFORE that pipeline runs, so the constant we want may not
-            // exist yet. Load explicitly to make the constant available.
+            // Mirror the subset of per-app setup that Api::route() does for
+            // HMAC. JWT dispatches BEFORE the normal MVC pipeline runs, so
+            // without this block the app-specific user model can't be
+            // resolved or queried:
+            //
+            //   1. loadAppModels    — registers app DataModel constants
+            //      like "User" so constant($app->user_model) resolves.
+            //      Without this, PHP 8 fatals "Undefined constant".
+            //   2. dbappconnect     — sets the app's DB credentials.
+            //      Without this, ModelObject->retrieve on an app-scoped
+            //      model auto-switches to the app DB (because the loaded
+            //      model_definition has 'appId' set) and mysqli connects
+            //      with null host/user/password → "No such file or
+            //      directory" socket error → HTTP 500.
+            //
+            // We skip defineAppEnvironmentConstants / defineAppDataStore
+            // (private instance methods) because login is just user
+            // lookup + password_verify; those constants matter for
+            // controller execution, not auth.
             \Kyte\Core\Api::loadAppModels($app);
+            \Kyte\Core\Api::dbappconnect($app->db_name, $app->db_username, $app->db_password);
 
             if (!defined($app->user_model)) {
                 // loadAppModels couldn't define it (no matching DataModel

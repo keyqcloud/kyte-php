@@ -1,3 +1,17 @@
+## 4.4.4
+
+### Bug Fix: `/jwt/login` still 500s on apps with custom `user_model` (continuation of 4.4.3)
+
+v4.4.3 fixed the `Undefined constant "User"` fatal by calling `Api::loadAppModels($app)` in `resolveAuthContext`. That uncovered a second gap: the app-scoped model definition has `appId` set, which causes `ModelObject->retrieve()` to auto-switch to the app DB via `Api::dbswitch(true)`. But the app-DB credentials (host/user/password) were never configured because `Api::dbappconnect()` is called only by the normal MVC pipeline (Api.php:690) — which JWT bypasses.
+
+Result: mysqli received null host/user/password and tried a Unix-socket connection → `No such file or directory` → HTTP 500.
+
+Fix: `resolveAuthContext` now also calls `Api::dbappconnect($app->db_name, $app->db_username, $app->db_password)` immediately after `loadAppModels`. The HMAC pipeline does both calls back-to-back at Api.php:688-690; JWT now matches.
+
+Apps without a custom `user_model` (default `KyteUser` path) are unaffected — they were never in the app-DB branch.
+
+No schema changes. Composer upgrade is sufficient.
+
 ## 4.4.3
 
 ### Bug Fix: `/jwt/login` fatals on apps with custom `user_model`
