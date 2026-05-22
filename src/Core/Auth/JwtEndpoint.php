@@ -153,11 +153,24 @@ final class JwtEndpoint
             return self::error(401, 'invalid_credentials', 'Invalid credentials.');
         }
 
+        // Resolve the user's account. KyteUser has a direct kyte_account FK,
+        // but app-scoped User models (created via DataModel in Shipyard) do
+        // not — the user belongs to the Application, and the Application
+        // belongs to the account. Fall back to $app->kyte_account in that
+        // case. This mirrors how HMAC's account context is derived: the
+        // session is on the app, and the app carries the account FK.
         $accountId = isset($user->kyte_account) ? (int)$user->kyte_account : 0;
+        if ($accountId === 0 && $app !== null && isset($app->kyte_account)) {
+            $accountId = (int)$app->kyte_account;
+        }
         if ($accountId === 0) {
             return self::error(401, 'invalid_credentials', 'Invalid credentials.');
         }
 
+        // KyteAccount lives in the default (system) DB. After the app-scoped
+        // user retrieve above, dbswitch is set to App DB. ModelObject->retrieve
+        // toggles back to default automatically when the target model has no
+        // 'appId' (KyteAccount doesn't), so no explicit dbswitch needed here.
         $account = new ModelObject(KyteAccount);
         if (!$account->retrieve('id', $accountId)) {
             return self::error(401, 'invalid_credentials', 'Invalid credentials.');
@@ -177,13 +190,76 @@ final class JwtEndpoint
             }
         }
 
+        // Mirror HMAC SessionController::new response shape so apps that
+        // consumed the HMAC session response (data[0], uid, account_id)
+        // keep working under JWT without code changes. The HMAC-only
+        // fields (kyte_pub, kyte_iden, kyte_num, session, token) are
+        // intentionally omitted — JWT doesn't have an API-handoff cred
+        // model, and there's no sessionToken/txToken concept.
+        $userData = self::userToArray($user);
+        $useSessionMap = defined('USE_SESSION_MAP') && USE_SESSION_MAP;
+
         return self::success([
             'access_token'       => $accessToken,
             'token_type'         => 'Bearer',
             'expires_in'         => self::accessTtl(),
             'refresh_token'      => $refresh['raw'],
             'refresh_expires_at' => $refresh['expires_at'],
+            'uid'                => (int)$user->id,
+            'account_id'         => (int)$account->id,
+            'data'               => $useSessionMap ? $userData : [$userData],
         ]);
+    }
+
+    /**
+     * Serialize a ModelObject for the JWT login response. Mirrors the
+     * subset of ModelController::getObject that the customer app actually
+     * consumes:
+     *   - Strip fields marked `protected: true` (password hash, etc.)
+     *   - Expand FK references into nested objects when SESSION_RETURN_FK
+     *     is enabled (default true). Without this, `user.org` would be
+     *     the integer `2` instead of `{id:2, org_type:'LP', ...}` — and
+     *     frontends doing `user.org.org_type` would silently break.
+     *
+     * Recursion-bounded at depth 3 to prevent runaway expansion on
+     * cyclic FKs (rare but possible in customer schemas).
+     */
+    private static function userToArray(ModelObject $user, int $depth = 0): array
+    {
+        $params = $user->getAllParams();
+        $struct = $user->kyte_model['struct'] ?? [];
+        $expandFks = $depth < 3
+            && (!defined('SESSION_RETURN_FK') || SESSION_RETURN_FK);
+
+        foreach ($params as $key => $value) {
+            if (!isset($struct[$key])) {
+                continue;
+            }
+
+            if (isset($struct[$key]['protected']) && $struct[$key]['protected']) {
+                $params[$key] = '';
+                continue;
+            }
+
+            // Expand FK if struct declares one, value is non-empty, and
+            // SESSION_RETURN_FK allows.
+            if ($expandFks && isset($struct[$key]['fk'], $value) && !empty($value)) {
+                $fk = $struct[$key]['fk'];
+                if (isset($fk['model'], $fk['field']) && defined($fk['model'])) {
+                    $fkModel = constant($fk['model']);
+                    $fkObj = new ModelObject($fkModel);
+                    // retrieve() handles dbswitch automatically based on
+                    // whether the FK model has 'appId' (app-scoped vs default).
+                    if ($fkObj->retrieve($fk['field'], $value, null, null, true)) {
+                        $params[$key] = self::userToArray($fkObj, $depth + 1);
+                    }
+                }
+            }
+        }
+
+        // The kyte_model handle itself should never leak to clients.
+        unset($params['kyte_model']);
+        return $params;
     }
 
     private static function refresh(array $body, string $ip): array
