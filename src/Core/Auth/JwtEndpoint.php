@@ -190,13 +190,45 @@ final class JwtEndpoint
             }
         }
 
+        // Mirror HMAC SessionController::new response shape so apps that
+        // consumed the HMAC session response (data[0], uid, account_id)
+        // keep working under JWT without code changes. The HMAC-only
+        // fields (kyte_pub, kyte_iden, kyte_num, session, token) are
+        // intentionally omitted — JWT doesn't have an API-handoff cred
+        // model, and there's no sessionToken/txToken concept.
+        $userData = self::userToArray($user);
+        $useSessionMap = defined('USE_SESSION_MAP') && USE_SESSION_MAP;
+
         return self::success([
             'access_token'       => $accessToken,
             'token_type'         => 'Bearer',
             'expires_in'         => self::accessTtl(),
             'refresh_token'      => $refresh['raw'],
             'refresh_expires_at' => $refresh['expires_at'],
+            'uid'                => (int)$user->id,
+            'account_id'         => (int)$account->id,
+            'data'               => $useSessionMap ? $userData : [$userData],
         ]);
+    }
+
+    /**
+     * Serialize a ModelObject for the JWT login response. Strips fields
+     * marked `protected: true` in the model struct (e.g. password hash,
+     * secret_key) — mirrors what ModelController::getObject does but
+     * standalone, since we can't invoke a controller from here.
+     */
+    private static function userToArray(ModelObject $user): array
+    {
+        $params = $user->getAllParams();
+        $struct = $user->kyte_model['struct'] ?? [];
+        foreach ($params as $key => $value) {
+            if (isset($struct[$key]['protected']) && $struct[$key]['protected']) {
+                $params[$key] = '';  // strip protected fields (password hash, etc.)
+            }
+        }
+        // The kyte_model handle itself should never leak to clients.
+        unset($params['kyte_model']);
+        return $params;
     }
 
     private static function refresh(array $body, string $ip): array
