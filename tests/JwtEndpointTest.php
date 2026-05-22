@@ -247,6 +247,39 @@ class JwtEndpointTest extends TestCase
         $this->assertSame(405, $result['status']);
     }
 
+    /**
+     * Regression: browser CORS preflight (OPTIONS) for /jwt/login was
+     * being routed to process() which only accepts POST and returned
+     * 405 with no CORS headers. Browsers then blocked the real POST.
+     * handle() now answers OPTIONS with 204 + CORS headers directly so
+     * the preflight succeeds and the actual login can proceed.
+     */
+    public function testHandleAnswersOptionsPreflightWith204(): void
+    {
+        $prevServer = $_SERVER;
+        try {
+            $_SERVER = [
+                'REQUEST_METHOD'                       => 'OPTIONS',
+                'REQUEST_URI'                          => '/jwt/login',
+                'HTTP_ORIGIN'                          => 'https://shipyard.example.com',
+                'HTTP_ACCESS_CONTROL_REQUEST_HEADERS'  => 'content-type, authorization',
+                'REMOTE_ADDR'                          => '203.0.113.42',
+            ];
+
+            ob_start();
+            JwtEndpoint::handle($this->api);
+            $body = ob_get_clean();
+
+            $this->assertSame(204, http_response_code(), 'OPTIONS preflight must reply 204');
+            $this->assertSame('', $body, 'OPTIONS preflight must not write a body');
+        } finally {
+            $_SERVER = $prevServer;
+            // Reset the response code for downstream tests since PHPUnit
+            // doesn't isolate http_response_code() between tests.
+            http_response_code(200);
+        }
+    }
+
     private function doLogin(): array
     {
         $result = JwtEndpoint::process($this->api, $this->serverFor('/jwt/login'), $this->jsonBody([
