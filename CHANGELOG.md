@@ -1,3 +1,15 @@
+## 4.4.3
+
+### Bug Fix: `/jwt/login` fatals on apps with custom `user_model`
+
+When an Application's `user_model` is set to an app-specific DataModel (e.g. `"User"` rather than the default `"KyteUser"`), `JwtEndpoint::resolveAuthContext` called `constant($app->user_model)` to resolve the model definition. But the JWT endpoint dispatches *before* `Api::loadAppModels()` runs in the normal MVC pipeline, so the app-scoped constant wasn't yet defined. In PHP 8+ that's a fatal: `Undefined constant "User"`. Surface to the client was HTTP 500.
+
+HMAC `/Session` login did not hit this because `Api::route()` calls `loadAppModels` before reaching the session controller. JWT's whole point is to bypass that pipeline (login can't require auth), which is what created the gap.
+
+Fix: `resolveAuthContext` now calls `Api::loadAppModels($app)` immediately after retrieving the Application, before referencing the constant. If the app references a name that no DataModel row defines, falls back to `KyteUser` (with an `error_log` breadcrumb) rather than fatal — login then naturally fails at `password_verify`, which is a safer surface than a 500.
+
+No schema changes. Composer upgrade is sufficient.
+
 ## 4.4.2
 
 ### Bug Fix: ErrorHandler crash when `apiContext->key` is a ModelObject

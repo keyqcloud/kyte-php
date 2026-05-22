@@ -335,6 +335,27 @@ final class JwtEndpoint
         }
 
         if ($app->user_model !== null && $app->username_colname !== null && $app->password_colname !== null) {
+            // App-specific DataModel constants ("User", "Customer", etc.) are
+            // registered lazily by Api::loadAppModels when an app context is
+            // detected in the normal MVC pipeline. JwtEndpoint dispatches
+            // BEFORE that pipeline runs, so the constant we want may not
+            // exist yet. Load explicitly to make the constant available.
+            \Kyte\Core\Api::loadAppModels($app);
+
+            if (!defined($app->user_model)) {
+                // loadAppModels couldn't define it (no matching DataModel
+                // row, or the row references a name that wasn't registered).
+                // Fall back to KyteUser rather than fatal — login will then
+                // fail at password_verify, which is the safer surface.
+                error_log("JwtEndpoint: app '{$appIdentifier}' references user_model '{$app->user_model}' but no DataModel row defines it; falling back to KyteUser.");
+                return [
+                    'user_model'     => KyteUser,
+                    'username_field' => $defaultUserField,
+                    'password_field' => $defaultPassField,
+                    'app'            => $app,
+                ];
+            }
+
             return [
                 'user_model'     => constant($app->user_model),
                 'username_field' => (string)$app->username_colname,
