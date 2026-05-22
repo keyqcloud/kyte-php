@@ -27,6 +27,21 @@ class AIErrorCorrection
      */
     public static function queueForAnalysis($error, $apiContext) {
         try {
+            // Defense-in-depth: ErrorHandler already gates this call, but
+            // re-check here so any future caller can't accidentally route
+            // a sensitive payload to the AI analysis pipeline (which would
+            // forward request body context to a third-party LLM).
+            $modelName = isset($apiContext->model) ? $apiContext->model : null;
+            $accountId = isset($apiContext->account->id) ? (int)$apiContext->account->id : null;
+            if ($modelName !== null && $accountId !== null) {
+                $policy = \Kyte\Core\SensitivityPolicy::getInstance();
+                if ($policy->shouldDropPayload($modelName, $modelName, $accountId)
+                    || !empty($policy->getSensitiveFields($modelName, $accountId))) {
+                    error_log("AI Error Correction: skipping sensitive-context error for model '$modelName'");
+                    return;
+                }
+            }
+
             // Quick checks (should we analyze?)
             if (!self::shouldAnalyze($error, $apiContext)) {
                 return;

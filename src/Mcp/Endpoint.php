@@ -1,0 +1,222 @@
+<?php
+namespace Kyte\Mcp;
+
+use Kyte\Core\Api;
+use Kyte\Core\Auth\AuthDispatcher;
+use Kyte\Core\Auth\McpTokenStrategy;
+use Kyte\Exception\SessionException;
+use Kyte\Mcp\Session\SaveSafeSessionFactory;
+use Laminas\HttpHandlerRunner\Emitter\SapiEmitter;
+use Mcp\Capability\Registry as McpRegistry;
+use Mcp\Capability\Registry\Container as McpContainer;
+use Mcp\Capability\Registry\ReferenceHandler;
+use Mcp\Server;
+use Mcp\Server\Handler\Request\CallToolHandler;
+use Mcp\Server\Session\FileSessionStore;
+use Mcp\Server\Transport\StreamableHttpTransport;
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Nyholm\Psr7Server\ServerRequestCreator;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+
+/**
+ * Entry point for `/mcp` requests. Owns the full MCP handling lifecycle:
+ *   1. Authenticate via AuthDispatcher (McpTokenStrategy resolves the bearer
+ *      token, populates $api->account).
+ *   2. Run the mcp/sdk Server with attribute-based discovery on the Tools dir.
+ *   3. Emit the resulting PSR-7 response back to the client.
+ *
+ * Bypasses Api::validateRequest() entirely. The standard MVC pipeline assumes
+ * Kyte's URL-shaped routing (POST /{model} + data) and HMAC-style response
+ * envelopes, neither of which apply to JSON-RPC over MCP. Calling
+ * Api::route() detects `/mcp` early and delegates here before any of that runs.
+ *
+ * Session storage uses the SDK's bundled FileSessionStore, scoped per-install
+ * under sys_get_temp_dir(). MCP sessions are short-lived and per-Claude-
+ * conversation, so file storage is sufficient at per-tenant scale. A MySQL-
+ * backed store can replace this if/when SaaS-scale deployment forces the
+ * issue (see design doc section 11).
+ *
+ * The handle()/process() split is for testability: process() is pure
+ * request-in / response-out and can be exercised from PHPUnit, while handle()
+ * binds it to PHP superglobals + SapiEmitter for real request handling.
+ */
+final class Endpoint
+{
+    /** Production entry point. Reads from globals, emits to SAPI. */
+    public static function handle(Api $api): void
+    {
+        $request = self::requestFromGlobals();
+        $response = self::process($api, $request);
+        (new SapiEmitter())->emit($response);
+    }
+
+    /**
+     * Pure request-in / response-out. Authenticates, dispatches via the SDK,
+     * returns the resulting PSR-7 response. Auth failures and pre-dispatch
+     * errors come back as JSON-RPC-shaped error responses with the
+     * appropriate HTTP status — never as exceptions thrown to the caller.
+     */
+    public static function process(Api $api, ServerRequestInterface $request): ResponseInterface
+    {
+        $psr17 = new Psr17Factory();
+
+        // Origin check runs before auth — DNS rebinding doesn't care about
+        // tokens, and rejecting fast saves a DB hit on the bearer lookup.
+        $originError = self::checkOrigin($request);
+        if ($originError !== null) {
+            return self::jsonRpcError($psr17, 403, -32011, $originError);
+        }
+
+        try {
+            self::authenticate($api, $request);
+        } catch (SessionException $e) {
+            return self::jsonRpcError($psr17, 401, -32001, $e->getMessage());
+        } catch (\Throwable $e) {
+            return self::jsonRpcError($psr17, 500, -32603, 'Internal MCP error: ' . $e->getMessage());
+        }
+
+        $transport = new StreamableHttpTransport(
+            $request,
+            responseFactory: $psr17,
+            streamFactory: $psr17,
+        );
+
+        $container = new McpContainer();
+        $container->set(Api::class, $api);
+
+        $sessionDir = self::sessionDirectory();
+
+        // Build registry + inner CallToolHandler ourselves so we can wrap the
+        // dispatch with ScopedCallToolHandler. The Builder otherwise creates
+        // these privately inside build(); registering our own registry via
+        // setRegistry() lets the SDK's loaders populate the same instance our
+        // wrapper later reads from. addRequestHandler() prepends to the
+        // handler list, so our wrapper wins the first-supports-wins dispatch
+        // in Server\Protocol over the SDK's default CallToolHandler.
+        $registry        = new McpRegistry();
+        $referenceHandler = new ReferenceHandler($container);
+        $innerCallTool   = new CallToolHandler($registry, $referenceHandler);
+        $scopedCallTool  = new ScopedCallToolHandler($innerCallTool, new ScopeRegistry($registry), $api);
+
+        $server = Server::builder()
+            ->setServerInfo(
+                'Kyte MCP',
+                \Kyte\Core\Version::get(),
+                'Kyte low-code framework MCP endpoint'
+            )
+            ->setInstructions(
+                'Tools operate on the account associated with the bearer token. ' .
+                'Use list_applications to discover apps, then traditional Kyte ' .
+                'workflows for further work. Additional tools land in subsequent ' .
+                'Phase 2 commits.'
+            )
+            ->setContainer($container)
+            ->setRegistry($registry)
+            ->addRequestHandler($scopedCallTool)
+            ->setSession(new FileSessionStore($sessionDir), new SaveSafeSessionFactory())
+            ->setDiscovery(__DIR__ . '/Tools')
+            ->build();
+
+        return $server->run($transport);
+    }
+
+    private static function requestFromGlobals(): ServerRequestInterface
+    {
+        $psr17 = new Psr17Factory();
+        $creator = new ServerRequestCreator($psr17, $psr17, $psr17, $psr17);
+        return $creator->fromGlobals();
+    }
+
+    /**
+     * Run the auth dispatcher to populate $api->account from the bearer token.
+     * Bypasses validateRequest() since we don't want its HMAC-flavored response
+     * envelope side-effects (kyte_pub, kyte_iden, etc.) leaking into MCP.
+     *
+     * Reads the Authorization header from the PSR-7 request rather than from
+     * globals so this path is testable. McpTokenStrategy still consults
+     * $_SERVER itself; the test harness sets both consistently.
+     */
+    private static function authenticate(Api $api, ServerRequestInterface $request): void
+    {
+        $authHeader = $request->getHeaderLine('Authorization');
+        if ($authHeader === '') {
+            throw new SessionException('[ERROR] /mcp requires an Authorization header.');
+        }
+
+        $strategy = AuthDispatcher::buildDefault()->select();
+        if (!$strategy instanceof McpTokenStrategy) {
+            throw new SessionException('[ERROR] /mcp requires an MCP bearer token (kmcp_live_...).');
+        }
+
+        $strategy->preAuth($api);
+        $strategy->verify($api); // no-op for bearer; kept for symmetry
+
+        $api->mcpToken  = $strategy->token;
+        $api->mcpScopes = $strategy->scopes;
+    }
+
+    /**
+     * MCP spec § Security requires servers to validate the Origin header to
+     * prevent DNS rebinding attacks. The attack vector is browser-only:
+     * malicious JavaScript on attacker.com tricks the victim's browser into
+     * POSTing to a Kyte instance, exploiting the bearer-token auth that the
+     * browser may have cached. CLI clients (Claude Code) are not affected
+     * because there is no shared-cookie / shared-credential context for an
+     * attacker to exploit.
+     *
+     * Policy:
+     *   - No Origin header → allow. CLI clients (Claude Code, curl, gust)
+     *     don't send Origin. Forcing one would break every non-browser
+     *     integration without a security benefit.
+     *   - Origin present + matches allowlist → allow.
+     *   - Origin present + no match → 403 + JSON-RPC -32011.
+     *
+     * Allowlist source: the per-install `MCP_ALLOWED_ORIGINS` PHP constant
+     * (CSV of full origins, e.g. `"https://claude.ai,https://app.example.com"`).
+     * Empty / undefined means "no browser origins are allowed" — Claude.ai
+     * custom-connector users must opt in by setting the constant in their
+     * config.php. Restrictive default is intentional: a permissive
+     * allowlist would broaden the attack surface for browser-borne
+     * requests without an explicit opt-in signal from the operator.
+     *
+     * Returns the rejection reason string on failure, or null on pass.
+     */
+    private static function checkOrigin(ServerRequestInterface $request): ?string
+    {
+        $origin = trim($request->getHeaderLine('Origin'));
+        if ($origin === '') {
+            return null;
+        }
+
+        $allowed = defined('MCP_ALLOWED_ORIGINS') ? (string)MCP_ALLOWED_ORIGINS : '';
+        $list = array_values(array_filter(array_map('trim', explode(',', $allowed)), fn ($v) => $v !== ''));
+
+        if (in_array($origin, $list, true)) {
+            return null;
+        }
+
+        return "Origin '{$origin}' is not in the MCP_ALLOWED_ORIGINS allowlist.";
+    }
+
+    private static function sessionDirectory(): string
+    {
+        $dir = sys_get_temp_dir() . '/kyte-mcp-sessions';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0700, true);
+        }
+        return $dir;
+    }
+
+    private static function jsonRpcError(Psr17Factory $psr17, int $httpStatus, int $rpcCode, string $message): ResponseInterface
+    {
+        $body = json_encode([
+            'jsonrpc' => '2.0',
+            'id'      => null,
+            'error'   => ['code' => $rpcCode, 'message' => $message],
+        ]);
+        return $psr17->createResponse($httpStatus)
+            ->withHeader('Content-Type', 'application/json')
+            ->withBody($psr17->createStream($body));
+    }
+}

@@ -46,6 +46,15 @@ class ErrorHandler
     public function handleException($exception) {
         $error = new \Kyte\Core\ModelObject(KyteError);
 
+        $modelName = isset($this->apiContext->model) ? $this->apiContext->model : null;
+        $accountId = isset($this->apiContext->account->id) ? (int)$this->apiContext->account->id : null;
+        [$dataForLog, $responseForLog, $skipAI] = $this->resolveSensitivePayload(
+            isset($this->apiContext->data) ? $this->apiContext->data : null,
+            isset($this->apiContext->response) ? $this->apiContext->response : null,
+            $modelName,
+            $accountId
+        );
+
         $log_detail = [
             'kyte_account' => isset($this->apiContext->account->id) ? $this->apiContext->account->id : null,
             'user_id' => isset($this->apiContext->user->id) ? $this->apiContext->user->id : null,
@@ -55,11 +64,11 @@ class ErrorHandler
             'signature' => isset($this->apiContext->signature) ? $this->apiContext->signature : null,
             'contentType' => isset($this->apiContext->contentType) ? $this->apiContext->contentType : null,
             'request' => isset($this->apiContext->request) ? $this->apiContext->request : null,
-            'model' => isset($this->apiContext->model) ? $this->apiContext->model : null,
+            'model' => $modelName,
             'field' => isset($this->apiContext->field) ? $this->apiContext->field : null,
             'value' => isset($this->apiContext->value) ? $this->apiContext->value : null,
-            'data' => isset($this->apiContext->data) ? print_r($this->apiContext->data, true) : null,
-            'response' => isset($this->apiContext->response) ? print_r($this->apiContext->response, true) : null,
+            'data' => $dataForLog,
+            'response' => $responseForLog,
             // Exception details
             'message' => $exception->getMessage(),
             'line' => $exception->getLine(),
@@ -90,8 +99,11 @@ class ErrorHandler
             $this->sendSlackNotification($this->apiContext->app->slack_error_webhook, $slackMessage);
         }
 
-        // AI Error Correction - Queue for analysis (non-blocking, async)
-        if (defined('AI_ERROR_CORRECTION') && AI_ERROR_CORRECTION) {
+        // AI Error Correction - Queue for analysis (non-blocking, async).
+        // Skipped entirely when the originating controller, model, or any
+        // model field is flagged sensitive — do not send regulated data
+        // off-platform for analysis, regardless of upstream regex masking.
+        if (defined('AI_ERROR_CORRECTION') && AI_ERROR_CORRECTION && !$skipAI) {
             \Kyte\AI\AIErrorCorrection::queueForAnalysis($error, $this->apiContext);
         }
     }
@@ -110,13 +122,20 @@ class ErrorHandler
 
         $error = new \Kyte\Core\ModelObject(KyteError);
 
+        $modelName = isset($this->apiContext->model) ? $this->apiContext->model : null;
+        $accountId = isset($this->apiContext->account->id) ? (int)$this->apiContext->account->id : null;
+        // handleError doesn't capture data/response by default — only the
+        // AI-gate flag matters here, but we still call resolve for the
+        // single source of truth on the skipAI decision.
+        [, , $skipAI] = $this->resolveSensitivePayload(null, null, $modelName, $accountId);
+
         $log_detail = [
             'kyte_account' => isset($this->apiContext->account->id) ? $this->apiContext->account->id : null,
             'user_id' => isset($this->apiContext->user->id) ? $this->apiContext->user->id : null,
             'app_id' => isset($this->apiContext->appId) ? $this->apiContext->appId : null,
             'api_key' => isset($this->apiContext->key) ? $this->apiContext->key : null,
             'request' => isset($this->apiContext->request) ? $this->apiContext->request : null,
-            'model' => isset($this->apiContext->model) ? $this->apiContext->model : null,
+            'model' => $modelName,
             'message' => $errstr,
             'file' => $errfile,
             'line' => $errline,
@@ -147,12 +166,54 @@ class ErrorHandler
             }
         }
 
-        // AI Error Correction - Queue for analysis (non-blocking, async)
-        if (defined('AI_ERROR_CORRECTION') && AI_ERROR_CORRECTION) {
+        // AI Error Correction - Queue for analysis (non-blocking, async).
+        // Skipped when the originating controller/model is flagged sensitive.
+        if (defined('AI_ERROR_CORRECTION') && AI_ERROR_CORRECTION && !$skipAI) {
             \Kyte\AI\AIErrorCorrection::queueForAnalysis($error, $this->apiContext);
         }
 
         return true; // Don't execute PHP internal error handler
+    }
+
+    /**
+     * Resolve what data/response to persist for a given sensitivity tier
+     * and whether the AI error-correction queue should be skipped.
+     *
+     * Returns [dataForLog, responseForLog, skipAI]:
+     *   - dataForLog / responseForLog are null when the controller or model
+     *     is blanket-sensitive, or otherwise contain the (possibly
+     *     field-redacted) printable representation of the original value.
+     *   - skipAI is true whenever ANY tier is sensitive (controller, model,
+     *     or any field on the model). The AI gate is deliberately wider
+     *     than the storage gate: a partially-redacted payload still
+     *     contains contextual hints we don't want sent off-platform for
+     *     analysis.
+     */
+    private function resolveSensitivePayload($rawData, $rawResponse, ?string $modelName, ?int $accountId): array
+    {
+        $policy = \Kyte\Core\SensitivityPolicy::getInstance();
+        $shouldDrop = $policy->shouldDropPayload($modelName, $modelName, $accountId);
+
+        $sensitiveFields = $modelName !== null
+            ? $policy->getSensitiveFields($modelName, $accountId)
+            : [];
+        $skipAI = $shouldDrop || !empty($sensitiveFields);
+
+        if ($shouldDrop) {
+            return [null, null, $skipAI];
+        }
+
+        $redactedData = \is_array($rawData)
+            ? $policy->redactFields($rawData, $modelName, $accountId)
+            : $rawData;
+        $redactedResponse = \is_array($rawResponse)
+            ? $policy->redactFields($rawResponse, $modelName, $accountId)
+            : $rawResponse;
+
+        $dataForLog = $redactedData !== null ? print_r($redactedData, true) : null;
+        $responseForLog = $redactedResponse !== null ? print_r($redactedResponse, true) : null;
+
+        return [$dataForLog, $responseForLog, $skipAI];
     }
 
     /**
@@ -295,21 +356,31 @@ class ErrorHandler
             if (strlen($buffer) > $threshold) {
                 $error = new \Kyte\Core\ModelObject(KyteError);
 
+                $modelName = isset($this->apiContext->model) ? $this->apiContext->model : null;
+                $accountId = isset($this->apiContext->account->id) ? (int)$this->apiContext->account->id : null;
+                $shouldDrop = \Kyte\Core\SensitivityPolicy::getInstance()
+                    ->shouldDropPayload($modelName, $modelName, $accountId);
+
                 $log_detail = [
                     'kyte_account' => isset($this->apiContext->account->id) ? $this->apiContext->account->id : null,
                     'user_id' => isset($this->apiContext->user->id) ? $this->apiContext->user->id : null,
                     'app_id' => isset($this->apiContext->appId) ? $this->apiContext->appId : null,
                     'request' => isset($this->apiContext->request) ? $this->apiContext->request : null,
-                    'model' => isset($this->apiContext->model) ? $this->apiContext->model : null,
+                    'model' => $modelName,
                     'message' => 'Unexpected output captured via output buffering',
                     'log_level' => 'warning',
                     'log_type' => (isset($this->apiContext->appId) && strlen($this->apiContext->appId) > 0) ? 'application' : 'system',
                     'request_id' => $this->requestId,
                     'source' => 'output_buffer',
-                    'data' => substr($buffer, 0, 5000), // Truncate to prevent huge logs
+                    // The captured buffer is opaque — we can't field-redact a
+                    // string. If the originating context is sensitive, drop
+                    // the buffer contents entirely and keep only the
+                    // metadata so the row remains useful for audit.
+                    'data' => $shouldDrop ? null : substr($buffer, 0, 5000),
                     'context' => json_encode([
                         'buffer_length' => strlen($buffer),
                         'truncated' => strlen($buffer) > 5000,
+                        'sensitive_dropped' => $shouldDrop,
                     ]),
                 ];
 

@@ -186,6 +186,22 @@ class Api
 	public $authStrategy = null;
 
 	/**
+	 * Validated MCP bearer token for /mcp requests. Null on every other code
+	 * path. Populated by Mcp\Endpoint after McpTokenStrategy::preAuth runs.
+	 *
+	 * @var \Kyte\Core\ModelObject|null
+	 */
+	public $mcpToken = null;
+
+	/**
+	 * Parsed scopes (e.g. ['read','draft','commit']) from the validated MCP
+	 * token. Empty on every other code path.
+	 *
+	 * @var string[]
+	 */
+	public $mcpScopes = [];
+
+	/**
 	 * Model definition cache
 	 *
 	 * @var array
@@ -602,6 +618,33 @@ class Api
      */
 	public function route() {
 		try {
+			// /mcp is served by Mcp\Endpoint, which runs the MCP SDK and
+			// emits its own JSON-RPC / SSE response. Bypass Kyte's MVC
+			// pipeline (auth, session, response envelope, controller dispatch)
+			// entirely — none of it applies to MCP.
+			$path = ltrim((string)parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH), '/');
+			$firstSegment = explode('/', $path)[0] ?? '';
+			if (strcasecmp($firstSegment, 'mcp') === 0) {
+				// $this->key / $this->account are normally instantiated below;
+				// Mcp\Endpoint::handle() will populate $this->account itself
+				// after the dispatcher runs, but it expects the empty slots to
+				// exist first.
+				$this->key = new \Kyte\Core\ModelObject(KyteAPIKey);
+				$this->account = new \Kyte\Core\ModelObject(KyteAccount);
+				\Kyte\Mcp\Endpoint::handle($this);
+				return;
+			}
+
+			// /jwt/{login,refresh,logout,logout-all} are served by
+			// JwtEndpoint. Same rationale as /mcp — these aren't model
+			// CRUD endpoints, they emit their own JSON shapes, and they
+			// must run BEFORE auth (login can't require auth, refresh
+			// uses a refresh token not an access token, etc.).
+			if (strcasecmp($firstSegment, 'jwt') === 0) {
+				\Kyte\Core\Auth\JwtEndpoint::handle($this);
+				return;
+			}
+
 			if (isset($_SERVER['HTTP_X_KYTE_APPID'])) {
 				$this->appId = $_SERVER['HTTP_X_KYTE_APPID'];
 			}

@@ -41,13 +41,25 @@ class AuthDispatcher
     }
 
     /**
-     * Convenience constructor wiring the default strategy stack for the
-     * current migration state. Phase 1: Hmac only. Phase 2 adds McpToken.
-     * Phase 3 adds JwtSession.
+     * Convenience constructor wiring the default strategy stack.
+     *
+     * Order matters. Strategies are tried in declaration order; the
+     * first that claims the request wins. The chosen order below relies
+     * on each strategy's matches() being strict — McpToken only claims
+     * Bearer `kmcp_live_...`, JwtSession only claims Bearer JWT shapes
+     * (with KYTE_JWT_SECRET defined), and Hmac is the catch-all that
+     * handles every existing customer flow.
+     *
+     * Phase 2 (MCP) added McpTokenStrategy.
+     * Phase 3 (JWT) appended JwtSessionStrategy between MCP and HMAC.
+     * Each is opt-in by config: a token can only be claimed by a
+     * strategy that's actually configured on the install.
      */
     public static function buildDefault(): self
     {
         return new self([
+            new McpTokenStrategy(),
+            new JwtSessionStrategy(),
             new HmacSessionStrategy(),
         ]);
     }

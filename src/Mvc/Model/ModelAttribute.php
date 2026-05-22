@@ -55,6 +55,19 @@ $ModelAttribute = [
 			'date'		=> false,
 		],
 
+		// Sensitive-data flag at the field level. Distinct from 'protected':
+		// 'protected' only blanks the value in GET responses. 'sensitive'
+		// redacts the field from activity/error logs and from MCP read tool
+		// responses. Set both if you want both behaviors.
+		'sensitive'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 0,
+			'date'		=> false,
+		],
+
 		// optional description
 		'description'		=> [
 			'type'		=> 't',

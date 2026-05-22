@@ -2,11 +2,28 @@
 <phpunit bootstrap="./tests/bootstrap.php" colors="true" defaultTestSuite="unit">
   <testsuites>
     <testsuite name="unit">
+      <file>tests/ActivityLoggerSensitivityTest.php</file>
       <file>tests/ApiTest.php</file>
+      <file>tests/Bz2CodecTest.php</file>
+      <file>tests/ClientIpTest.php</file>
       <file>tests/DatabaseTest.php</file>
+      <file>tests/ErrorHandlerSensitivityTest.php</file>
       <file>tests/FunctionTest.php</file>
       <file>tests/HmacSessionStrategyTest.php</file>
+      <file>tests/JwtEndpointTest.php</file>
+      <file>tests/JwtSessionStrategyTest.php</file>
+      <file>tests/McpControllerToolsTest.php</file>
+      <file>tests/McpEndpointTest.php</file>
+      <file>tests/McpModelToolsTest.php</file>
+      <file>tests/McpPageToolsTest.php</file>
+      <file>tests/McpScopeTest.php</file>
+      <file>tests/McpSensitivityTest.php</file>
+      <file>tests/McpTokenControllerTest.php</file>
+      <file>tests/McpTokenStrategyTest.php</file>
       <file>tests/ModelTest.php</file>
+      <file>tests/RefreshTokenStoreTest.php</file>
+      <file>tests/SaveSafeSessionTest.php</file>
+      <file>tests/SensitivityPolicyTest.php</file>
       <file>tests/SignatureTest.php</file>
       <file>tests/VersionTest.php</file>
     </testsuite>

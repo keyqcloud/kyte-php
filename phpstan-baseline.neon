@@ -1,0 +1,649 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Access to an undefined property \$this\(Kyte\\AI\\AIErrorAnalyzer\)\:\:\$lastCost\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/AI/AIErrorAnalyzer.php
+
+		-
+			message: '#^Access to an undefined property \$this\(Kyte\\AI\\AIErrorAnalyzer\)\:\:\$lastOutputTokens\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/AI/AIErrorAnalyzer.php
+
+		-
+			message: '#^Access to an undefined property \$this\(Kyte\\AI\\AIErrorAnalyzer\)\:\:\$lastRequestId\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/AI/AIErrorAnalyzer.php
+
+		-
+			message: '#^Access to an undefined property Kyte\\AI\\AIErrorAnalyzer\:\:\$lastCost\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/AI/AIErrorAnalyzer.php
+
+		-
+			message: '#^Access to an undefined property Kyte\\AI\\AIErrorAnalyzer\:\:\$lastInputTokens\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/AI/AIErrorAnalyzer.php
+
+		-
+			message: '#^Access to an undefined property Kyte\\AI\\AIErrorAnalyzer\:\:\$lastOutputTokens\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/AI/AIErrorAnalyzer.php
+
+		-
+			message: '#^Access to an undefined property Kyte\\AI\\AIErrorAnalyzer\:\:\$lastRequestId\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/AI/AIErrorAnalyzer.php
+
+		-
+			message: '#^Constant AWS_ACCESS_KEY_ID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/AI/AIErrorAnalyzer.php
+
+		-
+			message: '#^Constant AWS_SECRET_KEY not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/AI/AIErrorAnalyzer.php
+
+		-
+			message: '#^Constant AWS_ACCESS_KEY_ID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Aws/Credentials.php
+
+		-
+			message: '#^Constant AWS_SECRET_KEY not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Aws/Credentials.php
+
+		-
+			message: '#^Caught class AwsException not found\.$#'
+			identifier: class.notFound
+			count: 12
+			path: src/Aws/S3.php
+
+		-
+			message: '#^Constant ALLOW_ENC_HANDOFF not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Core/Api.php
+
+		-
+			message: '#^Constant ALLOW_MULTILOGON not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: src/Core/Api.php
+
+		-
+			message: '#^Constant API_URL not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Core/Api.php
+
+		-
+			message: '#^Constant APP_DATE_FORMAT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Core/Api.php
+
+		-
+			message: '#^Constant APP_LANG not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Core/Api.php
+
+		-
+			message: '#^Constant AUTH_STRATEGY_DISPATCHER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Core/Api.php
+
+		-
+			message: '#^Constant IS_PRIVATE not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: src/Core/Api.php
+
+		-
+			message: '#^Constant PAGE_SIZE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Core/Api.php
+
+		-
+			message: '#^Constant PASSWORD_FIELD not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Core/Api.php
+
+		-
+			message: '#^Constant SESSION_TIMEOUT not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: src/Core/Api.php
+
+		-
+			message: '#^Constant SIGNATURE_TIMEOUT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Core/Api.php
+
+		-
+			message: '#^Constant USERNAME_FIELD not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Core/Api.php
+
+		-
+			message: '#^Constant VERBOSE_LOG not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: src/Core/Api.php
+
+		-
+			message: '#^Constant APP_LANG not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Core/Auth/HmacSessionStrategy.php
+
+		-
+			message: '#^Constant IS_PRIVATE not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: src/Core/Auth/HmacSessionStrategy.php
+
+		-
+			message: '#^Constant SIGNATURE_TIMEOUT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Core/Auth/HmacSessionStrategy.php
+
+		-
+			message: '#^Constant VERBOSE_LOG not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Core/Auth/HmacSessionStrategy.php
+
+		-
+			message: '#^Call to an undefined static method Kyte\\Core\\DBI\:\:setCharsetApp\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: src/Core/DBI.php
+
+		-
+			message: '#^Call to an undefined static method Kyte\\Core\\DBI\:\:setEngineApp\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: src/Core/DBI.php
+
+		-
+			message: '#^Caught class Kyte\\Core\\mysqli_sql_exception not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Core/DBI.php
+
+		-
+			message: '#^Undefined variable\: \$charsetApp$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/Core/DBI.php
+
+		-
+			message: '#^Undefined variable\: \$engineApp$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/Core/DBI.php
+
+		-
+			message: '#^Undefined variable\: \$tbl_name_news$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/Core/DBI.php
+
+		-
+			message: '#^Constant RETURN_NO_MODEL not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: src/Core/ModelObject.php
+
+		-
+			message: '#^Constant STRICT_TYPING not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Core/ModelObject.php
+
+		-
+			message: '#^Method Kyte\\Core\\ModelObject\:\:validateRequiredParams\(\) should return bool but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: src/Core/ModelObject.php
+
+		-
+			message: '#^Variable \$id in isset\(\) is never defined\.$#'
+			identifier: isset.variable
+			count: 1
+			path: src/Core/ModelObject.php
+
+		-
+			message: '#^Call to an undefined method Kyte\\Cron\\AIErrorAnalysisCron\:\:logError\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: src/Cron/AIErrorAnalysisCron.php
+
+		-
+			message: '#^Call to an undefined static method Kyte\\Core\\Model\:\:create\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: src/Cron/CronJobManager.php
+
+		-
+			message: '#^Call to an undefined static method Kyte\\Core\\Model\:\:one\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 3
+			path: src/Cron/CronJobManager.php
+
+		-
+			message: '#^Static call to instance method Kyte\\Core\\Model\:\:delete\(\)\.$#'
+			identifier: method.staticCall
+			count: 1
+			path: src/Cron/CronJobManager.php
+
+		-
+			message: '#^Call to an undefined method Kyte\\Mvc\\Controller\\AIErrorDeduplicationController\:\:error\(\)\.$#'
+			identifier: method.notFound
+			count: 6
+			path: src/Mvc/Controller/AIErrorDeduplicationController.php
+
+		-
+			message: '#^Call to an undefined method Kyte\\Mvc\\Controller\\AIErrorDeduplicationController\:\:success\(\)\.$#'
+			identifier: method.notFound
+			count: 5
+			path: src/Mvc/Controller/AIErrorDeduplicationController.php
+
+		-
+			message: '#^Constant KYTE_USE_SNS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/ApplicationController.php
+
+		-
+			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/ApplicationController.php
+
+		-
+			message: '#^Constant SNS_REGION not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/ApplicationController.php
+
+		-
+			message: '#^Variable \$credential might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/Mvc/Controller/ApplicationController.php
+
+		-
+			message: '#^Variable \$site might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: src/Mvc/Controller/ApplicationController.php
+
+		-
+			message: '#^Result of method Kyte\\Mvc\\Controller\\CronJobController\:\:handleRecover\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: src/Mvc/Controller/CronJobController.php
+
+		-
+			message: '#^Result of method Kyte\\Mvc\\Controller\\CronJobController\:\:handleRollback\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: src/Mvc/Controller/CronJobController.php
+
+		-
+			message: '#^Result of method Kyte\\Mvc\\Controller\\CronJobController\:\:handleStats\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: src/Mvc/Controller/CronJobController.php
+
+		-
+			message: '#^Result of method Kyte\\Mvc\\Controller\\CronJobController\:\:handleTrigger\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: src/Mvc/Controller/CronJobController.php
+
+		-
+			message: '#^Result of method Kyte\\Mvc\\Controller\\CronJobExecutionController\:\:handleFailed\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: src/Mvc/Controller/CronJobExecutionController.php
+
+		-
+			message: '#^Result of method Kyte\\Mvc\\Controller\\CronJobExecutionController\:\:handlePending\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: src/Mvc/Controller/CronJobExecutionController.php
+
+		-
+			message: '#^Result of method Kyte\\Mvc\\Controller\\CronJobExecutionController\:\:handleRecent\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: src/Mvc/Controller/CronJobExecutionController.php
+
+		-
+			message: '#^Result of method Kyte\\Mvc\\Controller\\CronJobExecutionController\:\:handleRunning\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: src/Mvc/Controller/CronJobExecutionController.php
+
+		-
+			message: '#^Result of method Kyte\\Mvc\\Controller\\CronJobExecutionController\:\:handleStatistics\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: src/Mvc/Controller/CronJobExecutionController.php
+
+		-
+			message: '#^Result of method Kyte\\Mvc\\Controller\\CronJobFunctionController\:\:handleRollback\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: src/Mvc/Controller/CronJobFunctionController.php
+
+		-
+			message: '#^Caught class Kyte\\Mvc\\Controller\\Exception not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Mvc/Controller/KyteFunctionVersionController.php
+
+		-
+			message: '#^Constant KYTE_USE_SNS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: src/Mvc/Controller/KyteLibraryController.php
+
+		-
+			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: src/Mvc/Controller/KyteLibraryController.php
+
+		-
+			message: '#^Constant SNS_REGION not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: src/Mvc/Controller/KyteLibraryController.php
+
+		-
+			message: '#^Constant KYTE_JS_CDN not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/KytePageController.php
+
+		-
+			message: '#^Constant KYTE_USE_SNS not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: src/Mvc/Controller/KytePageController.php
+
+		-
+			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: src/Mvc/Controller/KytePageController.php
+
+		-
+			message: '#^Constant SNS_REGION not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: src/Mvc/Controller/KytePageController.php
+
+		-
+			message: '#^Undefined variable\: \$app$#'
+			identifier: variable.undefined
+			count: 2
+			path: src/Mvc/Controller/KytePageController.php
+
+		-
+			message: '#^Constant KYTE_USE_SNS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/KytePageDataController.php
+
+		-
+			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/KytePageDataController.php
+
+		-
+			message: '#^Constant SNS_REGION not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/KytePageDataController.php
+
+		-
+			message: '#^Caught class Kyte\\Mvc\\Controller\\Exception not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Mvc/Controller/KytePageVersionController.php
+
+		-
+			message: '#^Constant APP_EMAIL not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/KytePasswordResetController.php
+
+		-
+			message: '#^Constant APP_SES_REGION not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/KytePasswordResetController.php
+
+		-
+			message: '#^Constant SHIPYARD_URL not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/KytePasswordResetController.php
+
+		-
+			message: '#^Constant KYTE_USE_SNS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: src/Mvc/Controller/KyteScriptController.php
+
+		-
+			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: src/Mvc/Controller/KyteScriptController.php
+
+		-
+			message: '#^Constant SNS_REGION not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: src/Mvc/Controller/KyteScriptController.php
+
+		-
+			message: '#^Caught class Kyte\\Mvc\\Controller\\Exception not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Mvc/Controller/KyteScriptVersionController.php
+
+		-
+			message: '#^Constant SNS_KYTE_SHIPYARD_UPDATE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/KyteShipyardUpdateController.php
+
+		-
+			message: '#^Constant SNS_REGION not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/KyteShipyardUpdateController.php
+
+		-
+			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: src/Mvc/Controller/KyteSiteController.php
+
+		-
+			message: '#^Constant SNS_REGION not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: src/Mvc/Controller/KyteSiteController.php
+
+		-
+			message: '#^Constant STRICT_TYPING not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/ModelController.php
+
+		-
+			message: '#^Constant extTableModel not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/ModelController.php
+
+		-
+			message: '#^Undefined variable\: \$conditions$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/Mvc/Controller/ModelController.php
+
+		-
+			message: '#^Constant KYTE_USE_SNS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/NavigationController.php
+
+		-
+			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/NavigationController.php
+
+		-
+			message: '#^Constant SNS_REGION not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/NavigationController.php
+
+		-
+			message: '#^Variable \$nav might not be defined\.$#'
+			identifier: variable.undefined
+			count: 11
+			path: src/Mvc/Controller/NavigationController.php
+
+		-
+			message: '#^Constant PASSWORD_FIELD not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: src/Mvc/Controller/SessionController.php
+
+		-
+			message: '#^Constant SESSION_RETURN_FK not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/SessionController.php
+
+		-
+			message: '#^Constant USERNAME_FIELD not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: src/Mvc/Controller/SessionController.php
+
+		-
+			message: '#^Constant USE_SESSION_MAP not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: src/Mvc/Controller/SessionController.php
+
+		-
+			message: '#^Constant KYTE_USE_SNS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/SideNavController.php
+
+		-
+			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/SideNavController.php
+
+		-
+			message: '#^Constant SNS_REGION not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Mvc/Controller/SideNavController.php
+
+		-
+			message: '#^Variable \$nav might not be defined\.$#'
+			identifier: variable.undefined
+			count: 11
+			path: src/Mvc/Controller/SideNavController.php
+
+		-
+			message: '#^Constant APP_EMAIL not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Util/Email.php
+
+		-
+			message: '#^Constant APP_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: src/Util/Email.php
+
+		-
+			message: '#^Deprecated in PHP 8\.0\: Required parameter \$region follows optional parameter \$sender\.$#'
+			identifier: parameter.requiredAfterOptional
+			count: 1
+			path: src/Util/Email.php
+
+		-
+			message: '#^Constant AWS_ACCESS_KEY_ID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: tests/AwsCredentialTest.php
+
+		-
+			message: '#^Constant AWS_SECRET_KEY not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: tests/AwsCredentialTest.php
+
+		-
+			message: '#^Constant AWS_ACCESS_KEY_ID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: tests/AwsS3Test.php
+
+		-
+			message: '#^Constant SIGNATURE_TIMEOUT not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: tests/HmacSessionStrategyTest.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''created_by'' \(''created_by'', ''created_by''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: tests/ModelTest.php
+
+		-
+			message: '#^Constant SIGNATURE_TIMEOUT not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: tests/SignatureTest.php

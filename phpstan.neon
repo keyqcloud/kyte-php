@@ -1,0 +1,29 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 1
+    paths:
+        - src
+        - tests
+    excludePaths:
+        - vendor
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        # Kyte's global model-name constants (Application, Controller, etc.)
+        # are defined at runtime by Api::loadModelsAndControllers via define()
+        # calls. PHPStan can't see them statically.
+        - '#Constant [A-Z][A-Za-z]+ not found\.#'
+        # Per-install config constants (KYTE_JWT_SECRET, KYTE_TRUST_PROXY_IP_HEADERS,
+        # AUTH_STRATEGY_DISPATCHER, etc.) are defined in each install's
+        # config.php. Defensive defined() checks at call sites are the
+        # runtime guard; the static analyzer can't see them.
+        - '#Constant [A-Z][A-Z_0-9]+ not found\.#'
+        # Same for tools that reference `KyteAccount`, `KyteError`, etc.
+        - '#Class [A-Z][A-Za-z]+ referenced with incorrect case as#'
+        # AllowDynamicProperties attribute on ModelObject permits dynamic
+        # property access which is the whole point of that class.
+        - '#Access to an undefined property Kyte\\Core\\ModelObject::#'
+    bootstrapFiles:
+        - vendor/autoload.php

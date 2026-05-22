@@ -51,6 +51,19 @@ $Controller = [
 			],
 		],
 
+		// Sensitive-data flag. When 1, the controller's request body and
+		// response payload are dropped from activity/error logs and MCP read
+		// tools refuse or redact source. Runtime API response is unaffected.
+		// Applies to virtual (no-model) controllers as well as model-bound ones.
+		'sensitive'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 0,
+			'date'		=> false,
+		],
+
 		// framework attributes
 
 		'kyte_locked'	=> [

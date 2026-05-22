@@ -118,6 +118,21 @@ $KytePage = [
 			'date'		=> false,
 		],
 
+		// Sensitive-data flag. When 1, MCP read_page withholds the
+		// page's html/stylesheet/javascript content; metadata still
+		// returns so callers know the page exists. Distinct from the
+		// Controller/DataModel/ModelAttribute tiers because pages do
+		// not write to activity/error logs — this flag only affects
+		// MCP exposure.
+		'sensitive'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 0,
+			'date'		=> false,
+		],
+
 		'sitemap_include' => [
 			'type'		=> 'i',
 			'required'	=> false,
