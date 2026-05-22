@@ -1,3 +1,31 @@
+## 4.4.1
+
+### Bug Fix: CORS preflight on `/jwt/*` endpoints
+
+Browser CORS preflight requests (`OPTIONS /jwt/login`) were being routed
+through `JwtEndpoint::process()`, which only accepts POST and returned
+`405 method_not_allowed` with no CORS headers. Browsers then blocked
+the actual `POST /jwt/login`, breaking JWT login for any same-page web
+client (Shipyard 2.0+ in JWT mode, kyte-api-js v2 JWT consumers).
+
+Root cause: `Api::cors()` runs inside `validateRequest()`, which lives
+downstream of the `/jwt` dispatch in `Api::route()`. So `/jwt/*` skipped
+CORS entirely. (Same is technically true for `/mcp` but MCP is
+server-to-server and doesn't trigger browser preflight.)
+
+Fix: `JwtEndpoint::handle()` now emits CORS headers on every response
+and replies to OPTIONS with `204 No Content` + CORS preflight headers
+before falling through to `process()`. Mirrors the permissive Origin
+policy in `Api::cors()`.
+
+Regression test: `JwtEndpointTest::testHandleAnswersOptionsPreflightWith204`
+exercises the OPTIONS path through `handle()` end-to-end with output
+buffering and asserts the 204 response.
+
+No schema changes. Composer upgrade is sufficient. Customers running
+Shipyard 2.0+ in JWT mode must update before JWT login will succeed
+in a browser.
+
 ## 4.4.0
 
 > Phase 2 (MCP server) + Phase 2.5 (sensitive-data flag) + Phase 3 (JWT auth) all ship together. **No breaking changes** — every addition is opt-in, defaults preserve v4.3.x behavior bit-for-bit. Existing customers can upgrade in place without code changes.

@@ -48,15 +48,48 @@ final class JwtEndpoint
 
     /**
      * Production entry point — reads globals, writes to SAPI.
+     *
+     * Handles CORS inline. Api::cors() lives in validateRequest() which
+     * runs *downstream* of the /jwt dispatch in Api::route(), so by the
+     * time we get here, no CORS headers have been emitted. Browser
+     * preflight (OPTIONS) on /jwt/login would otherwise see a 405 with
+     * no Access-Control-Allow-Origin and block the real POST. Mirrors
+     * the permissive Origin policy in Api::cors().
      */
     public static function handle(Api $api): void
     {
+        self::emitCorsHeaders();
+
+        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+            $reqHeaders = $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'] ?? '';
+            header('Access-Control-Allow-Methods: POST, OPTIONS');
+            header("Access-Control-Allow-Headers: {$reqHeaders}");
+            http_response_code(204);
+            return;
+        }
+
         $rawBody = (string)file_get_contents('php://input');
         $result = self::process($api, $_SERVER, $rawBody);
 
         http_response_code($result['status']);
-        header('Content-Type: application/json');
         echo json_encode($result['body']);
+    }
+
+    /**
+     * Emit the per-request CORS headers shared by all /jwt/* responses,
+     * including the OPTIONS preflight reply. Mirrors Api::cors() so a
+     * browser opening a session via /jwt/login sees the same Origin /
+     * Credentials / Content-Type contract as it would for HMAC login.
+     */
+    private static function emitCorsHeaders(): void
+    {
+        $origin = $_SERVER['HTTP_ORIGIN']
+            ?? $_SERVER['HTTP_REFERER']
+            ?? $_SERVER['REMOTE_ADDR']
+            ?? '';
+        header("Access-Control-Allow-Origin: {$origin}");
+        header('Access-Control-Allow-Credentials: true');
+        header('Content-Type: application/json; charset=utf-8');
     }
 
     /**
