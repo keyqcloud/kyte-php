@@ -179,6 +179,23 @@ $Application = [
 			'protected'	=> true,
 		],
 
+		// Auth mode for code that Shipyard generates for this app.
+		// 'hmac' (default) → generated pages use the v1.x HMAC sign/rotate
+		//                    flow; new Kyte(url, key, iden, num, app).
+		// 'jwt'            → generated pages use the v2 JWT flow;
+		//                    new Kyte(url, null, null, null, app,
+		//                             { authMode: 'jwt' }).
+		// Switching mid-flight is a deliberate migration step — both
+		// strategies coexist on the server, but each generated page is
+		// pinned to whichever mode was active at the time of build.
+		'auth_mode'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 16,
+			'date'		=> false,
+			'default'	=> 'hmac',
+		],
+
 		// framework attributes
 
 		'kyte_account'	=> [
