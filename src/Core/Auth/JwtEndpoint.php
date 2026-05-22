@@ -153,11 +153,24 @@ final class JwtEndpoint
             return self::error(401, 'invalid_credentials', 'Invalid credentials.');
         }
 
+        // Resolve the user's account. KyteUser has a direct kyte_account FK,
+        // but app-scoped User models (created via DataModel in Shipyard) do
+        // not — the user belongs to the Application, and the Application
+        // belongs to the account. Fall back to $app->kyte_account in that
+        // case. This mirrors how HMAC's account context is derived: the
+        // session is on the app, and the app carries the account FK.
         $accountId = isset($user->kyte_account) ? (int)$user->kyte_account : 0;
+        if ($accountId === 0 && $app !== null && isset($app->kyte_account)) {
+            $accountId = (int)$app->kyte_account;
+        }
         if ($accountId === 0) {
             return self::error(401, 'invalid_credentials', 'Invalid credentials.');
         }
 
+        // KyteAccount lives in the default (system) DB. After the app-scoped
+        // user retrieve above, dbswitch is set to App DB. ModelObject->retrieve
+        // toggles back to default automatically when the target model has no
+        // 'appId' (KyteAccount doesn't), so no explicit dbswitch needed here.
         $account = new ModelObject(KyteAccount);
         if (!$account->retrieve('id', $accountId)) {
             return self::error(401, 'invalid_credentials', 'Invalid credentials.');
