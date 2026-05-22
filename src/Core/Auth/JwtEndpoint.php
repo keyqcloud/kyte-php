@@ -212,20 +212,51 @@ final class JwtEndpoint
     }
 
     /**
-     * Serialize a ModelObject for the JWT login response. Strips fields
-     * marked `protected: true` in the model struct (e.g. password hash,
-     * secret_key) — mirrors what ModelController::getObject does but
-     * standalone, since we can't invoke a controller from here.
+     * Serialize a ModelObject for the JWT login response. Mirrors the
+     * subset of ModelController::getObject that the customer app actually
+     * consumes:
+     *   - Strip fields marked `protected: true` (password hash, etc.)
+     *   - Expand FK references into nested objects when SESSION_RETURN_FK
+     *     is enabled (default true). Without this, `user.org` would be
+     *     the integer `2` instead of `{id:2, org_type:'LP', ...}` — and
+     *     frontends doing `user.org.org_type` would silently break.
+     *
+     * Recursion-bounded at depth 3 to prevent runaway expansion on
+     * cyclic FKs (rare but possible in customer schemas).
      */
-    private static function userToArray(ModelObject $user): array
+    private static function userToArray(ModelObject $user, int $depth = 0): array
     {
         $params = $user->getAllParams();
         $struct = $user->kyte_model['struct'] ?? [];
+        $expandFks = $depth < 3
+            && (!defined('SESSION_RETURN_FK') || SESSION_RETURN_FK);
+
         foreach ($params as $key => $value) {
+            if (!isset($struct[$key])) {
+                continue;
+            }
+
             if (isset($struct[$key]['protected']) && $struct[$key]['protected']) {
-                $params[$key] = '';  // strip protected fields (password hash, etc.)
+                $params[$key] = '';
+                continue;
+            }
+
+            // Expand FK if struct declares one, value is non-empty, and
+            // SESSION_RETURN_FK allows.
+            if ($expandFks && isset($struct[$key]['fk'], $value) && !empty($value)) {
+                $fk = $struct[$key]['fk'];
+                if (isset($fk['model'], $fk['field']) && defined($fk['model'])) {
+                    $fkModel = constant($fk['model']);
+                    $fkObj = new ModelObject($fkModel);
+                    // retrieve() handles dbswitch automatically based on
+                    // whether the FK model has 'appId' (app-scoped vs default).
+                    if ($fkObj->retrieve($fk['field'], $value, null, null, true)) {
+                        $params[$key] = self::userToArray($fkObj, $depth + 1);
+                    }
+                }
             }
         }
+
         // The kyte_model handle itself should never leak to clients.
         unset($params['kyte_model']);
         return $params;
