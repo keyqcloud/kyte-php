@@ -123,6 +123,37 @@ class JwtSessionStrategyTest extends TestCase
         $this->assertSame('jwt', $this->api->response['session']);
     }
 
+    /**
+     * Regression: every JWT-bearer request to a protected MVC endpoint
+     * was returning 403 "Unauthorized API request." because
+     * ModelController::authenticate() gates on
+     * `$this->api->session->hasSession`, and JwtSessionStrategy.preAuth
+     * was not setting it. HmacSessionStrategy gets hasSession=true
+     * indirectly via $api->session->validate(); JWT has no equivalent
+     * cookie-validation step, so it must set it explicitly.
+     */
+    public function testPreAuthMarksSessionAsAuthenticatedForProtectedEndpoints(): void
+    {
+        // Instantiate a SessionManager the way Api::route() does so we
+        // can assert against it the same way ModelController::authenticate()
+        // would.
+        $this->api->session = new \Kyte\Session\SessionManager(
+            Session, KyteUser, 'email', 'password', null, false, 3600
+        );
+        $this->assertFalse($this->api->session->hasSession, 'precondition: SessionManager starts unauthenticated');
+
+        $jwt = $this->mintToken();
+        $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $jwt;
+
+        $strategy = new JwtSessionStrategy();
+        $strategy->preAuth($this->api);
+
+        $this->assertTrue(
+            $this->api->session->hasSession,
+            'JwtSessionStrategy must set $api->session->hasSession so ModelController::authenticate() accepts the request'
+        );
+    }
+
     public function testPreAuthRejectsTamperedSignature(): void
     {
         $jwt = $this->mintToken();

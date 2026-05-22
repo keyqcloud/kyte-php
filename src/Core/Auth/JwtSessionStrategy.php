@@ -172,6 +172,20 @@ class JwtSessionStrategy implements AuthStrategy
         }
         $api->user = $user;
 
+        // Mark the SessionManager as authenticated.
+        //
+        // ModelController::authenticate() (line ~189) gates every protected
+        // model endpoint on `$this->api->session->hasSession`. In the HMAC
+        // flow, $api->session->validate() sets this to true after consuming
+        // a valid session cookie. JWT has no cookie-backed session — we
+        // just validated the bearer above and resolved $api->user — so we
+        // mark hasSession directly here. Without this, every JWT bearer
+        // request to a protected MVC endpoint returns 403 "Unauthorized
+        // API request." even though the JWT itself decoded cleanly.
+        if (isset($api->session) && property_exists($api->session, 'hasSession')) {
+            $api->session->hasSession = true;
+        }
+
         // The HMAC path uses $api->session (SessionManager) to hand out
         // rotating tokens. JWT has no rotating-session state; we set
         // the response slot to indicate the session is JWT-mediated so
