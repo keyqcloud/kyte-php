@@ -1,3 +1,23 @@
+## 4.5.0
+
+### Feature: JWT session lifetime caps (inactivity + absolute)
+
+JWT sessions in 4.4.x were effectively unlimited — every `/jwt/refresh` issued a fresh refresh token with `expires_at = now + 7d`, and the 15-minute access TTL meant any page activity rotated the refresh token forward indefinitely. A user could stay logged in for weeks just by opening the app every few days. This violates OWASP ASVS V3 ("absolute timeout MUST exist") and is the wrong default for an admin tool / regulated-industry web app.
+
+This release introduces a two-knob policy that matches the industry-standard pattern (sliding inactivity timeout + absolute family cap):
+
+1. **Lowered inactivity timeout.** `KYTE_JWT_REFRESH_TTL` default drops from 604800s (7d) to 14400s (4h). Closing the browser at 5pm now forces a re-login the next morning. Per-deployment override still applies — consumer mobile apps with "remember me" can opt for longer.
+
+2. **New absolute family cap.** `KYTE_JWT_FAMILY_MAX_LIFETIME` (new constant, default 43200s / 12h) caps total session lifetime from the original `/jwt/login`, independent of how active the user is. Enforced in `RefreshTokenStore::rotate()` — when crossed, the whole token family is revoked with `revoked_reason='family_max_lifetime'` and the user must re-authenticate.
+
+3. **New column: `KyteRefreshToken.family_started_at`.** Anchors the absolute cap to the original login moment. Set in `issue()`, copied forward unchanged in `issueInFamily()` on each rotation. Backward-compatibility: pre-upgrade tokens have `family_started_at = 0` and are treated as "uncapped" on first post-upgrade rotation — the rotation succeeds and the successor anchors the cap to that moment forward. No mass logout at upgrade time.
+
+The defaults align with AWS Console (12h max), Microsoft 365 admin (1h/12h), and OWASP ASVS V3 absolute-timeout requirements. Customer mobile/consumer apps that need longer sessions can override both constants per-deployment.
+
+Schema migration: `KyteRefreshToken` gains one unsigned-int column. **Run `migrations/4.5.0_jwt_family_lifetime.sql` after `composer update`** — Kyte does not auto-ALTER system tables. Existing rows backfill to 0 → treated as legacy → cap anchors on the next rotation, so there is NO mass logout at deploy time. Same operational pattern as the 4.4.0 sensitive-columns + JWT-refresh migrations.
+
+Tests: `RefreshTokenStoreTest` covers (a) family_started_at set on issue, (b) preserved across rotation, (c) cap rejection past the window, (d) cap allows refresh inside the window, (e) zero-anchor legacy backfill.
+
 ## 4.4.5
 
 ### Bug Fix + Feature: JWT login parity with HMAC session response
