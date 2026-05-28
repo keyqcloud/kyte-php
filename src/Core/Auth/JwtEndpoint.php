@@ -271,25 +271,40 @@ final class JwtEndpoint
 
         $result = RefreshTokenStore::rotate($raw, $ip);
 
-        // Re-load user + account for the new access token.
-        $user = new ModelObject(KyteUser);
+        // Resolve the user from the SAME model the app authenticates against.
+        // Apps with a custom user_model (an app-scoped User DataModel) do NOT
+        // live in KyteUser — login() handles this via resolveAuthContext(), and
+        // refresh() MUST mirror it. Without this, every refresh on such an app
+        // 401s with "principal not found" the moment the 15-min access token
+        // expires (the user_id is an app-DB id, absent from KyteUser). Resolve
+        // the app first so resolveAuthContext loads the app models + DB context
+        // and hands back the correct user_model.
+        $appIdentifier = null;
+        $userModel = KyteUser;
+        if ($result['app_id'] !== null) {
+            $app = new ModelObject(Application);
+            if ($app->retrieve('id', $result['app_id'])) {
+                $appIdentifier = (string)$app->identifier;
+                $context = self::resolveAuthContext($appIdentifier);
+                $userModel = $context['user_model'];
+            }
+        }
+
+        // Re-load user for the new access token from the resolved model.
+        $user = new ModelObject($userModel);
         if (!$user->retrieve('id', $result['user_id'])) {
             // The user's row was removed between issuance and refresh.
             // Family revocation is appropriate — the principal is gone.
             return self::error(401, 'invalid_credentials', 'Refresh token principal not found.');
         }
 
+        // KyteAccount lives in the default (system) DB. resolveAuthContext may
+        // have set the app DB credentials; ModelObject->retrieve toggles back to
+        // the default DB automatically for models without 'appId' (KyteAccount),
+        // so no explicit dbswitch is needed here.
         $account = new ModelObject(KyteAccount);
         if (!$account->retrieve('id', $result['account_id'])) {
             return self::error(401, 'invalid_credentials', 'Refresh token account not found.');
-        }
-
-        $appIdentifier = null;
-        if ($result['app_id'] !== null) {
-            $app = new ModelObject(Application);
-            if ($app->retrieve('id', $result['app_id'])) {
-                $appIdentifier = (string)$app->identifier;
-            }
         }
 
         $accessToken = self::mintAccessJwt($user, $account, $appIdentifier);
