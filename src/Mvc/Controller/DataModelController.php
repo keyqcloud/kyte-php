@@ -124,7 +124,14 @@ class DataModelController extends ModelController
                     throw new \Exception("Unknown model definition");
                 }
 
-                if ($o->name != $r['name']) {
+                // Only run the table-rename path when the request actually
+                // carries a (different) name. A metadata-only partial PUT —
+                // e.g. the Settings tab toggling `sensitive` — omits `name`,
+                // so `$o->name != $r['name']` would be true against a null and
+                // wrongly trigger renameTable($o->name, null), which throws
+                // "New table name cannot be empty" and aborts the save before
+                // `sensitive` is ever persisted.
+                if (isset($r['name']) && $o->name != $r['name']) {
                     // check if new name is unique
                     if (defined($r['name'])) {
                         throw new \Exception("New model name conflicts with existing model or system model name.");

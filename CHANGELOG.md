@@ -1,3 +1,17 @@
+## 4.5.1
+
+### Bug Fix: `sensitive` toggle (and any metadata-only PUT) silently fails on DataModel / ModelAttribute
+
+Toggling `sensitive=1` on a model (Settings tab) or field never persisted: the PUT returned HTTP 200 with an empty body, and the Shipyard toggle reverted with "Save failed." Root cause is in two update hooks that assumed every update carries the full record:
+
+- **`DataModelController::hook_preprocess` (update):** `if ($o->name != $r['name'])` ran the table-rename path. A partial PUT of just `{sensitive:1}` omits `name`, so the comparison was true against `null` → `DBI::renameTable($o->name, null)` → throws *"New table name cannot be empty"* — **before** `$obj->save()` persisted `sensitive`. Now gated on `isset($r['name']) && $o->name != $r['name']`.
+
+- **`ModelAttributeController::hook_preprocess` (update):** unconditionally ran `DBI::changeColumn($tbl->name, $o->name, $r['name'], $attrs)` on every update. A metadata-only PUT (no `name`) tried to rename the column to an empty name with an incomplete definition and threw. The CHANGE COLUMN path is now gated on `isset($r['name'])`; the field-edit form (which always sends `name`) is unaffected.
+
+Why it surfaced now: this is the first feature to PUT a single metadata field on these meta-models. The empty-200 was the swallowed hook exception (thrown after the 200 status path but before the response body was serialized). `Controller` sensitive toggles were never affected — `ControllerController` has no schema-altering update hook.
+
+Impact: blocks enabling sensitive-data redaction at the model/field level (the redaction policy reads these flags at runtime). No schema change. Composer upgrade is sufficient.
+
 ## 4.5.0
 
 ### Feature: JWT session lifetime caps (inactivity + absolute)
