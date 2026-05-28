@@ -183,23 +183,49 @@ class RefreshTokenStoreTest extends TestCase
             'family_started_at anchor preserved across allowed rotations');
     }
 
-    public function testRotateBackfillsWhenFamilyStartedAtIsZero(): void
+    public function testLegacyTokenWithinCapAnchorsToDateCreated(): void
     {
         $token = RefreshTokenStore::issue($this->userId, $this->accountId, null);
 
-        // Simulate a pre-upgrade token that predates the family_started_at
-        // column (default 0). Should NOT be rejected — instead the
-        // successor row anchors family_started_at to ~now.
+        // Simulate a pre-upgrade token: family_started_at = 0, but
+        // date_created is recent (within the 12h cap). Should rotate
+        // successfully and the successor inherits the date_created anchor
+        // (NOT now) so the absolute clock counts from the legacy login.
+        $createdAt = time() - 3600; // 1h ago — inside the cap
         \Kyte\Core\DBI::query(
-            "UPDATE `KyteRefreshToken` SET family_started_at = 0 WHERE id = " . (int)$token['id']
+            "UPDATE `KyteRefreshToken` SET family_started_at = 0, date_created = " . $createdAt . " WHERE id = " . (int)$token['id']
         );
 
-        $before = time();
         $successor = RefreshTokenStore::rotate($token['raw']);
         $successorRow = $this->loadById($successor['id']);
 
-        $this->assertGreaterThanOrEqual($before, (int)$successorRow['family_started_at']);
-        $this->assertLessThanOrEqual(time(), (int)$successorRow['family_started_at']);
+        $this->assertSame($createdAt, (int)$successorRow['family_started_at'],
+            'legacy token anchors the cap to date_created, not to now');
+    }
+
+    public function testLegacyTokenPastCapIsRevoked(): void
+    {
+        $token = RefreshTokenStore::issue($this->userId, $this->accountId, null);
+
+        // Pre-upgrade token whose original login (date_created) is older
+        // than the 12h cap. Even though family_started_at = 0 (legacy),
+        // it must NOT get a free pass — it's revoked on next rotation.
+        // This is the bug that let week-old sessions survive on dev.
+        $longAgo = time() - 86400; // 24h ago
+        \Kyte\Core\DBI::query(
+            "UPDATE `KyteRefreshToken` SET family_started_at = 0, date_created = " . $longAgo . " WHERE id = " . (int)$token['id']
+        );
+
+        try {
+            RefreshTokenStore::rotate($token['raw']);
+            $this->fail('Legacy token older than the cap should have thrown.');
+        } catch (SessionException $e) {
+            $this->assertStringContainsString('maximum lifetime', strtolower($e->getMessage()));
+        }
+
+        $row = $this->loadById($token['id']);
+        $this->assertSame('family_max_lifetime', $row['revoked_reason'],
+            'legacy token past the cap revoked with family_max_lifetime reason');
     }
 
     public function testRotateOnExpiredTokenMarksExpiredAndDoesNotKillFamily(): void

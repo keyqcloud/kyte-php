@@ -10,13 +10,21 @@ This release introduces a two-knob policy that matches the industry-standard pat
 
 2. **New absolute family cap.** `KYTE_JWT_FAMILY_MAX_LIFETIME` (new constant, default 43200s / 12h) caps total session lifetime from the original `/jwt/login`, independent of how active the user is. Enforced in `RefreshTokenStore::rotate()` — when crossed, the whole token family is revoked with `revoked_reason='family_max_lifetime'` and the user must re-authenticate.
 
-3. **New column: `KyteRefreshToken.family_started_at`.** Anchors the absolute cap to the original login moment. Set in `issue()`, copied forward unchanged in `issueInFamily()` on each rotation. Backward-compatibility: pre-upgrade tokens have `family_started_at = 0` and are treated as "uncapped" on first post-upgrade rotation — the rotation succeeds and the successor anchors the cap to that moment forward. No mass logout at upgrade time.
+3. **New column: `KyteRefreshToken.family_started_at`.** Anchors the absolute cap to the original login moment. Set in `issue()`, copied forward unchanged in `issueInFamily()` on each rotation.
+
+   **Legacy tokens (issued before this column existed) are capped, not exempted.** A pre-upgrade row has `family_started_at = 0`; `rotate()` anchors its cap to the token's `date_created` (the best available proxy for the original login). A pre-upgrade session whose login was more than `KYTE_JWT_FAMILY_MAX_LIFETIME` ago is revoked on its next rotation. **This means the first deploy of 4.5.0 forces re-login for any JWT session older than 12 hours** — intentional. An earlier draft of this change gave legacy tokens a free pass "to avoid disruption," but that let pre-upgrade 7-day sessions survive uncapped for up to a week after deploy (observed on dev), which defeats the purpose of an absolute cap.
+
+   **Operational note for upgrades with active JWT sessions:** after running the migration, existing sessions older than the cap end on their next request (clean 401 → client re-login). If you want a hard cutover instead of a staggered one, revoke all pre-upgrade rows directly: `UPDATE KyteRefreshToken SET revoked_at=UNIX_TIMESTAMP(), revoked_reason='legacy_purge_v4.5.0' WHERE family_started_at=0 AND revoked_at=0;`
 
 The defaults align with AWS Console (12h max), Microsoft 365 admin (1h/12h), and OWASP ASVS V3 absolute-timeout requirements. Customer mobile/consumer apps that need longer sessions can override both constants per-deployment.
 
-Schema migration: `KyteRefreshToken` gains one unsigned-int column. **Run `migrations/4.5.0_jwt_family_lifetime.sql` after `composer update`** — Kyte does not auto-ALTER system tables. Existing rows backfill to 0 → treated as legacy → cap anchors on the next rotation, so there is NO mass logout at deploy time. Same operational pattern as the 4.4.0 sensitive-columns + JWT-refresh migrations.
+Schema migration: `KyteRefreshToken` gains one unsigned-int column. **Run `migrations/4.5.0_jwt_family_lifetime.sql` after `composer update`** — Kyte does not auto-ALTER system tables. Same operational pattern as the 4.4.0 sensitive-columns + JWT-refresh migrations.
 
-Tests: `RefreshTokenStoreTest` covers (a) family_started_at set on issue, (b) preserved across rotation, (c) cap rejection past the window, (d) cap allows refresh inside the window, (e) zero-anchor legacy backfill.
+**Config note:** deployments that explicitly set `KYTE_JWT_REFRESH_TTL` in `config.php` (e.g. the 4.4.0 default of `604800`) override the new 4h default — update those configs to `14400` and add `KYTE_JWT_FAMILY_MAX_LIFETIME` or the new inactivity timeout is silently shadowed.
+
+**Client pairing:** kyte-api-js must be ≥ v2.0.2 (refresh-cookie TTL derived from `refresh_expires_at`). With the older v2.0.1 client, the browser cookie keeps a 30-day TTL, so an idle tab *looks* logged in under a dead server-side session until the next request fails. Both halves are required for correct UX.
+
+Tests: `RefreshTokenStoreTest` covers (a) family_started_at set on issue, (b) preserved across rotation, (c) cap rejection past the window, (d) cap allows refresh inside the window, (e) legacy token within cap anchors to date_created, (f) legacy token past cap is revoked.
 
 ## 4.4.5
 

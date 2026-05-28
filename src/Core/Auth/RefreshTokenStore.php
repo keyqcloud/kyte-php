@@ -95,25 +95,25 @@ final class RefreshTokenStore
         // same family is also forced to re-login. Mirrors AWS/Microsoft
         // admin-session absolute caps; satisfies OWASP ASVS V3.
         //
-        // Backward compatibility: tokens issued before this field existed
-        // have family_started_at = 0. Treat 0 as "unknown, skip cap" so
-        // existing sessions don't get a sudden mass logout. They will get
-        // the cap on next rotation (which copies family_started_at = the
-        // CURRENT now() — effectively starting the absolute clock then).
+        // Legacy tokens: rows issued before the family_started_at column
+        // existed have family_started_at = 0. We do NOT give them a free
+        // pass — that let pre-upgrade 7-day sessions survive uncapped for
+        // up to a full week after deploy. Instead, anchor the cap to the
+        // token's date_created (the best available proxy for family birth).
+        // A pre-upgrade session older than the cap is revoked on its next
+        // rotation, exactly like a native session would be. Effect: the
+        // first deploy of this code logs out any session whose original
+        // login was more than KYTE_JWT_FAMILY_MAX_LIFETIME ago.
         $familyStartedAt = (int)($token->family_started_at ?? 0);
-        if ($familyStartedAt > 0) {
-            $familyMaxLifetime = defined('KYTE_JWT_FAMILY_MAX_LIFETIME')
-                ? (int)KYTE_JWT_FAMILY_MAX_LIFETIME
-                : self::DEFAULT_FAMILY_MAX_LIFETIME;
-            if ($now - $familyStartedAt > $familyMaxLifetime) {
-                self::revokeFamily((string)$token->token_family, 'family_max_lifetime');
-                throw new SessionException('Session has reached its maximum lifetime; please log in again.');
-            }
-        } else {
-            // Backfill on first rotation post-upgrade: anchor the cap
-            // here so the session gets a 12h ceiling from this point
-            // forward instead of remaining uncapped forever.
-            $familyStartedAt = $now;
+        if ($familyStartedAt === 0) {
+            $familyStartedAt = (int)($token->date_created ?? $now);
+        }
+        $familyMaxLifetime = defined('KYTE_JWT_FAMILY_MAX_LIFETIME')
+            ? (int)KYTE_JWT_FAMILY_MAX_LIFETIME
+            : self::DEFAULT_FAMILY_MAX_LIFETIME;
+        if ($now - $familyStartedAt > $familyMaxLifetime) {
+            self::revokeFamily((string)$token->token_family, 'family_max_lifetime');
+            throw new SessionException('Session has reached its maximum lifetime; please log in again.');
         }
 
         // Normal rotation: issue successor with same family, then mark
