@@ -50,28 +50,39 @@ class ModelAttributeController extends ModelController
                 break;
 
             case 'update':
-                $tbl = new \Kyte\Core\ModelObject(DataModel);
-                if (!$tbl->retrieve('id', $o->dataModel)) {
-                    throw new \Exception("Unable to find associated data model.");
-                }
+                // Only touch the physical column when the request actually
+                // carries the column `name`. The CHANGE COLUMN path needs the
+                // full column definition; a metadata-only partial PUT — e.g.
+                // toggling `sensitive` on a field — omits `name`, so the old
+                // unconditional changeColumn($tbl->name, $o->name, null, ...)
+                // tried to rename the column to an empty name with an
+                // incomplete definition and threw, aborting the save before
+                // `sensitive` was persisted. The field-edit form always sends
+                // `name` for real schema changes, so this preserves that path.
+                if (isset($r['name'])) {
+                    $tbl = new \Kyte\Core\ModelObject(DataModel);
+                    if (!$tbl->retrieve('id', $o->dataModel)) {
+                        throw new \Exception("Unable to find associated data model.");
+                    }
 
-                $attrs = \Kyte\Mvc\Controller\DataModelController::prepareModelDef((object)$r);
-                
-                // switch dbs
-                $app = new \Kyte\Core\ModelObject(Application);
-                if (!$app->retrieve('id', $tbl->application)) {
-                    throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
-                }
-                
-                \Kyte\Core\Api::dbappconnect($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
-                \Kyte\Core\Api::dbswitch(true);
+                    $attrs = \Kyte\Mvc\Controller\DataModelController::prepareModelDef((object)$r);
 
-                // create new table with basic kyte info
-                if (!\Kyte\Core\DBI::changeColumn($tbl->name, $o->name, $r['name'], $attrs)) {
-                    throw new \Exception("Failed to change column {$o->name} to {$r['name']} in table {$tbl->name}...");
+                    // switch dbs
+                    $app = new \Kyte\Core\ModelObject(Application);
+                    if (!$app->retrieve('id', $tbl->application)) {
+                        throw new \Exception("CRITICAL ERROR: Unable to find application and perform context switch.");
+                    }
+
+                    \Kyte\Core\Api::dbappconnect($app->db_name, $app->db_username, $app->db_password, $app->db_host ? $app->db_host : null);
+                    \Kyte\Core\Api::dbswitch(true);
+
+                    // alter the underlying column to match the new definition
+                    if (!\Kyte\Core\DBI::changeColumn($tbl->name, $o->name, $r['name'], $attrs)) {
+                        throw new \Exception("Failed to change column {$o->name} to {$r['name']} in table {$tbl->name}...");
+                    }
+                    // return to kyte db
+                    \Kyte\Core\Api::dbswitch();
                 }
-                // return to kyte db
-                \Kyte\Core\Api::dbswitch();
                 break;
             
             default:
