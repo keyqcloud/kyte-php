@@ -1,3 +1,19 @@
+## 4.5.3
+
+### Bug Fix (critical): `/jwt/refresh` 401s for apps with a custom `user_model`
+
+`JwtEndpoint::refresh()` reloaded the principal with a hardcoded `new ModelObject(KyteUser)`. Apps that authenticate against an app-scoped `user_model` (a `User` DataModel, not `KyteUser`) store the user in the app DB, so `KyteUser->retrieve('id', $userId)` finds nothing → `401 invalid_credentials "Refresh token principal not found."`
+
+Impact: every JWT session on such an app dies on its **first refresh** — i.e. ~15 minutes (the access-token TTL) after login, presenting as "JWT randomly fails after a few minutes of inactivity." `login()` already handled custom user models (v4.4.3–4.4.5 via `resolveAuthContext`), but `refresh()` was never given the same treatment, so the bug was latent until an app with a custom user model was migrated HMAC→JWT.
+
+Fix: `refresh()` now resolves the app from `refresh_token.app_id`, calls `resolveAuthContext($appIdentifier)` (which loads the app models + DB context and returns the correct `user_model`), and retrieves the principal from that model — mirroring `login()`. Default `KyteUser` path (no app scope) is unchanged.
+
+No schema change. Composer upgrade is sufficient. Strongly recommended for any deployment running JWT on apps with custom user models.
+
+### Migration backfill: MCP token table
+
+Adds `migrations/4.5.3_mcp_tokens.sql` — creates `KyteMCPToken` (consumed by `McpTokenStrategy` / the Shipyard Tokens page). The Phase 2 MCP code shipped without its table-creation migration; this closes that gap. `CREATE TABLE IF NOT EXISTS`, safe to re-run.
+
 ## 4.5.2
 
 ### Bug Fix: `sensitive` toggle on a Controller silently fails (TypeError on metadata-only PUT)
