@@ -90,8 +90,24 @@ $KyteRefreshToken = [
 		],
 
 		// Expiration (unix epoch). 0 means never — strongly discouraged; UI
-		// defaults to KYTE_JWT_REFRESH_TTL (7 days).
+		// defaults to KYTE_JWT_REFRESH_TTL (4 hours).
 		'expires_at'		=> [
+			'type'		=> 'i',
+			'required'	=> true,
+			'size'		=> 11,
+			'unsigned'	=> true,
+			'default'	=> 0,
+			'date'		=> true,
+		],
+
+		// Family-wide absolute lifetime anchor (unix epoch). Set once when
+		// the family is born at /jwt/login and copied forward unchanged on
+		// every rotation in `RefreshTokenStore::issueInFamily()`. Used to
+		// enforce KYTE_JWT_FAMILY_MAX_LIFETIME — the absolute cap on how
+		// long a single login session can survive before forced re-auth,
+		// independent of how active the user is. Without this, sliding
+		// `expires_at` rotation allows indefinite sessions.
+		'family_started_at'	=> [
 			'type'		=> 'i',
 			'required'	=> true,
 			'size'		=> 11,

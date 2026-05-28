@@ -69,12 +69,14 @@ class RefreshTokenStoreTest extends TestCase
 
     public function testIssueReturnsRawAndPersistsHashedRow(): void
     {
+        $before = time();
         $result = RefreshTokenStore::issue($this->userId, $this->accountId, null, '1.2.3.4');
 
         $this->assertArrayHasKey('raw', $result);
         $this->assertArrayHasKey('id', $result);
         $this->assertArrayHasKey('family', $result);
         $this->assertArrayHasKey('expires_at', $result);
+        $this->assertArrayHasKey('family_started_at', $result);
         $this->assertStringStartsWith('kref_v1_', $result['raw']);
         $this->assertSame(64, strlen($result['family']), 'family is 64 hex chars');
 
@@ -83,6 +85,8 @@ class RefreshTokenStoreTest extends TestCase
         $this->assertSame(0, (int)$row['revoked_at']);
         $this->assertSame((string)$this->userId, $row['user']);
         $this->assertGreaterThan(time(), (int)$row['expires_at']);
+        $this->assertGreaterThanOrEqual($before, (int)$row['family_started_at']);
+        $this->assertLessThanOrEqual(time(), (int)$row['family_started_at']);
     }
 
     public function testRotateRevokesOldAndIssuesSuccessorInSameFamily(): void
@@ -118,6 +122,110 @@ class RefreshTokenStoreTest extends TestCase
         $successorRow = $this->loadById($successor['id']);
         $this->assertNotSame(0, (int)$successorRow['revoked_at']);
         $this->assertSame('reuse_detected', $successorRow['revoked_reason']);
+    }
+
+    public function testRotationPreservesFamilyStartedAt(): void
+    {
+        $original = RefreshTokenStore::issue($this->userId, $this->accountId, null);
+        $originalRow = $this->loadById($original['id']);
+        $originalAnchor = (int)$originalRow['family_started_at'];
+        $this->assertGreaterThan(0, $originalAnchor);
+
+        // Sleep would slow tests; instead force-shift expires_at so rotate()
+        // is willing to fire even if we run two rotations in the same second.
+        $successor = RefreshTokenStore::rotate($original['raw']);
+        $successorRow = $this->loadById($successor['id']);
+
+        $this->assertSame($originalAnchor, (int)$successorRow['family_started_at'],
+            'family_started_at must be copied forward, not reset to now');
+    }
+
+    public function testRotateRejectsWhenFamilyMaxLifetimeExceeded(): void
+    {
+        $token = RefreshTokenStore::issue($this->userId, $this->accountId, null);
+
+        // Force family_started_at far enough in the past that the default
+        // 12h cap is blown. Keep expires_at fresh so we hit the cap check,
+        // not the per-token expiration check.
+        $longAgo = time() - 86400; // 24h ago
+        \Kyte\Core\DBI::query(
+            "UPDATE `KyteRefreshToken` SET family_started_at = " . $longAgo . " WHERE id = " . (int)$token['id']
+        );
+
+        try {
+            RefreshTokenStore::rotate($token['raw']);
+            $this->fail('Rotation past family_max_lifetime should have thrown.');
+        } catch (SessionException $e) {
+            $this->assertStringContainsString('maximum lifetime', strtolower($e->getMessage()));
+        }
+
+        $row = $this->loadById($token['id']);
+        $this->assertSame('family_max_lifetime', $row['revoked_reason'],
+            'whole family revoked with family_max_lifetime reason');
+    }
+
+    public function testRotateAllowsRefreshBeforeFamilyMaxLifetime(): void
+    {
+        $token = RefreshTokenStore::issue($this->userId, $this->accountId, null);
+
+        // Set family_started_at to just inside the 12h window — refresh
+        // should still succeed.
+        $oneHourAgo = time() - 3600;
+        \Kyte\Core\DBI::query(
+            "UPDATE `KyteRefreshToken` SET family_started_at = " . $oneHourAgo . " WHERE id = " . (int)$token['id']
+        );
+
+        $successor = RefreshTokenStore::rotate($token['raw']);
+        $this->assertNotSame($token['raw'], $successor['raw']);
+
+        $successorRow = $this->loadById($successor['id']);
+        $this->assertSame($oneHourAgo, (int)$successorRow['family_started_at'],
+            'family_started_at anchor preserved across allowed rotations');
+    }
+
+    public function testLegacyTokenWithinCapAnchorsToDateCreated(): void
+    {
+        $token = RefreshTokenStore::issue($this->userId, $this->accountId, null);
+
+        // Simulate a pre-upgrade token: family_started_at = 0, but
+        // date_created is recent (within the 12h cap). Should rotate
+        // successfully and the successor inherits the date_created anchor
+        // (NOT now) so the absolute clock counts from the legacy login.
+        $createdAt = time() - 3600; // 1h ago — inside the cap
+        \Kyte\Core\DBI::query(
+            "UPDATE `KyteRefreshToken` SET family_started_at = 0, date_created = " . $createdAt . " WHERE id = " . (int)$token['id']
+        );
+
+        $successor = RefreshTokenStore::rotate($token['raw']);
+        $successorRow = $this->loadById($successor['id']);
+
+        $this->assertSame($createdAt, (int)$successorRow['family_started_at'],
+            'legacy token anchors the cap to date_created, not to now');
+    }
+
+    public function testLegacyTokenPastCapIsRevoked(): void
+    {
+        $token = RefreshTokenStore::issue($this->userId, $this->accountId, null);
+
+        // Pre-upgrade token whose original login (date_created) is older
+        // than the 12h cap. Even though family_started_at = 0 (legacy),
+        // it must NOT get a free pass — it's revoked on next rotation.
+        // This is the bug that let week-old sessions survive on dev.
+        $longAgo = time() - 86400; // 24h ago
+        \Kyte\Core\DBI::query(
+            "UPDATE `KyteRefreshToken` SET family_started_at = 0, date_created = " . $longAgo . " WHERE id = " . (int)$token['id']
+        );
+
+        try {
+            RefreshTokenStore::rotate($token['raw']);
+            $this->fail('Legacy token older than the cap should have thrown.');
+        } catch (SessionException $e) {
+            $this->assertStringContainsString('maximum lifetime', strtolower($e->getMessage()));
+        }
+
+        $row = $this->loadById($token['id']);
+        $this->assertSame('family_max_lifetime', $row['revoked_reason'],
+            'legacy token past the cap revoked with family_max_lifetime reason');
     }
 
     public function testRotateOnExpiredTokenMarksExpiredAndDoesNotKillFamily(): void

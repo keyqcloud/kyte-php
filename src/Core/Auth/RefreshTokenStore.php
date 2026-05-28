@@ -24,7 +24,20 @@ final class RefreshTokenStore
 {
     private const PREFIX = 'kref_v1_';
 
-    private const DEFAULT_REFRESH_TTL = 604800; // 7 days
+    // Default refresh-token TTL. The token slides forward this many seconds
+    // on every successful rotation — it acts as the inactivity timeout. Set
+    // to 4h (14400s) so that closing the browser at 5pm forces a re-login
+    // the next morning. Override with KYTE_JWT_REFRESH_TTL for deployments
+    // that need longer (e.g., consumer mobile apps with "remember me").
+    private const DEFAULT_REFRESH_TTL = 14400; // 4 hours
+
+    // Default absolute cap on how long a single rotation family may live
+    // before forced re-authentication, regardless of activity. Anchored to
+    // `family_started_at`, NOT to the current token's expires_at — so
+    // sliding rotation cannot extend it. Override with
+    // KYTE_JWT_FAMILY_MAX_LIFETIME. 12h aligns with AWS/Microsoft admin
+    // session caps and OWASP ASVS V3 "absolute timeout MUST exist".
+    private const DEFAULT_FAMILY_MAX_LIFETIME = 43200; // 12 hours
 
     /**
      * Issue a brand new refresh token for a user.
@@ -34,7 +47,10 @@ final class RefreshTokenStore
     public static function issue(int $userId, int $accountId, ?int $appId, string $ip = ''): array
     {
         $family = bin2hex(random_bytes(32));
-        return self::issueInFamily($userId, $accountId, $appId, $family, $ip);
+        // New family — anchor family_started_at to now. Rotation copies
+        // this forward unchanged so the absolute cap remains tied to the
+        // original /jwt/login moment.
+        return self::issueInFamily($userId, $accountId, $appId, $family, $ip, time());
     }
 
     /**
@@ -72,6 +88,34 @@ final class RefreshTokenStore
             throw new SessionException('Refresh token expired.');
         }
 
+        // Absolute family lifetime cap. Anchored to family_started_at —
+        // the moment of original /jwt/login — so it cannot be extended
+        // by sliding rotation. Once the cap is crossed, revoke the whole
+        // family (not just this token) so any concurrent device on the
+        // same family is also forced to re-login. Mirrors AWS/Microsoft
+        // admin-session absolute caps; satisfies OWASP ASVS V3.
+        //
+        // Legacy tokens: rows issued before the family_started_at column
+        // existed have family_started_at = 0. We do NOT give them a free
+        // pass — that let pre-upgrade 7-day sessions survive uncapped for
+        // up to a full week after deploy. Instead, anchor the cap to the
+        // token's date_created (the best available proxy for family birth).
+        // A pre-upgrade session older than the cap is revoked on its next
+        // rotation, exactly like a native session would be. Effect: the
+        // first deploy of this code logs out any session whose original
+        // login was more than KYTE_JWT_FAMILY_MAX_LIFETIME ago.
+        $familyStartedAt = (int)($token->family_started_at ?? 0);
+        if ($familyStartedAt === 0) {
+            $familyStartedAt = (int)($token->date_created ?? $now);
+        }
+        $familyMaxLifetime = defined('KYTE_JWT_FAMILY_MAX_LIFETIME')
+            ? (int)KYTE_JWT_FAMILY_MAX_LIFETIME
+            : self::DEFAULT_FAMILY_MAX_LIFETIME;
+        if ($now - $familyStartedAt > $familyMaxLifetime) {
+            self::revokeFamily((string)$token->token_family, 'family_max_lifetime');
+            throw new SessionException('Session has reached its maximum lifetime; please log in again.');
+        }
+
         // Normal rotation: issue successor with same family, then mark
         // current revoked with rotated_to = successor id.
         $userId    = (int)$token->user;
@@ -79,7 +123,7 @@ final class RefreshTokenStore
         $appId     = $token->application !== null ? (int)$token->application : null;
         $family    = (string)$token->token_family;
 
-        $successor = self::issueInFamily($userId, $accountId, $appId, $family, $ip);
+        $successor = self::issueInFamily($userId, $accountId, $appId, $family, $ip, $familyStartedAt);
 
         $token->save([
             'revoked_at'     => $now,
@@ -167,8 +211,13 @@ final class RefreshTokenStore
     /**
      * Internal: create a refresh token row in a specific family.
      * Used by both issue() (new family) and rotate() (existing family).
+     *
+     * $familyStartedAt is set once at family birth (issue()) and copied
+     * forward unchanged on each rotation. Callers MUST pass it — there
+     * is no default — so the absolute-cap anchor cannot accidentally
+     * reset to "now" mid-rotation and silently extend the session.
      */
-    private static function issueInFamily(int $userId, int $accountId, ?int $appId, string $family, string $ip): array
+    private static function issueInFamily(int $userId, int $accountId, ?int $appId, string $family, string $ip, int $familyStartedAt): array
     {
         $raw = self::PREFIX . self::randomTokenBody();
         $hash = hash('sha256', $raw);
@@ -178,22 +227,24 @@ final class RefreshTokenStore
 
         $token = new ModelObject(KyteRefreshToken);
         $token->create([
-            'token_hash'    => $hash,
-            'token_prefix'  => substr($raw, 0, 24),
-            'token_family'  => $family,
-            'user'          => $userId,
-            'application'   => $appId,
-            'expires_at'    => $expiresAt,
-            'last_used_at'  => $now,
-            'last_used_ip'  => $ip !== '' ? $ip : null,
-            'kyte_account'  => $accountId,
+            'token_hash'        => $hash,
+            'token_prefix'      => substr($raw, 0, 24),
+            'token_family'      => $family,
+            'user'              => $userId,
+            'application'       => $appId,
+            'expires_at'        => $expiresAt,
+            'family_started_at' => $familyStartedAt,
+            'last_used_at'      => $now,
+            'last_used_ip'      => $ip !== '' ? $ip : null,
+            'kyte_account'      => $accountId,
         ]);
 
         return [
-            'raw'        => $raw,
-            'id'         => (int)$token->id,
-            'family'     => $family,
-            'expires_at' => $expiresAt,
+            'raw'                => $raw,
+            'id'                 => (int)$token->id,
+            'family'             => $family,
+            'expires_at'         => $expiresAt,
+            'family_started_at'  => $familyStartedAt,
         ];
     }
 
