@@ -62,8 +62,14 @@ class ControllerController extends ModelController
      */
     private function validateControllerUpdate($originalController, array $updateData): void
     {
-        // Only validate if the name is actually changing
-        if ($originalController->name === $updateData['name']) {
+        // Skip when the update isn't changing the name. A metadata-only
+        // partial PUT — e.g. the detail page toggling `sensitive` — omits
+        // `name` entirely. The old `=== $updateData['name']` compared the
+        // existing string to null (false), so it fell through and passed
+        // null into checkNameExistsInScope(string $name) -> TypeError ->
+        // swallowed by the exception handler -> empty 200 -> save aborted
+        // before `sensitive` persisted.
+        if (!isset($updateData['name']) || $originalController->name === $updateData['name']) {
             return;
         }
 

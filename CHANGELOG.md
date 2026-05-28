@@ -1,3 +1,15 @@
+## 4.5.2
+
+### Bug Fix: `sensitive` toggle on a Controller silently fails (TypeError on metadata-only PUT)
+
+Completes the 4.5.1 fix for the third meta-controller. Toggling `sensitive=1` on a **Controller** (the detail-page toggle) returned HTTP 200 with an empty body and reverted with "Save failed."
+
+`ControllerController::hook_preprocess` (update) calls `validateControllerUpdate($o, $r)`, which early-returns only when `$o->name === $r['name']`. A metadata-only PUT of `{sensitive:1}` omits `name`, so `$r['name']` is `null`; `"SomeController" === null` is `false`, so it fell through and passed `null` into `checkNameExistsInScope(string $name)` → **TypeError** → caught by the global exception handler (logged as a `KyteError`, hence the empty 200) → the update aborted before `sensitive` was saved.
+
+Fix: `validateControllerUpdate` now returns early when `name` is absent — `if (!isset($r['name']) || $o->name === $r['name'])`. The name-change path (which always sends `name`) is unaffected.
+
+This is the Controller-level sibling of the 4.5.1 DataModel/ModelAttribute fixes — all three meta-controllers assumed every update carried the full record. With 4.5.2, sensitive flags can be set at controller, model, and field level. No schema change.
+
 ## 4.5.1
 
 ### Bug Fix: `sensitive` toggle (and any metadata-only PUT) silently fails on DataModel / ModelAttribute
