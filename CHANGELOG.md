@@ -1,3 +1,21 @@
+## 4.6.0
+
+### Feature: DB-backed MCP session store (cross-instance / load-balanced support)
+
+MCP protocol sessions were stored via the SDK's `FileSessionStore` under `sys_get_temp_dir()` — **local to a single host**. On a deployment behind a load balancer (e.g. ETOM's two instances), the `initialize` request lands on instance A and the follow-up request hits instance B, which has no session file → the SDK returns `-32600 "Session not found or has expired"` → the MCP client falls back to OAuth discovery (which Kyte doesn't serve) → the connection fails. Single-instance installs were unaffected.
+
+This release adds `Kyte\Mcp\Session\DbSessionStore`, which persists protocol sessions in a new `KyteMCPSession` table so **any instance sharing the database resolves any session**, and makes it the default backend.
+
+1. **New table: `KyteMCPSession`** (`migrations/4.6.0_mcp_session_store.sql`). Stores `session_id` (RFC4122 UUID, UNIQUE), the `payload` (the SDK's `json_encode`d session array), `last_activity`, and `kyte_account`. `CREATE TABLE IF NOT EXISTS`, safe to re-run. Auto-registered as a model via the `Mvc/Model` loader.
+
+2. **DB store is now the default.** `Endpoint::buildSessionStore()` selects the backend. The DB store is correct for any topology (single host, LB, future SaaS). Single-instance installs that prefer not to add the table can opt back to the file store with `define('KYTE_MCP_SESSION_STORE', 'file');`.
+
+3. **TTL semantics preserved.** `last_activity` is the last-write time; the SDK calls `session->save()` at the end of every handled request, so an active session's timestamp slides forward (idle timeout). `exists()` reports expiry without deleting; `read()` purges on expiry — both mirror `FileSessionStore` exactly. Idle TTL is `KYTE_MCP_SESSION_TTL` (default 3600s) for either backend.
+
+4. **Tenancy & cleanup.** Reads/writes/destroys are scoped to the bearer token's `kyte_account` (a session resolves only under the account that created it). `gc()` (the SDK runs it on ~1% of requests) is a global sweep of TTL-expired rows, capped at 1000 per call; rows are hard-deleted (purged), not tombstoned, so the `session_id` UNIQUE index stays clean.
+
+**Operational note:** run `migrations/4.6.0_mcp_session_store.sql` as part of the upgrade. With the default DB backend active, the table must exist before MCP traffic is served. Multi-instance installs (ETOM) require no per-instance config beyond the shared DB; this unblocks the `kyte-etometry` MCP connection (Tempo KYTE-183). No change to MCP auth (`KyteMCPToken`), which was already DB-backed.
+
 ## 4.5.3
 
 ### Bug Fix (critical): `/jwt/refresh` 401s for apps with a custom `user_model`
