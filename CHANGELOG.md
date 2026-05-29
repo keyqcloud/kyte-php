@@ -1,3 +1,15 @@
+## 4.6.1
+
+### Bug Fix (regression from 4.6.0): large MCP tool responses corrupt the session → `read_page` (and other large reads) fail
+
+A `read_page` against a large page (≈300KB+ of HTML) failed with a 400 and `"Control character error, possibly incorrectly encoded"`. Root cause is the new `DbSessionStore` from 4.6.0: it defined `KyteMCPSession.payload` as **`TEXT` (64KB max)**.
+
+The streamable-HTTP SDK persists its outgoing-message queue (`_mcp.outgoing_queue`) — the full JSON-RPC tool **response** — inside the session payload between handling and delivery. A large read produces a ~800KB response (the SDK also duplicates content as a text block *and* `structuredContent`); that overflows the 64KB column, MySQL **silently truncates** it at 65535 bytes, and the truncated JSON then fails `json_decode` on the next read → the ctrl-char error, surfaced to the client as a 400.
+
+The `FileSessionStore` that 4.6.0 replaced wrote to files with no size cap, so large reads worked there — this is a parity regression, not a pre-existing bug.
+
+Fix: `KyteMCPSession.payload` is now **`LONGTEXT`** (model type `lt`). `migrations/4.6.1_mcp_session_payload_longtext.sql` runs `ALTER TABLE ... MODIFY payload LONGTEXT` and purges any sessions already truncated under the old column (`LENGTH(payload) >= 65535`) so stale corrupt rows don't keep failing on resume. Single-instance installs on the `file` backend are unaffected. **Run the migration on every install that took 4.6.0 with the default DB store.**
+
 ## 4.6.0
 
 ### Feature: DB-backed MCP session store (cross-instance / load-balanced support)
