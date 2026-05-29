@@ -5,6 +5,7 @@ use Kyte\Core\Api;
 use Kyte\Core\Auth\AuthDispatcher;
 use Kyte\Core\Auth\McpTokenStrategy;
 use Kyte\Exception\SessionException;
+use Kyte\Mcp\Session\DbSessionStore;
 use Kyte\Mcp\Session\SaveSafeSessionFactory;
 use Laminas\HttpHandlerRunner\Emitter\SapiEmitter;
 use Mcp\Capability\Registry as McpRegistry;
@@ -13,6 +14,7 @@ use Mcp\Capability\Registry\ReferenceHandler;
 use Mcp\Server;
 use Mcp\Server\Handler\Request\CallToolHandler;
 use Mcp\Server\Session\FileSessionStore;
+use Mcp\Server\Session\SessionStoreInterface;
 use Mcp\Server\Transport\StreamableHttpTransport;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7Server\ServerRequestCreator;
@@ -31,11 +33,13 @@ use Psr\Http\Message\ServerRequestInterface;
  * envelopes, neither of which apply to JSON-RPC over MCP. Calling
  * Api::route() detects `/mcp` early and delegates here before any of that runs.
  *
- * Session storage uses the SDK's bundled FileSessionStore, scoped per-install
- * under sys_get_temp_dir(). MCP sessions are short-lived and per-Claude-
- * conversation, so file storage is sufficient at per-tenant scale. A MySQL-
- * backed store can replace this if/when SaaS-scale deployment forces the
- * issue (see design doc section 11).
+ * Session storage defaults to the DB-backed DbSessionStore (the KyteMCPSession
+ * table), so multi-instance / load-balanced deployments resolve the same
+ * protocol session on any host. The SDK's bundled FileSessionStore (per-host,
+ * under sys_get_temp_dir()) remains available as an escape hatch via the
+ * KYTE_MCP_SESSION_STORE='file' constant for single-instance installs that
+ * prefer to avoid the table. KYTE_MCP_SESSION_TTL overrides the idle TTL
+ * (default 3600s). See buildSessionStore() and design doc section 11.
  *
  * The handle()/process() split is for testability: process() is pure
  * request-in / response-out and can be exercised from PHPUnit, while handle()
@@ -85,7 +89,7 @@ final class Endpoint
         $container = new McpContainer();
         $container->set(Api::class, $api);
 
-        $sessionDir = self::sessionDirectory();
+        $sessionStore = self::buildSessionStore($api);
 
         // Build registry + inner CallToolHandler ourselves so we can wrap the
         // dispatch with ScopedCallToolHandler. The Builder otherwise creates
@@ -114,7 +118,7 @@ final class Endpoint
             ->setContainer($container)
             ->setRegistry($registry)
             ->addRequestHandler($scopedCallTool)
-            ->setSession(new FileSessionStore($sessionDir), new SaveSafeSessionFactory())
+            ->setSession($sessionStore, new SaveSafeSessionFactory())
             ->setDiscovery(__DIR__ . '/Tools')
             ->build();
 
@@ -197,6 +201,36 @@ final class Endpoint
         }
 
         return "Origin '{$origin}' is not in the MCP_ALLOWED_ORIGINS allowlist.";
+    }
+
+    /**
+     * Select the MCP protocol-session store.
+     *
+     * Defaults to the DB-backed store so load-balanced / multi-instance
+     * installs work out of the box (the SDK's FileSessionStore is per-host and
+     * breaks the moment `initialize` and its follow-ups land on different
+     * boxes — see DbSessionStore). Single-instance installs may opt back to the
+     * file store with KYTE_MCP_SESSION_STORE='file'. KYTE_MCP_SESSION_TTL (s)
+     * overrides the idle TTL for either backend.
+     *
+     * Requires the 4.6.0 migration (creates KyteMCPSession) to have run when
+     * the DB backend is active.
+     */
+    private static function buildSessionStore(Api $api): SessionStoreInterface
+    {
+        $ttl = (defined('KYTE_MCP_SESSION_TTL') && (int)KYTE_MCP_SESSION_TTL > 0)
+            ? (int)KYTE_MCP_SESSION_TTL
+            : DbSessionStore::DEFAULT_TTL;
+
+        $backend = defined('KYTE_MCP_SESSION_STORE')
+            ? strtolower(trim((string)KYTE_MCP_SESSION_STORE))
+            : 'db';
+
+        if ($backend === 'file') {
+            return new FileSessionStore(self::sessionDirectory(), $ttl);
+        }
+
+        return new DbSessionStore((int)$api->account->id, $ttl);
     }
 
     private static function sessionDirectory(): string
