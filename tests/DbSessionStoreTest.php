@@ -68,6 +68,27 @@ class DbSessionStoreTest extends TestCase
         $this->assertSame(1, (int)$rows[0]['c']);
     }
 
+    public function testLargePayloadRoundTripsWithoutTruncation(): void
+    {
+        // Regression (v4.6.1): the streamable-HTTP SDK stages full tool
+        // responses in the session payload (`_mcp.outgoing_queue`). A 64KB
+        // TEXT column silently truncated large reads (e.g. read_page on a
+        // 300KB+ page) → corrupt JSON → ctrl-char error on the next read.
+        // payload is LONGTEXT; this writes >64KB and reads it back intact.
+        $store = new DbSessionStore(self::ACCOUNT_A);
+        $id = new UuidV4();
+        $payload = json_encode([
+            'initialized' => true,
+            '_mcp' => ['outgoing_queue' => [['message' => str_repeat('x', 200000)]]],
+        ]);
+        $this->assertGreaterThan(65535, strlen($payload));
+
+        $this->assertTrue($store->write($id, $payload));
+        // Would fail on a TEXT column (truncated at 65535); passes on LONGTEXT.
+        $this->assertSame($payload, $store->read($id));
+        $this->assertSame(strlen($payload), strlen((string)$store->read($id)));
+    }
+
     public function testDestroyRemovesSession(): void
     {
         $store = new DbSessionStore(self::ACCOUNT_A);

@@ -28,8 +28,15 @@
  *   - `session_id` carries the RFC4122 UUID and must be UNIQUE; the index is
  *     created in the Phase-2/4.6.0 migration, not here (the model framework
  *     doesn't declare indexes).
- *   - `payload` is the raw `json_encode` of the SDK session array — small and
- *     bounded (a handful of scalar/array keys), TEXT is ample headroom.
+ *   - `payload` is the raw `json_encode` of the SDK session array. It is NOT
+ *     small/bounded: the streamable-HTTP SDK persists its outgoing-message
+ *     queue (`_mcp.outgoing_queue`) — i.e. full JSON-RPC tool *responses* —
+ *     inside the session between request and delivery. A single large read
+ *     (e.g. `read_page` on a 300KB+ page) puts a ~800KB response in here. So
+ *     `payload` is LONGTEXT, not TEXT: a TEXT column (64KB) silently truncates
+ *     the queued response → corrupt JSON → `json_decode` ctrl-char error on the
+ *     next read. The FileSessionStore this replaced had no size cap, so
+ *     LONGTEXT restores parity. See migrations/4.6.1_mcp_session_payload_longtext.sql.
  */
 
 $KyteMCPSession = [
@@ -45,11 +52,14 @@ $KyteMCPSession = [
 			'date'		=> false,
 		],
 
-		// Encoded session state: json_encode of the SDK session data array
-		// (initialized, client_info, client_capabilities, protocol_version,
-		// log_level). Opaque to Kyte — written and read verbatim by the store.
+		// Encoded session state: json_encode of the SDK session data array.
+		// Includes the SDK's `_mcp.outgoing_queue` — full JSON-RPC tool
+		// responses staged for delivery — so this can run to hundreds of KB
+		// for a large read. LONGTEXT ('lt'), NOT TEXT: a 64KB TEXT column
+		// truncates large queued responses and corrupts the session. Opaque
+		// to Kyte — written and read verbatim by the store.
 		'payload'		=> [
-			'type'		=> 't',
+			'type'		=> 'lt',
 			'required'	=> true,
 			'date'		=> false,
 		],
