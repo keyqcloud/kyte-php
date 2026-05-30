@@ -129,12 +129,13 @@ $Application = [
 			'protected'	=> false,
 		],
 
+		// JS obfuscation removed in v4.7.0 (KYTE-#191); column retained until v4.8.0 drop. Default off for new apps.
 		'obfuscate_kyte_connect' => [
 			'type'		=> 'i',
 			'required'	=> false,
 			'size'		=> 1,
 			'unsigned'	=> true,
-			'default'	=> 1,
+			'default'	=> 0,
 			'date'		=> false,
 		],
 

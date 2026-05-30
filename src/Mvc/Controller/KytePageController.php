@@ -431,7 +431,7 @@ class KytePageController extends ModelController
 
         // Check page metadata fields
         $metadataFields = ['title', 'description', 'lang', 'page_type', 'state', 'sitemap_include', 
-                          'obfuscate_js', 'is_js_module', 'use_container', 'protected', 
+                          'is_js_module', 'use_container', 'protected', 
                           'webcomponent_obj_name', 'header', 'footer', 'main_navigation', 'side_navigation'];
 
         foreach ($metadataFields as $field) {
@@ -444,7 +444,7 @@ class KytePageController extends ModelController
         }
 
         // Check content fields
-        $contentFields = ['html', 'stylesheet', 'javascript', 'javascript_obfuscated', 'block_layout'];
+        $contentFields = ['html', 'stylesheet', 'javascript', 'block_layout'];
         
         foreach ($contentFields as $field) {
             $oldValue = isset($currentData[$field]) ? $currentData[$field] : '';
@@ -1006,12 +1006,8 @@ class KytePageController extends ModelController
         // Start script tag
         $js_parts[] = $page['is_js_module'] == 1 ? '<script type="module">' : '<script>';
         
-        // Add kyte connect
-        if ($page['site']['application']['obfuscate_kyte_connect'] == 1) {
-            $js_parts[] = $page['site']['application']['kyte_connect_obfuscated'] . "\n\n";
-        } else {
-            $js_parts[] = $page['site']['application']['kyte_connect'] . "\n\n";
-        }
+        // Add kyte connect (JS obfuscation removed in v4.7.0 — always serve plain source; see KYTE-#191)
+        $js_parts[] = $page['site']['application']['kyte_connect'] . "\n\n";
         
         // Add web components
         $js_parts[] = self::buildWebComponentsJS($page);
@@ -1025,12 +1021,8 @@ class KytePageController extends ModelController
             $js_parts[] = 'if (k.isSession()) { ' . "\n";
         }
         
-        // Add custom JS
-        if ($page['obfuscate_js'] == 1) {
-            $js_parts[] = $page['javascript_obfuscated'] . "\n";
-        } else {
-            $js_parts[] = $page['javascript'] . "\n";
-        }
+        // Add custom JS (JS obfuscation removed in v4.7.0 — always serve plain source; see KYTE-#191)
+        $js_parts[] = $page['javascript'] . "\n";
         
         // Close protection logic
         if ($page['protected'] == 1) {
@@ -1263,20 +1255,13 @@ class KytePageController extends ModelController
     private static function buildHeaderFooterJS($page) {
         $js_parts = [];
         
+        // JS obfuscation removed in v4.7.0 — always serve plain source; see KYTE-#191
         if (!empty($page['header'])) {
-            if ($page['header']['obfuscate_js'] == 1) {
-                $js_parts[] = $page['header']['javascript_obfuscated'] . "\n";
-            } else {
-                $js_parts[] = $page['header']['javascript'] . "\n";
-            }
+            $js_parts[] = $page['header']['javascript'] . "\n";
         }
-        
+
         if (!empty($page['footer'])) {
-            if ($page['footer']['obfuscate_js'] == 1) {
-                $js_parts[] = $page['footer']['javascript_obfuscated'] . "\n";
-            } else {
-                $js_parts[] = $page['footer']['javascript'] . "\n";
-            }
+            $js_parts[] = $page['footer']['javascript'] . "\n";
         }
         
         return implode('', $js_parts);
@@ -1619,7 +1604,7 @@ class KytePageController extends ModelController
     private function addChangedFieldsToVersion(&$versionData, $changes, $pageObj, $newData) {
         // Add changed metadata fields
         $metadataFields = ['title', 'description', 'lang', 'page_type', 'state', 'sitemap_include', 
-                        'obfuscate_js', 'is_js_module', 'use_container', 'protected', 
+                        'is_js_module', 'use_container', 'protected', 
                         'webcomponent_obj_name', 'header', 'footer', 'main_navigation', 'side_navigation'];
 
         foreach ($metadataFields as $field) {
@@ -1629,7 +1614,7 @@ class KytePageController extends ModelController
         }
 
         // Add changed content fields (compressed)
-        $contentFields = ['html', 'stylesheet', 'javascript', 'javascript_obfuscated', 'block_layout'];
+        $contentFields = ['html', 'stylesheet', 'javascript', 'block_layout'];
         
         foreach ($contentFields as $field) {
             if (isset($changes[$field]) && isset($newData[$field])) {
