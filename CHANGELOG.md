@@ -1,3 +1,21 @@
+## 4.7.0
+
+### Change: drop JavaScript obfuscation (Phase 1 — behavioral; resolves KYTE-#188, KYTE-#191 Phase 1)
+
+JS obfuscation has been forced on every Kyte install since v1. It provides **no real security** (client JS runs in the browser and obfuscation is trivially reversible; it is not a recognized control under any compliance framework), it **bloats storage** (each obfuscated field is a stored duplicate of the source), and it has caused **operational breakage** — a WAF/firewall once blocked legitimate obfuscated JS. No customer ever asked for it.
+
+It also drove a **version-bloat bug (KYTE-#188)**: re-obfuscation is non-deterministic, so the publish/save path saw the obfuscated bytes change on every publish even when the human-authored source was byte-identical, spawning a content-identical `KytePageVersion`/`KytePageVersionContent` each time.
+
+This release stops obfuscation **behaviorally**, without a schema change. The obfuscated columns are left in place (inert) and will be dropped in a follow-up (Phase 2) once this is confirmed stable across installs — expand/contract so a code rollback never strands a dropped column.
+
+1. **Publish always serves plain source.** `KytePageController::buildJavaScript()` (page JS, the `kyte_connect` block, and header/footer JS via `buildHeaderFooterJS()`) and `KyteScriptController::handleScriptPublication()` now emit the plain `javascript` / `content` / `kyte_connect` regardless of the `obfuscate_js` / `obfuscate_kyte_connect` flags. The plain source has always been stored alongside the obfuscated copy, so this is **lossless**; existing pages de-obfuscate on their next publish.
+
+2. **Obfuscation removed from change-detection (the KYTE-#188 fix).** `detectChanges()`/`addChangedFieldsToVersion()` (KytePage) and `detectScriptChanges()`/`addChangedFieldsToScriptVersion()` (KyteScript) no longer include `javascript_obfuscated`/`content_js_obfuscated` in their content-field sets or `obfuscate_js` in their metadata sets. A publish of unchanged source no longer spawns a spurious version. (`generateContentHash()` already excluded the obfuscated field.)
+
+3. **New-app default.** `Application.obfuscate_kyte_connect` now defaults to `0` (was `1`). Moot behaviorally since publish ignores the flag, but keeps new rows honest.
+
+**No migration. No DB change. Backward/forward compatible during rollout:** the storage hooks still accept the `*_obfuscated` columns, so an older Shipyard that still sends an obfuscated blob keeps working (kyte-php just ignores it at publish), and a newer Shipyard that sends an empty obfuscated value + `obfuscate_js=0` also works. Phase 2 (a later release) removes the model fields, the remaining `bz*`/decompress handling, and drops the columns to reclaim the stored-duplicate bloat.
+
 ## 4.6.1
 
 ### Bug Fix (regression from 4.6.0): large MCP tool responses corrupt the session → `read_page` (and other large reads) fail

@@ -184,7 +184,7 @@ class KyteScriptController extends ModelController
         $changes = [];
 
         // Check script metadata fields
-        $metadataFields = ['name', 'description', 's3key', 'script_type', 'obfuscate_js', 'is_js_module', 'include_all', 'state'];
+        $metadataFields = ['name', 'description', 's3key', 'script_type', 'is_js_module', 'include_all', 'state'];
 
         foreach ($metadataFields as $field) {
             if (isset($newData[$field]) && $scriptObj->$field != $newData[$field]) {
@@ -196,7 +196,7 @@ class KyteScriptController extends ModelController
         }
 
         // Check content fields
-        $contentFields = ['content', 'content_js_obfuscated'];
+        $contentFields = ['content'];
         
         foreach ($contentFields as $field) {
             $oldContent = $currentData[$field] ?? '';
@@ -398,7 +398,7 @@ class KyteScriptController extends ModelController
      */
     private function addChangedFieldsToScriptVersion(&$versionData, $changes, $scriptObj, $newData): void {
         // Add changed metadata fields
-        $metadataFields = ['name', 'description', 's3key', 'script_type', 'obfuscate_js', 'is_js_module', 'include_all', 'state'];
+        $metadataFields = ['name', 'description', 's3key', 'script_type', 'is_js_module', 'include_all', 'state'];
 
         foreach ($metadataFields as $field) {
             if (isset($changes[$field])) {
@@ -483,9 +483,8 @@ class KyteScriptController extends ModelController
         $credential = new \Kyte\Aws\Credentials($r['site']['region'], $app->aws_public_key, $app->aws_private_key);
         $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
 
-        // write script to file
-        $content = ($o->script_type == 'css') ? $r['content'] : 
-                ($o->obfuscate_js ? $r['content_js_obfuscated'] : $r['content']);
+        // write script to file (JS obfuscation removed in v4.7.0 — always serve plain source; see KYTE-#191)
+        $content = $r['content'];
 
         $s3->write($o->s3key, $content);
 
