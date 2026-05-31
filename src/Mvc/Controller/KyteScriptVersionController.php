@@ -67,7 +67,6 @@ class KyteScriptVersionController extends ModelController
 
                 if (isset($r['script'], $r['script']['content'])) {
                     $r['script']['content'] = '';
-                    $r['script']['content_js_obfuscated'] = '';
                 }
                 break;
 

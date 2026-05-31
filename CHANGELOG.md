@@ -1,3 +1,19 @@
+## 4.8.0
+
+### Change: drop JavaScript obfuscation columns (Phase 2 — schema; resolves KYTE-#191 Phase 2)
+
+Phase 2 of the JS-obfuscation removal (KYTE-#191). Phase 1 (v4.7.0) stopped obfuscation **behaviorally** but deliberately left the obfuscated columns in place (inert) so an expand/contract rollout could prove stable before any schema change. This release **contracts**: it removes the now-dead columns and all remaining code that touched them.
+
+1. **Schema drop (9 tables, via `migrations/4.8.0_drop_obfuscation_columns.sql`).** Drops the inert obfuscated content columns `javascript_obfuscated` (`KytePageData`, `KytePageVersionContent`, `KyteSectionTemplate`), `content_js_obfuscated` (`KyteScript`, `KyteScriptVersionContent`), and `kyte_connect_obfuscated` (`Application`), plus the now-unused flags `obfuscate_js` (`KyteSectionTemplate`, `KyteScript`, `KytePage`, `KytePageVersion`, `KyteScriptVersion`) and `obfuscate_kyte_connect` (`Application`). This reclaims the **stored-duplicate storage bloat** — every page/script/section had been storing a second bzcompressed copy of its JS that was never served. The migration uses `ALGORITHM=INSTANT` (MariaDB 10.5+ instant `DROP COLUMN`), falling back automatically where an engine can't do it instantly.
+
+2. **Model definitions removed.** The five field identifiers are deleted from the `Mvc/Model` definitions (`KytePageData`, `KytePageVersionContent`, `KyteSectionTemplate`, `KyteScript`, `KyteScriptVersionContent`, `KytePage`, `KytePageVersion`, `KyteScriptVersion`, `Application`).
+
+3. **bz storage handling removed.** All `bzcompress`/`bzdecompress` of the obfuscated fields is gone from the page/script/section/library/nav/sidenav/application controllers (compress-on-write, decompress-on-read, the `storeVersionContent`/`storeScriptVersionContent` writes, and the `getCurrentPageData`/`getCurrentScriptData` reads). The `safeCompressCode`/`safeDecompressCode` helpers are retained — `content` still uses them.
+
+4. **isset() guards relaxed.** The content-save/publish/decompress guards (e.g. `KytePageController` update + `publishPage`, and the footer/header decompress guards across the page/data/application/library/sidenav/navigation/script controllers) previously required the obfuscated field alongside `html`/`stylesheet`/`javascript`/`block_layout`. Only the obfuscated element was removed from each guard; the guards still validate the real content fields.
+
+**ROLLOUT RULE (code-first / drop-last, expand-contract):** deploy the v4.8.0 **code** to **all** instances **before** running `migrations/4.8.0_drop_obfuscation_columns.sql`. The v4.8.0 code no longer references the obfuscated columns, so dropping them is safe once it is live; running the migration against v4.7.0-or-earlier code would break content save/publish/decompress. Shipyard may keep sending empty obfuscated payload keys harmlessly — v4.8.0 ignores unknown fields.
+
 ## 4.7.0
 
 ### Change: drop JavaScript obfuscation (Phase 1 — behavioral; resolves KYTE-#188, KYTE-#191 Phase 1)

@@ -29,12 +29,6 @@ $KytePageData = [
 			'date'		=> false,
 		],
 
-		'javascript_obfuscated'		=> [
-			'type'		=> 'lb',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
 		'stylesheet'	=> [
 			'type'		=> 'lb',
 			'required'	=> false,

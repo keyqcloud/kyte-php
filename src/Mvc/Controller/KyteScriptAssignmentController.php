@@ -41,7 +41,6 @@ class KyteScriptAssignmentController extends ModelController
         } else {
             if (isset($r['script'])) {
                 $r['script']['content'] = '';
-                $r['script']['content_js_obfuscated'] = '';
             }
             if (isset($r['page'], $r['page']['header'], $r['page']['footer'])) {
                 $r['page']['header'] = null;
