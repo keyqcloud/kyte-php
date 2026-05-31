@@ -158,23 +158,26 @@ class KytePageController extends ModelController
                         $params['javascript'] = $d['javascript'];
 
                         // Update KytePageData
-                        $bz_html = isset($d['html']) ? bzcompress($d['html'], 9) : '';
-                        $bz_stylesheet = isset($d['stylesheet']) ? bzcompress($d['stylesheet'], 9) : '';
-                        $bz_javascript = isset($d['javascript']) ? bzcompress($d['javascript'], 9) : '';
-                        $bz_block_layout = isset($d['block_layout']) ? bzcompress($d['block_layout'], 9) : '';
+                        $pageDataUpdate = [
+                            'html' => isset($d['html']) ? bzcompress($d['html'], 9) : '',
+                            'stylesheet' => isset($d['stylesheet']) ? bzcompress($d['stylesheet'], 9) : '',
+                            'javascript' => isset($d['javascript']) ? bzcompress($d['javascript'], 9) : '',
+                            'modified_by' => (is_object($this->user) && isset($this->user->id))
+                                ? (int) $this->user->id
+                                : ((is_numeric($this->user)) ? (int) $this->user : 0),
+                            'date_modified' => time(),
+                        ];
+                        // Only overwrite block_layout when it's actually provided. A partial
+                        // content save (e.g. the Shipyard IDE, which sends only
+                        // html/stylesheet/javascript) must NOT blank an existing block-editor
+                        // layout. See KYTE-#189.
+                        if (isset($d['block_layout'])) {
+                            $pageDataUpdate['block_layout'] = bzcompress($d['block_layout'], 9);
+                        }
 
                         $pd = new \Kyte\Core\ModelObject(KytePageData);
                         if($pd->retrieve('page', $o->id)) {
-                            $pd->save([
-                                'html' => $bz_html,
-                                'stylesheet' => $bz_stylesheet,
-                                'javascript' => $bz_javascript,
-                                'block_layout' => $bz_block_layout,
-                                'modified_by' => (is_object($this->user) && isset($this->user->id))
-                                    ? (int) $this->user->id
-                                    : ((is_numeric($this->user)) ? (int) $this->user : 0),
-                                'date_modified' => time(),
-                            ]);
+                            $pd->save($pageDataUpdate);
                         } else {
                             throw new \Exception("CRITICAL ERROR: Unable to find page data.");
                         }
