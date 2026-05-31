@@ -51,23 +51,21 @@ class KytePageController extends ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         if (isset($r['footer']) && is_array($r['footer']) &&
             isset($r['footer']['html'], $r['footer']['stylesheet'], $r['footer']['javascript'],
-                $r['footer']['javascript_obfuscated'], $r['footer']['block_layout'])) {
+                $r['footer']['block_layout'])) {
 
             $r['footer']['html'] = bzdecompress($r['footer']['html']);
             $r['footer']['stylesheet'] = bzdecompress($r['footer']['stylesheet']);
             $r['footer']['javascript'] = bzdecompress($r['footer']['javascript']);
-            $r['footer']['javascript_obfuscated'] = bzdecompress($r['footer']['javascript_obfuscated']);
             $r['footer']['block_layout'] = bzdecompress($r['footer']['block_layout']);
         }
 
         if (isset($r['header']) && is_array($r['header']) &&
             isset($r['header']['html'], $r['header']['stylesheet'], $r['header']['javascript'],
-                $r['header']['javascript_obfuscated'], $r['header']['block_layout'])) {
+                $r['header']['block_layout'])) {
 
             $r['header']['html'] = bzdecompress($r['header']['html']);
             $r['header']['stylesheet'] = bzdecompress($r['header']['stylesheet']);
             $r['header']['javascript'] = bzdecompress($r['header']['javascript']);
-            $r['header']['javascript_obfuscated'] = bzdecompress($r['header']['javascript_obfuscated']);
             $r['header']['block_layout'] = bzdecompress($r['header']['block_layout']);
         }
 
@@ -90,7 +88,6 @@ class KytePageController extends ModelController
                 $bz_html = isset($d['html']) ? bzcompress($d['html'], 9) : '';
                 $bz_stylesheet = isset($d['stylesheet']) ? bzcompress($d['stylesheet'], 9) : '';
                 $bz_javascript = isset($d['javascript']) ? bzcompress($d['javascript'], 9) : '';
-                $bz_javascript_obfuscated = isset($d['javascript_obfuscated']) ? bzcompress($d['javascript_obfuscated'], 9) : '';
                 $bz_block_layout = isset($d['block_layout']) ? bzcompress($d['block_layout'], 9) : '';
 
                 if(!$pd->create([
@@ -98,7 +95,6 @@ class KytePageController extends ModelController
                     'html' => $bz_html,
                     'stylesheet' => $bz_stylesheet,
                     'javascript' => $bz_javascript,
-                    'javascript_obfuscated' => $bz_javascript_obfuscated,
                     'block_layout' => $bz_block_layout,
                     'kyte_account' => $this->account->id,
                     'created_by' => $this->user->id,
@@ -151,7 +147,7 @@ class KytePageController extends ModelController
                 $versionType = isset($d['version_type']) ? $d['version_type'] : 'manual_save';
                 $changeSummary = isset($d['change_summary']) ? $d['change_summary'] : null;
 
-                if (isset($d['html'], $d['stylesheet'], $d['javascript'], $d['javascript_obfuscated'])) {
+                if (isset($d['html'], $d['stylesheet'], $d['javascript'])) {
                     // Check if content actually changed before creating version
                     if ($this->hasContentChanged($o, $d)) {
                         // Create version before updating
@@ -160,13 +156,11 @@ class KytePageController extends ModelController
                         $params['html'] = $d['html'];
                         $params['stylesheet'] = $d['stylesheet'];
                         $params['javascript'] = $d['javascript'];
-                        $params['javascript_obfuscated'] = $d['javascript_obfuscated'];
 
                         // Update KytePageData
                         $bz_html = isset($d['html']) ? bzcompress($d['html'], 9) : '';
                         $bz_stylesheet = isset($d['stylesheet']) ? bzcompress($d['stylesheet'], 9) : '';
                         $bz_javascript = isset($d['javascript']) ? bzcompress($d['javascript'], 9) : '';
-                        $bz_javascript_obfuscated = isset($d['javascript_obfuscated']) ? bzcompress($d['javascript_obfuscated'], 9) : '';
                         $bz_block_layout = isset($d['block_layout']) ? bzcompress($d['block_layout'], 9) : '';
 
                         $pd = new \Kyte\Core\ModelObject(KytePageData);
@@ -175,7 +169,6 @@ class KytePageController extends ModelController
                                 'html' => $bz_html,
                                 'stylesheet' => $bz_stylesheet,
                                 'javascript' => $bz_javascript,
-                                'javascript_obfuscated' => $bz_javascript_obfuscated,
                                 'block_layout' => $bz_block_layout,
                                 'modified_by' => (is_object($this->user) && isset($this->user->id))
                                     ? (int) $this->user->id
@@ -276,7 +269,7 @@ class KytePageController extends ModelController
      */
     private function publishPage($pageObj, $params, &$responseData) {
         // If content fields are not set, retrieve them from database
-        if (!isset($params['html'], $params['stylesheet'], $params['javascript'], $params['javascript_obfuscated'])) {
+        if (!isset($params['html'], $params['stylesheet'], $params['javascript'])) {
             $pd = new \Kyte\Core\ModelObject(KytePageData);
             if (!$pd->retrieve('page', $pageObj->id)) {
                 throw new \Exception("CRITICAL ERROR: Unable to find page data.");
@@ -284,7 +277,6 @@ class KytePageController extends ModelController
             $params['html'] = bzdecompress($pd->html);
             $params['stylesheet'] = bzdecompress($pd->stylesheet);
             $params['javascript'] = bzdecompress($pd->javascript);
-            $params['javascript_obfuscated'] = bzdecompress($pd->javascript_obfuscated);
         }
 
         // Get application credentials
@@ -418,7 +410,6 @@ class KytePageController extends ModelController
             'html' => bzdecompress($pd->html),
             'stylesheet' => bzdecompress($pd->stylesheet),
             'javascript' => bzdecompress($pd->javascript),
-            'javascript_obfuscated' => bzdecompress($pd->javascript_obfuscated),
             'block_layout' => bzdecompress($pd->block_layout),
         ];
     }
@@ -1555,7 +1546,6 @@ class KytePageController extends ModelController
             'html' => isset($data['html']) ? bzcompress($data['html'], 9) : null,
             'stylesheet' => isset($data['stylesheet']) ? bzcompress($data['stylesheet'], 9) : null,
             'javascript' => isset($data['javascript']) ? bzcompress($data['javascript'], 9) : null,
-            'javascript_obfuscated' => isset($data['javascript_obfuscated']) ? bzcompress($data['javascript_obfuscated'], 9) : null,
             'block_layout' => isset($data['block_layout']) ? bzcompress($data['block_layout'], 9) : null,
             'reference_count' => 1,
             'kyte_account' => $this->account->id,

@@ -16,12 +16,6 @@ $KyteScriptVersionContent = [
             'date' => false,
         ],
 
-        'content_js_obfuscated' => [
-            'type' => 'lb',
-            'required' => false,
-            'date' => false,
-        ],
-
         'reference_count' => [
             'type' => 'i',
             'required' => true,

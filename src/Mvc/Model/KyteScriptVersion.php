@@ -78,14 +78,6 @@ $KyteScriptVersion = [
             'date' => false,
         ],
 
-        'obfuscate_js' => [
-            'type' => 'i',
-            'required' => false,
-            'size' => 1,
-            'unsigned' => true,
-            'date' => false,
-        ],
-
         'is_js_module' => [
             'type' => 'i',
             'required' => false,

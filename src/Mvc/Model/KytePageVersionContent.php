@@ -28,12 +28,6 @@ $KytePageVersionContent = [
             'date' => false,
         ],
 
-        'javascript_obfuscated' => [
-            'type' => 'lb',
-            'required' => false,
-            'date' => false,
-        ],
-
         'block_layout' => [
             'type' => 'lb',
             'required' => false,

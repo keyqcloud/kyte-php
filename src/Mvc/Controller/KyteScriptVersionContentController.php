@@ -17,7 +17,7 @@ class KyteScriptVersionContentController extends ModelController
         switch ($method) {
             case 'get':
                 // Decompress content fields for display
-                $contentFields = ['content', 'content_js_obfuscated'];
+                $contentFields = ['content'];
                 foreach ($contentFields as $field) {
                     if (!empty($r[$field])) {
                         $r[$field] = bzdecompress($r[$field]);

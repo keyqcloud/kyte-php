@@ -46,13 +46,6 @@ $KyteScript = [
 			'date'		=> false,
 		],
 
-		// if js, then obfuscated version
-		'content_js_obfuscated'		=> [
-			'type'		=> 'lb',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
 		'site'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
@@ -63,15 +56,6 @@ $KyteScript = [
 				'model'	=> 'KyteSite',
 				'field'	=> 'id',
 			],
-		],
-
-		'obfuscate_js' => [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 1,
-			'unsigned'	=> true,
-			'default'	=> 0,
-			'date'		=> false,
 		],
 
 		'include_all' => [

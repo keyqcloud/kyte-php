@@ -42,24 +42,9 @@ $KyteSectionTemplate = [
 			'date'		=> false,
 		],
 
-		'javascript_obfuscated'		=> [
-			'type'		=> 'lb',
-			'required'	=> false,
-			'date'		=> false,
-		],
-
 		'stylesheet'		=> [
 			'type'		=> 'lb',
 			'required'	=> false,
-			'date'		=> false,
-		],
-
-		'obfuscate_js' => [
-			'type'		=> 'i',
-			'required'	=> false,
-			'size'		=> 1,
-			'unsigned'	=> true,
-			'default'	=> 0,
 			'date'		=> false,
 		],
 

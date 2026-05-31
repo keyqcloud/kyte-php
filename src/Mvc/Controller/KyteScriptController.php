@@ -58,7 +58,7 @@ class KyteScriptController extends ModelController
                 }
 
                 // Create version before updating if script exists
-                if ($o && (isset($r['content']) || isset($r['content_js_obfuscated']))) {
+                if ($o && isset($r['content'])) {
                     $versionType = $r['version_type'] ?? 'manual_save';
                     $changeSummary = $r['change_summary'] ?? null;
 
@@ -71,9 +71,6 @@ class KyteScriptController extends ModelController
                 // Compress content for storage
                 if (isset($r['content'])) {
                     $r['content'] = $this->safeCompressCode($r['content']);
-                }
-                if (isset($r['content_js_obfuscated'])) {
-                    $r['content_js_obfuscated'] = $this->safeCompressCode($r['content_js_obfuscated']);
                 }
                 break;
 
@@ -148,9 +145,6 @@ class KyteScriptController extends ModelController
         if (isset($r['content'])) {
             $r['content'] = $this->safeDecompressCode($r['content']);
         }
-        if (isset($r['content_js_obfuscated'])) {
-            $r['content_js_obfuscated'] = $this->safeDecompressCode($r['content_js_obfuscated']);
-        }
     }
 
     /**
@@ -173,7 +167,6 @@ class KyteScriptController extends ModelController
 
         return [
             'content' => $this->safeDecompressCode($script->content ?? ''),
-            'content_js_obfuscated' => $this->safeDecompressCode($script->content_js_obfuscated ?? ''),
         ];
     }
 
@@ -302,16 +295,13 @@ class KyteScriptController extends ModelController
      */
     private function storeScriptVersionContent($contentHash, $data): \Kyte\Core\ModelObject {
         $content = $data['content'] ?? '';
-        $contentJsObfuscated = $data['content_js_obfuscated'] ?? '';
-        
-        // Ensure both are compressed for storage
+
+        // Ensure content is compressed for storage
         $content = $this->safeCompressCode($content);
-        $contentJsObfuscated = $this->safeCompressCode($contentJsObfuscated);
 
         $contentData = [
             'content_hash' => $contentHash,
             'content' => $content,
-            'content_js_obfuscated' => $contentJsObfuscated,
             'reference_count' => 1,
             'kyte_account' => $this->account->id,
             'created_by' => $this->user->id,
@@ -594,21 +584,18 @@ class KyteScriptController extends ModelController
         $params['html'] = bzdecompress($pd->html);
         $params['stylesheet'] = bzdecompress($pd->stylesheet);
         $params['javascript'] = bzdecompress($pd->javascript);
-        $params['javascript_obfuscated'] = bzdecompress($pd->javascript_obfuscated);
-        
+
         // footers and headers
-        if ($params['footer'] && isset($params['footer']['html'], $params['footer']['stylesheet'], $params['footer']['javascript'], $params['footer']['javascript_obfuscated'], $params['footer']['block_layout'])) {
+        if ($params['footer'] && isset($params['footer']['html'], $params['footer']['stylesheet'], $params['footer']['javascript'], $params['footer']['block_layout'])) {
             $params['footer']['html'] = bzdecompress($params['footer']['html']);
             $params['footer']['stylesheet'] = bzdecompress($params['footer']['stylesheet']);
             $params['footer']['javascript'] = bzdecompress($params['footer']['javascript']);
-            $params['footer']['javascript_obfuscated'] = bzdecompress($params['footer']['javascript_obfuscated']);
             $params['footer']['block_layout'] = bzdecompress($params['footer']['block_layout']);
         }
-        if ($params['header'] && isset($params['header']['html'], $params['header']['stylesheet'], $params['header']['javascript'], $params['header']['javascript_obfuscated'], $params['header']['block_layout'])) {
+        if ($params['header'] && isset($params['header']['html'], $params['header']['stylesheet'], $params['header']['javascript'], $params['header']['block_layout'])) {
             $params['header']['html'] = bzdecompress($params['header']['html']);
             $params['header']['stylesheet'] = bzdecompress($params['header']['stylesheet']);
             $params['header']['javascript'] = bzdecompress($params['header']['javascript']);
-            $params['header']['javascript_obfuscated'] = bzdecompress($params['header']['javascript_obfuscated']);
             $params['header']['block_layout'] = bzdecompress($params['header']['block_layout']);
         }
         
