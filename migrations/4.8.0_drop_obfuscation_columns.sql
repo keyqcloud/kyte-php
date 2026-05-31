@@ -10,7 +10,7 @@
 -- storage bloat (every page/script/section stored a second bzcompressed copy
 -- of its JS that was never served).
 --
--- Columns dropped:
+-- Columns dropped (12 columns across 9 tables):
 --   javascript_obfuscated      (KytePageData, KytePageVersionContent,
 --                               KyteSectionTemplate)
 --   content_js_obfuscated      (KyteScript, KyteScriptVersionContent)
@@ -27,51 +27,44 @@
 --
 -- Table names are PascalCase (matches the framework's model class names).
 --
--- ALGORITHM=INSTANT: MariaDB 10.5+ supports instant DROP COLUMN, which avoids
--- a full table rebuild. If a given table/engine cannot perform the drop
--- instantly, MariaDB automatically falls back to a copy/inplace algorithm —
--- the statement still succeeds. Operators running this against large tables
--- (notably KytePageVersionContent) should expect I/O during any such fallback
--- and schedule accordingly.
+-- ALGORITHM: intentionally NOT pinned. Modern engines (MySQL 8.0.29+,
+-- MariaDB 10.5+ for the compatible cases) perform DROP COLUMN as an INSTANT
+-- operation automatically, with no table rebuild. Older engines fall back to
+-- INPLACE/COPY automatically. Do NOT add an explicit `ALGORITHM=INSTANT`: when
+-- requested explicitly it ERRORS on an engine that can't honor it (it does not
+-- silently fall back). Letting the engine choose is portable and still gets
+-- INSTANT where available. On large tables (notably KytePageVersionContent),
+-- if the engine has to fall back to a rebuild, expect I/O and schedule it.
 --
 -- See src/Mvc/Model/*.php (field definitions removed in v4.8.0).
 -- =========================================================================
 
 ALTER TABLE `KytePageData`
-    DROP COLUMN `javascript_obfuscated`,
-    ALGORITHM=INSTANT;
+    DROP COLUMN `javascript_obfuscated`;
 
 ALTER TABLE `KytePageVersionContent`
-    DROP COLUMN `javascript_obfuscated`,
-    ALGORITHM=INSTANT;
+    DROP COLUMN `javascript_obfuscated`;
 
 ALTER TABLE `KyteSectionTemplate`
     DROP COLUMN `javascript_obfuscated`,
-    DROP COLUMN `obfuscate_js`,
-    ALGORITHM=INSTANT;
+    DROP COLUMN `obfuscate_js`;
 
 ALTER TABLE `KyteScript`
     DROP COLUMN `content_js_obfuscated`,
-    DROP COLUMN `obfuscate_js`,
-    ALGORITHM=INSTANT;
+    DROP COLUMN `obfuscate_js`;
 
 ALTER TABLE `KyteScriptVersionContent`
-    DROP COLUMN `content_js_obfuscated`,
-    ALGORITHM=INSTANT;
+    DROP COLUMN `content_js_obfuscated`;
 
 ALTER TABLE `KytePage`
-    DROP COLUMN `obfuscate_js`,
-    ALGORITHM=INSTANT;
+    DROP COLUMN `obfuscate_js`;
 
 ALTER TABLE `KytePageVersion`
-    DROP COLUMN `obfuscate_js`,
-    ALGORITHM=INSTANT;
+    DROP COLUMN `obfuscate_js`;
 
 ALTER TABLE `KyteScriptVersion`
-    DROP COLUMN `obfuscate_js`,
-    ALGORITHM=INSTANT;
+    DROP COLUMN `obfuscate_js`;
 
 ALTER TABLE `Application`
     DROP COLUMN `kyte_connect_obfuscated`,
-    DROP COLUMN `obfuscate_kyte_connect`,
-    ALGORITHM=INSTANT;
+    DROP COLUMN `obfuscate_kyte_connect`;
