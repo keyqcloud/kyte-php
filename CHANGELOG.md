@@ -1,3 +1,11 @@
+## 4.8.1
+
+### Fix: republish is now fault-isolated (KYTE-#181) + partial content saves no longer blank `block_layout` (KYTE-#189)
+
+**Republish resilience (KYTE-#181).** `ApplicationController`'s `republish_kyte_connect` hook re-stamps every `state=1` page across all of an app's sites. Previously it `throw`ew on the first page with missing `KytePageData`, **aborting the entire batch** — every later site/page kept the stale connect string, leaving an app half-migrated (e.g. a JWT dashboard with an HMAC login page). Now each page is re-stamped inside a `try/catch`: failures are collected (`page` id, `s3key`, `site`, `reason`) and logged, and the loop continues. The result is surfaced on the response as `republish_summary` (`succeeded` / `failed` / `failures[]`) so the caller can show a real outcome instead of trusting a silent all-or-nothing hook. Also fixed: CloudFront invalidation ran **once outside** the sites loop, so only the *last* site was invalidated — it now runs **per site**, so multi-site apps no longer leave other sites' caches stale.
+
+**`block_layout` preservation (KYTE-#189).** The KytePage update content-save unconditionally wrote `block_layout`, blanking it to empty when the field wasn't in the payload. A partial save — notably the Shipyard IDE, which sends only `html`/`stylesheet`/`javascript` — would therefore **wipe an existing block-editor layout**. The update now only overwrites `block_layout` when it's actually provided, preserving the stored value otherwise. (The IDE "save silently doesn't persist" half of #189 was already resolved by the v4.8.0 guard relaxation; this closes the data-loss edge.)
+
 ## 4.8.0
 
 ### Change: drop JavaScript obfuscation columns (Phase 2 — schema; resolves KYTE-#191 Phase 2)

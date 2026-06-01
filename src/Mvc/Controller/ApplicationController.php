@@ -78,6 +78,11 @@ class ApplicationController extends ModelController
                 if (isset($d['republish_kyte_connect']) && $d['republish_kyte_connect'] == 1) {
                     $sites = new \Kyte\Core\Model(KyteSite);
                     $sites->retrieve('application', $o->id);
+
+                    // Fault-isolated republish summary. A single bad page must NOT abort the
+                    // whole batch and strand later pages on the stale connect string. See KYTE-#181.
+                    $republishSummary = ['succeeded' => 0, 'failed' => 0, 'failures' => []];
+
                     foreach($sites->objects as $site) {
                         $credential = new \Kyte\Aws\Credentials($site->region, $o->aws_public_key, $o->aws_private_key);
                         $s3 = new \Kyte\Aws\S3($credential, $site->s3BucketName);
@@ -86,51 +91,78 @@ class ApplicationController extends ModelController
                         $pages->retrieve("state", 1, false, [['field' => 'site', 'value' => $site->id]]);
 
                         foreach($pages->objects as $page) {
-                            $params = $this->getObject($page);
-                            $pd = new \Kyte\Core\ModelObject(KytePageData);
-                            if (!$pd->retrieve('page', $page->id)) {
-                                throw new \Exception("CRITICAL ERROR: Unable to find page data.");
-                            }
+                            // Re-stamp each page independently; collect failures and continue
+                            // instead of throwing and aborting the remaining pages/sites.
+                            try {
+                                $params = $this->getObject($page);
+                                $pd = new \Kyte\Core\ModelObject(KytePageData);
+                                if (!$pd->retrieve('page', $page->id)) {
+                                    throw new \Exception("Unable to find page data (KytePageData) for page {$page->id}.");
+                                }
 
-                            $params['html'] = bzdecompress($pd->html);
-                            $params['stylesheet'] = bzdecompress($pd->stylesheet);
-                            $params['javascript'] = bzdecompress($pd->javascript);
-                            // footers and headers
-                            if ($params['footer'] && isset($params['footer']['html'], $params['footer']['stylesheet'], $params['footer']['javascript'], $params['footer']['block_layout'])) {
-                                $params['footer']['html'] = bzdecompress($params['footer']['html']);
-                                $params['footer']['stylesheet'] = bzdecompress($params['footer']['stylesheet']);
-                                $params['footer']['javascript'] = bzdecompress($params['footer']['javascript']);
-                                $params['footer']['block_layout'] = bzdecompress($params['footer']['block_layout']);
+                                $params['html'] = bzdecompress($pd->html);
+                                $params['stylesheet'] = bzdecompress($pd->stylesheet);
+                                $params['javascript'] = bzdecompress($pd->javascript);
+                                // footers and headers
+                                if ($params['footer'] && isset($params['footer']['html'], $params['footer']['stylesheet'], $params['footer']['javascript'], $params['footer']['block_layout'])) {
+                                    $params['footer']['html'] = bzdecompress($params['footer']['html']);
+                                    $params['footer']['stylesheet'] = bzdecompress($params['footer']['stylesheet']);
+                                    $params['footer']['javascript'] = bzdecompress($params['footer']['javascript']);
+                                    $params['footer']['block_layout'] = bzdecompress($params['footer']['block_layout']);
+                                }
+                                if ($params['header'] && isset($params['header']['html'], $params['header']['stylesheet'], $params['header']['javascript'], $params['header']['block_layout'])) {
+                                    $params['header']['html'] = bzdecompress($params['header']['html']);
+                                    $params['header']['stylesheet'] = bzdecompress($params['header']['stylesheet']);
+                                    $params['header']['javascript'] = bzdecompress($params['header']['javascript']);
+                                    $params['header']['block_layout'] = bzdecompress($params['header']['block_layout']);
+                                }
+                                // compile html file
+                                $data = \Kyte\Mvc\Controller\KytePageController::createHtml($params);
+                                // write to file
+                                $s3->write($page->s3key, $data);
+                                $republishSummary['succeeded']++;
+                            } catch (\Throwable $e) {
+                                $republishSummary['failed']++;
+                                $republishSummary['failures'][] = [
+                                    'page' => $page->id,
+                                    's3key' => $page->s3key,
+                                    'site' => $site->id,
+                                    'reason' => $e->getMessage(),
+                                ];
+                                error_log("Republish: failed to re-stamp page {$page->id} (s3key {$page->s3key}, site {$site->id}): " . $e->getMessage());
+                                continue;
                             }
-                            if ($params['header'] && isset($params['header']['html'], $params['header']['stylesheet'], $params['header']['javascript'], $params['header']['block_layout'])) {
-                                $params['header']['html'] = bzdecompress($params['header']['html']);
-                                $params['header']['stylesheet'] = bzdecompress($params['header']['stylesheet']);
-                                $params['header']['javascript'] = bzdecompress($params['header']['javascript']);
-                                $params['header']['block_layout'] = bzdecompress($params['header']['block_layout']);
+                        }
+
+                        // Invalidate THIS site's CloudFront. Previously this ran once outside the
+                        // sites loop, so only the last site was invalidated — multi-site apps left
+                        // every other site's cache stale. See KYTE-#181.
+                        try {
+                            $invalidationPaths = ['/*'];
+                            if (KYTE_USE_SNS) {
+                                $snsCredential = new \Kyte\Aws\Credentials(SNS_REGION);
+                                $sns = new \Kyte\Aws\Sns($snsCredential, SNS_QUEUE_SITE_MANAGEMENT);
+                                $sns->publish([
+                                    'action' => 'cf_invalidate',
+                                    'site_id' => $site->id,
+                                    'cf_id' => $site->cfDistributionId,
+                                    'cf_invalidation_paths' => $invalidationPaths,
+                                    'caller_id' => time(),
+                                ]);
+                            } else {
+                                $cf = new \Kyte\Aws\CloudFront($credential);
+                                $cf->createInvalidation($site->cfDistributionId, $invalidationPaths);
                             }
-                            // compile html file
-                            $data = \Kyte\Mvc\Controller\KytePageController::createHtml($params);
-                            // write to file
-                            $s3->write($page->s3key, $data);
+                        } catch (\Throwable $e) {
+                            error_log("Republish: CloudFront invalidation failed for site {$site->id}: " . $e->getMessage());
                         }
                     }
 
-                    // invalidate CF
-                    $invalidationPaths = ['/*'];
-                    if (KYTE_USE_SNS) {
-                        $credential = new \Kyte\Aws\Credentials(SNS_REGION);
-                        $sns = new \Kyte\Aws\Sns($credential, SNS_QUEUE_SITE_MANAGEMENT);
-                        $sns->publish([
-                            'action' => 'cf_invalidate',
-                            'site_id' => $site->id,
-                            'cf_id' => $site->cfDistributionId,
-                            'cf_invalidation_paths' => $invalidationPaths,
-                            'caller_id' => time(),
-                        ]);
-                    } else {
-                        // invalidate CF
-                        $cf = new \Kyte\Aws\CloudFront($credential);
-                        $cf->createInvalidation($site->cfDistributionId, $invalidationPaths);
+                    // Surface the result so the caller (Shipyard) can show a real summary
+                    // instead of trusting a silent all-or-nothing hook.
+                    $r['republish_summary'] = $republishSummary;
+                    if ($republishSummary['failed'] > 0) {
+                        error_log("Republish completed with {$republishSummary['failed']} failure(s) of " . ($republishSummary['succeeded'] + $republishSummary['failed']) . " page(s): " . json_encode($republishSummary['failures']));
                     }
                 }
                 break;
