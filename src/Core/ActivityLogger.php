@@ -130,7 +130,7 @@ class ActivityLogger
                 $redacted = is_array($requestData)
                     ? SensitivityPolicy::getInstance()->redactFields($requestData, $modelName, $this->accountId)
                     : $requestData;
-                $requestDataForLog = json_encode($this->redactSensitive($redacted));
+                $requestDataForLog = $this->capField(json_encode($this->redactSensitive($redacted)));
             }
 
             $logData = [
@@ -172,7 +172,7 @@ class ActivityLogger
             if ($action === 'PUT' && !$shouldDrop && $this->preUpdateState !== null && is_array($requestData)) {
                 $changes = $this->computeChanges($this->preUpdateState, $requestData, $modelName);
                 if (!empty($changes)) {
-                    $logData['changes'] = json_encode($changes);
+                    $logData['changes'] = $this->capField(json_encode($changes));
                 }
             }
 
@@ -230,6 +230,46 @@ class ActivityLogger
         }
 
         $this->isLogging = false;
+    }
+
+    /**
+     * Cap an encoded JSON field to KYTE_ACTIVITY_LOG_MAX_FIELD_BYTES.
+     *
+     * `request_data` and `changes` are LONGTEXT and otherwise store the FULL
+     * request body / diff — a single page or script save carries 300KB+ of
+     * HTML/JS/CSS, which is what let KyteActivityLog grow to 10GB and OOM the
+     * admin log query (KYTE-#182). When the encoded value exceeds the cap it
+     * is replaced with a small audit-preserving marker: the original byte
+     * size and the top-level field names (so you still see WHAT was sent /
+     * changed, just not the megabyte of content). A cap <= 0 disables the
+     * limit. Bytes, not characters — we are capping storage size.
+     */
+    private function capField($encoded) {
+        if ($encoded === null) {
+            return null;
+        }
+        $max = defined('KYTE_ACTIVITY_LOG_MAX_FIELD_BYTES')
+            ? (int)KYTE_ACTIVITY_LOG_MAX_FIELD_BYTES
+            : 16384;
+        if ($max <= 0 || strlen($encoded) <= $max) {
+            return $encoded;
+        }
+
+        $fields = null;
+        $decoded = json_decode($encoded, true);
+        if (is_array($decoded)) {
+            $fields = array_keys($decoded);
+            // Guard against the marker itself ballooning on a very wide payload.
+            if (count($fields) > 50) {
+                $fields = array_slice($fields, 0, 50);
+            }
+        }
+
+        return json_encode([
+            '_truncated'      => true,
+            '_original_bytes' => strlen($encoded),
+            '_fields'         => $fields,
+        ]);
     }
 
     /**

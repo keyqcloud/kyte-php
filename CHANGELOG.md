@@ -1,3 +1,15 @@
+## 4.9.0
+
+### Fix: ActivityLogger no longer bloats KyteActivityLog, and the admin log list stops dragging blobs (KYTE-#182)
+
+`KyteActivityLog` grew to **10GB on one install and OOM'd the admin log query**. Two independent causes, both fixed here — pure code, no schema change, instant rollback.
+
+1. **Write-cap (the durable bloat fix).** `request_data` and `changes` are `LONGTEXT` and `ActivityLogger` stored the **full** json-encoded request body / diff. A single page or script save carries 300KB+ of HTML/JS/CSS, so each logged row could be hundreds of KB — multiplied across every write, that is what filled the table. `ActivityLogger::log()` now caps each of those two fields at `KYTE_ACTIVITY_LOG_MAX_FIELD_BYTES` (default **16384** bytes, auto-defaulted in `Api`). When the encoded value exceeds the cap it is replaced with a small audit-preserving marker — `{"_truncated":true,"_original_bytes":N,"_fields":[...]}` — so you still see *what* was sent or changed (the top-level field names and the original size), just not the megabyte of content. Set the constant to `0` to disable the limit. Redaction (SensitivityPolicy + the hardcoded `SENSITIVE_FIELDS` baseline) is unchanged and still runs before the cap.
+
+2. **List-view projection (the OOM fix).** The framework `SELECT *` (`DBI::select`) pulls both `LONGTEXT` columns for every row, and the admin log **list** never uses them — only the single-record **detail** view does. `KyteActivityLogController` now detects a by-`id` detail fetch in `hook_prequery` and, on every other (list) response, omits `request_data`/`changes` and skips the JSON decode. The detail view (Shipyard `get("KyteActivityLog","id",idx)`) still returns the full decoded payload, so no Shipyard change is required. Severity/action colors are still added to both list and detail rows.
+
+**Not in this release (deferred to the data-model initiative, KYTE-#190):** index coverage on `KyteActivityLog`'s filter/sort columns and a retention policy. The earlier one-off ETOM purge (10.4GB → 1.56GB) was the band-aid; the write-cap above is what prevents recurrence.
+
 ## 4.8.1
 
 ### Fix: republish is now fault-isolated (KYTE-#181) + partial content saves no longer blank `block_layout` (KYTE-#189)
