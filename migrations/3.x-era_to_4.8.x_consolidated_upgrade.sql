@@ -16,9 +16,22 @@
 -- MySQL target those column clauses would need to be adjusted (plain ADD/DROP, or
 -- an information_schema-guarded approach). Client B (the first consumer) is MariaDB.
 --
--- ROLLOUT: deploy the v4.8.x CODE first, THEN run this. After it, verify the
--- app + run a page publish. config.php also needs the 4.x constants (JWT
--- secret + TTLs, AUTH strategy, etc.) — see the upgrade notes, NOT in this SQL.
+-- ROLLOUT (expand -> switch -> contract) — this file both ADDS and DROPS, which
+-- have opposite ordering needs vs the code swap:
+--   1. Run sections 1 & 2 (CREATE + ADD). Safe on the OLD (pre-4.8) code, which
+--      simply ignores the new tables/columns.
+--   2. `composer update` to 4.8.x + reload php-fpm. App is serveable now (the
+--      obfuscation columns still exist but are ignored).
+--   3. Run section 3 (DROP obfuscation columns). The OLD code still READ these,
+--      so this must NOT run until the new code is live.
+-- In a maintenance window with the app stopped, running the whole file then the
+-- composer update also works (nothing is serving, so nothing can break).
+--
+-- config.php: the 4.x framework auto-defaults its new constants (Api.php
+-- $defaultEnvironmentConstants), notably AUTH_STRATEGY_DISPATCHER='off' = legacy
+-- HMAC — so an HMAC install needs little/no config change. JWT is opt-in
+-- (KYTE_JWT_SECRET + AUTH_STRATEGY_DISPATCHER='on'); KYTE_DB_CA_BUNDLE is needed
+-- for SSL DB connections (4.x default).
 --
 -- DATA-migration caveat: if the install has EXISTING cron jobs from the old
 -- (pre-4.0.0, full-class) format, those need a separate conversion to the
