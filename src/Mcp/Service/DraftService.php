@@ -385,7 +385,7 @@ final class DraftService
      * to a human Publish. Null if the draft doesn't exist / belong to the
      * account.
      *
-     * @return array{committed:bool, draft_id:int, parent_id:int, version_number:int, site_id:?int, s3key:?string}|null
+     * @return array{committed:bool, draft_id:int, parent_id:int, version_number?:int, site_id?:?int, s3key?:?string, error?:string}|null
      */
     public function commitDraft(array $surface, int $draftId): ?array
     {
@@ -414,9 +414,22 @@ final class DraftService
         $api  = $this->api;
         $resp = [];
         $controller = new \Kyte\Mvc\Controller\KytePageController(\KytePage, $api, 'm/d/Y H:i:s', $resp, true);
-        $pub = $controller->publishFromContent($page, $content);
 
-        // Promote: demote the prior current version, flip this draft to live.
+        // Publish through the real pipeline. If it fails (e.g. bad AWS creds),
+        // the draft is NOT promoted — the page stays untouched and the caller
+        // gets a clear error so it can retry, rather than a false "committed".
+        try {
+            $pub = $controller->publishFromContent($page, $content);
+        } catch (\Throwable $e) {
+            return [
+                'committed' => false,
+                'draft_id'  => $draftId,
+                'parent_id' => $parentId,
+                'error'     => $e->getMessage(),
+            ];
+        }
+
+        // Publish succeeded — promote: demote the prior current, flip this draft.
         $this->markCurrentNotCurrent($surface, $parentId);
         $draft->save([
             'is_current'   => 1,

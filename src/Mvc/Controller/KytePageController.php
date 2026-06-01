@@ -294,7 +294,15 @@ class KytePageController extends ModelController
         $params['stylesheet'] = isset($content['stylesheet']) ? $content['stylesheet'] : '';
         $params['javascript'] = isset($content['javascript']) ? $content['javascript'] : '';
 
-        // Update the live KytePageData store (mirrors the update hook write).
+        // Publish FIRST (compile + S3 + CloudFront). If the S3 upload fails we
+        // bail BEFORE mutating the live KytePageData, so a failed commit leaves
+        // the page untouched rather than half-applied (DB updated, site stale).
+        $publishOk = self::publishPage($pageObj, $params, $r);
+        if ($publishOk === false) {
+            throw new \RuntimeException("Publish failed: S3 write to '{$pageObj->s3key}' did not succeed (check the application's AWS credentials / bucket).");
+        }
+
+        // Publish landed — persist the live content store + published state.
         $pageDataUpdate = [
             'html'          => bzcompress($params['html'], 9),
             'stylesheet'    => bzcompress($params['stylesheet'], 9),
@@ -305,18 +313,20 @@ class KytePageController extends ModelController
             $pageDataUpdate['block_layout'] = bzcompress($content['block_layout'], 9);
         }
         $pd = new \Kyte\Core\ModelObject(KytePageData);
-        if (!$pd->retrieve('page', $pageObj->id)) {
-            throw new \Exception("CRITICAL ERROR: Unable to find page data for page {$pageObj->id}.");
+        if ($pd->retrieve('page', $pageObj->id)) {
+            $pd->save($pageDataUpdate);
+        } else {
+            $pd->create(array_merge($pageDataUpdate, [
+                'page'         => $pageObj->id,
+                'kyte_account' => (int)$pageObj->kyte_account,
+                'date_created' => time(),
+            ]));
         }
-        $pd->save($pageDataUpdate);
 
         // Ensure the page is in the published state.
         if ((int)$pageObj->state !== 1) {
             $pageObj->save(['state' => 1]);
         }
-
-        // Compile + push to S3 + invalidate CloudFront (identical to a human publish).
-        self::publishPage($pageObj, $params, $r);
 
         return [
             'site_id' => isset($r['site']['id']) ? (int)$r['site']['id'] : 0,
@@ -349,8 +359,11 @@ class KytePageController extends ModelController
         // Compile HTML file
         $compiledHtml = self::createHtml($params);
         
-        // Write compiled HTML to S3
-        $s3->write($pageObj->s3key, $compiledHtml);
+        // Write compiled HTML to S3. Capture the result: the S3 stream wrapper
+        // returns false on a failed upload (e.g. invalid credentials) rather
+        // than throwing, so callers that need to know whether the publish
+        // actually landed (the MCP commit_draft flow) can check the return.
+        $publishOk = $s3->write($pageObj->s3key, $compiledHtml);
 
         // Update sitemap
         $siteDomain = $responseData['site']['aliasDomain'] ?: $responseData['site']['cfDomain'];
@@ -386,6 +399,10 @@ class KytePageController extends ModelController
             $cf = new \Kyte\Aws\CloudFront($credential);
             $cf->createInvalidation($responseData['site']['cfDistributionId'], $invalidationPaths);
         }
+
+        // true on a successful page write, false if the S3 upload failed.
+        // Existing void callers (the update hook) ignore this harmlessly.
+        return $publishOk;
     }
 
     /**

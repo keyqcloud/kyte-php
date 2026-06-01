@@ -107,9 +107,9 @@ final class DraftTools
      * Publish. Requires the 'commit' scope (tokens are draft-only by default).
      *
      * @param int $draft_id KytePageVersion id of a draft (from list_drafts).
-     * @return array{committed:bool, draft_id:int, parent_id:int, version_number:int, site_id:?int, s3key:?string}|null
+     * @return array{committed:bool, draft_id:int, parent_id:int, version_number?:int, site_id?:?int, s3key?:?string, error?:string}|null
      */
-    #[McpTool(name: 'commit_draft', description: 'Publish a pending draft to the live site (writes live content, pushes to S3, invalidates CloudFront) and make it the current version. This is the only draft action that affects the live page. Requires the commit scope.')]
+    #[McpTool(name: 'commit_draft', description: 'Publish a pending draft to the live site (writes live content, pushes to S3, invalidates CloudFront) and make it the current version. This is the only draft action that affects the live page. Requires the commit scope. Returns committed:false with an error if the publish fails (the draft is left intact).')]
     #[RequiresScope('commit')]
     public function commitDraft(int $draft_id): ?array
     {
