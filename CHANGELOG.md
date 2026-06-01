@@ -1,3 +1,22 @@
+## 4.10.0
+
+### Feature: MCP draft/write — AI can draft and commit pages, controller functions, and scripts
+
+Phase 2 *write* tools for the MCP server. Until now the MCP tools were read-only; this release lets an AI client **propose changes as drafts** and **commit** them live, across all three content surfaces — without ever touching the live resource until an explicit commit.
+
+**Model.** A draft is a pending version row (`draft=1`, `is_current=0`) on the existing version tables — the live content and the current version are untouched until commit, which flips the draft to `is_current=1` and publishes. A new migration `migrations/4.10.0_version_draft_flags.sql` adds `draft` + `draft_source` to `KytePageVersion`, `KyteFunctionVersion`, and `KyteScriptVersion` (additive, migration-first, inert on older code).
+
+**Engine.** `Kyte\Mcp\Service\DraftService` is surface-generic, driven by a per-surface descriptor (version model, content model, parent model, content fields), reusing the same sha256 content-hash + bzip2 + `reference_count` dedup conventions as the existing controllers so drafts de-duplicate against existing version content.
+
+**Tools** (`Kyte\Mcp\Tools\DraftTools`):
+- Writes (require `draft` scope): `write_page_part(page_id, part, content)`, `write_function_code(function_id, code)`, `write_script_content(script_id, content)`. Repeated writes on the same resource accumulate into one open draft.
+- Review (require `read`): `list_drafts(application_id)` spans all surfaces (each row tagged with its `surface`); `read_draft(surface, draft_id)` returns content + which parts differ from live.
+- Lifecycle: `discard_draft(surface, draft_id)` (`draft` scope); `commit_draft(surface, draft_id)` (`commit` scope) — the only action that changes the live resource. Pages/scripts publish to S3 + invalidate CloudFront; functions write the live code and regenerate the controller's compiled code base. On a failed publish, commit returns `committed:false` + an error and leaves the draft intact (publishes first, so a failure never half-applies).
+
+**Supporting changes.** `KytePageController::publishPage` is now `public static` and returns the S3 write result (existing void callers unaffected); it gains `publishFromContent()` for commit. `KyteScriptController` gains `publishFromContent()`. `ModelController` gains an optional `internal` constructor flag that skips the session `authenticate()` check, so a trusted server-side caller (the MCP commit flow) can use a controller with an account context but no HTTP session.
+
+Token scopes (`read` / `draft` / `commit`) on `KyteMCPToken` already existed; new tokens stay draft-only by default, so committing live is opt-in per token. Sequenced by risk: pages and scripts (fully versioned) and controller functions; model/schema drafting is intentionally out of scope (deferred to the data-model initiative).
+
 ## 4.9.0
 
 ### Fix: ActivityLogger no longer bloats KyteActivityLog, and the admin log list stops dragging blobs (KYTE-#182)

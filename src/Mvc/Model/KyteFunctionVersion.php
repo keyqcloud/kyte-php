@@ -92,6 +92,25 @@ $KyteFunctionVersion = [
             'date' => false,
         ],
 
+        // Draft flag (MCP draft/write). A draft is a pending version: draft=1,
+        // is_current=0; the live function code + current version are untouched
+        // until the draft is committed. See KytePageVersion for the model.
+        'draft' => [
+            'type' => 'i',
+            'required' => false,
+            'size' => 1,
+            'unsigned' => true,
+            'default' => 0,
+            'date' => false,
+        ],
+
+        'draft_source' => [
+            'type' => 's',
+            'required' => false,
+            'size' => 50,
+            'date' => false,
+        ],
+
         'parent_version' => [
             'type' => 'i',
             'required' => false,
