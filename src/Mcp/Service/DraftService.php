@@ -354,7 +354,10 @@ final class DraftService
             'draft'            => 1,
             'draft_source'     => 'mcp',
             'kyte_account'     => $this->accountId(),
-            'created_by'       => $this->userIdOrNull(),
+            // MCP requests carry an account but no KyteUser, so default to the
+            // 0 system sentinel — some version tables (KyteFunctionVersion)
+            // declare created_by NOT NULL, where a null would fail the insert.
+            'created_by'       => $this->userIdOrNull() ?? 0,
         ]);
         if (!$created) {
             throw new \RuntimeException('Unable to create draft.');
