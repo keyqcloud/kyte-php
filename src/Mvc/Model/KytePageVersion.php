@@ -187,6 +187,31 @@ $KytePageVersion = [
             'date' => false,
         ],
 
+        // Draft flag (KYTE MCP draft/write). A draft is a pending version
+        // that is NOT live: draft=1, is_current=0, and the page's current
+        // live version is left untouched until the draft is committed.
+        // Distinct from a historical version (draft=0, is_current=0), which
+        // is a superseded former-current. Committing a draft flips it to
+        // is_current=1, draft=0 and publishes.
+        'draft' => [
+            'type' => 'i',
+            'required' => false,
+            'size' => 1,
+            'unsigned' => true,
+            'default' => 0,
+            'date' => false,
+        ],
+
+        // Origin of a draft, e.g. 'mcp' for an AI-authored draft. Null for
+        // ordinary (human/save) versions. Drives the Shipyard review panel's
+        // AI-vs-human filter.
+        'draft_source' => [
+            'type' => 's',
+            'required' => false,
+            'size' => 50,
+            'date' => false,
+        ],
+
         'parent_version' => [
             'type' => 'i',
             'required' => false,
