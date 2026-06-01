@@ -378,6 +378,77 @@ final class DraftService
     }
 
     /**
+     * Commit a draft: publish its content to live and promote it to the
+     * current version. This is the ONLY draft operation that touches the live
+     * site. Publishing reuses the real KytePageController pipeline (live
+     * KytePageData write + S3 + CloudFront), so the result is byte-identical
+     * to a human Publish. Null if the draft doesn't exist / belong to the
+     * account.
+     *
+     * @return array{committed:bool, draft_id:int, parent_id:int, version_number:int, site_id:?int, s3key:?string}|null
+     */
+    public function commitDraft(array $surface, int $draftId): ?array
+    {
+        // Publish strategy is surface-specific; only pages are wired so far.
+        if ($surface['label'] !== 'page') {
+            return null;
+        }
+
+        $draft = $this->loadDraft($surface, $draftId);
+        if ($draft === null) {
+            return null;
+        }
+        $parentId = (int)$draft->{$surface['fk']};
+
+        // Re-scope the page and load it as the publish target.
+        $page = new ModelObject($surface['parentModel']);
+        if (!$page->retrieve('id', $parentId) || (int)$page->kyte_account !== $this->accountId()) {
+            return null;
+        }
+
+        $content = $this->versionContent($surface, $draft);
+
+        // Publish through the real controller pipeline. Construct it in
+        // internal mode (no HTTP session) — account context comes from $api.
+        // The controller constructor takes $api by reference; bind a local.
+        $api  = $this->api;
+        $resp = [];
+        $controller = new \Kyte\Mvc\Controller\KytePageController(\KytePage, $api, 'm/d/Y H:i:s', $resp, true);
+        $pub = $controller->publishFromContent($page, $content);
+
+        // Promote: demote the prior current version, flip this draft to live.
+        $this->markCurrentNotCurrent($surface, $parentId);
+        $draft->save([
+            'is_current'   => 1,
+            'draft'        => 0,
+            'version_type' => 'mcp_commit',
+        ]);
+
+        return [
+            'committed'      => true,
+            'draft_id'       => $draftId,
+            'parent_id'      => $parentId,
+            'version_number' => (int)$draft->version_number,
+            'site_id'        => isset($pub['site_id']) ? (int)$pub['site_id'] : null,
+            's3key'          => isset($pub['s3key']) ? (string)$pub['s3key'] : null,
+        ];
+    }
+
+    /**
+     * Demote the parent's current version (is_current=1 → 0), if any.
+     */
+    private function markCurrentNotCurrent(array $surface, int $parentId): void
+    {
+        $cur = new ModelObject($surface['versionModel']);
+        if ($cur->retrieve($surface['fk'], $parentId, [
+            ['field' => 'is_current',   'value' => 1],
+            ['field' => 'kyte_account', 'value' => $this->accountId()],
+        ])) {
+            $cur->save(['is_current' => 0]);
+        }
+    }
+
+    /**
      * List open drafts whose parent lives under the given application. Walks
      * draft versions in account scope and filters by the parent's site/app.
      * For the page surface, parent → KytePage → KyteSite(application).

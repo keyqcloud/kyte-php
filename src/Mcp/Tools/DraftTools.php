@@ -97,4 +97,22 @@ final class DraftTools
     {
         return $this->service()->discardDraft(DraftService::pageSurface(), $draft_id);
     }
+
+    /**
+     * Commit (publish) a draft to the live site.
+     *
+     * This is the ONLY draft tool that changes the live page: it writes the
+     * draft's content live, publishes to S3, invalidates CloudFront, and makes
+     * the draft the new current version — identical to a human clicking
+     * Publish. Requires the 'commit' scope (tokens are draft-only by default).
+     *
+     * @param int $draft_id KytePageVersion id of a draft (from list_drafts).
+     * @return array{committed:bool, draft_id:int, parent_id:int, version_number:int, site_id:?int, s3key:?string}|null
+     */
+    #[McpTool(name: 'commit_draft', description: 'Publish a pending draft to the live site (writes live content, pushes to S3, invalidates CloudFront) and make it the current version. This is the only draft action that affects the live page. Requires the commit scope.')]
+    #[RequiresScope('commit')]
+    public function commitDraft(int $draft_id): ?array
+    {
+        return $this->service()->commitDraft(DraftService::pageSurface(), $draft_id);
+    }
 }

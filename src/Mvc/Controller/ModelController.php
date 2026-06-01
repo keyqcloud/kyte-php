@@ -104,17 +104,30 @@ class ModelController
     protected $checkExisting;
     protected $existingThrowException;
 
+    /**
+     * Internal/system invocation flag. When true, the constructor skips the
+     * session-based authenticate() check, allowing a trusted server-side
+     * caller (e.g. the MCP commit flow) to construct a controller with an
+     * account context but no HTTP session. Account scoping is still the
+     * caller's responsibility. Defaults to false — normal HTTP requests
+     * always authenticate.
+     *
+     * @var bool
+     */
+    protected $internal = false;
+
     // array with error messages
     protected $exceptionMessages;
 
-    public function __construct($model, &$api, $dateformat, &$response)
+    public function __construct($model, &$api, $dateformat, &$response, $internal = false)
     {
         try {
-            
+
             $this->model = $model;
             $this->api = $api;
             $this->dateformat = $dateformat;
             $this->response = &$response;
+            $this->internal = $internal;
 
             /**
              * @deprecated These member variables are maintained for backwards compatibility but will be deprecated in the near future.
@@ -179,7 +192,7 @@ class ModelController
 
         $this->hook_init();
         
-        if ($this->requireAuth) {
+        if ($this->requireAuth && !$this->internal) {
             $this->authenticate();
         }
     }

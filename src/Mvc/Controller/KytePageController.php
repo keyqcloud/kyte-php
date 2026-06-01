@@ -190,7 +190,7 @@ class KytePageController extends ModelController
                 }
 
                 if (isset($d['state']) && $d['state'] == 1) {
-                    $this->publishPage($o, $params, $r);
+                    self::publishPage($o, $params, $r);
                 }
                 break;
 
@@ -270,7 +270,61 @@ class KytePageController extends ModelController
      * @param array $responseData Response data containing site information
      * @throws \Exception if critical errors occur during publishing
      */
-    private function publishPage($pageObj, $params, &$responseData) {
+    /**
+     * Promote an explicit content set to live and publish it (MCP commit_draft).
+     *
+     * Mirrors the update→publish path exactly: writes the live KytePageData,
+     * recompiles the page via getObject expansion, pushes to S3, and
+     * invalidates CloudFront. Used to commit a draft (a non-current
+     * KytePageVersion) without going through an HTTP request — construct this
+     * controller with the internal flag (no session) and call this directly.
+     * Does NOT create a new version row (the draft being committed already is
+     * the version); the caller flips the draft to is_current.
+     *
+     * @param object $pageObj The KytePage ModelObject to publish.
+     * @param array  $content html / stylesheet / javascript [/ block_layout].
+     * @return array{site_id:int, s3key:string}
+     */
+    public function publishFromContent($pageObj, array $content) {
+        // Expand the page exactly as the normal publish path does (FK chain:
+        // site → application, header/footer/navigation templates, etc.).
+        $r = $this->getObject($pageObj);
+        $params = $r;
+        $params['html']       = isset($content['html']) ? $content['html'] : '';
+        $params['stylesheet'] = isset($content['stylesheet']) ? $content['stylesheet'] : '';
+        $params['javascript'] = isset($content['javascript']) ? $content['javascript'] : '';
+
+        // Update the live KytePageData store (mirrors the update hook write).
+        $pageDataUpdate = [
+            'html'          => bzcompress($params['html'], 9),
+            'stylesheet'    => bzcompress($params['stylesheet'], 9),
+            'javascript'    => bzcompress($params['javascript'], 9),
+            'date_modified' => time(),
+        ];
+        if (isset($content['block_layout'])) {
+            $pageDataUpdate['block_layout'] = bzcompress($content['block_layout'], 9);
+        }
+        $pd = new \Kyte\Core\ModelObject(KytePageData);
+        if (!$pd->retrieve('page', $pageObj->id)) {
+            throw new \Exception("CRITICAL ERROR: Unable to find page data for page {$pageObj->id}.");
+        }
+        $pd->save($pageDataUpdate);
+
+        // Ensure the page is in the published state.
+        if ((int)$pageObj->state !== 1) {
+            $pageObj->save(['state' => 1]);
+        }
+
+        // Compile + push to S3 + invalidate CloudFront (identical to a human publish).
+        self::publishPage($pageObj, $params, $r);
+
+        return [
+            'site_id' => isset($r['site']['id']) ? (int)$r['site']['id'] : 0,
+            's3key'   => (string)$pageObj->s3key,
+        ];
+    }
+
+    public static function publishPage($pageObj, $params, &$responseData) {
         // If content fields are not set, retrieve them from database
         if (!isset($params['html'], $params['stylesheet'], $params['javascript'])) {
             $pd = new \Kyte\Core\ModelObject(KytePageData);
