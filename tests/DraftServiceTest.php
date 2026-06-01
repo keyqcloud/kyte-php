@@ -169,4 +169,91 @@ class DraftServiceTest extends TestCase
         $result = $svc->writePart($S, (int)$other->id, 'html', 'x');
         $this->assertNull($result, 'writing to a page outside the account is denied');
     }
+
+    public function testFunctionSurfaceAuthoring(): void
+    {
+        \Kyte\Core\DBI::createTable(constant('Function'));
+        \Kyte\Core\DBI::createTable(KyteFunctionVersion);
+        \Kyte\Core\DBI::createTable(KyteFunctionVersionContent);
+
+        $fn = new \Kyte\Core\ModelObject(constant('Function'));
+        $fn->create([
+            'name'         => 'al_draft_test_fn',
+            'controller'   => 1,
+            'code'         => bzcompress('echo 1;', 9),
+            'kyte_account' => $this->accountId,
+        ]);
+        $fnId = (int)$fn->id;
+
+        $hash = hash('sha256', 'echo 1;');
+        (new \Kyte\Core\ModelObject(KyteFunctionVersionContent))->create([
+            'content_hash' => $hash, 'code' => bzcompress('echo 1;', 9),
+            'reference_count' => 1, 'last_referenced' => time(), 'kyte_account' => $this->accountId,
+        ]);
+        (new \Kyte\Core\ModelObject(KyteFunctionVersion))->create([
+            'function' => $fnId, 'version_number' => 1, 'version_type' => 'initial',
+            'content_hash' => $hash, 'is_current' => 1, 'draft' => 0, 'kyte_account' => $this->accountId,
+        ]);
+
+        $svc = $this->svc();
+        $S = DraftService::functionSurface();
+
+        $w = $svc->writePart($S, $fnId, 'code', 'echo 2;');
+        $this->assertNotNull($w);
+        $this->assertTrue($w['created']);
+
+        $read = $svc->readDraft($S, $w['draft_id']);
+        $this->assertSame('echo 2;', $read['content']['code']);
+        $this->assertContains('code', $read['changed_parts']);
+
+        // Live function code unchanged by drafting.
+        $this->assertSame('echo 1;', $svc->currentLiveContent($S, $fnId)['code']);
+
+        $svc->discardDraft($S, $w['draft_id']);
+        $this->assertNull($svc->readDraft($S, $w['draft_id']));
+    }
+
+    public function testScriptSurfaceAuthoring(): void
+    {
+        \Kyte\Core\DBI::createTable(KyteScript);
+        \Kyte\Core\DBI::createTable(KyteScriptVersion);
+        \Kyte\Core\DBI::createTable(KyteScriptVersionContent);
+
+        $sc = new \Kyte\Core\ModelObject(KyteScript);
+        $sc->create([
+            'name'         => 'al_draft_test_script',
+            'site'         => 1,
+            's3key'        => 'assets/js/al-draft-test.js',
+            'content'      => bzcompress('let a = 1;', 9),
+            'kyte_account' => $this->accountId,
+        ]);
+        $scId = (int)$sc->id;
+
+        $hash = hash('sha256', 'let a = 1;');
+        (new \Kyte\Core\ModelObject(KyteScriptVersionContent))->create([
+            'content_hash' => $hash, 'content' => bzcompress('let a = 1;', 9),
+            'reference_count' => 1, 'last_referenced' => time(), 'kyte_account' => $this->accountId,
+        ]);
+        (new \Kyte\Core\ModelObject(KyteScriptVersion))->create([
+            'script' => $scId, 'version_number' => 1, 'version_type' => 'initial',
+            'content_hash' => $hash, 'is_current' => 1, 'draft' => 0, 'kyte_account' => $this->accountId,
+        ]);
+
+        $svc = $this->svc();
+        $S = DraftService::scriptSurface();
+
+        $w = $svc->writePart($S, $scId, 'content', 'let a = 2;');
+        $this->assertNotNull($w);
+        $this->assertTrue($w['created']);
+
+        $read = $svc->readDraft($S, $w['draft_id']);
+        $this->assertSame('let a = 2;', $read['content']['content']);
+        $this->assertContains('content', $read['changed_parts']);
+
+        // Live script content unchanged by drafting.
+        $this->assertSame('let a = 1;', $svc->currentLiveContent($S, $scId)['content']);
+
+        $svc->discardDraft($S, $w['draft_id']);
+        $this->assertNull($svc->readDraft($S, $w['draft_id']));
+    }
 }

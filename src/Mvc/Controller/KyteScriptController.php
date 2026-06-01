@@ -498,6 +498,52 @@ class KyteScriptController extends ModelController
     }
 
     /**
+     * Publish an explicit script content to live (MCP commit_draft).
+     *
+     * Publishes the script asset itself to S3 (the common case — scripts are
+     * referenced by their s3key URL) and invalidates CloudFront, mirroring the
+     * page commit: publish FIRST and bail on a failed upload BEFORE mutating
+     * the live KyteScript.content, so a failed commit leaves the script
+     * untouched. Construct this controller in internal mode (no session) from
+     * a trusted server-side caller.
+     *
+     * NOTE: this does NOT regenerate pages that inline an `include_all` script
+     * (updatePagesForScript) — that heavier propagation is left to a normal
+     * Shipyard publish for now. Scripts referenced by URL update fully here.
+     *
+     * @param object $scriptObj The KyteScript ModelObject to publish.
+     * @param array  $content   ['content' => <plain script source>].
+     * @return array{site_id:int, s3key:string}
+     */
+    public function publishFromContent($scriptObj, array $content) {
+        $plain = isset($content['content']) ? $content['content'] : '';
+        $r = $this->getObject($scriptObj);
+
+        $app = new \Kyte\Core\ModelObject(Application);
+        if (!$app->retrieve('id', $r['site']['application']['id'])) {
+            throw new \Exception("CRITICAL ERROR: Unable to find application.");
+        }
+        $credential = new \Kyte\Aws\Credentials($r['site']['region'], $app->aws_public_key, $app->aws_private_key);
+        $s3 = new \Kyte\Aws\S3($credential, $r['site']['s3BucketName']);
+
+        // Publish FIRST; bail before mutating the live content if S3 fails.
+        $publishOk = $s3->write($scriptObj->s3key, $plain);
+        if ($publishOk === false) {
+            throw new \RuntimeException("Publish failed: S3 write to '{$scriptObj->s3key}' did not succeed (check the application's AWS credentials / bucket).");
+        }
+
+        // Publish landed — persist the live content + invalidate CloudFront.
+        $scriptObj->save(['content' => bzcompress($plain, 9)]);
+        $r['content'] = $plain;
+        $this->invalidateCloudFront($r);
+
+        return [
+            'site_id' => isset($r['site']['id']) ? (int)$r['site']['id'] : 0,
+            's3key'   => (string)$scriptObj->s3key,
+        ];
+    }
+
+    /**
      * Handle script deletion (extracted from original delete case)
      */
     private function handleScriptDeletion($o): void {

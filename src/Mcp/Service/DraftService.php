@@ -60,6 +60,69 @@ final class DraftService
         ];
     }
 
+    /**
+     * Descriptor for the controller-function surface (KyteFunctionVersion).
+     * Single content field `code`; commit is DB-only (regenerate code base).
+     *
+     * @return array{versionModel:array, contentModel:array, parentModel:array, fk:string, contentFields:array<int,string>, writableParts:array<int,string>, label:string}
+     */
+    public static function functionSurface(): array
+    {
+        return [
+            'versionModel'  => \KyteFunctionVersion,
+            'contentModel'  => \KyteFunctionVersionContent,
+            // 'Function' collides with the PHP keyword — resolve via constant().
+            'parentModel'   => constant('Function'),
+            'fk'            => 'function',
+            'contentFields' => ['code'],
+            'writableParts' => ['code'],
+            'label'         => 'function',
+        ];
+    }
+
+    /**
+     * Descriptor for the standalone-script surface (KyteScriptVersion).
+     * Single content field `content`; commit publishes the asset to S3.
+     *
+     * @return array{versionModel:array, contentModel:array, parentModel:array, fk:string, contentFields:array<int,string>, writableParts:array<int,string>, label:string}
+     */
+    public static function scriptSurface(): array
+    {
+        return [
+            'versionModel'  => \KyteScriptVersion,
+            'contentModel'  => \KyteScriptVersionContent,
+            'parentModel'   => \KyteScript,
+            'fk'            => 'script',
+            'contentFields' => ['content'],
+            'writableParts' => ['content'],
+            'label'         => 'script',
+        ];
+    }
+
+    /**
+     * Resolve a surface descriptor by label ('page' | 'function' | 'script').
+     * Null for an unknown label.
+     */
+    public static function surfaceByLabel(string $label): ?array
+    {
+        switch (strtolower(trim($label))) {
+            case 'page':     return self::pageSurface();
+            case 'function': return self::functionSurface();
+            case 'script':   return self::scriptSurface();
+            default:         return null;
+        }
+    }
+
+    /**
+     * All draftable surfaces, for cross-surface listing.
+     *
+     * @return array<int, array>
+     */
+    public static function allSurfaces(): array
+    {
+        return [self::pageSurface(), self::functionSurface(), self::scriptSurface()];
+    }
+
     private function accountId(): int
     {
         return isset($this->api->account->id) ? (int)$this->api->account->id : 0;
@@ -385,41 +448,30 @@ final class DraftService
      * to a human Publish. Null if the draft doesn't exist / belong to the
      * account.
      *
-     * @return array{committed:bool, draft_id:int, parent_id:int, version_number?:int, site_id?:?int, s3key?:?string, error?:string}|null
+     * @return array{committed:bool, draft_id:int, parent_id:int, version_number?:int, site_id?:int, s3key?:string, controller_id?:int, error?:string}|null
      */
     public function commitDraft(array $surface, int $draftId): ?array
     {
-        // Publish strategy is surface-specific; only pages are wired so far.
-        if ($surface['label'] !== 'page') {
-            return null;
-        }
-
         $draft = $this->loadDraft($surface, $draftId);
         if ($draft === null) {
             return null;
         }
         $parentId = (int)$draft->{$surface['fk']};
 
-        // Re-scope the page and load it as the publish target.
-        $page = new ModelObject($surface['parentModel']);
-        if (!$page->retrieve('id', $parentId) || (int)$page->kyte_account !== $this->accountId()) {
+        // Re-scope the parent and load it as the publish target.
+        $parent = new ModelObject($surface['parentModel']);
+        if (!$parent->retrieve('id', $parentId) || (int)$parent->kyte_account !== $this->accountId()) {
             return null;
         }
 
         $content = $this->versionContent($surface, $draft);
 
-        // Publish through the real controller pipeline. Construct it in
-        // internal mode (no HTTP session) — account context comes from $api.
-        // The controller constructor takes $api by reference; bind a local.
-        $api  = $this->api;
-        $resp = [];
-        $controller = new \Kyte\Mvc\Controller\KytePageController(\KytePage, $api, 'm/d/Y H:i:s', $resp, true);
-
-        // Publish through the real pipeline. If it fails (e.g. bad AWS creds),
-        // the draft is NOT promoted — the page stays untouched and the caller
-        // gets a clear error so it can retry, rather than a false "committed".
+        // Publish through the real pipeline for this surface. If it fails (e.g.
+        // bad AWS creds), the draft is NOT promoted — the parent stays
+        // untouched and the caller gets a clear error to retry, rather than a
+        // false "committed".
         try {
-            $pub = $controller->publishFromContent($page, $content);
+            $pub = $this->publishForSurface($surface, $parent, $content);
         } catch (\Throwable $e) {
             return [
                 'committed' => false,
@@ -437,14 +489,53 @@ final class DraftService
             'version_type' => 'mcp_commit',
         ]);
 
-        return [
+        return array_merge([
             'committed'      => true,
             'draft_id'       => $draftId,
             'parent_id'      => $parentId,
             'version_number' => (int)$draft->version_number,
-            'site_id'        => isset($pub['site_id']) ? (int)$pub['site_id'] : null,
-            's3key'          => isset($pub['s3key']) ? (string)$pub['s3key'] : null,
-        ];
+        ], $pub);
+    }
+
+    /**
+     * Surface-specific publish for commit. Returns publish metadata (merged
+     * into the commit result) and throws on a failed publish.
+     *
+     * - page/script: publish through the real controller (S3 + CloudFront),
+     *   constructed in internal mode (no HTTP session; account from $api).
+     * - function: DB-only — write the live Function.code and regenerate the
+     *   controller's compiled code base (no S3).
+     *
+     * @param array<string,string> $content
+     * @return array<string,mixed>
+     */
+    private function publishForSurface(array $surface, ModelObject $parent, array $content): array
+    {
+        $api  = $this->api;
+        $resp = [];
+
+        switch ($surface['label']) {
+            case 'page':
+                $c = new \Kyte\Mvc\Controller\KytePageController(\KytePage, $api, 'm/d/Y H:i:s', $resp, true);
+                return $c->publishFromContent($parent, $content);
+
+            case 'script':
+                $c = new \Kyte\Mvc\Controller\KyteScriptController(\KyteScript, $api, 'm/d/Y H:i:s', $resp, true);
+                return $c->publishFromContent($parent, $content);
+
+            case 'function':
+                // Write the live function code, then regenerate the owning
+                // controller's compiled code base (generateCodeBase is static).
+                $parent->save(['code' => bzcompress(isset($content['code']) ? $content['code'] : '', 9)]);
+                $ctrl = new ModelObject(constant('Controller'));
+                if ($ctrl->retrieve('id', (int)$parent->controller)) {
+                    \Kyte\Mvc\Controller\ControllerController::generateCodeBase($ctrl);
+                }
+                return ['controller_id' => (int)$parent->controller];
+
+            default:
+                throw new \RuntimeException("Commit is not supported for surface '{$surface['label']}'.");
+        }
     }
 
     /**
@@ -466,7 +557,7 @@ final class DraftService
      * draft versions in account scope and filters by the parent's site/app.
      * For the page surface, parent → KytePage → KyteSite(application).
      *
-     * @return array{drafts: array<int, array{draft_id:int, parent_id:int, version_number:int, draft_source:?string, date_modified:?int}>}
+     * @return array{drafts: array<int, array{surface:string, draft_id:int, parent_id:int, version_number:int, draft_source:?string, date_modified:?int}>}
      */
     public function listDrafts(array $surface, int $applicationId): array
     {
@@ -488,6 +579,7 @@ final class DraftService
                 continue;
             }
             $out[] = [
+                'surface'        => $surface['label'],
                 'draft_id'       => (int)$d->id,
                 'parent_id'      => $parentId,
                 'version_number' => (int)$d->version_number,
@@ -511,18 +603,32 @@ final class DraftService
      */
     private function parentInApplication(array $surface, int $parentId, int $applicationId, int $accountId): bool
     {
-        if ($surface['label'] !== 'page') {
+        $parent = new ModelObject($surface['parentModel']);
+        if (!$parent->retrieve('id', $parentId) || (int)$parent->kyte_account !== $accountId) {
             return false;
         }
-        $page = new ModelObject(\KytePage);
-        if (!$page->retrieve('id', $parentId) || (int)$page->kyte_account !== $accountId) {
-            return false;
+
+        switch ($surface['label']) {
+            // Pages and scripts both resolve their app via the site FK.
+            case 'page':
+            case 'script':
+                $site = new ModelObject(\KyteSite);
+                if (!$site->retrieve('id', (int)$parent->site) || (int)$site->kyte_account !== $accountId) {
+                    return false;
+                }
+                return (int)$site->application === $applicationId;
+
+            // Functions resolve their app via the controller FK.
+            case 'function':
+                $ctrl = new ModelObject(constant('Controller'));
+                if (!$ctrl->retrieve('id', (int)$parent->controller) || (int)$ctrl->kyte_account !== $accountId) {
+                    return false;
+                }
+                return (int)$ctrl->application === $applicationId;
+
+            default:
+                return false;
         }
-        $site = new ModelObject(\KyteSite);
-        if (!$site->retrieve('id', (int)$page->site) || (int)$site->kyte_account !== $accountId) {
-            return false;
-        }
-        return (int)$site->application === $applicationId;
     }
 
     /**

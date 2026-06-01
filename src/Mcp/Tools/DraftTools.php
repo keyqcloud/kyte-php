@@ -7,20 +7,21 @@ use Kyte\Mcp\Service\DraftService;
 use Mcp\Capability\Attribute\McpTool;
 
 /**
- * Draft authoring tools for the MCP draft/write feature.
+ * Draft authoring + commit tools for the MCP draft/write feature, across all
+ * three draftable surfaces: pages, controller functions, and standalone
+ * scripts. A draft is a pending, non-live edit (draft=1, is_current=0); the
+ * live resource is untouched until commit_draft publishes it.
  *
- * A draft is a pending, non-live edit. `write_page_part` accumulates content
- * changes into a single open draft per page (draft=1, is_current=0) WITHOUT
- * touching the live page — a human (or a commit-scoped tool) promotes it
- * later. `list_drafts`/`read_draft` support review; `discard_draft` drops a
- * draft. Commit (promotion + publish) is a separate commit-scoped tool.
+ * Writes are surface-specific (a page has parts; functions/scripts have a
+ * single content field). The lifecycle tools — read/discard/commit — take a
+ * `surface` argument ('page' | 'function' | 'script') because version ids are
+ * per-table and collide across surfaces. list_drafts spans all surfaces and
+ * tags each row with its surface, so a caller knows what to pass back.
  *
- * All work is delegated to the surface-generic DraftService; this class only
- * supplies the page surface and shapes tool I/O. Functions and scripts will
- * add sibling tools over the same service with their own surface descriptors.
- *
- * Scope mapping: write/discard require 'draft'; list/read require 'read'.
- * Account scoping is enforced inside the service on every caller-supplied id.
+ * Scopes: write/discard require 'draft'; list/read require 'read'; commit
+ * requires 'commit' (tokens are draft-only by default). Account scoping is
+ * enforced inside the service on every caller-supplied id. All work is
+ * delegated to the surface-generic DraftService.
  */
 final class DraftTools
 {
@@ -33,86 +34,147 @@ final class DraftTools
         return new DraftService($this->api);
     }
 
+    // ----- Writes (draft scope) — one per surface -----
+
     /**
-     * Create or update a draft edit of a page part (does NOT publish).
+     * Create/update a DRAFT edit of a page part (html, stylesheet, javascript).
+     * Does not publish. Repeated calls on the same page accumulate into one draft.
      *
-     * Repeated calls for the same page accumulate into one open draft: each
-     * call starts from the page's current live content (or the in-progress
-     * draft), sets the named part, and re-stores. Use commit_draft to publish.
-     *
-     * @param int    $page_id KytePage id from list_pages.
-     * @param string $part    One of: html, stylesheet, javascript (aliases: css, js).
-     * @param string $content Full new content for that part.
-     * @return array{ok:bool, draft_id?:int, parent_id?:int, version_number?:int, part?:string, created?:bool, content_bytes?:int, error?:string}
+     * @return array{ok:bool, surface?:string, draft_id?:int, parent_id?:int, version_number?:int, part?:string, created?:bool, content_bytes?:int, error?:string}
      */
-    #[McpTool(name: 'write_page_part', description: 'Create or update a DRAFT edit of a page part (html, stylesheet, or javascript). Does not publish — the draft is held for review and promoted via commit_draft. Repeated calls on the same page accumulate into one draft.')]
+    #[McpTool(name: 'write_page_part', description: 'Create or update a DRAFT edit of a page part (html, stylesheet, or javascript). Does not publish — held for review and promoted via commit_draft. Repeated calls on the same page accumulate into one draft.')]
     #[RequiresScope('draft')]
     public function writePagePart(int $page_id, string $part, string $content): array
     {
-        $result = $this->service()->writePart(DraftService::pageSurface(), $page_id, $part, $content);
+        return $this->writeResult(DraftService::pageSurface(), $page_id, $part, $content);
+    }
+
+    /**
+     * Create/update a DRAFT edit of a controller function's code. Does not
+     * regenerate the controller until commit_draft.
+     *
+     * @return array{ok:bool, surface?:string, draft_id?:int, parent_id?:int, version_number?:int, part?:string, created?:bool, content_bytes?:int, error?:string}
+     */
+    #[McpTool(name: 'write_function_code', description: 'Create or update a DRAFT edit of a controller function\'s PHP code. Does not regenerate the controller — held for review and promoted via commit_draft.')]
+    #[RequiresScope('draft')]
+    public function writeFunctionCode(int $function_id, string $code): array
+    {
+        return $this->writeResult(DraftService::functionSurface(), $function_id, 'code', $code);
+    }
+
+    /**
+     * Create/update a DRAFT edit of a standalone script's content. Does not
+     * publish the script until commit_draft.
+     *
+     * @return array{ok:bool, surface?:string, draft_id?:int, parent_id?:int, version_number?:int, part?:string, created?:bool, content_bytes?:int, error?:string}
+     */
+    #[McpTool(name: 'write_script_content', description: 'Create or update a DRAFT edit of a standalone script\'s content. Does not publish — held for review and promoted via commit_draft.')]
+    #[RequiresScope('draft')]
+    public function writeScriptContent(int $script_id, string $content): array
+    {
+        return $this->writeResult(DraftService::scriptSurface(), $script_id, 'content', $content);
+    }
+
+    /**
+     * @param array<string,mixed> $surface
+     * @return array{ok:bool, surface?:string, draft_id?:int, parent_id?:int, version_number?:int, part?:string, created?:bool, content_bytes?:int, error?:string}
+     */
+    private function writeResult(array $surface, int $parentId, string $part, string $content): array
+    {
+        $result = $this->service()->writePart($surface, $parentId, $part, $content);
         if ($result === null) {
             return [
                 'ok'    => false,
-                'error' => "Could not write draft: page {$page_id} was not found in this account, or '{$part}' is not a writable part. Valid parts: html, stylesheet, javascript.",
+                'error' => "Could not write draft: {$surface['label']} {$parentId} was not found in this account, or '{$part}' is not a writable part.",
             ];
         }
-        return array_merge(['ok' => true], $result);
+        return array_merge(['ok' => true, 'surface' => $surface['label']], $result);
     }
 
+    // ----- Review / lifecycle -----
+
     /**
-     * List open drafts in an application (pages, for now).
+     * List pending (uncommitted) drafts across ALL surfaces in an application.
+     * Each row is tagged with its `surface` — pass that to read/commit/discard.
      *
-     * @param int $application_id Application id from list_applications.
-     * @return array{drafts: array<int, array{draft_id:int, parent_id:int, version_number:int, draft_source:?string, date_modified:?int}>}
+     * @return array{drafts: array<int, array{surface:string, draft_id:int, parent_id:int, version_number:int, draft_source:?string, date_modified:?int}>}
      */
-    #[McpTool(name: 'list_drafts', description: 'List pending (uncommitted) drafts in a Kyte application. Use read_draft to inspect one and commit_draft to publish it.')]
+    #[McpTool(name: 'list_drafts', description: 'List pending (uncommitted) drafts across pages, functions, and scripts in a Kyte application. Each row is tagged with its surface (page/function/script); pass that surface to read_draft / commit_draft / discard_draft.')]
     #[RequiresScope('read')]
     public function listDrafts(int $application_id): array
     {
-        return $this->service()->listDrafts(DraftService::pageSurface(), $application_id);
+        $svc = $this->service();
+        $all = [];
+        foreach (DraftService::allSurfaces() as $surface) {
+            $r = $svc->listDrafts($surface, $application_id);
+            foreach ($r['drafts'] as $d) {
+                $all[] = $d;
+            }
+        }
+        return ['drafts' => $all];
     }
 
     /**
-     * Read a draft's content and which parts differ from the live page.
+     * Read a pending draft (its content + which parts differ from live).
      *
-     * @param int $draft_id KytePageVersion id of a draft (from list_drafts).
-     * @return array{draft_id:int, parent_id:int, version_number:int, draft_source:?string, content:array<string,string>, changed_parts:array<int,string>}|null
+     * @param string $surface  page | function | script (from list_drafts).
+     * @param int    $draft_id Version id of the draft (from list_drafts).
+     * @return array{surface:string, draft_id:int, parent_id:int, version_number:int, draft_source:?string, content:array<string,string>, changed_parts:array<int,string>}|null
      */
-    #[McpTool(name: 'read_draft', description: 'Read a pending draft: its content (html/stylesheet/javascript) and which parts differ from the current live version.')]
+    #[McpTool(name: 'read_draft', description: 'Read a pending draft: its content and which parts differ from the current live version. Pass the surface (page/function/script) and draft_id from list_drafts.')]
     #[RequiresScope('read')]
-    public function readDraft(int $draft_id): ?array
+    public function readDraft(string $surface, int $draft_id): ?array
     {
-        return $this->service()->readDraft(DraftService::pageSurface(), $draft_id);
+        $s = DraftService::surfaceByLabel($surface);
+        if ($s === null) {
+            return null;
+        }
+        $result = $this->service()->readDraft($s, $draft_id);
+        if ($result === null) {
+            return null;
+        }
+        return array_merge(['surface' => $s['label']], $result);
     }
 
     /**
-     * Discard a pending draft (soft-delete; does not affect the live page).
+     * Discard a pending draft (soft-delete; does not affect the live resource).
      *
-     * @param int $draft_id KytePageVersion id of a draft (from list_drafts).
+     * @param string $surface  page | function | script (from list_drafts).
+     * @param int    $draft_id Version id of the draft.
      * @return array{discarded:bool, draft_id:int}|null
      */
-    #[McpTool(name: 'discard_draft', description: 'Discard a pending draft. Does not affect the live page. Returns null if the draft does not exist in this account.')]
+    #[McpTool(name: 'discard_draft', description: 'Discard a pending draft (does not affect the live resource). Pass the surface (page/function/script) and draft_id. Returns null if the draft does not exist in this account.')]
     #[RequiresScope('draft')]
-    public function discardDraft(int $draft_id): ?array
+    public function discardDraft(string $surface, int $draft_id): ?array
     {
-        return $this->service()->discardDraft(DraftService::pageSurface(), $draft_id);
+        $s = DraftService::surfaceByLabel($surface);
+        if ($s === null) {
+            return null;
+        }
+        return $this->service()->discardDraft($s, $draft_id);
     }
 
     /**
-     * Commit (publish) a draft to the live site.
+     * Commit (publish) a draft live and make it the current version.
      *
-     * This is the ONLY draft tool that changes the live page: it writes the
-     * draft's content live, publishes to S3, invalidates CloudFront, and makes
-     * the draft the new current version — identical to a human clicking
-     * Publish. Requires the 'commit' scope (tokens are draft-only by default).
+     * The ONLY draft tool that changes the live resource. Pages/scripts publish
+     * to S3 + invalidate CloudFront; functions regenerate the controller's
+     * compiled code base. Requires the 'commit' scope (tokens are draft-only by
+     * default). On a failed publish, returns committed:false + error and leaves
+     * the draft intact.
      *
-     * @param int $draft_id KytePageVersion id of a draft (from list_drafts).
-     * @return array{committed:bool, draft_id:int, parent_id:int, version_number?:int, site_id?:?int, s3key?:?string, error?:string}|null
+     * @param string $surface  page | function | script (from list_drafts).
+     * @param int    $draft_id Version id of the draft.
+     * @return array{committed:bool, draft_id?:int, parent_id?:int, version_number?:int, site_id?:int, s3key?:string, controller_id?:int, error?:string}|null
      */
-    #[McpTool(name: 'commit_draft', description: 'Publish a pending draft to the live site (writes live content, pushes to S3, invalidates CloudFront) and make it the current version. This is the only draft action that affects the live page. Requires the commit scope. Returns committed:false with an error if the publish fails (the draft is left intact).')]
+    #[McpTool(name: 'commit_draft', description: 'Publish a pending draft live and make it the current version. The only draft action that affects the live resource (pages/scripts publish to S3 + CloudFront; functions regenerate the controller code). Pass the surface (page/function/script) and draft_id. Requires the commit scope. Returns committed:false with an error if the publish fails (the draft is left intact).')]
     #[RequiresScope('commit')]
-    public function commitDraft(int $draft_id): ?array
+    public function commitDraft(string $surface, int $draft_id): ?array
     {
-        return $this->service()->commitDraft(DraftService::pageSurface(), $draft_id);
+        $s = DraftService::surfaceByLabel($surface);
+        if ($s === null) {
+            return ['committed' => false, 'error' => "Unknown surface '{$surface}'. Use page, function, or script."];
+        }
+        return $this->service()->commitDraft($s, $draft_id);
     }
 }
