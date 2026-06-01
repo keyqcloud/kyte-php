@@ -31,6 +31,13 @@ class KyteActivityLogController extends ModelController
         'LOGIN_FAIL' => '#dc3545'
     ];
 
+    // Set true in hook_prequery when a single record is fetched by primary
+    // key (the Shipyard detail view does `get("KyteActivityLog","id",idx)`).
+    // The heavy LONGTEXT columns (request_data, changes) are returned only in
+    // that case; list responses omit them so a page of logs doesn't drag a
+    // blob per row into memory. See KYTE-#182.
+    private $isDetailView = false;
+
     public function hook_init() {
         $this->requireAccount = false;
         $this->dateformat = 'm/d/Y H:i:s';
@@ -53,6 +60,10 @@ class KyteActivityLogController extends ModelController
         if ($method !== 'get') {
             throw new \Exception("Unauthorized request method: {$method}");
         }
+
+        // Single-record detail fetch (by primary key) gets the full payload;
+        // everything else is treated as a list and projected down. KYTE-#182.
+        $this->isDetailView = ($field === 'id' && $value !== null && $value !== '');
 
         $query = [];
 
@@ -177,6 +188,16 @@ class KyteActivityLogController extends ModelController
         // Add action color
         if (isset($o->action)) {
             $r['action_color'] = self::ACTION_COLORS[$o->action] ?? '#6c757d';
+        }
+
+        // List projection (KYTE-#182): the heavy LONGTEXT columns are only
+        // consumed by the single-record detail view. On a list response, drop
+        // the raw blobs and skip the decode entirely so a page of rows can't
+        // pull a request body per row into memory. The detail fetch (by id)
+        // still returns the decoded payload below.
+        if (!$this->isDetailView) {
+            unset($r['request_data'], $r['changes']);
+            return;
         }
 
         // Decode request_data JSON if present
