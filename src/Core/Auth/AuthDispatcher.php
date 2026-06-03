@@ -52,6 +52,10 @@ class AuthDispatcher
      *
      * Phase 2 (MCP) added McpTokenStrategy.
      * Phase 3 (JWT) appended JwtSessionStrategy between MCP and HMAC.
+     * Phase 3 follow-on added AppContextStrategy between Jwt and HMAC — it
+     * claims ONLY anonymous app-only requests (x-kyte-appid, no Bearer/
+     * signature/identity), so it cannot shadow the authenticated flows above
+     * or the HMAC catch-all below.
      * Each is opt-in by config: a token can only be claimed by a
      * strategy that's actually configured on the install.
      */
@@ -60,6 +64,7 @@ class AuthDispatcher
         return new self([
             new McpTokenStrategy(),
             new JwtSessionStrategy(),
+            new AppContextStrategy(),
             new HmacSessionStrategy(),
         ]);
     }

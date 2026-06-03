@@ -53,6 +53,14 @@ class AuthShadowHarness
         try {
             $strategy = AuthDispatcher::buildDefault()->select();
             if ($strategy !== null) {
+                // AppContextStrategy (anonymous app-only) has no legacy
+                // equivalent — the legacy HMAC path rejects appid-only
+                // requests outright — so there is nothing to compare. Skip to
+                // avoid spurious shadow diffs/exceptions during rollout. The
+                // finally block still restores the pre-shadow Api state.
+                if ($strategy->name() === 'app_context') {
+                    return;
+                }
                 $strategy->preAuth($api);
                 $strategy->verify($api);
             }

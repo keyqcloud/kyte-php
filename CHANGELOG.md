@@ -1,3 +1,20 @@
+## 4.11.0
+
+### Feature: JWT-mode anonymous/public API access (AppContextStrategy) — KYTE-#229
+
+Lets a site running in **JWT auth mode** (endpoint + appId, no embedded HMAC key/secret) serve `requireAuth=false` controllers to **anonymous visitors** (public/catalog browsing before any login) — something only HMAC mode could do before. Server-side half of the two-repo change (the kyte-api-js anonymous fall-through ships alongside).
+
+**New `AppContextStrategy`** (`src/Core/Auth/AppContextStrategy.php`), slotted in `AuthDispatcher::buildDefault()` **after** `JwtSessionStrategy` and **before** `HmacSessionStrategy`:
+- `matches()` is strict and header-only — claims a request **only** when an `x-kyte-appid` is present **and** there is no `Authorization` Bearer, no `x-kyte-signature`, and no `x-kyte-identity`. Mutually exclusive with every authenticated flow, so it cannot shadow HMAC or JWT.
+- `preAuth()` resolves the application's **account** for query scoping but **never resolves a user and never sets `hasSession`**. That is the security invariant: `ModelController::authenticate()` throws unless both `$api->user->id` and `$api->session->hasSession` are set, so every `requireAuth=true` controller keeps returning 403 to anonymous requests — only `requireAuth=false` controllers are reachable.
+
+**Defense in depth:**
+- **Per-app opt-in.** New `Application.allow_public` flag (default `0`; migration `migrations/4.11.0_application_allow_public.sql`). `preAuth()` rejects an appid-only request unless the app sets `allow_public=1` — anonymous access is never implicit.
+- **Read-only.** `ModelController` restricts an `app_context` request to `GET` regardless of the controller's `allowableActions`; anonymous writes are not possible.
+- **Shadow harness.** `AuthShadowHarness` skips `app_context` (no legacy equivalent to diff against during dispatcher rollout).
+
+Audit attribution for anonymous requests uses `user_id=null` / session `'0'` (ActivityLogger already tolerates a null user). Existing HMAC and JWT-Bearer flows are unchanged. Tests: `tests/AppContextStrategyTest.php` (matches() truth table; `preAuth` resolves account but not user/hasSession; opt-in enforcement).
+
 ## 4.10.1
 
 ### Fix: MCP commit_draft published raw bzip2 bytes into page HTML (header/footer section CSS not decompressed)

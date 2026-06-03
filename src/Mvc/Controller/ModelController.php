@@ -191,7 +191,17 @@ class ModelController
         $this->shipyard_init();
 
         $this->hook_init();
-        
+
+        // Anonymous app-context (JWT-mode public access via AppContextStrategy)
+        // is READ-ONLY: no user is resolved, so restrict to GET regardless of
+        // the controller's allowableActions. Writes require an authenticated
+        // user/session. Only fires in dispatcher mode when the anonymous
+        // strategy was selected; every other path is unaffected.
+        if (isset($this->api->authStrategy) && $this->api->authStrategy !== null
+            && $this->api->authStrategy->name() === 'app_context') {
+            $this->allowableActions = array_values(array_intersect($this->allowableActions, ['get']));
+        }
+
         if ($this->requireAuth && !$this->internal) {
             $this->authenticate();
         }

@@ -181,6 +181,19 @@ $Application = [
 			'default'	=> 'hmac',
 		],
 
+		// Per-app opt-in for anonymous/public API access (AppContextStrategy,
+		// JWT-mode public access). 0 = anonymous appid-only requests rejected
+		// (default); 1 = requireAuth=false controllers are reachable
+		// anonymously (read-only). See src/Core/Auth/AppContextStrategy.php.
+		'allow_public'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 1,
+			'unsigned'	=> true,
+			'default'	=> 0,
+			'date'		=> false,
+		],
+
 		// framework attributes
 
 		'kyte_account'	=> [
