@@ -49,24 +49,14 @@ class KytePageController extends ModelController
     }
 
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
-        if (isset($r['footer']) && is_array($r['footer']) &&
-            isset($r['footer']['html'], $r['footer']['stylesheet'], $r['footer']['javascript'],
-                $r['footer']['block_layout'])) {
-
-            $r['footer']['html'] = bzdecompress($r['footer']['html']);
-            $r['footer']['stylesheet'] = bzdecompress($r['footer']['stylesheet']);
-            $r['footer']['javascript'] = bzdecompress($r['footer']['javascript']);
-            $r['footer']['block_layout'] = bzdecompress($r['footer']['block_layout']);
+        // The header/footer section templates are FK-expanded by getObject()
+        // with their content still bzip2-compressed; decompress in place so
+        // callers (API consumers AND the publish/assembly path) get plaintext.
+        if (isset($r['footer'])) {
+            self::decompressSectionTemplate($r['footer']);
         }
-
-        if (isset($r['header']) && is_array($r['header']) &&
-            isset($r['header']['html'], $r['header']['stylesheet'], $r['header']['javascript'],
-                $r['header']['block_layout'])) {
-
-            $r['header']['html'] = bzdecompress($r['header']['html']);
-            $r['header']['stylesheet'] = bzdecompress($r['header']['stylesheet']);
-            $r['header']['javascript'] = bzdecompress($r['header']['javascript']);
-            $r['header']['block_layout'] = bzdecompress($r['header']['block_layout']);
+        if (isset($r['header'])) {
+            self::decompressSectionTemplate($r['header']);
         }
 
         switch ($method) {
@@ -263,8 +253,64 @@ class KytePageController extends ModelController
     }
 
     /**
+     * Decompress a FK-expanded header/footer section template in place.
+     *
+     * KyteSectionTemplate stores html/stylesheet/javascript/block_layout
+     * bzip2-compressed (compress-on-write). getObject()'s FK expansion returns
+     * those fields RAW, so every code path that assembles a page from an
+     * expanded $page array — the HTTP response hook AND the MCP commit publish
+     * path (publishFromContent) — must decompress them first. Skipping this is
+     * what let raw "BZh…" bytes land inside the published <style>/<footer>
+     * blocks when committing a draft over MCP (the human publish path was
+     * saved only by hook_response_data running first).
+     *
+     * Each field is decompressed INDEPENDENTLY via Bz2Codec (idempotent and
+     * safe on already-plaintext or non-bzip2 rows) — unlike the previous
+     * all-or-nothing isset() guard, a null block_layout no longer suppresses
+     * decompression of the other three fields.
+     *
+     * @param mixed $section The expanded section array (by reference). Non-array
+     *                       values (e.g. an unexpanded id) are left untouched.
+     */
+    private static function decompressSectionTemplate(&$section) {
+        if (!is_array($section)) {
+            return;
+        }
+        foreach (['html', 'stylesheet', 'javascript', 'block_layout'] as $field) {
+            if (isset($section[$field])) {
+                $section[$field] = \Kyte\Mcp\Util\Bz2Codec::decompressIfBz2($section[$field]);
+            }
+        }
+    }
+
+    /**
+     * Detect whether assembled page HTML has been contaminated with binary
+     * content that must never be published. Two independent signals:
+     *
+     *  1. A bzip2 stream header — "BZh" + a level digit (1-9) + the block
+     *     magic "1AY&SY" (0x314159265359). This full signature avoids
+     *     false-positives on legitimate prose that merely contains "BZh".
+     *  2. The string is not valid UTF-8 — a catch-all for any non-text bytes
+     *     (raw compressed payloads are never valid UTF-8).
+     *
+     * @param string $html The fully assembled page HTML.
+     * @return bool True if the HTML must NOT be published.
+     */
+    public static function hasBinaryContamination($html) {
+        if (!is_string($html) || $html === '') {
+            return false;
+        }
+        if (strpos($html, "BZh") !== false &&
+            preg_match('/BZh[1-9]1AY&SY/', $html) === 1) {
+            return true;
+        }
+        // preg_match with the /u modifier returns false (not 0) on invalid UTF-8.
+        return preg_match('//u', $html) !== 1;
+    }
+
+    /**
      * Publish a page to S3 and invalidate CloudFront cache
-     * 
+     *
      * @param object $pageObj The page object being published
      * @param array $params Parameters including page content and metadata
      * @param array $responseData Response data containing site information
@@ -289,6 +335,19 @@ class KytePageController extends ModelController
         // Expand the page exactly as the normal publish path does (FK chain:
         // site → application, header/footer/navigation templates, etc.).
         $r = $this->getObject($pageObj);
+
+        // getObject() returns the FK-expanded header/footer with their content
+        // still bzip2-compressed. The HTTP publish path is decompressed by
+        // hook_response_data() before it reaches publishPage(); this internal
+        // path never runs that hook, so decompress here — otherwise the raw
+        // compressed bytes get assembled straight into the published HTML.
+        if (isset($r['header'])) {
+            self::decompressSectionTemplate($r['header']);
+        }
+        if (isset($r['footer'])) {
+            self::decompressSectionTemplate($r['footer']);
+        }
+
         $params = $r;
         $params['html']       = isset($content['html']) ? $content['html'] : '';
         $params['stylesheet'] = isset($content['stylesheet']) ? $content['stylesheet'] : '';
@@ -358,12 +417,22 @@ class KytePageController extends ModelController
 
         // Compile HTML file
         $compiledHtml = self::createHtml($params);
-        
+
+        // Integrity guard: never ship corrupt output. If an upstream decompress
+        // failed and raw bzip2 bytes (or any non-UTF-8) made it into the
+        // assembled HTML, abort BEFORE writing to S3/CloudFront. Returning
+        // false (rather than throwing) lets the MCP commit_draft flow surface
+        // committed:false and leave the draft intact for a retry.
+        if (self::hasBinaryContamination($compiledHtml)) {
+            error_log("KytePageController::publishPage aborted for s3key '{$pageObj->s3key}': assembled HTML failed integrity check (bzip2 magic or invalid UTF-8). Publish NOT written.");
+            return false;
+        }
+
         // Write compiled HTML to S3. Capture the result: the S3 stream wrapper
         // returns false on a failed upload (e.g. invalid credentials) rather
         // than throwing, so callers that need to know whether the publish
         // actually landed (the MCP commit_draft flow) can check the return.
-        $publishOk = $s3->write($pageObj->s3key, $compiledHtml);
+        $publishOk = $s3->write($pageObj->s3key, $compiledHtml, 'text/html; charset=utf-8');
 
         // Update sitemap
         $siteDomain = $responseData['site']['aliasDomain'] ?: $responseData['site']['cfDomain'];
