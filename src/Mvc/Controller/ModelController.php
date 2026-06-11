@@ -194,16 +194,25 @@ class ModelController
 
         // Anonymous app-context (JWT-mode public access via AppContextStrategy).
         // Per-app tri-state Application.allow_public governs the anonymous
-        // surface: 1 = read-only (restrict to GET regardless of the
-        // controller's allowableActions); 2 = controller-governed (the
-        // controller's own requireAuth=false + allowableActions declaration
-        // applies, including writes — the same contract HMAC anonymous has
-        // always honored). allow_public=0 never reaches here (preAuth rejects).
-        // Only fires in dispatcher mode when the anonymous strategy was
-        // selected; every other path is unaffected.
+        // surface: 1 = read-only (GET only, regardless of the controller's
+        // allowableActions); 2 = controller-governed (the controller's own
+        // requireAuth=false + allowableActions declaration applies, including
+        // writes — the same contract HMAC anonymous has always honored).
+        // allow_public=0 never reaches here (preAuth rejects). Only fires in
+        // dispatcher mode when the anonymous strategy was selected; every
+        // other path is unaffected.
+        //
+        // Read-only is enforced on the HTTP METHOD, not just allowableActions:
+        // controllers that override new()/update()/delete() (e.g.
+        // KytePasswordResetController) skip the base class's allowableActions
+        // check, so the intersect alone is bypassable. Throwing here runs
+        // before any action method can.
         if (isset($this->api->authStrategy) && $this->api->authStrategy !== null
             && $this->api->authStrategy->name() === 'app_context'
             && (int)($this->api->app->allow_public ?? 0) === 1) {
+            if (strtoupper((string)$this->api->request) !== 'GET') {
+                throw new \Kyte\Exception\SessionException("Anonymous access to this application is read-only.");
+            }
             $this->allowableActions = array_values(array_intersect($this->allowableActions, ['get']));
         }
 
