@@ -1,3 +1,34 @@
+## 4.11.0
+
+### Feature: JWT-mode anonymous/public API access (AppContextStrategy) — KYTE-#229
+
+Lets a site running in **JWT auth mode** (endpoint + appId, no embedded HMAC key/secret) serve `requireAuth=false` controllers to **anonymous visitors** (public/catalog browsing before any login) — something only HMAC mode could do before. Server-side half of the two-repo change (the kyte-api-js anonymous fall-through ships alongside).
+
+**New `AppContextStrategy`** (`src/Core/Auth/AppContextStrategy.php`), slotted in `AuthDispatcher::buildDefault()` **after** `JwtSessionStrategy` and **before** `HmacSessionStrategy`:
+- `matches()` is strict and header-only — claims a request **only** when an `x-kyte-appid` is present **and** there is no `Authorization` Bearer, no `x-kyte-signature`, and no `x-kyte-identity`. Mutually exclusive with every authenticated flow, so it cannot shadow HMAC or JWT.
+- `preAuth()` resolves the application's **account** for query scoping but **never resolves a user and never sets `hasSession`**. That is the security invariant: `ModelController::authenticate()` throws unless both `$api->user->id` and `$api->session->hasSession` are set, so every `requireAuth=true` controller keeps returning 403 to anonymous requests — only `requireAuth=false` controllers are reachable.
+
+**Defense in depth:**
+- **Per-app tri-state opt-in.** New `Application.allow_public` flag (default `0`; migration `migrations/4.11.0_application_allow_public.sql`):
+  - `0` (default) — anonymous appid-only requests are rejected in `preAuth()`; anonymous access is never implicit.
+  - `1` — **read-only**: `ModelController` restricts an `app_context` request to `GET` regardless of the controller's `allowableActions` (public catalog/storefront browsing).
+  - `2` — **controller-governed**: the controller's own `requireAuth=false` + `allowableActions` declaration governs, including writes — needed for pre-login flows like password reset (`new`/`update` are POST/PUT). This matches the contract controller authors have always written against: under HMAC, anonymous visitors to a public site can already reach every `requireAuth=false` action (the signing endpoint mints anonymous signatures from the embedded public key alone), so `2` exposes nothing HMAC does not. `requireAuth=true` controllers still 403 in every mode (the no-user/no-`hasSession` invariant is independent of `allow_public`).
+- **Shadow harness.** `AuthShadowHarness` skips `app_context` (no legacy equivalent to diff against during dispatcher rollout).
+
+Audit attribution for anonymous requests uses `user_id=null` / session `'0'` (ActivityLogger already tolerates a null user). Existing HMAC and JWT-Bearer flows are unchanged. Tests: `tests/AppContextStrategyTest.php` (matches() truth table; `preAuth` resolves account but not user/hasSession; tri-state opt-in enforcement incl. unknown values treated as off).
+
+### Feature: platform-level password reset for JWT mode — `/jwt/password-*` (KYTE-#268)
+
+Shipyard is **platform-level** (no `x-kyte-appid` — `applicationId` is deliberately null), so its anonymous password reset can ride neither HMAC anonymous (gone in JWT mode) nor `AppContextStrategy` (appid required). Result: password reset was broken on JWT-mode Shipyard installs. Fixed the same way `/jwt/login` solved appid-less login — dedicated unauthenticated endpoints on `JwtEndpoint`:
+
+- `POST /jwt/password-reset` `{email}` → always `{ok:true}` (no-reveal); known email gets a timestamped token (raw, in the password column — login disabled while pending) + SES mail.
+- `POST /jwt/password-validate` `{token}` → `{valid:bool, email}` (password.html pre-check; the email is only disclosed to a live-token holder, who received it at that inbox).
+- `POST /jwt/password-update` `{token, password}` → consumes the token, stores the new password hashed, and **revokes every refresh-token family** for the user (a reset invalidates all sessions); `401 invalid_token` on expired/unknown.
+
+Token/email mechanics are extracted to `Kyte\Core\Auth\PasswordResetFlow` and shared with `KytePasswordResetController` (behavior-identical refactor — same token format, 1-hour TTL, no-reveal logging), so the HMAC/app-scoped path and the JWT platform path cannot drift. App-scoped sites keep using their own reset controllers via `app_context` mode 2. kyte-shipyard `reset.js`/`password.js` call the new endpoints when in JWT mode (ships in the Shipyard release alongside).
+
+Tests: `tests/JwtEndpointTest.php` gains the `/jwt/password-*` suite (no-reveal, pending-token login lockout, validate/consume round-trip, refresh-family revocation, expired/unknown → 401).
+
 ## 4.10.1
 
 ### Fix: MCP commit_draft published raw bzip2 bytes into page HTML (header/footer section CSS not decompressed)

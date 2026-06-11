@@ -27,6 +27,10 @@ use PHPUnit\Framework\TestCase;
  *                 missing body → 400
  *   /jwt/logout   valid → 200 + token revoked; second call idempotent
  *   /jwt/logout-all valid → 200 + all user tokens revoked across families
+ *   /jwt/password-* reset: no-reveal (unknown email also 200), token stored
+ *                 raw + login disabled while pending; validate: live/consumed;
+ *                 update: sets hashed password + revokes refresh families,
+ *                 expired/unknown token → 401 (KYTE-#268)
  *   Routing       Unknown action → 404
  *                 GET method → 405
  */
@@ -296,6 +300,147 @@ class JwtEndpointTest extends TestCase
         $rows = \Kyte\Core\DBI::query("SELECT token_family FROM `KyteRefreshToken` WHERE token_hash = '$hash'");
         $this->assertNotEmpty($rows);
         return (string)$rows[0]['token_family'];
+    }
+
+    // ---------- /jwt/password-* (KYTE-#268) ----------
+
+    public function testPasswordResetMissingEmailReturns400(): void
+    {
+        $result = JwtEndpoint::process($this->api, $this->serverFor('/jwt/password-reset'), $this->jsonBody([]));
+
+        $this->assertSame(400, $result['status']);
+        $this->assertSame('invalid_request', $result['body']['error']);
+    }
+
+    public function testPasswordResetUnknownEmailStillReturnsOk(): void
+    {
+        // No-reveal: unknown email gets the same response as a known one.
+        $result = JwtEndpoint::process($this->api, $this->serverFor('/jwt/password-reset'), $this->jsonBody([
+            'email' => 'jwt-endpoint-nobody@example.com',
+        ]));
+
+        $this->assertSame(200, $result['status']);
+        $this->assertTrue($result['body']['ok']);
+    }
+
+    public function testPasswordResetKnownEmailStoresTokenAndDisablesLogin(): void
+    {
+        $result = JwtEndpoint::process($this->api, $this->serverFor('/jwt/password-reset'), $this->jsonBody([
+            'email' => $this->userEmail,
+        ]));
+
+        $this->assertSame(200, $result['status']);
+        $this->assertTrue($result['body']['ok']);
+
+        // The raw token replaced the password hash: hex.unixtime format.
+        $user = new \Kyte\Core\ModelObject(KyteUser);
+        $this->assertTrue($user->retrieve('id', $this->userId));
+        $this->assertMatchesRegularExpression('/^[0-9a-f]+\.\d+$/', (string)$user->password);
+
+        // Login with the old password is disabled while the reset is pending
+        // (password_verify can never match a raw token).
+        $login = JwtEndpoint::process($this->api, $this->serverFor('/jwt/login'), $this->jsonBody([
+            'email'    => $this->userEmail,
+            'password' => self::PASSWORD,
+        ]));
+        $this->assertSame(401, $login['status']);
+    }
+
+    public function testPasswordValidateAndUpdateFlow(): void
+    {
+        // Seed a valid reset token directly (skips the SES email step).
+        $token = \Kyte\Core\Auth\PasswordResetFlow::generateToken($this->userEmail);
+        $user = new \Kyte\Core\ModelObject(KyteUser);
+        $this->assertTrue($user->retrieve('id', $this->userId));
+        $user->save(['password' => $token]);
+
+        // Validate — token is live.
+        $validate = JwtEndpoint::process($this->api, $this->serverFor('/jwt/password-validate'), $this->jsonBody([
+            'token' => $token,
+        ]));
+        $this->assertSame(200, $validate['status']);
+        $this->assertTrue($validate['body']['valid']);
+        $this->assertSame($this->userEmail, $validate['body']['email']);
+
+        // Update — sets the new password (hashed).
+        $newPassword = 'jwt-endpoint-new-password-4821';
+        $update = JwtEndpoint::process($this->api, $this->serverFor('/jwt/password-update'), $this->jsonBody([
+            'token'    => $token,
+            'password' => $newPassword,
+        ]));
+        $this->assertSame(200, $update['status']);
+        $this->assertTrue($update['body']['ok']);
+
+        // Token is consumed — validate now reports invalid.
+        $revalidate = JwtEndpoint::process($this->api, $this->serverFor('/jwt/password-validate'), $this->jsonBody([
+            'token' => $token,
+        ]));
+        $this->assertSame(200, $revalidate['status']);
+        $this->assertFalse($revalidate['body']['valid']);
+
+        // Login with the NEW password works.
+        $login = JwtEndpoint::process($this->api, $this->serverFor('/jwt/login'), $this->jsonBody([
+            'email'    => $this->userEmail,
+            'password' => $newPassword,
+        ]));
+        $this->assertSame(200, $login['status']);
+        $this->assertArrayHasKey('access_token', $login['body']);
+    }
+
+    public function testPasswordUpdateRevokesRefreshTokenFamilies(): void
+    {
+        // Establish a session first, then reset the password — the old
+        // refresh token must be revoked.
+        $login = JwtEndpoint::process($this->api, $this->serverFor('/jwt/login'), $this->jsonBody([
+            'email'    => $this->userEmail,
+            'password' => self::PASSWORD,
+        ]));
+        $this->assertSame(200, $login['status']);
+        $refreshToken = $login['body']['refresh_token'];
+
+        $token = \Kyte\Core\Auth\PasswordResetFlow::generateToken($this->userEmail);
+        $user = new \Kyte\Core\ModelObject(KyteUser);
+        $this->assertTrue($user->retrieve('id', $this->userId));
+        $user->save(['password' => $token]);
+
+        $update = JwtEndpoint::process($this->api, $this->serverFor('/jwt/password-update'), $this->jsonBody([
+            'token'    => $token,
+            'password' => 'jwt-endpoint-after-revoke-7733',
+        ]));
+        $this->assertSame(200, $update['status']);
+
+        $refresh = JwtEndpoint::process($this->api, $this->serverFor('/jwt/refresh'), $this->jsonBody([
+            'refresh_token' => $refreshToken,
+        ]));
+        $this->assertSame(401, $refresh['status']);
+    }
+
+    public function testPasswordUpdateWithExpiredTokenReturns401(): void
+    {
+        // Hand-craft a token whose timestamp is 2 hours old.
+        $expired = bin2hex(random_bytes(32)) . '.' . (time() - 7200);
+        $user = new \Kyte\Core\ModelObject(KyteUser);
+        $this->assertTrue($user->retrieve('id', $this->userId));
+        $user->save(['password' => $expired]);
+
+        $result = JwtEndpoint::process($this->api, $this->serverFor('/jwt/password-update'), $this->jsonBody([
+            'token'    => $expired,
+            'password' => 'whatever-5912',
+        ]));
+
+        $this->assertSame(401, $result['status']);
+        $this->assertSame('invalid_token', $result['body']['error']);
+    }
+
+    public function testPasswordUpdateWithUnknownTokenReturns401(): void
+    {
+        $result = JwtEndpoint::process($this->api, $this->serverFor('/jwt/password-update'), $this->jsonBody([
+            'token'    => bin2hex(random_bytes(32)) . '.' . time(),
+            'password' => 'whatever-3317',
+        ]));
+
+        $this->assertSame(401, $result['status']);
+        $this->assertSame('invalid_token', $result['body']['error']);
     }
 
     private function serverFor(string $path): array

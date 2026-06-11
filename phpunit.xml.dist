@@ -4,6 +4,7 @@
     <testsuite name="unit">
       <file>tests/ActivityLoggerSensitivityTest.php</file>
       <file>tests/ApiTest.php</file>
+      <file>tests/AppContextStrategyTest.php</file>
       <file>tests/Bz2CodecTest.php</file>
       <file>tests/ClientIpTest.php</file>
       <file>tests/DatabaseTest.php</file>
