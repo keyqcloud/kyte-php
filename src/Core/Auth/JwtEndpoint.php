@@ -427,7 +427,13 @@ final class JwtEndpoint
         $valid = $user->retrieve('password', $token)
             && PasswordResetFlow::isValidToken($token, (string)$user->password);
 
-        return self::success(['valid' => $valid]);
+        // The email is only disclosed to a caller holding a LIVE token —
+        // which they could only have received at that very inbox.
+        // password.html uses it to fill the read-only email field.
+        return self::success([
+            'valid' => $valid,
+            'email' => $valid ? (string)$user->email : null,
+        ]);
     }
 
     /**

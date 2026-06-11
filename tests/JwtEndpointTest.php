@@ -360,6 +360,7 @@ class JwtEndpointTest extends TestCase
         ]));
         $this->assertSame(200, $validate['status']);
         $this->assertTrue($validate['body']['valid']);
+        $this->assertSame($this->userEmail, $validate['body']['email']);
 
         // Update — sets the new password (hashed).
         $newPassword = 'jwt-endpoint-new-password-4821';

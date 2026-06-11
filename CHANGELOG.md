@@ -22,7 +22,7 @@ Audit attribution for anonymous requests uses `user_id=null` / session `'0'` (Ac
 Shipyard is **platform-level** (no `x-kyte-appid` — `applicationId` is deliberately null), so its anonymous password reset can ride neither HMAC anonymous (gone in JWT mode) nor `AppContextStrategy` (appid required). Result: password reset was broken on JWT-mode Shipyard installs. Fixed the same way `/jwt/login` solved appid-less login — dedicated unauthenticated endpoints on `JwtEndpoint`:
 
 - `POST /jwt/password-reset` `{email}` → always `{ok:true}` (no-reveal); known email gets a timestamped token (raw, in the password column — login disabled while pending) + SES mail.
-- `POST /jwt/password-validate` `{token}` → `{valid:bool}` (password.html pre-check).
+- `POST /jwt/password-validate` `{token}` → `{valid:bool, email}` (password.html pre-check; the email is only disclosed to a live-token holder, who received it at that inbox).
 - `POST /jwt/password-update` `{token, password}` → consumes the token, stores the new password hashed, and **revokes every refresh-token family** for the user (a reset invalidates all sessions); `401 invalid_token` on expired/unknown.
 
 Token/email mechanics are extracted to `Kyte\Core\Auth\PasswordResetFlow` and shared with `KytePasswordResetController` (behavior-identical refactor — same token format, 1-hour TTL, no-reveal logging), so the HMAC/app-scoped path and the JWT platform path cannot drift. App-scoped sites keep using their own reset controllers via `app_context` mode 2. kyte-shipyard `reset.js`/`password.js` call the new endpoints when in JWT mode (ships in the Shipyard release alongside).
