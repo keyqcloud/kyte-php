@@ -203,13 +203,13 @@ class S3 extends Client
     }
 
     // use S3 stream wrapper to write to bucket path
-    public function write($key, $data) {
+    public function write($key, $data, $contentType = null) {
         // check if bucket exists
         if (!$this->bucket) {
             throw new \Exception('bucket must be defined');
         }
 
-        return $this->streamWrite($key, $data, 'w');
+        return $this->streamWrite($key, $data, 'w', $contentType);
     }
 
     // use S3 stream wrapper to append to bucket path
@@ -223,10 +223,19 @@ class S3 extends Client
     }
 
     // use S3 stream wrapper to write/append to bucket path
-    private function streamWrite($key, $data, $flag) {
+    private function streamWrite($key, $data, $flag, $contentType = null) {
         $this->client->registerStreamWrapper();
 
-        $stream = fopen('s3://'.$this->bucket.'/'.$key, $flag);
+        // When a content type is supplied, pass it through the stream context so
+        // the underlying PutObject sets Content-Type (e.g. published HTML gets
+        // "text/html; charset=utf-8" instead of S3's extension-inferred default
+        // without a charset). Other callers keep the prior behaviour.
+        if ($contentType !== null) {
+            $context = stream_context_create(['s3' => ['ContentType' => $contentType]]);
+            $stream = fopen('s3://'.$this->bucket.'/'.$key, $flag, false, $context);
+        } else {
+            $stream = fopen('s3://'.$this->bucket.'/'.$key, $flag);
+        }
         fwrite($stream, $data);
         return fclose($stream);
     }

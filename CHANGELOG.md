@@ -1,3 +1,19 @@
+## 4.10.1
+
+### Fix: MCP commit_draft published raw bzip2 bytes into page HTML (header/footer section CSS not decompressed)
+
+Publishing a page through the MCP `commit_draft` flow could inject raw bzip2-compressed binary (magic `BZh9…`) into the published HTML, inside `<style>`/`<footer>` blocks, producing a browser UTF-8 decode error and garbled header/footer CSS. Surfaced on FrameVTO / doctor.etometry.com (page 58, published to v13).
+
+**Root cause.** A page's `header`/`footer` are FKs to `KyteSectionTemplate`, which stores `html`/`stylesheet`/`javascript`/`block_layout` **bzip2-compressed**. `getObject()`'s FK expansion returns those fields RAW. The page-assembly path (`createHtml` → `buildHeaderFooterStyles` etc.) concatenates them straight into the output, so they must be decompressed first. The **human publish** path (HTTP `update`, `state=1`) was saved only incidentally — `KytePageController::hook_response_data()` runs first and decompresses `$r['header']`/`$r['footer']`. The **MCP commit** path (`DraftService::commitDraft` → `publishForSurface` → `KytePageController::publishFromContent`) calls `getObject()` and goes straight to `publishPage()`, never invoking that hook — so the compressed bytes shipped. Deterministic per-path (not a race): any page with a populated header/footer section template was affected; the "re-publish cleared it" report was a re-publish via the human path.
+
+**Fixes (`KytePageController`, `S3`):**
+1. **Path-independent decompression.** New `decompressSectionTemplate(&$section)` decompresses header/footer content via `Bz2Codec::decompressIfBz2`, called from BOTH `hook_response_data()` and `publishFromContent()`. The page's own html/stylesheet/javascript were already correct (decompressed by `DraftService::versionContent`); only the section templates leaked.
+2. **Latent guard bug fixed.** The old `hook_response_data` block required *all four* fields (`html`, `stylesheet`, `javascript`, `block_layout`) to be set or it decompressed *none* — a null `block_layout` would have leaked the other three even on the HTTP path. The new helper decompresses each field independently.
+3. **Output integrity guard.** `publishPage()` now runs `hasBinaryContamination()` on the assembled HTML (bzip2 stream magic `BZh[1-9]1AY&SY`, or invalid UTF-8) and **aborts before the S3 write** (returns false → MCP commit reports `committed:false`, draft left intact) rather than shipping corrupt HTML.
+4. **Charset.** Published HTML objects are now written with `Content-Type: text/html; charset=utf-8` (`S3::write()` gained an optional content-type passed through the stream-wrapper context; other callers unchanged).
+
+Tests: `tests/PublishIntegrityTest.php` covers the per-field decompression (incl. the null-`block_layout` regression) and the contamination detector (embedded bzip2 stream, invalid UTF-8, and no false-positive on literal "BZh" prose).
+
 ## 4.10.0
 
 ### Feature: MCP draft/write — AI can draft and commit pages, controller functions, and scripts
