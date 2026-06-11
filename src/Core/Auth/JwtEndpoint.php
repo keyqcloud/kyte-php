@@ -29,6 +29,24 @@ use Kyte\Exception\SessionException;
  *                          Revokes EVERY active refresh token for the
  *                          user whose token was presented.
  *
+ *   POST /jwt/password-reset    body {email}
+ *                          → 200 {ok: true}  ALWAYS (never reveals
+ *                                whether the email exists)
+ *   POST /jwt/password-validate body {token}
+ *                          → 200 {valid: bool}
+ *   POST /jwt/password-update   body {token, password}
+ *                          → 200 {ok: true}; revokes all the user's
+ *                                refresh-token families
+ *                          → 401 invalid/expired token
+ *                          Platform-level (KyteUser) password reset for
+ *                          JWT-mode Shipyard (KYTE-#268). Shipyard is not
+ *                          app-scoped (no x-kyte-appid), so neither HMAC
+ *                          anonymous nor AppContextStrategy (#229) can
+ *                          carry this flow in JWT mode — these endpoints
+ *                          solve it the same way /jwt/login solved
+ *                          appid-less login. App-scoped sites use their
+ *                          own controllers via app_context mode 2.
+ *
  * Routing: Api::route() detects a `/jwt` first segment and dispatches
  * here before the normal MVC pipeline runs (same pattern as /mcp).
  *
@@ -115,6 +133,9 @@ final class JwtEndpoint
                 case 'refresh':    return self::refresh($body, $ip);
                 case 'logout':     return self::logout($body);
                 case 'logout-all': return self::logoutAll($body);
+                case 'password-reset':    return self::passwordReset($body);
+                case 'password-validate': return self::passwordValidate($body);
+                case 'password-update':   return self::passwordUpdate($body);
                 default:
                     return self::error(404, 'not_found', "Unknown JWT endpoint: {$action}.");
             }
@@ -351,6 +372,97 @@ final class JwtEndpoint
             'logout_all'
         );
         return self::success(['ok' => true, 'revoked' => $count]);
+    }
+
+    /**
+     * Request a password reset (KYTE-#268). Platform-level: operates on
+     * KyteUser only — app-scoped sites run their own reset controllers
+     * via app_context mode 2. ALWAYS answers {ok:true} so an anonymous
+     * caller can't probe which emails exist (mirrors
+     * KytePasswordResetController::new).
+     */
+    private static function passwordReset(array $body): array
+    {
+        $email = trim((string)($body['email'] ?? ''));
+        if ($email === '') {
+            return self::error(400, 'invalid_request', 'email required.');
+        }
+
+        $user = new ModelObject(KyteUser);
+        if ($user->retrieve('email', $email)) {
+            $token = PasswordResetFlow::generateToken($email);
+
+            // The RAW token goes into the password column (see
+            // PasswordResetFlow) — ModelObject::save writes raw, and a
+            // pending token also disables login until the reset completes.
+            $user->save(['password' => $token]);
+
+            try {
+                PasswordResetFlow::sendResetEmail($user, $token);
+            } catch (\Throwable $e) {
+                // Delivery state must not leak to an anonymous caller —
+                // log it and keep the no-reveal response shape.
+                error_log('JwtEndpoint: password-reset email failed - ' . $e->getMessage());
+            }
+        } else {
+            // Same no-reveal logging as the HMAC controller path.
+            error_log('Attempted reset for non-existing account ' . $email);
+        }
+
+        return self::success(['ok' => true]);
+    }
+
+    /**
+     * Validate a reset token without consuming it — password.html checks
+     * the token from the email link before showing the new-password form.
+     */
+    private static function passwordValidate(array $body): array
+    {
+        $token = (string)($body['token'] ?? '');
+        if ($token === '') {
+            return self::error(400, 'invalid_request', 'token required.');
+        }
+
+        $user = new ModelObject(KyteUser);
+        $valid = $user->retrieve('password', $token)
+            && PasswordResetFlow::isValidToken($token, (string)$user->password);
+
+        return self::success(['valid' => $valid]);
+    }
+
+    /**
+     * Consume a reset token and set the new password. Revokes every
+     * refresh-token family for the user — a password reset invalidates
+     * all existing sessions.
+     */
+    private static function passwordUpdate(array $body): array
+    {
+        $token = (string)($body['token'] ?? '');
+        $password = (string)($body['password'] ?? '');
+        if ($token === '' || $password === '') {
+            return self::error(400, 'invalid_request', 'token and password required.');
+        }
+
+        $user = new ModelObject(KyteUser);
+        if (!$user->retrieve('password', $token)
+            || !PasswordResetFlow::isValidToken($token, (string)$user->password)) {
+            return self::error(401, 'invalid_token', 'Invalid or expired token. Please request a new password reset.');
+        }
+
+        // ModelObject::save writes raw — hash explicitly here (the
+        // struct-driven password_hash lives in ModelController's data
+        // cleaning, which this path doesn't traverse).
+        $user->save(['password' => password_hash($password, PASSWORD_DEFAULT)]);
+
+        // Best-effort session revocation; the password change itself
+        // already succeeded.
+        try {
+            RefreshTokenStore::revokeAllForUser((int)$user->id, (int)$user->kyte_account, 'password_reset');
+        } catch (\Throwable $e) {
+            error_log('JwtEndpoint: refresh-token revocation after password reset failed - ' . $e->getMessage());
+        }
+
+        return self::success(['ok' => true]);
     }
 
     /**

@@ -17,6 +17,18 @@ Lets a site running in **JWT auth mode** (endpoint + appId, no embedded HMAC key
 
 Audit attribution for anonymous requests uses `user_id=null` / session `'0'` (ActivityLogger already tolerates a null user). Existing HMAC and JWT-Bearer flows are unchanged. Tests: `tests/AppContextStrategyTest.php` (matches() truth table; `preAuth` resolves account but not user/hasSession; tri-state opt-in enforcement incl. unknown values treated as off).
 
+### Feature: platform-level password reset for JWT mode — `/jwt/password-*` (KYTE-#268)
+
+Shipyard is **platform-level** (no `x-kyte-appid` — `applicationId` is deliberately null), so its anonymous password reset can ride neither HMAC anonymous (gone in JWT mode) nor `AppContextStrategy` (appid required). Result: password reset was broken on JWT-mode Shipyard installs. Fixed the same way `/jwt/login` solved appid-less login — dedicated unauthenticated endpoints on `JwtEndpoint`:
+
+- `POST /jwt/password-reset` `{email}` → always `{ok:true}` (no-reveal); known email gets a timestamped token (raw, in the password column — login disabled while pending) + SES mail.
+- `POST /jwt/password-validate` `{token}` → `{valid:bool}` (password.html pre-check).
+- `POST /jwt/password-update` `{token, password}` → consumes the token, stores the new password hashed, and **revokes every refresh-token family** for the user (a reset invalidates all sessions); `401 invalid_token` on expired/unknown.
+
+Token/email mechanics are extracted to `Kyte\Core\Auth\PasswordResetFlow` and shared with `KytePasswordResetController` (behavior-identical refactor — same token format, 1-hour TTL, no-reveal logging), so the HMAC/app-scoped path and the JWT platform path cannot drift. App-scoped sites keep using their own reset controllers via `app_context` mode 2. kyte-shipyard `reset.js`/`password.js` call the new endpoints when in JWT mode (ships in the Shipyard release alongside).
+
+Tests: `tests/JwtEndpointTest.php` gains the `/jwt/password-*` suite (no-reveal, pending-token login lockout, validate/consume round-trip, refresh-family revocation, expired/unknown → 401).
+
 ## 4.10.1
 
 ### Fix: MCP commit_draft published raw bzip2 bytes into page HTML (header/footer section CSS not decompressed)
