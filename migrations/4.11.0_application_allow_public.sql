@@ -4,9 +4,11 @@
 -- IMPORTANT: Backup your database before running this migration.
 --
 -- Adds the per-app opt-in flag for anonymous/public API access via
--- AppContextStrategy (JWT-mode public storefronts). Default 0 = anonymous
--- appid-only requests are rejected; set to 1 per app to allow read-only
--- anonymous access to requireAuth=false controllers.
+-- AppContextStrategy (JWT-mode public storefronts). Tri-state:
+--   0 = anonymous appid-only requests rejected (default);
+--   1 = read-only (GET) anonymous access to requireAuth=false controllers;
+--   2 = controller-governed — requireAuth=false + allowableActions apply,
+--       including writes (password reset / signup-style public flows).
 --
 -- ADDITIVE / migration-first / inert on older code (older code ignores the
 -- column; new code defaults it to 0). Table name is PascalCase. ALGORITHM not

@@ -20,12 +20,20 @@ use Kyte\Exception\SessionException;
  * BOTH `$api->user->id` and `$api->session->hasSession` are set, so every
  * `requireAuth=true` controller keeps returning 403 to anonymous requests.
  * Only controllers that explicitly opt out (`requireAuth=false`) are
- * reachable, and even those are READ-ONLY for this path (ModelController
- * restricts an app_context request to GET).
+ * reachable.
  *
- * Per-app opt-in: an application must set `Application.allow_public = 1` to
- * serve anonymous requests. A non-opted-in app's appid-only request is
- * rejected in preAuth (so anonymous access is never silently enabled).
+ * Per-app opt-in (tri-state `Application.allow_public`):
+ *   0 = off (default) — appid-only requests are rejected in preAuth, so
+ *       anonymous access is never silently enabled.
+ *   1 = read-only — ModelController restricts the request to GET regardless
+ *       of the controller's allowableActions (public catalog/storefront).
+ *   2 = controller-governed — the controller's own `requireAuth=false` +
+ *       `allowableActions` declaration governs, including writes (e.g.
+ *       password reset / signup flows). This is the same contract controller
+ *       authors have always written against: under HMAC, anonymous visitors
+ *       to a public site could always reach every requireAuth=false action
+ *       (the signing endpoint mints anonymous signatures from the embedded
+ *       public key alone), so 2 exposes nothing HMAC did not.
  *
  * matches() is STRICT and header-only: it claims a request ONLY when an
  * `x-kyte-appid` is present AND there is no Authorization Bearer, no
@@ -75,9 +83,12 @@ class AppContextStrategy implements AuthStrategy
             throw new SessionException('Anonymous access requires a valid application context (x-kyte-appid).');
         }
 
-        // Per-app opt-in. Without an explicit Application.allow_public=1, an
-        // appid-only request is rejected — anonymous access is never implicit.
-        if ((int)($api->app->allow_public ?? 0) !== 1) {
+        // Per-app opt-in. Without an explicit Application.allow_public of
+        // 1 (read-only) or 2 (controller-governed), an appid-only request is
+        // rejected — anonymous access is never implicit. The read-only vs
+        // controller-governed distinction is enforced in ModelController.
+        $allowPublic = (int)($api->app->allow_public ?? 0);
+        if ($allowPublic !== 1 && $allowPublic !== 2) {
             throw new SessionException('Anonymous access is not enabled for this application.');
         }
 

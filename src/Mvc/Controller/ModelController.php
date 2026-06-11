@@ -192,13 +192,18 @@ class ModelController
 
         $this->hook_init();
 
-        // Anonymous app-context (JWT-mode public access via AppContextStrategy)
-        // is READ-ONLY: no user is resolved, so restrict to GET regardless of
-        // the controller's allowableActions. Writes require an authenticated
-        // user/session. Only fires in dispatcher mode when the anonymous
-        // strategy was selected; every other path is unaffected.
+        // Anonymous app-context (JWT-mode public access via AppContextStrategy).
+        // Per-app tri-state Application.allow_public governs the anonymous
+        // surface: 1 = read-only (restrict to GET regardless of the
+        // controller's allowableActions); 2 = controller-governed (the
+        // controller's own requireAuth=false + allowableActions declaration
+        // applies, including writes — the same contract HMAC anonymous has
+        // always honored). allow_public=0 never reaches here (preAuth rejects).
+        // Only fires in dispatcher mode when the anonymous strategy was
+        // selected; every other path is unaffected.
         if (isset($this->api->authStrategy) && $this->api->authStrategy !== null
-            && $this->api->authStrategy->name() === 'app_context') {
+            && $this->api->authStrategy->name() === 'app_context'
+            && (int)($this->api->app->allow_public ?? 0) === 1) {
             $this->allowableActions = array_values(array_intersect($this->allowableActions, ['get']));
         }
 

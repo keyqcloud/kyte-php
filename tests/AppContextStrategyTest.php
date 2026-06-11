@@ -129,6 +129,39 @@ class AppContextStrategyTest extends TestCase
         (new AppContextStrategy())->preAuth($api);
     }
 
+    public function testPreAuthAcceptsControllerGovernedMode(): void
+    {
+        // allow_public = 2 (controller-governed) must pass preAuth with the
+        // same anonymous invariant as read-only mode — the read-only vs
+        // controller-governed distinction is enforced in ModelController.
+        $api = $this->makeApi();
+        $acct = new \Kyte\Core\ModelObject(KyteAccount);
+        $acct->create(['number' => 'appctx-' . uniqid(), 'name' => 'AppCtx Test']);
+        $app = $this->makeApp((int)$acct->id, 2);
+        $api->app = $app;
+        $api->appId = $app->identifier;
+
+        (new AppContextStrategy())->preAuth($api);
+
+        $this->assertSame((int)$acct->id, (int)$api->account->id, 'account resolved from the app');
+        $this->assertNull($api->user, 'no user is resolved (anonymous)');
+        $this->assertFalse($api->session->hasSession, 'hasSession is never set — the security invariant');
+    }
+
+    public function testPreAuthRejectsUnknownAllowPublicValue(): void
+    {
+        // Only 1 and 2 are valid opt-ins; anything else is treated as off.
+        $api = $this->makeApi();
+        $acct = new \Kyte\Core\ModelObject(KyteAccount);
+        $acct->create(['number' => 'appctx-' . uniqid(), 'name' => 'AppCtx Test']);
+        $app = $this->makeApp((int)$acct->id, 3);
+        $api->app = $app;
+        $api->appId = $app->identifier;
+
+        $this->expectException(SessionException::class);
+        (new AppContextStrategy())->preAuth($api);
+    }
+
     public function testPreAuthRejectsWithoutApp(): void
     {
         $api = $this->makeApi();
