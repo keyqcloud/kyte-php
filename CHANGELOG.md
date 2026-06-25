@@ -1,3 +1,11 @@
+## 4.11.1
+
+### Fix: CloudFront invalidation `CallerReference` collision (direct/`KYTE_USE_SNS=false` path) — KYTE-#201
+
+`Kyte\Aws\CloudFront::createInvalidation()` built its `CallerReference` as `time().$distributionId` — **second precision**. Any two invalidations against the same distribution within the same second reused that reference with a different path batch, which CloudFront rejects with `InvalidArgument`. The wrapper then swallowed it as a generic *"Unable to create new invalidation"*. This made the **direct** invalidation path (`KYTE_USE_SNS=false`) flaky under rapid or bulk publishes — a/the reason invalidation was historically routed through SNS→Lambda instead.
+
+Fix: append `uniqid('', true)` (microsecond entropy) so successive CallerReferences never collide, and surface the real AWS error message instead of the generic one. Measured latency of a single `createInvalidation` is ~150–190 ms, so the synchronous direct call is well within request budgets (the old "timeout" symptom was this failure, not the call duration). Unblocks the #201 move off SNS for cache invalidation: fix lands first, then installs flip `KYTE_USE_SNS=false`, then the dead SNS branches get removed.
+
 ## 4.11.0
 
 ### Feature: JWT-mode anonymous/public API access (AppContextStrategy) — KYTE-#229
