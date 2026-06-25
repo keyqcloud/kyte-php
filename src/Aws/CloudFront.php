@@ -221,8 +221,15 @@ class CloudFront extends Client
 
             $result = $this->client->createInvalidation([
                 'DistributionId'    => $distributionId,
+                // CallerReference must be unique per call. time().$distributionId
+                // (second precision) collided whenever two invalidations hit the
+                // same distribution within the same second — CloudFront rejects a
+                // reused CallerReference that carries a different batch with
+                // InvalidArgument. That broke rapid/bulk publishes (and was a/the
+                // reason direct invalidation was abandoned for SNS). uniqid(more)
+                // adds microsecond entropy so successive calls never collide.
                 'InvalidationBatch' => [
-                    'CallerReference'   => time().$distributionId,
+                    'CallerReference'   => time().$distributionId.uniqid('', true),
                     'Paths'             => [
                         'Items'     => $paths,
                         'Quantity'  => count($paths),
@@ -230,8 +237,9 @@ class CloudFront extends Client
                 ],
             ]);
         } catch(\Exception $e) {
-            throw new \Exception("Unable to create new invalidation");
-            return false;
+            // Surface the real AWS error instead of swallowing it — the old
+            // generic message hid the InvalidArgument collision above.
+            throw new \Exception("Unable to create CloudFront invalidation: ".$e->getMessage());
         }
 
         return true;

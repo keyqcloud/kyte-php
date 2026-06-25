@@ -656,23 +656,30 @@ class KyteScriptController extends ModelController
      */
     private function invalidateCloudFront($r): void {
         $invalidationPaths = ['/*'];
-        if (KYTE_USE_SNS) {
-            $credential = new \Kyte\Aws\Credentials(SNS_REGION);
-            $sns = new \Kyte\Aws\Sns($credential, SNS_QUEUE_SITE_MANAGEMENT);
-            $sns->publish([
-                'action' => 'cf_invalidate',
-                'site_id' => $r['site']['id'],
-                'cf_id' => $r['site']['cfDistributionId'],
-                'cf_invalidation_paths' => $invalidationPaths,
-                'caller_id' => time(),
-            ]);
-        } else {
-            // invalidate CF
-            $app = new \Kyte\Core\ModelObject(Application);
-            $app->retrieve('id', $r['site']['application']['id']);
-            $credential = new \Kyte\Aws\Credentials($r['site']['region'], $app->aws_public_key, $app->aws_private_key);
-            $cf = new \Kyte\Aws\CloudFront($credential);
-            $cf->createInvalidation($r['site']['cfDistributionId'], $invalidationPaths);
+        // Best-effort: the script is already published to S3; a failed CloudFront
+        // invalidation (transient AWS error, missing distribution) must not fail
+        // the request. Log and continue. (KYTE_USE_SNS is the deprecated async path.)
+        try {
+            if (KYTE_USE_SNS) {
+                $credential = new \Kyte\Aws\Credentials(SNS_REGION);
+                $sns = new \Kyte\Aws\Sns($credential, SNS_QUEUE_SITE_MANAGEMENT);
+                $sns->publish([
+                    'action' => 'cf_invalidate',
+                    'site_id' => $r['site']['id'],
+                    'cf_id' => $r['site']['cfDistributionId'],
+                    'cf_invalidation_paths' => $invalidationPaths,
+                    'caller_id' => time(),
+                ]);
+            } else {
+                // invalidate CF
+                $app = new \Kyte\Core\ModelObject(Application);
+                $app->retrieve('id', $r['site']['application']['id']);
+                $credential = new \Kyte\Aws\Credentials($r['site']['region'], $app->aws_public_key, $app->aws_private_key);
+                $cf = new \Kyte\Aws\CloudFront($credential);
+                $cf->createInvalidation($r['site']['cfDistributionId'], $invalidationPaths);
+            }
+        } catch (\Throwable $e) {
+            error_log("CloudFront invalidation failed (best-effort): " . $e->getMessage());
         }
     }
 
@@ -681,23 +688,29 @@ class KyteScriptController extends ModelController
      */
     private function invalidateCloudFrontForDeletion($d): void {
         $invalidationPaths = ['/*'];
-        if (KYTE_USE_SNS) {
-            $credential = new \Kyte\Aws\Credentials(SNS_REGION);
-            $sns = new \Kyte\Aws\Sns($credential, SNS_QUEUE_SITE_MANAGEMENT);
-            $sns->publish([
-                'action' => 'cf_invalidate',
-                'site_id' => $d['site']['id'],
-                'cf_id' => $d['site']['cfDistributionId'],
-                'cf_invalidation_paths' => $invalidationPaths,
-                'caller_id' => time(),
-            ]);
-        } else {
-            // invalidate CF
-            $app = new \Kyte\Core\ModelObject(Application);
-            $app->retrieve('id', $d['site']['application']['id']);
-            $credential = new \Kyte\Aws\Credentials($d['site']['region'], $app->aws_public_key, $app->aws_private_key);
-            $cf = new \Kyte\Aws\CloudFront($credential);
-            $cf->createInvalidation($d['site']['cfDistributionId'], $invalidationPaths);
+        // Best-effort: content is already published; a failed CloudFront
+        // invalidation must not fail the request. Log and continue.
+        try {
+            if (KYTE_USE_SNS) {
+                $credential = new \Kyte\Aws\Credentials(SNS_REGION);
+                $sns = new \Kyte\Aws\Sns($credential, SNS_QUEUE_SITE_MANAGEMENT);
+                $sns->publish([
+                    'action' => 'cf_invalidate',
+                    'site_id' => $d['site']['id'],
+                    'cf_id' => $d['site']['cfDistributionId'],
+                    'cf_invalidation_paths' => $invalidationPaths,
+                    'caller_id' => time(),
+                ]);
+            } else {
+                // invalidate CF
+                $app = new \Kyte\Core\ModelObject(Application);
+                $app->retrieve('id', $d['site']['application']['id']);
+                $credential = new \Kyte\Aws\Credentials($d['site']['region'], $app->aws_public_key, $app->aws_private_key);
+                $cf = new \Kyte\Aws\CloudFront($credential);
+                $cf->createInvalidation($d['site']['cfDistributionId'], $invalidationPaths);
+            }
+        } catch (\Throwable $e) {
+            error_log("CloudFront invalidation failed (best-effort): " . $e->getMessage());
         }
     }
 }
