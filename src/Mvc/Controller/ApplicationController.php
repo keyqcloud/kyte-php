@@ -139,20 +139,8 @@ class ApplicationController extends ModelController
                         // every other site's cache stale. See KYTE-#181.
                         try {
                             $invalidationPaths = ['/*'];
-                            if (KYTE_USE_SNS) {
-                                $snsCredential = new \Kyte\Aws\Credentials(SNS_REGION);
-                                $sns = new \Kyte\Aws\Sns($snsCredential, SNS_QUEUE_SITE_MANAGEMENT);
-                                $sns->publish([
-                                    'action' => 'cf_invalidate',
-                                    'site_id' => $site->id,
-                                    'cf_id' => $site->cfDistributionId,
-                                    'cf_invalidation_paths' => $invalidationPaths,
-                                    'caller_id' => time(),
-                                ]);
-                            } else {
-                                $cf = new \Kyte\Aws\CloudFront($credential);
-                                $cf->createInvalidation($site->cfDistributionId, $invalidationPaths);
-                            }
+                            $cf = new \Kyte\Aws\CloudFront($credential);
+                            $cf->createInvalidation($site->cfDistributionId, $invalidationPaths);
                         } catch (\Throwable $e) {
                             error_log("Republish: CloudFront invalidation failed for site {$site->id}: " . $e->getMessage());
                         }

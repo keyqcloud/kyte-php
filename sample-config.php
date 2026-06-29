@@ -5,6 +5,13 @@
     /* General Application Settings */
     define('APP_NAME', ''); // Name of the application
     define('SHIPYARD_URL', ''); // Base URL of Kyte Shipyard
+    // Shipyard self-update target. The dashboard enqueues an update; the
+    // ShipyardUpdateWorker cron job publishes the latest build here and
+    // invalidates the distribution (replaces the kyte-lambda-update-shipyard Lambda).
+    // Register the worker once: php bin/register-shipyard-update-job.php
+    define('KYTE_SHIPYARD_S3', ''); // S3 bucket hosting the Shipyard dashboard
+    define('KYTE_SHIPYARD_CF', ''); // CloudFront distribution id for the Shipyard dashboard
+    // define('KYTE_SHIPYARD_REGION', 'us-east-1'); // Optional; defaults to us-east-1
 	define('APP_EMAIL', ''); // Application email address
     define('APP_SES_REGION', ''); // AWS SES region for sending emails')
 	define('SUPPORT_EMAIL', ''); // Support email address
@@ -27,7 +34,6 @@
     define('SNS_KYTE_SHIPYARD_UPDATE', ''); // SNS queue for Kyte Shipyard updates
 
     /* Kyte Framework Specific Settings */
-    define('KYTE_USE_SNS', true); // Enable/Disable AWS SNS integration
     define('DEBUG', false); // Enable/Disable debug mode
     define('S3_DEBUG', false); // Enable/Disable S3 debug mode
     define('ALLOW_ENC_HANDOFF', true); // Allow encrypted handoff

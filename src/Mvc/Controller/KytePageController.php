@@ -27,21 +27,9 @@ class KytePageController extends ModelController
                     $invalidationPaths = ['/*'];
                     // Best-effort: content already in S3; a failed invalidation must not fail the request.
                     try {
-                        if (KYTE_USE_SNS) {
-                            $credential = new \Kyte\Aws\Credentials(SNS_REGION);
-                            $sns = new \Kyte\Aws\Sns($credential, SNS_QUEUE_SITE_MANAGEMENT);
-                            $sns->publish([
-                                'action' => 'cf_invalidate',
-                                'site_id' => $d['site']['id'],
-                                'cf_id' => $d['site']['cfDistributionId'],
-                                'cf_invalidation_paths' => $invalidationPaths,
-                                'caller_id' => time(),
-                            ]);
-                        } else {
-                            // invalidate CF
-                            $cf = new \Kyte\Aws\CloudFront($credential);
-                            $cf->createInvalidation($d['site']['cfDistributionId'], $invalidationPaths);
-                        }
+                        // invalidate CF
+                        $cf = new \Kyte\Aws\CloudFront($credential);
+                        $cf->createInvalidation($d['site']['cfDistributionId'], $invalidationPaths);
                     } catch (\Throwable $e) {
                         error_log("CloudFront invalidation failed (best-effort): " . $e->getMessage());
                     }
@@ -235,21 +223,9 @@ class KytePageController extends ModelController
                     $invalidationPaths = ['/*'];
                     // Best-effort: content already in S3; a failed invalidation must not fail the request.
                     try {
-                        if (KYTE_USE_SNS) {
-                            $credential = new \Kyte\Aws\Credentials(SNS_REGION);
-                            $sns = new \Kyte\Aws\Sns($credential, SNS_QUEUE_SITE_MANAGEMENT);
-                            $sns->publish([
-                                'action' => 'cf_invalidate',
-                                'site_id' => $d['site']['id'],
-                                'cf_id' => $d['site']['cfDistributionId'],
-                                'cf_invalidation_paths' => $invalidationPaths,
-                                'caller_id' => time(),
-                            ]);
-                        } else {
-                            // invalidate CF
-                            $cf = new \Kyte\Aws\CloudFront($credential);
-                            $cf->createInvalidation($d['site']['cfDistributionId'], $invalidationPaths);
-                        }
+                        // invalidate CF
+                        $cf = new \Kyte\Aws\CloudFront($credential);
+                        $cf->createInvalidation($d['site']['cfDistributionId'], $invalidationPaths);
                     } catch (\Throwable $e) {
                         error_log("CloudFront invalidation failed (best-effort): " . $e->getMessage());
                     }
@@ -464,22 +440,9 @@ class KytePageController extends ModelController
         // Invalidate CloudFront cache
         // Best-effort: content already in S3; a failed invalidation must not fail the publish.
         try {
-            if (KYTE_USE_SNS) {
-                // Use SNS for asynchronous invalidation
-                $snsCredential = new \Kyte\Aws\Credentials(SNS_REGION);
-                $sns = new \Kyte\Aws\Sns($snsCredential, SNS_QUEUE_SITE_MANAGEMENT);
-                $sns->publish([
-                    'action' => 'cf_invalidate',
-                    'site_id' => $responseData['site']['id'],
-                    'cf_id' => $responseData['site']['cfDistributionId'],
-                    'cf_invalidation_paths' => $invalidationPaths,
-                    'caller_id' => time(),
-                ]);
-            } else {
-                // Direct CloudFront invalidation
-                $cf = new \Kyte\Aws\CloudFront($credential);
-                $cf->createInvalidation($responseData['site']['cfDistributionId'], $invalidationPaths);
-            }
+            // Direct CloudFront invalidation
+            $cf = new \Kyte\Aws\CloudFront($credential);
+            $cf->createInvalidation($responseData['site']['cfDistributionId'], $invalidationPaths);
         } catch (\Throwable $e) {
             error_log("CloudFront invalidation failed (best-effort): " . $e->getMessage());
         }

@@ -173,7 +173,6 @@ class Api
 		'USE_SESSION_MAP' => false,
 		'CHECK_SYNTAX_ON_IMPORT' => false,
 		'STRICT_TYPING' => true,
-		'KYTE_USE_SNS' => false,
 		'AUTH_STRATEGY_DISPATCHER' => 'off',
 		'KYTE_ACTIVITY_LOG_MAX_FIELD_BYTES' => 16384,
 	];
@@ -402,10 +401,13 @@ class Api
 		if ($host == null) {
 			$host = KYTE_DB_HOST;
 		}
-		//
-		if (\Kyte\Core\DBI::$dbUser == $username && \Kyte\Core\DBI::$dbName == $database && \Kyte\Core\DBI::$dbHost == $host) {
+		// already pointed at this app DB — keep the live connection, nothing to do
+		if (\Kyte\Core\DBI::$dbUserApp == $username && \Kyte\Core\DBI::$dbNameApp == $database && \Kyte\Core\DBI::$dbHostApp == $host) {
 			return;
 		}
+
+		// target changed — drop the stale app handle so the next query reconnects to the new DB
+		\Kyte\Core\DBI::closeApp();
 
 		\Kyte\Core\DBI::setDbNameApp($database);
 		\Kyte\Core\DBI::setDbUserApp($username);

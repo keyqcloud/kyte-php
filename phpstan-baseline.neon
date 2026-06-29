@@ -271,24 +271,6 @@ parameters:
 			path: src/Mvc/Controller/AIErrorDeduplicationController.php
 
 		-
-			message: '#^Constant KYTE_USE_SNS not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: src/Mvc/Controller/ApplicationController.php
-
-		-
-			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: src/Mvc/Controller/ApplicationController.php
-
-		-
-			message: '#^Constant SNS_REGION not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: src/Mvc/Controller/ApplicationController.php
-
-		-
 			message: '#^Variable \$credential might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
@@ -367,45 +349,9 @@ parameters:
 			path: src/Mvc/Controller/KyteFunctionVersionController.php
 
 		-
-			message: '#^Constant KYTE_USE_SNS not found\.$#'
-			identifier: constant.notFound
-			count: 2
-			path: src/Mvc/Controller/KyteLibraryController.php
-
-		-
-			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
-			identifier: constant.notFound
-			count: 2
-			path: src/Mvc/Controller/KyteLibraryController.php
-
-		-
-			message: '#^Constant SNS_REGION not found\.$#'
-			identifier: constant.notFound
-			count: 2
-			path: src/Mvc/Controller/KyteLibraryController.php
-
-		-
 			message: '#^Constant KYTE_JS_CDN not found\.$#'
 			identifier: constant.notFound
 			count: 1
-			path: src/Mvc/Controller/KytePageController.php
-
-		-
-			message: '#^Constant KYTE_USE_SNS not found\.$#'
-			identifier: constant.notFound
-			count: 3
-			path: src/Mvc/Controller/KytePageController.php
-
-		-
-			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
-			identifier: constant.notFound
-			count: 3
-			path: src/Mvc/Controller/KytePageController.php
-
-		-
-			message: '#^Constant SNS_REGION not found\.$#'
-			identifier: constant.notFound
-			count: 3
 			path: src/Mvc/Controller/KytePageController.php
 
 		-
@@ -413,24 +359,6 @@ parameters:
 			identifier: variable.undefined
 			count: 2
 			path: src/Mvc/Controller/KytePageController.php
-
-		-
-			message: '#^Constant KYTE_USE_SNS not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: src/Mvc/Controller/KytePageDataController.php
-
-		-
-			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: src/Mvc/Controller/KytePageDataController.php
-
-		-
-			message: '#^Constant SNS_REGION not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: src/Mvc/Controller/KytePageDataController.php
 
 		-
 			message: '#^Caught class Kyte\\Mvc\\Controller\\Exception not found\.$#'
@@ -457,40 +385,10 @@ parameters:
 			path: src/Mvc/Controller/KytePasswordResetController.php
 
 		-
-			message: '#^Constant KYTE_USE_SNS not found\.$#'
-			identifier: constant.notFound
-			count: 2
-			path: src/Mvc/Controller/KyteScriptController.php
-
-		-
-			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
-			identifier: constant.notFound
-			count: 2
-			path: src/Mvc/Controller/KyteScriptController.php
-
-		-
-			message: '#^Constant SNS_REGION not found\.$#'
-			identifier: constant.notFound
-			count: 2
-			path: src/Mvc/Controller/KyteScriptController.php
-
-		-
 			message: '#^Caught class Kyte\\Mvc\\Controller\\Exception not found\.$#'
 			identifier: class.notFound
 			count: 1
 			path: src/Mvc/Controller/KyteScriptVersionController.php
-
-		-
-			message: '#^Constant SNS_KYTE_SHIPYARD_UPDATE not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: src/Mvc/Controller/KyteShipyardUpdateController.php
-
-		-
-			message: '#^Constant SNS_REGION not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: src/Mvc/Controller/KyteShipyardUpdateController.php
 
 		-
 			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
@@ -523,24 +421,6 @@ parameters:
 			path: src/Mvc/Controller/ModelController.php
 
 		-
-			message: '#^Constant KYTE_USE_SNS not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: src/Mvc/Controller/NavigationController.php
-
-		-
-			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: src/Mvc/Controller/NavigationController.php
-
-		-
-			message: '#^Constant SNS_REGION not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: src/Mvc/Controller/NavigationController.php
-
-		-
 			message: '#^Variable \$nav might not be defined\.$#'
 			identifier: variable.undefined
 			count: 11
@@ -569,24 +449,6 @@ parameters:
 			identifier: constant.notFound
 			count: 2
 			path: src/Mvc/Controller/SessionController.php
-
-		-
-			message: '#^Constant KYTE_USE_SNS not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: src/Mvc/Controller/SideNavController.php
-
-		-
-			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: src/Mvc/Controller/SideNavController.php
-
-		-
-			message: '#^Constant SNS_REGION not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: src/Mvc/Controller/SideNavController.php
 
 		-
 			message: '#^Variable \$nav might not be defined\.$#'

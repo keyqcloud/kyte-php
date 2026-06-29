@@ -1,3 +1,34 @@
+## 4.12.0
+
+### Cleanup: remove `KYTE_USE_SNS` flag + dead SNS invalidation branches — KYTE-#201
+
+Direct CloudFront invalidation (shipped + verified in 4.11.1) is now the only path. With every install already running `KYTE_USE_SNS=false`, this removes the flag and the now-dead SNS publish branch at every invalidation site — behavior-neutral cleanup.
+
+- Dropped the `if (KYTE_USE_SNS) { <SNS publish> } else { <direct> }` fork at all 10 sites, keeping only the direct `Kyte\Aws\CloudFront::createInvalidation()` call inside its existing best-effort try/catch: `ApplicationController` (republish-all), `KytePageController` ×3, `KyteScriptController` ×2 (`invalidateCloudFront`/`invalidateCloudFrontForDeletion`), `KyteLibraryController` ×2, `KytePageDataController`, `NavigationController`, `SideNavController`.
+- Removed `'KYTE_USE_SNS' => false` from `Api::$defaultEnvironmentConstants` and the `define('KYTE_USE_SNS', ...)` from `sample-config.php` + docs.
+- **Kept** `SNS_REGION`, `SNS_QUEUE_SITE_MANAGEMENT` and the `Kyte\Aws\Sns` class — still used by site-provisioning (migrated in later #201 work). Updated the PHPStan baseline accordingly. (`SNS_KYTE_SHIPYARD_UPDATE` is no longer referenced after the shipyard-update migration below.)
+
+### Fix: per-app DB connections (`DBI::connectApp()`) now use SSL when `KYTE_DB_CA_BUNDLE` is set
+
+`DBI::connectApp()` — the per-application/tenant connection used by `Api::dbappconnect()` — opened a plain `mysqli` connection with **no TLS**, unlike `DBI::connect()`. Against a database with `require_secure_transport=ON` this fails with *"Connections using insecure transport are prohibited"*: the control-plane connection (already SSL) succeeds so **login works**, but opening any application backed by a **dedicated per-app database** fails. Latent until a deployment runs on an SSL-required server — surfaced migrating the dev server from Aurora (`require_secure_transport=OFF`) to a MariaDB RDS with it `ON`.
+
+- `connectApp()` now mirrors `connect()`: when `KYTE_DB_CA_BUNDLE` is defined it connects via `ssl_set()` + `MYSQLI_CLIENT_SSL`, with the same non-SSL fallback on failure. **Gated on the constant**, so deployments that don't define a CA bundle keep identical non-SSL behavior (no-op) — verified against ORB/ORT and ETOM, which are unaffected.
+- Fixed the `Api::dbappconnect()` per-app routing guard: it compared the **main** connection's statics (`$dbUser`/`$dbName`/`$dbHost`) instead of the **app** statics (`$dbUserApp`/`$dbNameApp`/`$dbHostApp`), so the "already connected to this app" short-circuit never fired. Corrected the comparison **and** added `DBI::closeApp()` when the app target changes, so in-process app switching reconnects to the right tenant DB instead of reusing the previous app's cached handle. Latent cross-tenant hazard, previously masked by single-app-per-request + the cron worker's fork/`reconnect()` (which clears the app handle).
+- Removed dead method `DBI::dbInitApp()` — it could never run (called non-existent `setCharsetApp()`/`setEngineApp()`), had no callers anywhere, and duplicated the live `Api::dbappconnect()` path.
+
+### Migration: Shipyard self-update moved from Lambda into a kyte-php cron worker — KYTE-#201
+
+`KyteShipyardUpdateController::new` previously published `current_version` to `SNS_KYTE_SHIPYARD_UPDATE` and the `kyte-lambda-update-shipyard` Lambda did the work. That Lambda had two production bugs: `mimetypes.guess_type()` returned `None` for `.map`/directory entries → `boto3 upload_file(ContentType=None)` **failed** (source maps never uploaded), and its `kyte_shipyard_cf` env var pointed at a **nonexistent distribution** → the invalidation threw `NoSuchDistribution` and the dashboard served stale.
+
+The update now runs **out-of-band in a cron worker**, not synchronously in the request. The download/extract/upload/invalidate routinely exceeds the **~100s Cloudflare non-enterprise** request ceiling (and ALB idle timeouts), so a synchronous controller action would 524 on Cloudflare-fronted installs. Both Lambda bugs are fixed inherently.
+
+- **New `KyteShipyardUpdate` model + table** (`migrations/4.12.0_shipyard_update.sql`) tracks each request and its outcome (`status` pending→running→complete/failed, `requested_version`, `deployed_version`, `files_uploaded`/`files_failed`, `cloudfront_invalidated`, `message`).
+- **`KyteShipyardUpdateController::new`** does a fast inline CDN version check (~100ms) and returns "up to date" immediately when current; otherwise it enqueues a `KyteShipyardUpdate` row (`status=pending`) and returns it. The dashboard polls `GET` on the model by id for live status.
+- **`ShipyardUpdateWorker`** (`src/Cron/ShipyardUpdateWorker.php`, a `CronJobBase` job, interval 60s) claims the oldest pending row, downloads + extracts the stable `kyte-shipyard.zip` (ext-zip / `ZipArchive`), uploads every file via `Kyte\Aws\S3::write()` with an **explicit per-extension Content-Type** (JS→`application/javascript`, CSS→`text/css`; unknown types like `.map` are omitted rather than crashing — fixes bug #1), then invalidates the distribution from **config** `KYTE_SHIPYARD_CF` (fixes bug #2, best-effort). `heartbeat()` extends the lease during large uploads.
+- **Idempotency, two layers:** the controller refuses to enqueue while a row is pending/running (request dedup); the worker registers with `allow_concurrent=0` (lease lock) and claims rows via a guarded `pending→running` UPDATE keyed on `affected_rows()==1` (execution dedup).
+
+**Setup:** run the migration, `php bin/register-shipyard-update-job.php`, and set `KYTE_SHIPYARD_S3` / `KYTE_SHIPYARD_CF` (+ optional `KYTE_SHIPYARD_REGION`, default `us-east-1`) in `config.php`. **New dependency:** `ext-zip`. `SNS_KYTE_SHIPYARD_UPDATE` is no longer referenced (the Lambda + SNS topic are decommissioned in the final #201 step).
+
 ## 4.11.1
 
 ### Fix: CloudFront invalidation `CallerReference` collision (direct/`KYTE_USE_SNS=false` path) — KYTE-#201
