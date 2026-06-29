@@ -155,10 +155,10 @@ class DBI {
 		self::setDbPasswordApp($dbPasswordApp);
 		self::setDbHostApp($dbHostApp);
 		self::setDbNameApp($dbNameApp);
-		self::setCharsetApp($charsetApp);
-		self::setEngineApp($engineApp);
+		self::setCharset($charset);
+		self::setEngine($engine);
 
-		return self::connect();
+		return self::connectApp();
 	}
 
 	/*
@@ -234,12 +234,33 @@ class DBI {
 	{
 		if (!self::$dbConnApp) {
 			try {
-				self::$dbConnApp = new \mysqli(self::$dbHostApp, self::$dbUserApp, self::$dbPasswordApp, self::$dbNameApp);
+				if (defined('KYTE_DB_CA_BUNDLE')) {
+					self::$dbConnApp = new \mysqli();
+					self::$dbConnApp->ssl_set(null, null, KYTE_DB_CA_BUNDLE, null, null);
+					if (!self::$dbConnApp->real_connect(self::$dbHostApp, self::$dbUserApp, self::$dbPasswordApp, self::$dbNameApp, null, null, MYSQLI_CLIENT_SSL)) {
+						throw new \Exception('App SSL connection failed: ' . self::$dbConnApp->connect_error, self::$dbConnApp->connect_errno);
+					}
+				} else {
+					self::$dbConnApp = new \mysqli(self::$dbHostApp, self::$dbUserApp, self::$dbPasswordApp, self::$dbNameApp);
+				}
 				// set charset to utf8mb4
 				if ( TRUE !== self::$dbConnApp->set_charset( self::$charset ) )
 					throw new \Exception( self::$dbConnApp->error, self::$dbConnApp->errno );
-			} catch (mysqli_sql_exception $e) {
-				throw $e;
+			} catch (\Exception $e) {
+				// If SSL connection fails, fall back to non-SSL connection
+				if (defined('KYTE_DB_CA_BUNDLE') && (self::$dbConnApp === null || self::$dbConnApp->connect_errno)) {
+					error_log("App SSL connection failed, falling back to non-SSL: " . $e->getMessage());
+					$reportLevel = mysqli_report(MYSQLI_REPORT_OFF);
+					self::$dbConnApp = new \mysqli(self::$dbHostApp, self::$dbUserApp, self::$dbPasswordApp, self::$dbNameApp);
+					mysqli_report($reportLevel);
+					if (self::$dbConnApp->connect_error) {
+						throw new \Exception('App database connection failed (both SSL and non-SSL): ' . self::$dbConnApp->connect_error, self::$dbConnApp->connect_errno);
+					}
+					if ( TRUE !== self::$dbConnApp->set_charset( self::$charset ) )
+						throw new \Exception( self::$dbConnApp->error, self::$dbConnApp->errno );
+				} else {
+					throw $e;
+				}
 			}
 		}
 

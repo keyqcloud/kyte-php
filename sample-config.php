@@ -27,7 +27,6 @@
     define('SNS_KYTE_SHIPYARD_UPDATE', ''); // SNS queue for Kyte Shipyard updates
 
     /* Kyte Framework Specific Settings */
-    define('KYTE_USE_SNS', true); // Enable/Disable AWS SNS integration
     define('DEBUG', false); // Enable/Disable debug mode
     define('S3_DEBUG', false); // Enable/Disable S3 debug mode
     define('ALLOW_ENC_HANDOFF', true); // Allow encrypted handoff

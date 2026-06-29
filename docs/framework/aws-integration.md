@@ -399,7 +399,6 @@ echo "Message published: $messageId";
 Kyte uses SNS for system notifications. Configure these in your config:
 
 ```php
-define('KYTE_USE_SNS', true);
 define('SNS_REGION', 'us-east-1');
 define('SNS_QUEUE_SITE_MANAGEMENT', 'arn:aws:sns:...:site-management');
 define('SNS_KYTE_SHIPYARD_UPDATE', 'arn:aws:sns:...:shipyard-updates');
@@ -802,10 +801,6 @@ class InventoryController extends ModelController
 
     private function publishLowStockAlert($productId, $productName, $quantity)
     {
-        if (!KYTE_USE_SNS) {
-            return;
-        }
-
         try {
             $credentials = new \Kyte\Aws\Credentials(SNS_REGION);
             $sns = new \Kyte\Aws\Sns($credentials);

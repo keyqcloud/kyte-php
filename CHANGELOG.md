@@ -1,3 +1,20 @@
+## 4.12.0
+
+### Cleanup: remove `KYTE_USE_SNS` flag + dead SNS invalidation branches — KYTE-#201
+
+Direct CloudFront invalidation (shipped + verified in 4.11.1) is now the only path. With every install already running `KYTE_USE_SNS=false`, this removes the flag and the now-dead SNS publish branch at every invalidation site — behavior-neutral cleanup.
+
+- Dropped the `if (KYTE_USE_SNS) { <SNS publish> } else { <direct> }` fork at all 10 sites, keeping only the direct `Kyte\Aws\CloudFront::createInvalidation()` call inside its existing best-effort try/catch: `ApplicationController` (republish-all), `KytePageController` ×3, `KyteScriptController` ×2 (`invalidateCloudFront`/`invalidateCloudFrontForDeletion`), `KyteLibraryController` ×2, `KytePageDataController`, `NavigationController`, `SideNavController`.
+- Removed `'KYTE_USE_SNS' => false` from `Api::$defaultEnvironmentConstants` and the `define('KYTE_USE_SNS', ...)` from `sample-config.php` + docs.
+- **Kept** `SNS_REGION`, `SNS_QUEUE_SITE_MANAGEMENT`, `SNS_KYTE_SHIPYARD_UPDATE` and the `Kyte\Aws\Sns` class — still used by site-provisioning and shipyard-update (migrated in later #201 work). Updated the PHPStan baseline accordingly.
+
+### Fix: per-app DB connections (`DBI::connectApp()`) now use SSL when `KYTE_DB_CA_BUNDLE` is set
+
+`DBI::connectApp()` — the per-application/tenant connection used by `Api::dbappconnect()` — opened a plain `mysqli` connection with **no TLS**, unlike `DBI::connect()`. Against a database with `require_secure_transport=ON` this fails with *"Connections using insecure transport are prohibited"*: the control-plane connection (already SSL) succeeds so **login works**, but opening any application backed by a **dedicated per-app database** fails. Latent until a deployment runs on an SSL-required server — surfaced migrating the dev server from Aurora (`require_secure_transport=OFF`) to a MariaDB RDS with it `ON`.
+
+- `connectApp()` now mirrors `connect()`: when `KYTE_DB_CA_BUNDLE` is defined it connects via `ssl_set()` + `MYSQLI_CLIENT_SSL`, with the same non-SSL fallback on failure. **Gated on the constant**, so deployments that don't define a CA bundle keep identical non-SSL behavior (no-op) — verified against ORB/ORT and ETOM, which are unaffected.
+- Fixed a dead-code bug in `DBI::dbInitApp()`: it referenced non-existent `setCharsetApp()`/`setEngineApp()` (fatal if ever invoked) and returned `connect()` instead of `connectApp()`. No callers today (live path is `Api::dbappconnect()`), so behavior-neutral.
+
 ## 4.11.1
 
 ### Fix: CloudFront invalidation `CallerReference` collision (direct/`KYTE_USE_SNS=false` path) — KYTE-#201

@@ -173,7 +173,6 @@ class Api
 		'USE_SESSION_MAP' => false,
 		'CHECK_SYNTAX_ON_IMPORT' => false,
 		'STRICT_TYPING' => true,
-		'KYTE_USE_SNS' => false,
 		'AUTH_STRATEGY_DISPATCHER' => 'off',
 		'KYTE_ACTIVITY_LOG_MAX_FIELD_BYTES' => 16384,
 	];
