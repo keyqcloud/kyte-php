@@ -391,18 +391,6 @@ parameters:
 			path: src/Mvc/Controller/KyteScriptVersionController.php
 
 		-
-			message: '#^Constant SNS_KYTE_SHIPYARD_UPDATE not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: src/Mvc/Controller/KyteShipyardUpdateController.php
-
-		-
-			message: '#^Constant SNS_REGION not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: src/Mvc/Controller/KyteShipyardUpdateController.php
-
-		-
 			message: '#^Constant SNS_QUEUE_SITE_MANAGEMENT not found\.$#'
 			identifier: constant.notFound
 			count: 2

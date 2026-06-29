@@ -150,17 +150,6 @@ class DBI {
 		return self::connect();
 	}
 
-	public static function dbInitApp($dbUserApp, $dbPasswordApp, $dbHostApp, $dbNameApp, $charset, $engine) {
-		self::setDbUserApp($dbUserApp);
-		self::setDbPasswordApp($dbPasswordApp);
-		self::setDbHostApp($dbHostApp);
-		self::setDbNameApp($dbNameApp);
-		self::setCharset($charset);
-		self::setEngine($engine);
-
-		return self::connectApp();
-	}
-
 	/*
 	 * Connect to database
 	 *
