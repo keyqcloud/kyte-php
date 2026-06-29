@@ -118,7 +118,7 @@ class CloudFront extends Client
         $this->AllowedMethods = ['GET', 'HEAD'];
         $this->AllowedCachedMethods = ['GET', 'HEAD'];
         $this->SmoothStreaming = false;
-        // $this->DefaultTTL = 86400;
+        $this->DefaultTTL = 86400;
         // $this->MaxTTL = 315360000;
         $this->Compress = true;
         // $this->FunctionAssociations;                   // [ 'EventType' => 'viewer-request|viewer-response|origin-request|origin-response', 'FunctionARN' => '<string>', ]
@@ -347,6 +347,12 @@ class CloudFront extends Client
         }
     }
 
+    // Whether the loaded distribution is currently enabled. Call getDistribution()
+    // first (it populates distributionConfig). Returns null if not loaded.
+    public function isEnabled() {
+        return isset($this->distributionConfig['Enabled']) ? (bool) $this->distributionConfig['Enabled'] : null;
+    }
+
     public function addOrigin(
         // $ConnectionAttempts,            // integer
         // $ConnectionTimeout,             // integer
@@ -466,6 +472,7 @@ class CloudFront extends Client
         ];
         $this->distributionConfig['DefaultCacheBehavior']['Compress'] = $this->Compress;
         $this->distributionConfig['DefaultCacheBehavior']['MinTTL'] = $this->MinTTL;
+        $this->distributionConfig['DefaultCacheBehavior']['DefaultTTL'] = $this->DefaultTTL;
         $this->distributionConfig['DefaultCacheBehavior']['TargetOriginId'] = $this->TargetOriginId;
         $this->distributionConfig['DefaultCacheBehavior']['ViewerProtocolPolicy'] = $this->ViewerProtocolPolicy;
         $this->distributionConfig['DefaultCacheBehavior']['ForwardedValues'] = [

@@ -24,18 +24,30 @@ class S3 extends Client
     // create bucket
     public function createBucket() {
         try {
-            $this->client->createBucket([
+            $params = [
                 // 'ACL' => $this->acl, // 'private|public-read|public-read-write|authenticated-read'
                 'Bucket' => $this->bucket, // REQUIRED
-                'CreateBucketConfiguration' => [
-                    'LocationConstraint' => $this->credentials->getRegion() //'ap-northeast-1|ap-southeast-2|ap-southeast-1|cn-north-1|eu-central-1|eu-west-1|us-east-1|us-west-1|us-west-2|sa-east-1'
-                ]
-            ]);
+            ];
+            // us-east-1 is the S3 default region and MUST NOT carry a
+            // LocationConstraint (S3 rejects it with InvalidLocationConstraint);
+            // every other region requires one.
+            if ($this->credentials->getRegion() !== 'us-east-1') {
+                $params['CreateBucketConfiguration'] = [
+                    'LocationConstraint' => $this->credentials->getRegion(),
+                ];
+            }
+
+            $this->client->createBucket($params);
 
             return true;
-        } catch (\AwsException $e) {
-			throw $e;
-		}
+        } catch (\Aws\Exception\AwsException $e) {
+            // Idempotent: if we already own this bucket, treat as success so the
+            // provisioning worker can safely re-run the create step on retry.
+            if ($e->getAwsErrorCode() === 'BucketAlreadyOwnedByYou') {
+                return true;
+            }
+            throw $e;
+        }
 
         // if ($context) {
         //     $context = stream_context_create($context);
@@ -185,6 +197,46 @@ class S3 extends Client
         }
 
         return true;
+    }
+
+    // empty a bucket of all objects (and versions/delete-markers) so it can be
+    // deleted. Paginated; idempotent if the bucket is already gone. Used by the
+    // site-provisioning worker's delete flow (replaces the Lambda's boto3 purge).
+    public function emptyBucket() {
+        if (!$this->bucket) {
+            throw new \Exception('bucket must be defined');
+        }
+        try {
+            // ListObjectVersions covers both versioned and unversioned buckets
+            // (unversioned objects come back under 'Versions' with VersionId 'null').
+            $paginator = $this->client->getPaginator('ListObjectVersions', [
+                'Bucket' => $this->bucket,
+            ]);
+            foreach ($paginator as $page) {
+                $items = array_merge(
+                    $page['Versions'] ?? [],
+                    $page['DeleteMarkers'] ?? []
+                );
+                if (empty($items)) {
+                    continue;
+                }
+                $this->client->deleteObjects([
+                    'Bucket' => $this->bucket,
+                    'Delete' => [
+                        'Objects' => array_map(function ($o) {
+                            return ['Key' => $o['Key'], 'VersionId' => $o['VersionId']];
+                        }, $items),
+                        'Quiet' => true,
+                    ],
+                ]);
+            }
+            return true;
+        } catch (\Aws\Exception\AwsException $e) {
+            if ($e->getAwsErrorCode() === 'NoSuchBucket') {
+                return true; // already gone — idempotent
+            }
+            throw $e;
+        }
     }
 
     // delete bucket
