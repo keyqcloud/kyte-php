@@ -1,3 +1,26 @@
+## 4.15.0
+
+### Feature: MCP schema-management tools (create/alter/drop models) + `schema` scope — KYTE-#325
+
+A `schema`-scoped MCP token can now create and migrate data models from Claude, where each change applies a **real DDL migration** (CREATE/ALTER/DROP TABLE/COLUMN) against the application's own database. Same plumbing as the #322 site tools — the tools drive `DataModelController`/`ModelAttributeController` in internal mode. Shipped in two parts.
+
+**PR B — MCP schema tools:**
+- **New `schema` scope** added to `KyteMCPTokenController::VALID_SCOPES`, held separately from `provision` so a token can be granted model-migration rights independently of site spin-up/tear-down. Not hierarchical.
+- **`src/Mcp/Tools/ModelTools.php`** (auto-discovered) write tools, all `[schema]`: `create_model` (CREATE TABLE), `add_attribute` (ADD COLUMN — decimal needs precision+scale, varchar needs size, FK via `foreign_key_model`), `update_attribute` (CHANGE COLUMN — `name` required since the column def is rewritten in full), `rename_model` (RENAME TABLE); plus the destructive `remove_attribute` (DROP COLUMN) and `delete_model` (DROP TABLE), each gated behind a **required `confirm_destructive` flag**. `read_model`/`list_models` already existed. Every caller-supplied model/attribute id is re-scoped to the token's account; foreign ids are rejected.
+- `rename_model` registers the app's model constants via `Api::loadAppModels` first — `DataModelController::update` guards on `defined($o->name)`, which the HTTP pipeline satisfies at routing but the MCP path (routing-bypassed) does not (mirrors `AppModelWrapperController`).
+- **Model-layer hardening** surfaced by the partial payloads the MCP tools send: `DataModelController::prepareModelDef` reads optional flags/defaults defensively (no undefined-property warning / null-to-strlen deprecation when `protected`/`password`/`defaults`/`unsigned` are omitted); `Api::loadAppModels` skips rows with a missing/corrupt `model_definition` instead of `define()`-ing a null name, and no longer re-defines an already-defined constant.
+- Tests: `tests/McpModelToolsTest.php` extended with write coverage (create/add/update/rename, decimal precision/scale reaching the physical column, destructive-op confirm gating, FK-dependency block, cross-account isolation), driving real DDL against the test DB via a dedicated password-bearing app user.
+
+**PR A — model-layer fixes/hardening (platform; benefits Shipyard too):**
+- **`DBI::renameTable`** referenced an undefined `$tbl_name_news` (typo) → emitted a malformed RENAME; rename was effectively broken. Fixed to `$tbl_name_new`.
+- **`DBI::dropTable`** now uses `DROP TABLE IF EXISTS` (was a bare DROP that errored on an already-absent table).
+- **`kyte_locked` enforced on the DDL path** — `DataModelController`/`ModelAttributeController` now refuse update/delete of a locked model or attribute, guarding before any DB switch or DDL.
+- **FK-dependency guard before drop** — dropping a model is refused while another model's attribute references it via `foreignKeyModel`; dropping a column is refused while another attribute references it via `foreignKeyAttribute`. Both account-scoped, with an error naming the blocking `model.attribute`. Replaces the two stale "external tables and foreign keys" TODOs.
+- **Decimal (`d`) support** — new `migrations/4.15.0_modelattribute_decimal.sql` adds `precision`/`scale` to `ModelAttribute`; `prepareModelDef` passes them through for type `d`; `DBI::buildFieldDefinition` now throws on a `d` column missing precision/scale instead of emitting invalid SQL. The type was previously non-functional end-to-end.
+- **Model-cache invalidation** — both controllers call `Api::clearModelCache()` after a schema change (create/rename/delete model, add/change/drop column), so the new struct is served immediately instead of the stale file cache (up to 1h TTL).
+
+**Migration:** `migrations/4.15.0_modelattribute_decimal.sql` (additive, nullable, no-op for existing rows). Rolls with the batched 4.14.0 site-tools rollout.
+
 ## 4.14.0
 
 ### Feature: MCP site-provisioning tools (create/delete/update/read) + `provision` scope — KYTE-#322
