@@ -11,10 +11,15 @@ class DataModelController extends ModelController
     // public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}
 
     public static function prepareModelDef($o) {
+        // Optional flags/values may be absent when the caller sends a partial
+        // attribute payload (e.g. the MCP schema tools, which only set the
+        // fields they care about). Read them defensively so a missing property
+        // doesn't emit an undefined-property warning or a null-to-strlen
+        // deprecation; the dashboard form still sends the full set.
         $attrs = [
             'type'      => $o->type == 'date' ? 'i' : $o->type,
             'date'      => $o->type == 'date',
-            'required'  => $o->required == 1,
+            'required'  => isset($o->required) && $o->required == 1,
         ];
 
         // size
@@ -33,22 +38,22 @@ class DataModelController extends ModelController
         }
 
         // unsigned
-        if ($o->unsigned == 1) {
+        if (!empty($o->unsigned)) {
             $attrs['unsigned'] = true;
         }
 
         // protected
-        if ($o->protected == 1) {
+        if (!empty($o->protected)) {
             $attrs['protected'] = true;
         }
 
         // password
-        if ($o->password == 1) {
+        if (!empty($o->password)) {
             $attrs['password'] = true;
         }
 
         // defaults
-        if (strlen($o->defaults) > 0) {
+        if (isset($o->defaults) && strlen((string)$o->defaults) > 0) {
             $attrs['default'] = $o->defaults;
         }
 

@@ -472,9 +472,21 @@ class Api
 
 		foreach($models->objects as $object) {
 			$model_definition = json_decode($object->model_definition, true);
+			// Skip rows whose stored definition is missing or corrupt — a single
+			// bad row must not break loading (and define()ing) the rest of the
+			// app's models. Without this, json_decode returns null and the
+			// name lookup/define() below would choke on a null model name.
+			if (!is_array($model_definition) || empty($model_definition['name'])) {
+				if (VERBOSE_LOG) {
+					error_log("Skipping app model with missing/invalid model_definition (DataModel id {$object->id}).");
+				}
+				continue;
+			}
 			$model_definition['appId'] = $app->identifier;
 			$modelDefs[$model_definition['name']] = $model_definition;
-			define($model_definition['name'], $model_definition);
+			if (!defined($model_definition['name'])) {
+				define($model_definition['name'], $model_definition);
+			}
 		}
 
 		// Update caches
