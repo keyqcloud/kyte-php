@@ -14,12 +14,12 @@ A `schema`-scoped MCP token can now create and migrate data models from Claude, 
 **PR A — model-layer fixes/hardening (platform; benefits Shipyard too):**
 - **`DBI::renameTable`** referenced an undefined `$tbl_name_news` (typo) → emitted a malformed RENAME; rename was effectively broken. Fixed to `$tbl_name_new`.
 - **`DBI::dropTable`** now uses `DROP TABLE IF EXISTS` (was a bare DROP that errored on an already-absent table).
-- **`kyte_locked` enforced on the DDL path** — `DataModelController`/`ModelAttributeController` now refuse update/delete of a locked model or attribute, guarding before any DB switch or DDL.
+- **`kyte_locked` enforced on the DDL path** — `DataModelController`/`ModelAttributeController` now refuse update/delete of a locked model or attribute, guarding before any DB switch or DDL. New `migrations/4.15.0_datamodel_kyte_locked.sql` (idempotent `ADD COLUMN IF NOT EXISTS`) guarantees the column exists on both `DataModel` and `ModelAttribute` — the original consolidated 3.x→4.8 upgrade added it but some installs applied it only partially (observed: `ModelAttribute` had it, `DataModel` did not), leaving the model-level guard silently inert. The guard is only meaningful when the column physically exists.
 - **FK-dependency guard before drop** — dropping a model is refused while another model's attribute references it via `foreignKeyModel`; dropping a column is refused while another attribute references it via `foreignKeyAttribute`. Both account-scoped, with an error naming the blocking `model.attribute`. Replaces the two stale "external tables and foreign keys" TODOs.
 - **Decimal (`d`) support** — new `migrations/4.15.0_modelattribute_decimal.sql` adds `precision`/`scale` to `ModelAttribute`; `prepareModelDef` passes them through for type `d`; `DBI::buildFieldDefinition` now throws on a `d` column missing precision/scale instead of emitting invalid SQL. The type was previously non-functional end-to-end.
 - **Model-cache invalidation** — both controllers call `Api::clearModelCache()` after a schema change (create/rename/delete model, add/change/drop column), so the new struct is served immediately instead of the stale file cache (up to 1h TTL).
 
-**Migration:** `migrations/4.15.0_modelattribute_decimal.sql` (additive, nullable, no-op for existing rows). Rolls with the batched 4.14.0 site-tools rollout.
+**Migrations:** `migrations/4.15.0_modelattribute_decimal.sql` (adds `precision`/`scale`) and `migrations/4.15.0_datamodel_kyte_locked.sql` (ensures `kyte_locked` on `DataModel` + `ModelAttribute`). Both additive, nullable, idempotent, no-op for existing rows. Roll with the batched 4.14.0 site-tools rollout.
 
 ## 4.14.0
 
