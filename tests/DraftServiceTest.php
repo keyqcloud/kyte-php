@@ -51,6 +51,7 @@ class DraftServiceTest extends TestCase
         $page = new \Kyte\Core\ModelObject(KytePage);
         $page->create([
             'title'        => 'Draft Test Page',
+            's3key'        => 'draft-test-page.html',
             'state'        => 1,
             'kyte_account' => $this->accountId,
         ]);
@@ -164,7 +165,7 @@ class DraftServiceTest extends TestCase
 
         // A page id that does not belong to this account.
         $other = new \Kyte\Core\ModelObject(KytePage);
-        $other->create(['title' => 'Other', 'state' => 1, 'kyte_account' => $this->accountId + 99999]);
+        $other->create(['title' => 'Other', 's3key' => 'other-page.html', 'state' => 1, 'kyte_account' => $this->accountId + 99999]);
 
         $result = $svc->writePart($S, (int)$other->id, 'html', 'x');
         $this->assertNull($result, 'writing to a page outside the account is denied');
@@ -180,6 +181,7 @@ class DraftServiceTest extends TestCase
         $fn->create([
             'name'         => 'al_draft_test_fn',
             'controller'   => 1,
+            'type'         => 'custom',
             'code'         => bzcompress('echo 1;', 9),
             'kyte_account' => $this->accountId,
         ]);
