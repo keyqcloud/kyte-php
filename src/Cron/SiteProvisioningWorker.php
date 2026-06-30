@@ -273,7 +273,12 @@ class SiteProvisioningWorker extends CronJobBase
         return 'deleted';
     }
 
-    /** Delete the site's ACM certs (now detached) + their Domain/SAN rows. */
+    /**
+     * Delete the site's ACM certs (now detached from the deleted distributions)
+     * and soft-delete their Domain/SAN rows. Uses raw SQL (table names) rather than
+     * model-name constants, which aren't reliably defined in the eval'd cron-worker
+     * context (they resolve to the worker's namespace and fall through).
+     */
     private function teardownDomains($credential, int $siteId): void
     {
         $domains = DBI::prepared_query(
@@ -287,18 +292,20 @@ class SiteProvisioningWorker extends CronJobBase
                     $acm = new \Kyte\Aws\Acm($credential, $domain['certificateArn']);
                     $acm->delete();
                 } catch (\Throwable $e) {
-                    $this->log("ACM delete failed for cert {$domain['certificateArn']} (site #{$siteId}): " . $e->getMessage());
+                    // Best-effort: a cert already gone (e.g. a prior tick) is fine.
+                    $this->log("ACM delete for cert {$domain['certificateArn']} (site #{$siteId}): " . $e->getMessage());
                 }
             }
-            $sans = new \Kyte\Core\Model(SubjectAlternativeName);
-            $sans->retrieve('domain', $domain['id']);
-            foreach ($sans->objects as $san) {
-                $san->delete();
-            }
-            $d = new ModelObject(Domain);
-            if ($d->retrieve('id', $domain['id'])) {
-                $d->delete();
-            }
+            DBI::prepared_query(
+                "UPDATE SubjectAlternativeName SET deleted = 1, date_deleted = UNIX_TIMESTAMP() WHERE domain = ? AND deleted = 0",
+                'i',
+                [$domain['id']]
+            );
+            DBI::prepared_query(
+                "UPDATE Domain SET deleted = 1, date_deleted = UNIX_TIMESTAMP() WHERE id = ?",
+                'i',
+                [$domain['id']]
+            );
         }
     }
 
