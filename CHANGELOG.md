@@ -1,3 +1,15 @@
+## 4.14.0
+
+### Feature: MCP site-provisioning tools (create/delete/update/read) + `provision` scope — KYTE-#322
+
+New MCP tools let a token holder manage a site's lifecycle from Claude, building on the #201 `SiteProvisioningWorker` (provisioning now runs in-process, so these tools just flip state and the worker does the AWS work out of band).
+
+- **New `provision` scope** — gates infrastructure-creating tools, held separately from content `read`/`draft`/`commit` so a token can author pages/scripts without the right to spin up or tear down sites. The dispatch path has no scope enum (RequiresScope/ScopeRegistry/the token CSV all accept arbitrary strings), so the only change to make it grantable was adding `provision` to `KyteMCPTokenController::VALID_SCOPES`.
+- **`src/Mcp/Tools/SiteTools.php`** (auto-discovered): `create_site` / `delete_site` / `update_site` `[provision]`, `read_site` `[read]`. Mutations call `KyteSiteController` in internal mode (no session, mirroring `DraftService`'s publish path); `create_site`/`delete_site` flip `KyteSite.status` to `creating`/`deleting` and return immediately — callers poll `read_site` (which surfaces `status`, `provisioning_message`, and the live `cloudfront_domain`) until `active`/`deleted`. Every caller-supplied id is re-scoped to the token's account; new sites are stamped with the caller account.
+- Guarded `KyteSiteController::delete()`'s `deleted_by = $this->user->id` for the no-`KyteUser` server-side path (`isset() ? : 0`).
+- Custom-domain (`aliasDomain`) assignment is intentionally **not** exposed here — that's the ACM + DNS path (KYTE-#320). Infra ids (bucket/distribution) omitted from output; `cloudfront_domain` surfaced.
+- Tests: `tests/McpSiteToolsTest.php` (row-level create/read/update/delete + account isolation), wired into the CI unit suite. Code-only — **no migration**.
+
 ## 4.13.0
 
 ### Migration: site provisioning moved from Lambda into a cron worker — KYTE-#201

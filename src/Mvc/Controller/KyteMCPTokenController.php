@@ -40,8 +40,11 @@ namespace Kyte\Mvc\Controller;
  */
 class KyteMCPTokenController extends ModelController
 {
-    /** Allowed scope values per design doc § 5.4. */
-    private const VALID_SCOPES = ['read', 'draft', 'commit'];
+    /** Allowed scope values per design doc § 5.4. `provision` gates the
+     * infrastructure-creating MCP tools (create/delete/update site; later
+     * create_app + model migrations) — held separately from content
+     * read/draft/commit so a token can author without spin-up/tear-down rights. */
+    private const VALID_SCOPES = ['read', 'draft', 'commit', 'provision'];
 
     /** Default TTL when the request omits expires_at: 30 days. */
     private const DEFAULT_TTL_SECONDS = 30 * 86400;
