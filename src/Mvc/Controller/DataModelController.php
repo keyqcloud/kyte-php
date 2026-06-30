@@ -204,8 +204,20 @@ class DataModelController extends ModelController
                 
                 // return to kyte db
                 \Kyte\Core\Api::dbswitch();
+
+                // Invalidate the cached model struct for this app — the model is
+                // gone, so the next request must not load it from the stale cache.
+                \Kyte\Core\Api::clearModelCache($o->application);
                 break;
-            
+
+            case 'new':
+            case 'update':
+                // A create or rename changed this app's model set / a struct name;
+                // flush the cached struct so the next request loads fresh rather
+                // than serving the stale cache for up to its TTL.
+                \Kyte\Core\Api::clearModelCache($o->application);
+                break;
+
             default:
                 break;
         }

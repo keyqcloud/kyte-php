@@ -125,6 +125,10 @@ class ModelAttributeController extends ModelController
                 $tbl->save([
                     'model_definition' => json_encode($model_definition)
                 ]);
+                // Invalidate the cached model struct so the schema change (add /
+                // change / drop column) is served immediately — the file cache
+                // would otherwise serve the stale struct for up to its TTL (1h).
+                \Kyte\Core\Api::clearModelCache($tbl->application);
                 break;
             
             default:

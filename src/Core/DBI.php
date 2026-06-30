@@ -716,7 +716,7 @@ class DBI {
 		// db connection
 		$con = self::getConnection();
 
-		$tbl_sql = "DROP TABLE `$tbl_name`";
+		$tbl_sql = "DROP TABLE IF EXISTS `$tbl_name`";
 
 		$result = $con->query($tbl_sql);
 		if($result === false) {
@@ -741,7 +741,7 @@ class DBI {
 		// db connection
 		$con = self::getConnection();
 
-		$tbl_sql = "ALTER TABLE `$tbl_name_old` RENAME TO `$tbl_name_news`";
+		$tbl_sql = "ALTER TABLE `$tbl_name_old` RENAME TO `$tbl_name_new`";
 
 		$result = $con->query($tbl_sql);
 		if($result === false) {
