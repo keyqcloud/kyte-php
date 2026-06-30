@@ -544,6 +544,8 @@ class DBI {
 				case 'd':
 					if (array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
 						$field .= ' decimal(' . $attrs['precision'] . ',' . $attrs['scale'] . ')';
+					} else {
+						throw new \Exception("decimal requires precision and scale to be declared for column $name of table $tableName.");
 					}
 					break;
 				case 't':

@@ -22,6 +22,16 @@ class DataModelController extends ModelController
             $attrs['size'] = $o->size;
         }
 
+        // decimal precision/scale — only meaningful for the `d` type, where
+        // DBI::buildFieldDefinition needs both to emit decimal(precision,scale).
+        if ($o->type == 'd') {
+            if (!isset($o->precision) || !isset($o->scale) || $o->precision === '' || $o->scale === '') {
+                throw new \Exception("Decimal attribute requires both precision and scale.");
+            }
+            $attrs['precision'] = $o->precision;
+            $attrs['scale'] = $o->scale;
+        }
+
         // unsigned
         if ($o->unsigned == 1) {
             $attrs['unsigned'] = true;
@@ -124,6 +134,13 @@ class DataModelController extends ModelController
                     throw new \Exception("Unknown model definition");
                 }
 
+                // Refuse to alter a kyte-locked model (system/critical model).
+                // Guard before any DB switch or DDL so a locked row never
+                // reaches the app database.
+                if ((int)$o->kyte_locked === 1) {
+                    throw new \Exception("Model '{$o->name}' is locked and cannot be modified.");
+                }
+
                 // Only run the table-rename path when the request actually
                 // carries a (different) name. A metadata-only partial PUT —
                 // e.g. the Settings tab toggling `sensitive` — omits `name`,
@@ -171,6 +188,31 @@ class DataModelController extends ModelController
     public function hook_response_data($method, $o, &$r = null, &$d = null) {
         switch ($method) {
             case 'delete':
+                // Refuse to drop a kyte-locked model (system/critical model).
+                // Guard before any cascade delete, DB switch, or DROP TABLE.
+                if ((int)$o->kyte_locked === 1) {
+                    throw new \Exception("Model '{$o->name}' is locked and cannot be deleted.");
+                }
+
+                // FK-dependency guard: refuse to drop a model that another
+                // model's attribute still references via foreignKeyModel.
+                // Account-scoped; the model's own attributes are excluded since
+                // they are deleted along with it.
+                $dependents = new \Kyte\Core\Model(ModelAttribute);
+                $dependents->retrieve('foreignKeyModel', $o->id, false, [['field' => 'kyte_account', 'value' => $this->api->account->id]]);
+                $blockingNames = [];
+                foreach ($dependents->objects as $dep) {
+                    if ($dep->dataModel == $o->id) {
+                        continue;
+                    }
+                    $depModel = new \Kyte\Core\ModelObject(DataModel);
+                    $depModelName = $depModel->retrieve('id', $dep->dataModel) ? $depModel->name : "model #{$dep->dataModel}";
+                    $blockingNames[] = "{$depModelName}.{$dep->name}";
+                }
+                if (!empty($blockingNames)) {
+                    throw new \Exception("Cannot delete model '{$o->name}': it is referenced by foreign key(s) " . implode(', ', $blockingNames) . ". Remove the referencing attribute(s) first.");
+                }
+
                 // delete model attributes
                 $attrs = new \Kyte\Core\Model(ModelAttribute);
                 $attrs->retrieve("dataModel", $o->id);
@@ -187,7 +229,8 @@ class DataModelController extends ModelController
                 //     $ctrl->delete('id', $controller->id);
                 // }
 
-                // TODO: consider situation where there are external tables and foreign keys
+                // Cross-model foreign-key references are guarded above; any
+                // remaining external-table cleanup is the caller's responsibility.
 
                 // switch dbs
                 $app = new \Kyte\Core\ModelObject(Application);
