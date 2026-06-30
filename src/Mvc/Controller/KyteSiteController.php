@@ -104,10 +104,12 @@ class KyteSiteController extends ModelController
             error_log('Site found...deleting...');
         }
         
-        // begin the deletion process
+        // begin the deletion process. deleted_by is best-effort: a server-side
+        // caller (e.g. the MCP delete_site tool, internal mode) has no KyteUser,
+        // so guard against a null $this->user rather than fatal on ->id.
         $o->save([
             'status' => 'deleting',
-            'deleted_by' => $this->user->id,    // store the user id of who initiated the delete, will add time after via lambda fx
+            'deleted_by' => isset($this->user->id) ? $this->user->id : 0,
             'date_modified' => time(),
         ]);
 
