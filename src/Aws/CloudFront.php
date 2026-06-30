@@ -303,9 +303,14 @@ class CloudFront extends Client
         try {
             $distributionId = $this->Id ? $this->Id : $distributionId;
 
-            $result = $this->client->deleteDistribution([
-                'Id' => $distributionId
-            ]);
+            $params = ['Id' => $distributionId];
+            // DeleteDistribution REQUIRES the current ETag as IfMatch (just like
+            // updateDistribution); getDistribution() populates $this->etag. Without
+            // it AWS rejects the call with InvalidIfMatchVersion.
+            if (!empty($this->etag)) {
+                $params['IfMatch'] = $this->etag;
+            }
+            $result = $this->client->deleteDistribution($params);
 
             $this->Id = null;
             $this->Arn = null;

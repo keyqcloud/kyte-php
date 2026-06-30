@@ -57,6 +57,12 @@ class SiteProvisioningWorker extends CronJobBase
                 } else {
                     $summary[$id] = $this->advanceDelete($credential, $site);
                 }
+                // A successful step clears any prior transient-error state so the
+                // attempts counter doesn't creep toward the give-up cap and the
+                // dashboard doesn't show a stale error.
+                if ((int) $site['provisioning_attempts'] > 0) {
+                    $this->updateSite($id, ['provisioning_attempts' => 0, 'provisioning_message' => null]);
+                }
             } catch (\Throwable $e) {
                 $this->recordFailure($id, (int) $site['provisioning_attempts'], $site['status'], $e->getMessage());
                 $summary[$id] = 'error: ' . $e->getMessage();
