@@ -544,6 +544,8 @@ class DBI {
 				case 'd':
 					if (array_key_exists('precision', $attrs) && array_key_exists('scale', $attrs)) {
 						$field .= ' decimal(' . $attrs['precision'] . ',' . $attrs['scale'] . ')';
+					} else {
+						throw new \Exception("decimal requires precision and scale to be declared for column $name of table $tableName.");
 					}
 					break;
 				case 't':
@@ -716,7 +718,7 @@ class DBI {
 		// db connection
 		$con = self::getConnection();
 
-		$tbl_sql = "DROP TABLE `$tbl_name`";
+		$tbl_sql = "DROP TABLE IF EXISTS `$tbl_name`";
 
 		$result = $con->query($tbl_sql);
 		if($result === false) {
@@ -741,7 +743,7 @@ class DBI {
 		// db connection
 		$con = self::getConnection();
 
-		$tbl_sql = "ALTER TABLE `$tbl_name_old` RENAME TO `$tbl_name_news`";
+		$tbl_sql = "ALTER TABLE `$tbl_name_old` RENAME TO `$tbl_name_new`";
 
 		$result = $con->query($tbl_sql);
 		if($result === false) {

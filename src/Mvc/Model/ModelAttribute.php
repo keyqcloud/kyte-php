@@ -29,6 +29,26 @@ $ModelAttribute = [
 			'date'		=> false,
 		],
 
+		// total number of digits for a decimal (`d`) column, e.g. 10 in
+		// decimal(10,2). Required (alongside `scale`) for the decimal type.
+		'precision'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 11,
+			'unsigned'	=> true,
+			'date'		=> false,
+		],
+
+		// number of digits after the decimal point, e.g. 2 in decimal(10,2).
+		// Required (alongside `precision`) for the decimal type.
+		'scale'		=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'size'		=> 11,
+			'unsigned'	=> true,
+			'date'		=> false,
+		],
+
 		'unsigned'	=> [
 			'type'		=> 'i',
 			'required'	=> false,

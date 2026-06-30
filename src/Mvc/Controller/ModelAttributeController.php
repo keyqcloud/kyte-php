@@ -60,6 +60,12 @@ class ModelAttributeController extends ModelController
                 // `sensitive` was persisted. The field-edit form always sends
                 // `name` for real schema changes, so this preserves that path.
                 if (isset($r['name'])) {
+                    // Refuse to alter a kyte-locked attribute (system/critical
+                    // column). Guard before any DB switch or DDL.
+                    if ((int)$o->kyte_locked === 1) {
+                        throw new \Exception("Attribute '{$o->name}' is locked and cannot be modified.");
+                    }
+
                     $tbl = new \Kyte\Core\ModelObject(DataModel);
                     if (!$tbl->retrieve('id', $o->dataModel)) {
                         throw new \Exception("Unable to find associated data model.");
@@ -98,7 +104,27 @@ class ModelAttributeController extends ModelController
 
         switch ($method) {
             case 'delete':
-                // TODO: consider situation where there are external tables and foreign keys
+                // Refuse to drop a kyte-locked attribute (system/critical
+                // column). Guard before any DB switch or DROP COLUMN.
+                if ((int)$o->kyte_locked === 1) {
+                    throw new \Exception("Attribute '{$o->name}' is locked and cannot be deleted.");
+                }
+
+                // FK-dependency guard: refuse to drop a column that another
+                // attribute still references via foreignKeyAttribute.
+                // Account-scoped.
+                $dependents = new \Kyte\Core\Model(ModelAttribute);
+                $dependents->retrieve('foreignKeyAttribute', $o->id, false, [['field' => 'kyte_account', 'value' => $this->api->account->id]]);
+                $blockingNames = [];
+                foreach ($dependents->objects as $dep) {
+                    $depModel = new \Kyte\Core\ModelObject(DataModel);
+                    $depModelName = $depModel->retrieve('id', $dep->dataModel) ? $depModel->name : "model #{$dep->dataModel}";
+                    $blockingNames[] = "{$depModelName}.{$dep->name}";
+                }
+                if (!empty($blockingNames)) {
+                    throw new \Exception("Cannot delete attribute '{$o->name}': it is referenced by foreign key(s) " . implode(', ', $blockingNames) . ". Remove the referencing attribute(s) first.");
+                }
+
                 $d = false; // set auto delete external tables to false since there are none.
                 // switch dbs
                 $app = new \Kyte\Core\ModelObject(Application);
@@ -125,6 +151,10 @@ class ModelAttributeController extends ModelController
                 $tbl->save([
                     'model_definition' => json_encode($model_definition)
                 ]);
+                // Invalidate the cached model struct so the schema change (add /
+                // change / drop column) is served immediately — the file cache
+                // would otherwise serve the stale struct for up to its TTL (1h).
+                \Kyte\Core\Api::clearModelCache($tbl->application);
                 break;
             
             default:
