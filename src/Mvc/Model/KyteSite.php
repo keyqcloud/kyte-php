@@ -104,6 +104,23 @@ $KyteSite = [
 			'date'		=> false,
 		],
 
+		// provisioning state (SiteProvisioningWorker, KYTE-#201). Sub-state during
+		// creating/deleting is inferred from the s3*/cf* columns; these two are for
+		// surfacing failures to the dashboard and bounding retries.
+		'provisioning_message'	=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
+		'provisioning_attempts'	=> [
+			'type'		=> 'i',
+			'required'	=> false,
+			'unsigned'	=> true,
+			'default'	=> 0,
+			'date'		=> false,
+		],
+
 		'application'	=> [
 			'type'		=> 'i',
 			'required'	=> false,

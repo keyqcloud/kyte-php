@@ -118,7 +118,7 @@ class CloudFront extends Client
         $this->AllowedMethods = ['GET', 'HEAD'];
         $this->AllowedCachedMethods = ['GET', 'HEAD'];
         $this->SmoothStreaming = false;
-        // $this->DefaultTTL = 86400;
+        $this->DefaultTTL = 86400;
         // $this->MaxTTL = 315360000;
         $this->Compress = true;
         // $this->FunctionAssociations;                   // [ 'EventType' => 'viewer-request|viewer-response|origin-request|origin-response', 'FunctionARN' => '<string>', ]
@@ -303,9 +303,14 @@ class CloudFront extends Client
         try {
             $distributionId = $this->Id ? $this->Id : $distributionId;
 
-            $result = $this->client->deleteDistribution([
-                'Id' => $distributionId
-            ]);
+            $params = ['Id' => $distributionId];
+            // DeleteDistribution REQUIRES the current ETag as IfMatch (just like
+            // updateDistribution); getDistribution() populates $this->etag. Without
+            // it AWS rejects the call with InvalidIfMatchVersion.
+            if (!empty($this->etag)) {
+                $params['IfMatch'] = $this->etag;
+            }
+            $result = $this->client->deleteDistribution($params);
 
             $this->Id = null;
             $this->Arn = null;
@@ -345,6 +350,12 @@ class CloudFront extends Client
             throw new \Exception($e->getMessage());
             return false;
         }
+    }
+
+    // Whether the loaded distribution is currently enabled. Call getDistribution()
+    // first (it populates distributionConfig). Returns null if not loaded.
+    public function isEnabled() {
+        return isset($this->distributionConfig['Enabled']) ? (bool) $this->distributionConfig['Enabled'] : null;
     }
 
     public function addOrigin(
@@ -466,6 +477,7 @@ class CloudFront extends Client
         ];
         $this->distributionConfig['DefaultCacheBehavior']['Compress'] = $this->Compress;
         $this->distributionConfig['DefaultCacheBehavior']['MinTTL'] = $this->MinTTL;
+        $this->distributionConfig['DefaultCacheBehavior']['DefaultTTL'] = $this->DefaultTTL;
         $this->distributionConfig['DefaultCacheBehavior']['TargetOriginId'] = $this->TargetOriginId;
         $this->distributionConfig['DefaultCacheBehavior']['ViewerProtocolPolicy'] = $this->ViewerProtocolPolicy;
         $this->distributionConfig['DefaultCacheBehavior']['ForwardedValues'] = [

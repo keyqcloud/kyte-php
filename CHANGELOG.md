@@ -1,3 +1,18 @@
+## 4.13.0
+
+### Migration: site provisioning moved from Lambda into a cron worker — KYTE-#201
+
+`KyteSiteController` published S3/CloudFront/ACM actions to `SNS_QUEUE_SITE_MANAGEMENT` → the `kyte-lambda-site-management` self-chaining state machine did the work, writing back to the DB via the `kyte-lambda-database-transaction` Lambda. Both Lambdas are replaced by a cron worker that writes the DB directly. Completes the #201 migration off SNS/Lambda (after #1 + #2 in 4.12.0).
+
+- **`SiteProvisioningWorker`** (`src/Cron/SiteProvisioningWorker.php`, `CronJobBase`, interval 30s) scans `KyteSite` rows in `creating`/`deleting` and advances each one actionable step per tick. **Sub-state is inferred from the populated `s3*`/`cf*` columns** (no separate state machine), and every AWS op is **idempotent** so a tick is safe to re-run:
+  - **CREATE:** website bucket (create [us-east-1-aware] → drop public-access-block → public-read policy → website config) → media bucket (CORS instead) → website CloudFront → media CloudFront (each distribution id persisted the instant it's created, since `createDistribution` isn't idempotent) → poll both until `Deployed` → `status=active`.
+  - **DELETE:** empty+delete each bucket → disable+delete each distribution (polled across ticks) → delete ACM certs + `Domain`/`SAN` rows (after the distributions are gone — a cert can't be deleted while attached) → `status=deleted`.
+  - CloudFront create/delete take minutes, so deployment is **polled across ticks** with `heartbeat()` — never a blocking sleep. A site that errors `MAX_ATTEMPTS` times flips to `status=failed` with `provisioning_message` instead of looping.
+- **`KyteSiteController`** `new`/`delete` no longer publish to SNS — they just set `status=creating`/`deleting` (+ the existing content-record cleanup) and let the worker take over. Domain/cert teardown moved to the worker (ordering depends on the distribution being deleted first).
+- **`Kyte\Aws` wrapper fixes:** `S3::createBucket` no longer sends a `LocationConstraint` for `us-east-1` (it was failing there) and is idempotent on `BucketAlreadyOwnedByYou`; **new `S3::emptyBucket()`** (paginated, version-aware) so `deleteBucket()` works; `CloudFront` now applies `DefaultTTL` (86400) and the worker sets `MinTTL`=3600 for parity with the old Lambda; **new `CloudFront::isEnabled()`**.
+- **New:** `migrations/4.13.0_site_provisioning.sql` (adds `KyteSite.provisioning_message` + `provisioning_attempts`), `bin/register-site-provisioning-job.php`.
+- **Unlocks** native MCP `create_site`/`create_app`. After this soaks, all 3 Lambdas + `SNS_QUEUE_SITE_MANAGEMENT` can be decommissioned.
+
 ## 4.12.0
 
 ### Cleanup: remove `KYTE_USE_SNS` flag + dead SNS invalidation branches — KYTE-#201

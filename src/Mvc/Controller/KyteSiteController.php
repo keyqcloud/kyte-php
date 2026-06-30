@@ -84,41 +84,11 @@ class KyteSiteController extends ModelController
                     throw new \Exception("Unknown region $region. Please check to make sure you specified a valid region for AWS S3.");
                 }
 
-                // create unique names for s3 buckets
-                $timestamp = time();
-                $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-'.$timestamp);
-                $s3MediaBucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-static-assets-'.$timestamp);
-
-                // TODO: endpoint url changes based on region!
-                // see: https://docs.aws.amazon.com/general/latest/gr/s3.html#s3_website_region_endpoints
-                $websiteOrigin = self::getWebsiteEndpoint($bucketName, $region);
-                // static content origin url
-                $staticContentOrigin = $s3MediaBucketName.'.s3.amazonaws.com';
-
-                $credential = new \Kyte\Aws\Credentials(SNS_REGION);
-                $sns = new \Kyte\Aws\Sns($credential, SNS_QUEUE_SITE_MANAGEMENT);
-
-                // queue creation of s3 bucket for static web app
-                $sns->publish([
-                    'action' => 's3_create',
-                    'region_name' => $region,
-                    'bucket_name' => $bucketName,
-                    'cf_origin' => $websiteOrigin,
-                    'site_id' => $o->id,
-                    'is_website' => true,
-                    'is_media' => false,
-                ]);
-
-                // queue creation of s3 bucket for static content
-                $sns->publish([
-                    'action' => 's3_create',
-                    'region_name' => $region,
-                    'bucket_name' => $s3MediaBucketName,
-                    'cf_origin' => $staticContentOrigin,
-                    'site_id' => $o->id,
-                    'is_website' => false,
-                    'is_media' => true,
-                ]);
+                // Provisioning (2 S3 buckets + 2 CloudFront distributions) is now
+                // handled out-of-band by SiteProvisioningWorker: it picks up the row
+                // while status='creating' (set in hook_preprocess) and derives the
+                // bucket names + origins itself. KYTE-#201 #3 — replaces the SNS
+                // publish to kyte-lambda-site-management.
                 break;
             
             default:
@@ -141,27 +111,11 @@ class KyteSiteController extends ModelController
             'date_modified' => time(),
         ]);
 
-        // add s3 static content bucket to deletion queue
-        $credential = new \Kyte\Aws\Credentials(SNS_REGION);
-        $sns = new \Kyte\Aws\Sns($credential, SNS_QUEUE_SITE_MANAGEMENT);
-        $sns->publish([
-            'action' => 's3_delete',
-            'region_name' => $o->region,
-            'bucket_name' => $o->s3MediaBucketName,
-            'site_id' => $o->id,
-            'cf_id' => $o->cfMediaDistributionId,
-        ]);
+        // AWS teardown (empty+delete both buckets, disable+delete both CloudFront
+        // distributions, then delete ACM certs) is now handled out-of-band by
+        // SiteProvisioningWorker, which picks up the row while status='deleting'.
+        // KYTE-#201 #3 — replaces the SNS publish to kyte-lambda-site-management.
 
-        // add s3 web app bucket to deletion queue
-        $params = [
-            'action' => 's3_delete',
-            'region_name' => $o->region,
-            'bucket_name' => $o->s3BucketName,
-            'site_id' => $o->id,
-            'cf_id' => $o->cfDistributionId,
-        ];
-        $sns->publish($params, $o->id);
-        
         // delete KytePage
         $objs = new \Kyte\Core\Model(KytePage);
         $objs->retrieve('site', $o->id);
@@ -229,21 +183,9 @@ class KyteSiteController extends ModelController
             $obj->delete();
         }
 
-        // delete Domain and SAN
-        $objs = new \Kyte\Core\Model(Domain);
-        $objs->retrieve('site', $o->id);
-        foreach ($objs->objects as $obj) {
-            $sans = new \Kyte\Core\Model(SubjectAlternativeName);
-            $sans->retrieve('domain', $obj->id);
-            foreach ($sans->objects as $san) {
-                $san->delete();
-            }
-            $params = [
-                'action' => 'acm_delete',
-                'acm_arn' => $obj->certificateArn,
-            ];
-            $sns->publish($params, $o->id);
-        }
+        // Domain/SAN rows + their ACM certificates are deleted by
+        // SiteProvisioningWorker AFTER the CloudFront distributions are torn down
+        // (an ACM cert can't be deleted while still attached to a distribution).
     }
 
     // public function hook_process_get_response(&$r) {}
