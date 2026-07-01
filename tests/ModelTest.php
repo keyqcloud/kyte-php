@@ -152,6 +152,26 @@ class ModelTest extends TestCase
         $data = \Kyte\Core\DBI::query('SELECT * FROM `TestTable`;');
         $this->assertTrue(count($data) > 0 ? true : false);
 
+        // test column projection (KYTE-#190): DBI::select with a field list
+        // reads only the requested columns (plus `id`, always included),
+        // keeping large/other columns out of the result set.
+        $projected = \Kyte\Core\DBI::select('TestTable', null, null, null, ['name']);
+        $this->assertNotEmpty($projected);
+        $this->assertArrayHasKey('id', $projected[0]);              // id auto-included
+        $this->assertArrayHasKey('name', $projected[0]);            // requested column
+        $this->assertArrayNotHasKey('temperature', $projected[0]);  // projected out
+        $this->assertArrayNotHasKey('category', $projected[0]);     // projected out
+        // backward compatible: no field list still returns every column
+        $full = \Kyte\Core\DBI::select('TestTable');
+        $this->assertArrayHasKey('temperature', $full[0]);
+        // an empty / all-invalid field list falls back to SELECT * (never emits
+        // invalid SQL), and an injection-y column name is dropped
+        $fallback = \Kyte\Core\DBI::select('TestTable', null, null, null, []);
+        $this->assertArrayHasKey('temperature', $fallback[0]);
+        $sanitized = \Kyte\Core\DBI::select('TestTable', null, null, null, ['name', 'temperature; DROP TABLE x']);
+        $this->assertArrayHasKey('name', $sanitized[0]);
+        $this->assertArrayNotHasKey('temperature', $sanitized[0]); // malformed name dropped
+
         // test udpate entry
         $model = new \Kyte\Core\ModelObject(TestTable);
         $this->assertTrue($model->retrieve('name', 'Test'));
@@ -233,6 +253,17 @@ class ModelTest extends TestCase
         $model = new \Kyte\Core\Model(TestTable);
         $this->assertTrue($model->retrieve('category', 'Test'));
         $this->assertEquals(2, $model->count());
+
+        // test Model column projection (KYTE-#190 fluent select): projected
+        // rows hydrate the requested column but not the omitted ones.
+        $model = new \Kyte\Core\Model(TestTable);
+        $this->assertTrue($model->select(['name'])->retrieve('category', 'Test'));
+        $this->assertEquals(2, $model->count());
+        $projObj = $model->first();
+        $this->assertIsObject($projObj);
+        $this->assertNotFalse($projObj->getParam('name'));        // projected column present
+        $this->assertNotFalse($projObj->getParam('id'));          // id always included
+        $this->assertFalse($projObj->getParam('temperature'));    // omitted column not hydrated
 
         // test retrieve with conditions
         $model = new \Kyte\Core\Model(TestTable);
