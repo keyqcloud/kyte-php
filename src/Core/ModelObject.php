@@ -216,6 +216,58 @@ class ModelObject
 	}
 
 	/**
+	 * Lazy-load additional column(s) onto an already-retrieved object
+	 * (KYTE-#190). Pairs with column projection: retrieve a list with a narrow
+	 * Model::select([...]) and then load() the large/deferred columns only for
+	 * the specific object(s) that actually need them — keeping big TEXT/BLOB
+	 * columns out of list reads without losing access to them on demand.
+	 *
+	 * Requires the object to have been retrieved (must have an id). Only real
+	 * struct columns are loaded; unknown names are ignored. Fetches the
+	 * requested columns for this row in a single projected query and populates
+	 * them (refreshing any already-set values).
+	 *
+	 * @param string|array $fields Column name(s) to load
+	 * @return bool true if the columns were loaded, false if the object has no
+	 *              id, nothing valid was requested, or the row was not found
+	 */
+	public function load($fields)
+	{
+		$id = isset($this->id) ? $this->id : null;
+		if (!isset($id)) {
+			return false;
+		}
+
+		$cols = is_array($fields) ? $fields : [$fields];
+		$cols = array_values(array_filter($cols, function ($c) {
+			return is_string($c) && array_key_exists($c, $this->kyte_model['struct']);
+		}));
+		if (count($cols) === 0) {
+			return false;
+		}
+
+		// check db context
+		if (isset($this->kyte_model['appId'])) {
+			\Kyte\Core\Api::dbswitch(true);
+		} else {
+			\Kyte\Core\Api::dbswitch();
+		}
+
+		$data = \Kyte\Core\DBI::select($this->kyte_model['name'], (int)$id, null, null, $cols);
+		if (count($data) === 0) {
+			return false;
+		}
+
+		foreach ($data[0] as $key => $value) {
+			if (array_key_exists($key, $this->kyte_model['struct'])) {
+				$this->setParam($key, $value);
+			}
+		}
+
+		return true;
+	}
+
+	/**
      * Update entry information for item that was retrieved.
      *
      * @param array $params

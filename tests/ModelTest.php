@@ -265,6 +265,11 @@ class ModelTest extends TestCase
         $this->assertNotFalse($projObj->getParam('id'));          // id always included
         $this->assertFalse($projObj->getParam('temperature'));    // omitted column not hydrated
 
+        // test lazy-load of a projected-out column (KYTE-#190 ModelObject::load)
+        $this->assertTrue($projObj->load('temperature'));         // load it on demand
+        $this->assertNotFalse($projObj->getParam('temperature')); // now populated
+        $this->assertFalse($projObj->load('does_not_exist'));     // unknown column = no-op
+
         // test retrieve with conditions
         $model = new \Kyte\Core\Model(TestTable);
         $this->assertTrue($model->retrieve('category', 'Test', false, [['field' => 'name', 'value' => 'Test2']]));
