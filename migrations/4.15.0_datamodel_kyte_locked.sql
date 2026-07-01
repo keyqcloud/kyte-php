@@ -12,20 +12,49 @@
 -- model-level lock guard silently inert (read as NULL -> 0 -> "not locked").
 --
 -- This migration GUARANTEES the column exists on both framework tables so the
--- lock guard is reliable on every install. Idempotent (IF NOT EXISTS),
--- nullable, default 0 -> a no-op for existing rows and for installs that
--- already have it.
+-- lock guard is reliable on every install. It is idempotent (adds the column
+-- only when absent), nullable, default 0 -> a no-op for existing rows and for
+-- installs that already have it.
+--
+-- PORTABILITY (v4.15.1 fix): earlier this used MariaDB-only
+-- `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, which is a syntax error on MySQL
+-- (5.7 / 8.0). It now guards with an information_schema check + a prepared
+-- statement, which is idempotent on BOTH MySQL and MariaDB. Safe to (re-)run
+-- on any install regardless of engine or prior state.
 --
 -- ADDITIVE / migration-first / inert on older code. PascalCase tables.
--- MariaDB `ALTER ... ADD COLUMN IF NOT EXISTS` (matches existing migrations).
 --
 -- See src/Mvc/Controller/DataModelController.php and
 -- src/Mvc/Controller/ModelAttributeController.php (kyte_locked guards),
 -- src/Mvc/Model/DataModel.php / src/Mvc/Model/ModelAttribute.php (definitions).
 -- =========================================================================
 
-ALTER TABLE `DataModel`
-    ADD COLUMN IF NOT EXISTS `kyte_locked` INT UNSIGNED NULL DEFAULT 0;
+-- DataModel.kyte_locked
+SET @col_exists := (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME   = 'DataModel'
+      AND COLUMN_NAME  = 'kyte_locked'
+);
+SET @ddl := IF(@col_exists = 0,
+    'ALTER TABLE `DataModel` ADD COLUMN `kyte_locked` INT UNSIGNED NULL DEFAULT 0',
+    'DO 0'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
-ALTER TABLE `ModelAttribute`
-    ADD COLUMN IF NOT EXISTS `kyte_locked` INT UNSIGNED NULL DEFAULT 0;
+-- ModelAttribute.kyte_locked
+SET @col_exists := (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME   = 'ModelAttribute'
+      AND COLUMN_NAME  = 'kyte_locked'
+);
+SET @ddl := IF(@col_exists = 0,
+    'ALTER TABLE `ModelAttribute` ADD COLUMN `kyte_locked` INT UNSIGNED NULL DEFAULT 0',
+    'DO 0'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

@@ -1,3 +1,10 @@
+## 4.15.1
+
+### Fix: make the `kyte_locked` migration portable to MySQL — KYTE-#325
+
+- `migrations/4.15.0_datamodel_kyte_locked.sql` used MariaDB-only `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, which is a **syntax error on MySQL 5.7 / 8.0**. Rewritten to guard with an `information_schema` column check + a prepared statement, which is idempotent on **both MySQL and MariaDB**. Surfaced during the v4.15.0 rollout to the first MySQL-backed install (its `kyte_locked` columns already existed, so nothing was harmed — the failed statement was a no-op — but a *drifted* MySQL install would have errored and never gained the column, leaving the model-level lock guard inert).
+- Migration-only change; no PHP behavior change. Installs already on v4.15.0 with the columns present need no action. Fresh or drifted MySQL installs now apply cleanly.
+
 ## 4.15.0
 
 ### Feature: MCP schema-management tools (create/alter/drop models) + `schema` scope — KYTE-#325
