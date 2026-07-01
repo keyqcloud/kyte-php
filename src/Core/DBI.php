@@ -1202,9 +1202,33 @@ class DBI {
 	 * @param integer $id
 	 * @param string $condition
 	 */
-	public static function select($table, $id = null, $condition = null, $join = null)
+	public static function select($table, $id = null, $condition = null, $join = null, $fields = null)
 	{
 		$cacheKey = null;
+
+		// Column projection (KYTE-#190): when $fields is a non-empty array of
+		// column names, read only those columns instead of `table`.* — this is
+		// how large TEXT/BLOB columns are kept out of list reads. Backward
+		// compatible: null (the default) preserves the historical SELECT *.
+		// Column names are validated against a strict identifier pattern (they
+		// originate from the model struct, but we never interpolate anything
+		// unvalidated into SQL). `id` is always included so every projected row
+		// stays identifiable/hydratable. An empty-after-validation list falls
+		// back to * rather than emitting invalid SQL.
+		$columnList = "`$table`.*";
+		if (is_array($fields) && count($fields) > 0) {
+			$cols = [];
+			$seen = [];
+			foreach (array_merge(['id'], $fields) as $f) {
+				if (is_string($f) && preg_match('/^[A-Za-z0-9_]+$/', $f) && !isset($seen[$f])) {
+					$seen[$f] = true;
+					$cols[] = "`$table`.`$f`";
+				}
+			}
+			if (count($cols) > 0) {
+				$columnList = implode(', ', $cols);
+			}
+		}
 
 		// Check cache if enabled
 		if (self::$cacheEnabled) {
@@ -1213,6 +1237,7 @@ class DBI {
 				'id' => $id,
 				'condition' => $condition,
 				'join' => $join,
+				'columns' => $columnList,
 				'db' => self::$useAppDB ? 'app' : 'main'
 			]));
 
@@ -1228,7 +1253,7 @@ class DBI {
 		// db connection
 		$con = self::getConnection();
 
-		$query = "SELECT `$table`.* FROM `$table`";
+		$query = "SELECT $columnList FROM `$table`";
 
 		if (is_array($join)) {
 			foreach ($join as $j) {

@@ -29,6 +29,15 @@ class Model
 	 */
 	private $eagerLoad = [];
 
+	/**
+	 * Column projection (KYTE-#190). When set to a non-empty array of column
+	 * names, retrieve() reads only those columns (plus `id`) instead of every
+	 * column — the mechanism for keeping large TEXT/BLOB columns out of list
+	 * reads. null (the default) preserves the historical SELECT * behaviour.
+	 * @var array|null
+	 */
+	private $projection = null;
+
 	public function __construct($model, $page_size = null, $page_num = null, $search_fields = null, $search_value = null) {
 		$this->kyte_model = $model;
 		$this->page_size = $page_size;
@@ -54,6 +63,26 @@ class Model
 			$this->eagerLoad[] = $relations;
 		} elseif (is_array($relations)) {
 			$this->eagerLoad = array_merge($this->eagerLoad, $relations);
+		}
+		return $this;  // Fluent interface for chaining
+	}
+
+	/**
+	 * Restrict retrieve() to a subset of columns (KYTE-#190 column projection).
+	 * `id` is always included by the query layer so rows stay identifiable.
+	 * Pass a single field name or an array of field names. Passing null/empty
+	 * clears the projection (back to all columns).
+	 *
+	 * @param string|array|null $fields Column name(s) from the model struct
+	 * @return self For method chaining
+	 */
+	public function select($fields) {
+		if (is_string($fields)) {
+			$this->projection = [$fields];
+		} elseif (is_array($fields) && count($fields) > 0) {
+			$this->projection = $fields;
+		} else {
+			$this->projection = null;
 		}
 		return $this;  // Fluent interface for chaining
 	}
@@ -275,7 +304,7 @@ class Model
 				}
 			}
 
-			$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql, $join);
+			$data = \Kyte\Core\DBI::select($this->kyte_model['name'], null, $sql, $join, $this->projection);
 
 			foreach ($data as $item) {
 				$obj = new \Kyte\Core\ModelObject($this->kyte_model);
