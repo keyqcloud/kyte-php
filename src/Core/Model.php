@@ -30,6 +30,15 @@ class Model
 	private $eagerLoad = [];
 
 	/**
+	 * Optional per-relation scoping conditions applied to the batched eager-load
+	 * query (KYTE-#190 / #340), keyed by relation name. Each entry is a list of
+	 * ['field' => ..., 'value' => ...] AND-ed into the FK lookup so eager-loaded
+	 * rows are scoped identically to the lazy path (account/org isolation).
+	 * @var array<string,array<int,array<string,mixed>>>
+	 */
+	private $eagerLoadConditions = [];
+
+	/**
 	 * Column projection (KYTE-#190). When set to a non-empty array of column
 	 * names, retrieve() reads only those columns (plus `id`) instead of every
 	 * column — the mechanism for keeping large TEXT/BLOB columns out of list
@@ -58,11 +67,16 @@ class Model
 	 * @param string|array $relations Relationship name(s) - FK field names from model struct
 	 * @return self For method chaining
 	 */
-	public function with($relations) {
+	public function with($relations, $conditionsMap = []) {
 		if (is_string($relations)) {
 			$this->eagerLoad[] = $relations;
 		} elseif (is_array($relations)) {
 			$this->eagerLoad = array_merge($this->eagerLoad, $relations);
+		}
+		// Optional per-relation scoping conditions (account/org isolation), so
+		// the batched eager-load returns the same rows the lazy path would.
+		if (is_array($conditionsMap) && !empty($conditionsMap)) {
+			$this->eagerLoadConditions = array_merge($this->eagerLoadConditions, $conditionsMap);
 		}
 		return $this;  // Fluent interface for chaining
 	}
@@ -359,14 +373,21 @@ class Model
 				continue;
 			}
 
-			// Single query to load all related records
+			// Single query to load all related records — with the same account/
+			// org scoping the lazy path applies, so eager-loading can't surface
+			// cross-account/org FK rows (KYTE-#190 / #340).
 			$ids = array_unique($ids);
 			$idList = implode(',', array_map('intval', $ids));
-			$relatedData = \Kyte\Core\DBI::select(
-				$fkModel['name'],
-				null,
-				" WHERE `{$fk['field']}` IN ($idList)"
-			);
+			$sql = " WHERE `{$fk['field']}` IN ($idList)";
+			if (!empty($this->eagerLoadConditions[$relation])) {
+				foreach ($this->eagerLoadConditions[$relation] as $cond) {
+					if (isset($cond['field'], $cond['value'])) {
+						$escaped = \Kyte\Core\DBI::escape_string($cond['value']);
+						$sql .= " AND `{$cond['field']}` = '{$escaped}'";
+					}
+				}
+			}
+			$relatedData = \Kyte\Core\DBI::select($fkModel['name'], null, $sql);
 
 			// Index by FK field for O(1) lookup
 			$relatedMap = [];
