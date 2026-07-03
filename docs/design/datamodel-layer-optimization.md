@@ -1,8 +1,9 @@
 # Data-Model Layer Optimization & Robustness — KYTE-#190
 
-> **Status:** scoping (reconstructed 2026-07-01). The original scoping doc was
-> never committed and was lost; this rebuilds it and is grounded in a fresh
-> code recon of `master` (see "Current state", verified 2026-07-01).
+> **Status:** ACTIVE. Brainstorm complete (2026-07-03) — see §6 for locked
+> decisions. P1 engine slices 1–2 shipped (projection #114, lazy-load #115).
+> Reconstructed 2026-07-01 from a fresh code recon of `master` after the
+> original (uncommitted) doc was lost.
 >
 > **Spans:** kyte-php (`DBI` / `Model` / `ModelObject` / `ModelController` /
 > `DataModel` + `ModelAttribute`), kyte-api-js (`KyteTable` / `KyteForm`),
@@ -104,3 +105,110 @@ Themes to work through with Kenneth, ordered by expected impact:
 #182 (done — tactical write-cap + activity-log prune), #171 (N+1), #61
 (CronWorker / retention), #167 / #168 (partial-PUT robustness), #188
 (versioning bloat).
+
+## 6. Brainstorm outcomes & locked decisions (2026-07-03)
+
+Full working session with Kenneth. Everything below is decided.
+
+### 6.1 Column projection — generic wiring (P1)
+
+- **New `X-Kyte-Fields` request header** (CSV of field names) — deliberately
+  **separate** from `x-kyte-page-search-fields` (search = "which columns to
+  LIKE-match"; projection = "which columns to return" — distinct concerns).
+  Read in `Api` like other `X-Kyte-*` headers; applied in the generic
+  `ModelController::get()` via `Model::select()`.
+- **Opt-in on BOTH list and single-GET; never auto-applied.** No header ⇒ full
+  object (detail/edit views untouched). Header present ⇒ honored everywhere
+  (enables light single-GET: metadata-only fetch, status polling, progressive
+  detail loading via `load()`).
+- **Base-controller `alwaysInclude`** set (id + FK ids + audit columns) unioned
+  with the client's fields before querying — protects response hooks / FK
+  expansion from projected-out columns. `id` is force-included regardless.
+- **kyte-api-js:** `KyteTable` already derives its field list from `col.data`
+  and sends it (as `x-kyte-page-search-fields`, `kyte-source.js:1491-1508`);
+  add a sibling `X-Kyte-Fields` from the same list — **one line, zero new dev
+  config, projection "just works" from column defs.** Single hand-written
+  `kyte-source.js` → `release.sh` → CDN.
+- **FK labels** use dotted paths (`client.name`, resolved client-side by
+  `getNestedValue`). P1 treats a dotted path as "include the `client` base
+  column + existing full FK expansion" (reusing the dotted-path parser
+  `Model::retrieve` already has for search/sort joins). **Nested FK
+  projection + recursion capping = fast-follow → card #332** (motivated by
+  recursive-FK expansion bloat; the client contract is UNCHANGED between P1 and
+  the fast-follow, so it's a server-only upgrade — no second SDK release).
+  Modes: no header = full expand; `client.name` = expand + project to
+  `{id,name}` + cap recursion; bare `client` = expand fully.
+
+### 6.2 Index management for user models (P1 + fast-follow)
+
+- **Auto-index every FK column by default** — biggest win, invisible to users.
+- Add `indexed` / `unique` flags to `ModelAttribute` → `DBI::addIndex()` /
+  `dropIndex()` via the #325 schema-DDL path; naming `idx_<table>_<col>`;
+  idempotent via the `information_schema` guard (MySQL has no
+  `ADD INDEX IF NOT EXISTS` — **reuse the v4.15.1 PREPARE/EXECUTE pattern**).
+- **Composite (multi-column) indexes = fast-follow → card #331.**
+- **Retro-fit approach (a):** new models get indexes going forward + an
+  **opt-in, throttled backfill** for existing tables (CronWorker-driven,
+  off-peak — PK/id-range, never an unbounded scan; ETOM burst-credit lesson).
+  **⚠️ Per-deploy backfill:** once the feature ships, run the backfill for
+  EACH install (dev + ORB/ORT + ETOM + TBG) together as a deliberate off-peak
+  op. Do not forget.
+
+### 6.3 Pagination guardrails (P1) — grounded in industry research
+
+No mainstream API returns unbounded results by default (Stripe default 10/max
+100; GitHub 30/100; Shopify 50/250; DRF configurable + `max_page_size`). Kyte's
+"no page header ⇒ whole table" is the outlier.
+
+- **The `page_num=0` behavior is load-bearing internally** (framework
+  `Model::retrieve` calls legitimately want all rows) → the guardrail lives at
+  the **controller/HTTP layer**, NOT the model layer. `Model::retrieve` stays
+  unbounded-capable.
+- **`KYTE_MAX_PAGE_SIZE = 100`** (configurable) — clamp `X-Kyte-Page-Size`.
+  Matches Stripe/GitHub.
+- **Backstop ceiling + truncation logging** on unbounded HTTP list requests —
+  set generously at first, **measure who depends on unbounded, then tighten**
+  (don't guess the number today). "No silent full-table scans."
+- **Explicit "return all" opt-in** for legit bulk (e.g. dropdown loads)
+  short-term. Keep internal `Model::retrieve` unbounded.
+- **End state:** paginate-by-default like the industry (Kyte's existing
+  `PAGE_SIZE = 50` is a textbook default) via a measured migration.
+- **Cursor/keyset pagination** = future perf item (offset degrades at depth).
+
+### 6.4 Dropdowns / large FK pickers (kyte-api-js) — card #333
+
+Industry threshold ~100 options: below ⇒ load-all plain select (keep simple);
+above ⇒ **async server-side typeahead** (debounced 200–400ms, min-char trigger,
+small paginated+projected result, virtualized render, per-query cache, stale-
+response guard). Composes the #190 work directly (projection → `{id,label}`;
+pagination cap; existing search; FK-auto-index makes it fast). No new server
+primitives — `KyteForm::reloadAjax` switches from load-all to typeahead above a
+configurable threshold.
+
+### 6.5 Deferred columns (P2) — card #338
+
+**Opt-in, not blanket auto-by-type** (blanket = behavioral change / silent
+breakage, same principle as pagination). A `deferred` flag on `ModelAttribute`
+excludes that column from default list reads (via the projection engine),
+`load()`ed on demand. Surface in Shipyard + the #325 MCP tools. **Plus** an
+**off-by-default** global `KYTE_AUTO_DEFER_HUGE` that auto-defers only the two
+extreme types (`lt`/`lb`) as a per-install safety valve.
+
+### 6.6 Query-perf wins ("hood's open")
+
+- **Double `COUNT` per list → card #339.** `Model::retrieve` runs two counts
+  (`total` + `total_filtered`) every list. Make skippable; check whether the
+  unfiltered total is even consumed; long-term `has_more`/cursor.
+- **FK-expansion N+1 audit → card #340 (high-pri, refs #171).** Confirm the
+  generic `ModelController::get` actually uses `Model::with()` eager-loading;
+  if not, every list is silently N+1. Potentially the biggest hidden win.
+- **Batch `Model::loadColumn()` → card #341.** Load a deferred column for a
+  whole result set in one `WHERE id IN (...)` query (complements
+  `ModelObject::load()`), avoiding N+1 when a deferred column is needed
+  list-wide.
+
+### 6.7 New cards from this session
+
+#331 composite indexes · #332 nested FK projection · #333 KyteForm typeahead ·
+#338 deferred-column flag · #339 count optimization · #340 N+1 eager-load audit
+· #341 batch `loadColumn`.
