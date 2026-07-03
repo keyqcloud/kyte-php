@@ -798,12 +798,38 @@ class ModelController
             if ($projection !== null) {
                 $objs->select($projection);
             }
-            $objs->retrieve($field, $value, $isLike, $conditions, $all, $order);
+
+            // Pagination guardrail (KYTE-#190): an unbounded HTTP list (no page
+            // index) is capped by a backstop so a client can't pull an entire
+            // large table. Paginated requests (page_num >= 1) manage their own
+            // LIMIT. A caller can opt out of the cap with X-Kyte-All: true (the
+            // truncation log below still records unbounded reads). Internal
+            // Model::retrieve calls don't pass through here, so they stay
+            // unbounded-capable.
+            $backstop = 0;
+            $optOutUnbounded = isset($_SERVER['HTTP_X_KYTE_ALL']) && $_SERVER['HTTP_X_KYTE_ALL'] === 'true';
+            if (!$this->api->page_num && !$optOutUnbounded) {
+                $backstop = KYTE_MAX_UNBOUNDED_ROWS;
+            }
+            $objs->retrieve($field, $value, $isLike, $conditions, $all, $order, $backstop);
 
             // get total count
             $this->api->total_count = $objs->total;
             $this->api->total_filtered = $objs->total_filtered;
             $this->api->page_total = ceil($this->api->total_filtered / $this->api->page_size);
+
+            // Log when the backstop actually truncated an unbounded list, so the
+            // real blast radius can be measured before the ceiling is tightened
+            // toward paginate-by-default.
+            if ($backstop > 0 && $objs->total_filtered > $backstop) {
+                error_log(sprintf(
+                    "KYTE-#190 pagination backstop: '%s' unbounded list capped to %d of %d rows (uri=%s)",
+                    $this->model['name'],
+                    $backstop,
+                    $objs->total_filtered,
+                    isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''
+                ));
+            }
 
             if ($this->failOnNull && count($objs->objects) < 1) {
                 throw new \Exception($this->exceptionMessages['get']['failOnNull']);

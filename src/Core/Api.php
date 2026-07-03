@@ -175,6 +175,15 @@ class Api
 		'STRICT_TYPING' => true,
 		'AUTH_STRATEGY_DISPATCHER' => 'off',
 		'KYTE_ACTIVITY_LOG_MAX_FIELD_BYTES' => 16384,
+		// Pagination guardrails (KYTE-#190). KYTE_MAX_PAGE_SIZE clamps a
+		// client-supplied X-Kyte-Page-Size (industry norm ~100). When a list
+		// request carries no page index it would otherwise return every row;
+		// KYTE_MAX_UNBOUNDED_ROWS is a generous backstop so it can't pull a
+		// whole large table (measure the truncation log, then tighten toward
+		// paginate-by-default). Controller-layer only — internal Model::retrieve
+		// stays unbounded. Both overridable per install in config.php.
+		'KYTE_MAX_PAGE_SIZE' => 100,
+		'KYTE_MAX_UNBOUNDED_ROWS' => 10000,
 	];
 
 	/**
@@ -367,6 +376,27 @@ class Api
 			'default'	=> 0,
 			'date'		=> false,
 		];
+	}
+
+	/**
+	 * Clamp a requested page size to a sane range (KYTE-#190 pagination
+	 * guardrail): capped at $max, and falling back to $default for a
+	 * non-positive value. Pure/static for unit testing.
+	 *
+	 * @param mixed $requested Raw client-supplied page size
+	 * @param int   $max       Hard maximum (KYTE_MAX_PAGE_SIZE)
+	 * @param int   $default   Fallback when the request is non-positive
+	 * @return int
+	 */
+	public static function clampPageSize($requested, $max, $default) {
+		$requested = intval($requested);
+		if ($requested < 1) {
+			return intval($default);
+		}
+		if ($requested > $max) {
+			return intval($max);
+		}
+		return $requested;
 	}
 
 	/**
@@ -1040,8 +1070,15 @@ class Api
 			}
 		}
 
-		// set page size
-		$this->page_size = isset($_SERVER['HTTP_X_KYTE_PAGE_SIZE']) ? intval($_SERVER['HTTP_X_KYTE_PAGE_SIZE']) : PAGE_SIZE;
+		// set page size — pagination guardrail (KYTE-#190): clamp a client-
+		// supplied X-Kyte-Page-Size to KYTE_MAX_PAGE_SIZE (falling back to the
+		// default for a non-positive value) so no request can demand an
+		// oversized page.
+		$this->page_size = self::clampPageSize(
+			isset($_SERVER['HTTP_X_KYTE_PAGE_SIZE']) ? $_SERVER['HTTP_X_KYTE_PAGE_SIZE'] : 0,
+			KYTE_MAX_PAGE_SIZE,
+			PAGE_SIZE
+		);
 		// get page num from header
 		$this->page_num = isset($_SERVER['HTTP_X_KYTE_PAGE_IDX']) ? intval($_SERVER['HTTP_X_KYTE_PAGE_IDX']) : 0;
 
