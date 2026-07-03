@@ -26,6 +26,7 @@
       <file>tests/McpTokenControllerTest.php</file>
       <file>tests/McpTokenStrategyTest.php</file>
       <file>tests/ModelControllerProjectionTest.php</file>
+      <file>tests/ModelEagerLoadTest.php</file>
       <file>tests/ModelTest.php</file>
       <file>tests/PublishIntegrityTest.php</file>
       <file>tests/RefreshTokenStoreTest.php</file>

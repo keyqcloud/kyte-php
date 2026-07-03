@@ -309,6 +309,68 @@ class ModelController
         return [];
     }
 
+    /**
+     * Account/org scoping conditions for a foreign-key lookup (KYTE-#190) — the
+     * single source of truth shared by the lazy FK expansion in getObject and
+     * the batched eager-load, so both scope identically. Returns null when the
+     * FK model needs no scoping (app-DB model without a userorg column,
+     * KyteAccount, or requireAccount off).
+     *
+     * @param array<string,mixed> $fk_model The referenced model definition
+     * @param array<string,mixed> $fk       The fk struct (model/field)
+     * @return array<int,array<string,mixed>>|null
+     */
+    protected function fkScopeConditions($fk_model, $fk)
+    {
+        if (!isset($fk_model['appId']) && $this->requireAccount && $fk['model'] !== 'KyteAccount') {
+            return [['field' => 'kyte_account', 'value' => $this->api->account->id]];
+        }
+        if ($this->requireAccount && $this->api->app !== null && $this->user !== null && $this->api->app->org_model !== null && $this->api->app->userorg_colname !== null && isset($fk_model['struct'][$this->api->app->userorg_colname])) {
+            return [['field' => $this->api->app->userorg_colname, 'value' => $this->user->{$this->api->app->userorg_colname}]];
+        }
+        return null;
+    }
+
+    /**
+     * Compute the FK relations to eager-load for a get() (KYTE-#190 / #340) so
+     * FK expansion is batched instead of N+1. Only relations that (a) will
+     * actually be expanded — getFKTables on, present in $projection when the
+     * read is projected — and (b) live in the SAME DB context as this model
+     * (app-DB vs control-DB) are eager-loaded; a cross-DB FK stays on the
+     * (DB-switching) lazy path. Returns a map of relation => scoping-conditions
+     * for Model::with(), scoped identically to the lazy path.
+     *
+     * @param array<int,string>|null $projection
+     * @return array<string,array<int,array<string,mixed>>|null>
+     */
+    protected function eagerLoadPlan($projection)
+    {
+        $plan = [];
+        if (!$this->getFKTables) {
+            return $plan;
+        }
+        $mainInApp = isset($this->model['appId']);
+        foreach ($this->model['struct'] as $key => $struct) {
+            if (!isset($struct['fk']['model'], $struct['fk']['field'])) {
+                continue;
+            }
+            if ($projection !== null && !in_array($key, $projection, true)) {
+                continue;
+            }
+            if (!defined($struct['fk']['model'])) {
+                continue;
+            }
+            $fk_model = constant($struct['fk']['model']);
+            // Same DB context only — a cross-DB FK needs a switch the batched
+            // query does not do, so leave it to the lazy path.
+            if (isset($fk_model['appId']) !== $mainInApp) {
+                continue;
+            }
+            $plan[$key] = $this->fkScopeConditions($fk_model, $struct['fk']);
+        }
+        return $plan;
+    }
+
     protected function getObject($obj) {
         try {
             $response = $obj->getAllParams();
@@ -375,12 +437,7 @@ class ModelController
                         $fk_model = constant($fk['model']);
                         $fk_obj = new \Kyte\Core\ModelObject($fk_model);
 
-                        $conditions = null;
-                        if (!isset($fk_model['appId']) && $this->requireAccount && $fk['model'] !== 'KyteAccount') {
-                            $conditions = [['field' => 'kyte_account', 'value' => $this->api->account->id]];
-                        } elseif ($this->requireAccount && $this->api->app !== null && $this->user !== null && $this->api->app->org_model !== null && $this->api->app->userorg_colname !== null && isset($fk_model['struct'][$this->api->app->userorg_colname])) {
-                            $conditions = [['field' => $this->api->app->userorg_colname, 'value' => $this->user->{$this->api->app->userorg_colname}]];
-                        }
+                        $conditions = $this->fkScopeConditions($fk_model, $fk);
 
                         if ($fk_obj->retrieve($fk['field'], $value, $conditions, null, true)) {
                             $value = $this->getObject($fk_obj); // Recursively get object for FK
@@ -797,6 +854,14 @@ class ModelController
             $objs = new \Kyte\Core\Model($this->model, $this->api->page_size, $this->api->page_num, $search_fields, $search_values);
             if ($projection !== null) {
                 $objs->select($projection);
+            }
+
+            // Eager-load FK relations (KYTE-#190 / #340) so FK expansion is one
+            // batched query per relation instead of N+1, using the same scoping
+            // and DB context as the lazy path.
+            $eagerPlan = $this->eagerLoadPlan($projection);
+            if (!empty($eagerPlan)) {
+                $objs->with(array_keys($eagerPlan), $eagerPlan);
             }
 
             // Pagination guardrail (KYTE-#190): an unbounded HTTP list (no page
