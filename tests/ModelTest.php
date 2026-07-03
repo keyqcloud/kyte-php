@@ -289,6 +289,13 @@ class ModelTest extends TestCase
         $this->assertTrue($model->retrieve('category', 'Test', false, null, true));
         $this->assertEquals(3, $model->count());
 
+        // test retrieve with a row limit (KYTE-#190 pagination-backstop
+        // mechanism): a $limit caps the returned rows even for an unbounded,
+        // non-paginated retrieve. Three rows match; limit 1 returns one.
+        $model = new \Kyte\Core\Model(TestTable);
+        $this->assertTrue($model->retrieve('category', 'Test', false, null, true, null, 1));
+        $this->assertEquals(1, $model->count());
+
         // test retrieve order by
         $model = new \Kyte\Core\Model(TestTable);
         $this->assertTrue($model->retrieve('category', 'Test', false, null, true, ['field' => 'category', 'direction' => 'asc']));
