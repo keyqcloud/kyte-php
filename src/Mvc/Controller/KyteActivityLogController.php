@@ -44,6 +44,19 @@ class KyteActivityLogController extends ModelController
     }
 
     /**
+     * KYTE-#190: keep the heavy LONGTEXT columns (request_data, changes) out of
+     * LIST reads at the QUERY level — they are never read from the DB for a
+     * list, superseding the old #182 post-query unset. The single-record detail
+     * fetch (by id) still returns them for decoding. `$isDetailView` is set in
+     * hook_prequery, which runs before the read.
+     *
+     * @return array<int,string>
+     */
+    protected function defaultProjectionExclude() {
+        return $this->isDetailView ? [] : ['request_data', 'changes'];
+    }
+
+    /**
      * Filter support via custom headers and query params
      *
      * Supported filters:
@@ -190,13 +203,12 @@ class KyteActivityLogController extends ModelController
             $r['action_color'] = self::ACTION_COLORS[$o->action] ?? '#6c757d';
         }
 
-        // List projection (KYTE-#182): the heavy LONGTEXT columns are only
-        // consumed by the single-record detail view. On a list response, drop
-        // the raw blobs and skip the decode entirely so a page of rows can't
-        // pull a request body per row into memory. The detail fetch (by id)
-        // still returns the decoded payload below.
+        // List projection (KYTE-#190, supersedes the #182 post-query prune):
+        // the heavy LONGTEXT columns are excluded at the QUERY level via
+        // defaultProjectionExclude(), so on a list read they were never read
+        // from the DB — nothing to decode. The detail fetch (by id) returns
+        // them for decoding below.
         if (!$this->isDetailView) {
-            unset($r['request_data'], $r['changes']);
             return;
         }
 

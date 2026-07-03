@@ -229,6 +229,86 @@ class ModelController
         $this->hook_auth();
     }
 
+    /**
+     * Resolve the column projection for a read (KYTE-#190). Returns the list of
+     * columns to SELECT, or null for "all columns" (historical behaviour).
+     *
+     *   - a non-empty X-Kyte-Fields value => those columns (a dotted FK path
+     *     like `client.name` contributes its base column `client`) unioned with
+     *     the always-include set;
+     *   - else a non-empty default-exclude set => all struct columns minus the
+     *     excludes (server-side deferral of e.g. large LONGTEXT columns);
+     *   - else null.
+     *
+     * Pure/logic-only (no DB, no request state) so it is unit-testable. A
+     * header that names nothing valid falls back to null (full row) rather than
+     * an empty/invalid projection.
+     *
+     * @param array<string,mixed> $struct      Model struct (column => definition)
+     * @param string|null         $headerValue Raw X-Kyte-Fields header value
+     * @param array<int,string>   $always      Always-included columns
+     * @param array<int,string>   $exclude     Columns excluded by default
+     * @return array<int,string>|null
+     */
+    public static function resolveProjection($struct, $headerValue, array $always, array $exclude)
+    {
+        if (is_string($headerValue) && trim($headerValue) !== '') {
+            $requested = [];
+            foreach (explode(',', $headerValue) as $f) {
+                $f = trim($f);
+                if ($f === '') {
+                    continue;
+                }
+                // dotted FK path (client.name) contributes its base column (client)
+                $dot = strpos($f, '.');
+                $root = $dot !== false ? substr($f, 0, $dot) : $f;
+                if (isset($struct[$root])) {
+                    $requested[$root] = true;
+                }
+            }
+            if (!empty($requested)) {
+                return array_values(array_unique(array_merge($always, array_keys($requested))));
+            }
+            return null; // header present but nothing valid => full row (safe)
+        }
+
+        if (!empty($exclude)) {
+            return array_values(array_diff(array_keys($struct), $exclude));
+        }
+
+        return null;
+    }
+
+    /**
+     * Columns always kept in a projected read (KYTE-#190) regardless of the
+     * client's X-Kyte-Fields request: id + account/audit columns, plus anything
+     * a subclass needs for its response hooks. Filtered to columns that exist in
+     * the model struct. Override to add controller-specific required columns.
+     *
+     * @return array<int,string>
+     */
+    protected function projectionAlwaysInclude()
+    {
+        $always = ['id', 'kyte_account', 'created_by', 'date_created', 'modified_by', 'date_modified', 'deleted_by', 'date_deleted', 'deleted'];
+        $struct = $this->model['struct'];
+        return array_values(array_filter($always, function ($c) use ($struct) {
+            return isset($struct[$c]);
+        }));
+    }
+
+    /**
+     * Columns a controller excludes from reads by default when the client sends
+     * no explicit X-Kyte-Fields projection (KYTE-#190) — e.g. large LONGTEXT
+     * columns a list view never needs. Empty by default (no server-side
+     * deferral).
+     *
+     * @return array<int,string>
+     */
+    protected function defaultProjectionExclude()
+    {
+        return [];
+    }
+
     protected function getObject($obj) {
         try {
             $response = $obj->getAllParams();
@@ -703,8 +783,21 @@ class ModelController
                 error_log("HTTP_X_KYTE_PAGE_SEARCH_VALUE: ".$_SERVER['HTTP_X_KYTE_PAGE_SEARCH_VALUE']."; Decoded: ".$search_values);
             }
 
+            // Column projection (KYTE-#190): resolve the SELECT column list from
+            // the client's X-Kyte-Fields header (opt-in) or a controller's
+            // default-exclude set, else null (full row — historical behaviour).
+            $projection = self::resolveProjection(
+                $this->model['struct'],
+                isset($_SERVER['HTTP_X_KYTE_FIELDS']) ? $_SERVER['HTTP_X_KYTE_FIELDS'] : null,
+                $this->projectionAlwaysInclude(),
+                $this->defaultProjectionExclude()
+            );
+
             // init model
             $objs = new \Kyte\Core\Model($this->model, $this->api->page_size, $this->api->page_num, $search_fields, $search_values);
+            if ($projection !== null) {
+                $objs->select($projection);
+            }
             $objs->retrieve($field, $value, $isLike, $conditions, $all, $order);
 
             // get total count
