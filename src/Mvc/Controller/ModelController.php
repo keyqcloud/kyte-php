@@ -405,10 +405,36 @@ class ModelController
         return $plan;
     }
 
+    /**
+     * Strip eager-load helper keys (`<fk>_object`) from a response row (KYTE-#190).
+     * Model::eagerLoadRelations attaches the fetched relation as a dynamic
+     * `<fk>_object` property for getObject() to consume — it is an internal
+     * expansion helper, not a response field. getAllParams() surfaces it, so
+     * left in the payload it duplicates the related row and, for relations whose
+     * columns carry binary data (e.g. bzip2-compressed section templates),
+     * produces invalid UTF-8 that makes json_encode fail. Only non-struct keys
+     * ending in `_object` are removed. Pure/static for unit testing.
+     *
+     * @param array<string,mixed> $response Row from getAllParams()
+     * @param array<string,mixed> $struct   Model struct
+     * @return array<string,mixed>
+     */
+    public static function stripEagerHelpers(array $response, $struct)
+    {
+        foreach (array_keys($response) as $rk) {
+            if (is_string($rk) && substr($rk, -7) === '_object' && !isset($struct[$rk])) {
+                unset($response[$rk]);
+            }
+        }
+        return $response;
+    }
+
     protected function getObject($obj) {
         try {
-            $response = $obj->getAllParams();
-    
+            // Strip eager-load `<fk>_object` helpers; the object property itself
+            // is kept so FK expansion below still uses the eager-loaded object.
+            $response = self::stripEagerHelpers($obj->getAllParams(), $obj->kyte_model['struct']);
+
             foreach ($response as $key => &$value) {
                 if (!isset($obj->kyte_model['struct'][$key])) {
                     continue; // Skip if key not found in struct
