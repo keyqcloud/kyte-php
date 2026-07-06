@@ -87,4 +87,27 @@ class ModelControllerProjectionTest extends TestCase
         $p = ModelController::resolveProjection($this->struct, 'id,name', $this->always, []);
         $this->assertSame(count($p), count(array_unique($p)));
     }
+
+    public function testStripEagerHelpersRemovesObjectKeysButKeepsRealFields(): void
+    {
+        // Eager-load attaches `<fk>_object` helper props that getAllParams
+        // surfaces; they must not reach the response (KYTE-#190 — a bzip2
+        // section-template `<fk>_object` carries binary that breaks json_encode).
+        $struct = ['id' => [], 'parent' => ['fk' => []], 'name' => []];
+        $row = [
+            'id'            => 1,
+            'parent'        => 5,
+            'name'          => 'x',
+            'parent_object' => (object) ['name' => 'P'],   // eager helper (object)
+            'header_object' => "\xff\xfebinary",           // eager helper (binary)
+        ];
+        $out = ModelController::stripEagerHelpers($row, $struct);
+        $this->assertArrayHasKey('id', $out);
+        $this->assertArrayHasKey('parent', $out);          // real FK field kept
+        $this->assertArrayHasKey('name', $out);
+        $this->assertArrayNotHasKey('parent_object', $out); // helper stripped
+        $this->assertArrayNotHasKey('header_object', $out); // helper stripped
+        // the survivors must be JSON-encodable (the whole point)
+        $this->assertNotFalse(json_encode($out));
+    }
 }
