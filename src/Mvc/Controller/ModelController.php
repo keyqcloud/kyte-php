@@ -198,6 +198,13 @@ class ModelController
         
         $this->shipyard_init();
 
+        // KYTE-#342: apply DB-driven controller_config (before hook_init so a
+        // hand-written controller's hook_init can still override). Custom
+        // controllers bind $this->model in shipyard_init, so it is set here;
+        // the generic AppModelWrapperController binds it later in hook_init and
+        // re-applies there.
+        $this->applyControllerConfig();
+
         $this->hook_init();
 
         // Anonymous app-context (JWT-mode public access via AppContextStrategy).
@@ -235,6 +242,52 @@ class ModelController
             throw new \Kyte\Exception\SessionException("Unauthorized API request.");
         }
         $this->hook_auth();
+    }
+
+    /**
+     * Resolve the effective controller_config (KYTE-#342), most-specific wins:
+     * global defaults → DataModel baseline → Controller-row override. Pure/static
+     * for unit testing.
+     *
+     * @param array<string,mixed>      $global Platform defaults
+     * @param array<string,mixed>|null $model  DataModel controller_config
+     * @param array<string,mixed>|null $ctrl   Controller-row controller_config
+     * @return array<string,mixed>
+     */
+    public static function resolveControllerConfig(array $global, $model, $ctrl)
+    {
+        $effective = $global;
+        if (is_array($model)) {
+            $effective = array_merge($effective, $model);
+        }
+        if (is_array($ctrl)) {
+            $effective = array_merge($effective, $ctrl);
+        }
+        return $effective;
+    }
+
+    /**
+     * Apply the resolved controller_config to this controller's behaviour flags
+     * (KYTE-#342). Currently sets $allowClientProjection from `allow_projection`
+     * (global default KYTE_ALLOW_PROJECTION, overridden by the model's
+     * controller_config). Safe to call more than once and before the model is
+     * bound — it no-ops until $this->model['controller_config'] exists, so the
+     * generic AppModelWrapperController can re-apply after it binds the model.
+     * The remaining hook_init flags (require_account, expand_fk, …) migrate here
+     * over time. The Controller-row override layer is a fast-follow.
+     */
+    protected function applyControllerConfig()
+    {
+        $global = ['allow_projection' => (defined('KYTE_ALLOW_PROJECTION') ? (bool)KYTE_ALLOW_PROJECTION : false)];
+        $modelCfg = (is_array($this->model) && isset($this->model['controller_config']) && is_array($this->model['controller_config']))
+            ? $this->model['controller_config']
+            : null;
+
+        $effective = self::resolveControllerConfig($global, $modelCfg, null);
+
+        if (array_key_exists('allow_projection', $effective)) {
+            $this->allowClientProjection = (bool)$effective['allow_projection'];
+        }
     }
 
     /**

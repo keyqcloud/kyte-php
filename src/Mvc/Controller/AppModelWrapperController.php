@@ -32,6 +32,11 @@ class AppModelWrapperController extends ModelController
         // specify model of this wrapper controller
         $this->model = constant($appModel->name);
 
+        // KYTE-#342: the user model is bound here (not in shipyard_init), so
+        // re-apply the DB-driven controller_config now that $this->model —
+        // and its controller_config — is available (e.g. allow_projection).
+        $this->applyControllerConfig();
+
         \Kyte\Core\Api::dbappconnect($this->api->app->db_name, $this->api->app->db_username, $this->api->app->db_password);
     }
 

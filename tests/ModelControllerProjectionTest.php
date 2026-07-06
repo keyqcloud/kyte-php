@@ -118,6 +118,34 @@ class ModelControllerProjectionTest extends TestCase
         $this->assertNotContains('body', $p);  // large column still trimmed
     }
 
+    public function testResolveControllerConfigMostSpecificWins(): void
+    {
+        // KYTE-#342: global default -> DataModel baseline -> Controller override.
+        $global = ['allow_projection' => false];
+
+        // no overrides -> global
+        $this->assertSame(
+            ['allow_projection' => false],
+            ModelController::resolveControllerConfig($global, null, null)
+        );
+        // model baseline turns it on
+        $this->assertTrue(
+            ModelController::resolveControllerConfig($global, ['allow_projection' => true], null)['allow_projection']
+        );
+        // controller override wins over the model baseline
+        $this->assertFalse(
+            ModelController::resolveControllerConfig($global, ['allow_projection' => true], ['allow_projection' => false])['allow_projection']
+        );
+        // unrelated keys merge without clobbering
+        $merged = ModelController::resolveControllerConfig(
+            ['allow_projection' => false, 'require_account' => true],
+            ['allow_projection' => true],
+            null
+        );
+        $this->assertTrue($merged['allow_projection']);
+        $this->assertTrue($merged['require_account']);
+    }
+
     public function testStripEagerHelpersRemovesObjectKeysButKeepsRealFields(): void
     {
         // Eager-load attaches `<fk>_object` helper props that getAllParams

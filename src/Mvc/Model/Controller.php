@@ -39,6 +39,14 @@ $Controller = [
 			'date'		=> false,
 		],
 
+		// KYTE-#342: per-controller JSON behaviour config; overrides the
+		// DataModel baseline. See docs/design/db-driven-controller-config.md.
+		'controller_config'		=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
 		'application'	=> [
 			'type'		=> 'i',
 			'required'	=> false,
