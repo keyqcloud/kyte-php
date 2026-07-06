@@ -184,6 +184,11 @@ class Api
 		// stays unbounded. Both overridable per install in config.php.
 		'KYTE_MAX_PAGE_SIZE' => 100,
 		'KYTE_MAX_UNBOUNDED_ROWS' => 10000,
+		// DB-driven controller config (KYTE-#342). Global default for
+		// allow_projection (client-driven X-Kyte-Fields column projection).
+		// Off platform-wide; a model/controller opts in via controller_config,
+		// which overrides this. Overridable per install in config.php.
+		'KYTE_ALLOW_PROJECTION' => false,
 	];
 
 	/**
@@ -513,6 +518,12 @@ class Api
 				continue;
 			}
 			$model_definition['appId'] = $app->identifier;
+			// KYTE-#342: fold the model's controller_config JSON into the
+			// definition so it rides the model cache and is available on
+			// $this->model['controller_config'] for both the generic and custom
+			// controller paths (empty array when unset/invalid).
+			$cc = isset($object->controller_config) ? json_decode($object->controller_config, true) : null;
+			$model_definition['controller_config'] = is_array($cc) ? $cc : [];
 			$modelDefs[$model_definition['name']] = $model_definition;
 			if (!defined($model_definition['name'])) {
 				define($model_definition['name'], $model_definition);

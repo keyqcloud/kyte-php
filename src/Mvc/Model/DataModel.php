@@ -16,6 +16,15 @@ $DataModel = [
 			'date'		=> false,
 		],
 
+		// KYTE-#342: JSON controller behaviour config (baseline for the generic
+		// controller path; inheritable default for custom controllers). First
+		// flag: allow_projection. See docs/design/db-driven-controller-config.md.
+		'controller_config'		=> [
+			'type'		=> 't',
+			'required'	=> false,
+			'date'		=> false,
+		],
+
 		// 'get_request'	=> [
 		// 	'type'		=> 'i',
 		// 	'required'	=> false,
