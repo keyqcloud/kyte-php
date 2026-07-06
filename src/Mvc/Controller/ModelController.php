@@ -289,11 +289,37 @@ class ModelController
      */
     protected function projectionAlwaysInclude()
     {
-        $always = ['id', 'kyte_account', 'created_by', 'date_created', 'modified_by', 'date_modified', 'deleted_by', 'date_deleted', 'deleted'];
-        $struct = $this->model['struct'];
-        return array_values(array_filter($always, function ($c) use ($struct) {
-            return isset($struct[$c]);
-        }));
+        return self::alwaysIncludeColumns($this->model['struct']);
+    }
+
+    /**
+     * Columns always kept in a projected read (KYTE-#190 decision C: "id + FK
+     * ids + audit"): id, account/audit columns, AND every foreign-key column.
+     *
+     * FK columns are always included so FK expansion (SESSION_RETURN_FK) still
+     * runs even when the client's X-Kyte-Fields omits them — controllers read
+     * expanded FK data in their response hooks (e.g. KytePage/KyteScript/Media
+     * build their S3 client from `$r['site']['region']`), and dropping the FK
+     * would break them. Trimming *inside* the expanded FK object is the separate
+     * nested-projection fast-follow (#332). Pure/static for unit testing.
+     *
+     * @param array<string,mixed> $struct Model struct (column => definition)
+     * @return array<int,string>
+     */
+    public static function alwaysIncludeColumns($struct)
+    {
+        $always = [];
+        foreach (['id', 'kyte_account', 'created_by', 'date_created', 'modified_by', 'date_modified', 'deleted_by', 'date_deleted', 'deleted'] as $c) {
+            if (isset($struct[$c])) {
+                $always[] = $c;
+            }
+        }
+        foreach ($struct as $key => $def) {
+            if (isset($def['fk']) && !in_array($key, $always, true)) {
+                $always[] = $key;
+            }
+        }
+        return array_values($always);
     }
 
     /**
