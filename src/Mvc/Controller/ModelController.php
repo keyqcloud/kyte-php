@@ -100,6 +100,14 @@ class ModelController
     protected $getExternalTables;
     protected $requireAuth;
     protected $requireAccount;
+    // Client-driven column projection (KYTE-#190) is OPT-IN per controller. A
+    // rich controller whose response hooks read columns the client didn't
+    // display (e.g. KytePage reads s3key / site.region to build S3 links) would
+    // break under a blind X-Kyte-Fields projection, so it is OFF by default.
+    // The generic/user-model path — and, later, the DB-driven controller_config
+    // flag — turns it on for models that are safe. The server-side
+    // defaultProjectionExclude() path is independent and always honoured.
+    protected $allowClientProjection = false;
     protected $failOnNull;
     protected $checkExisting;
     protected $existingThrowException;
@@ -867,11 +875,15 @@ class ModelController
             }
 
             // Column projection (KYTE-#190): resolve the SELECT column list from
-            // the client's X-Kyte-Fields header (opt-in) or a controller's
+            // the client's X-Kyte-Fields header — only when this controller
+            // opts in ($allowClientProjection) — or a controller's server-side
             // default-exclude set, else null (full row — historical behaviour).
+            $clientFields = ($this->allowClientProjection && isset($_SERVER['HTTP_X_KYTE_FIELDS']))
+                ? $_SERVER['HTTP_X_KYTE_FIELDS']
+                : null;
             $projection = self::resolveProjection(
                 $this->model['struct'],
-                isset($_SERVER['HTTP_X_KYTE_FIELDS']) ? $_SERVER['HTTP_X_KYTE_FIELDS'] : null,
+                $clientFields,
                 $this->projectionAlwaysInclude(),
                 $this->defaultProjectionExclude()
             );
