@@ -88,6 +88,36 @@ class ModelControllerProjectionTest extends TestCase
         $this->assertSame(count($p), count(array_unique($p)));
     }
 
+    public function testAlwaysIncludeColumnsKeepsIdAuditAndForeignKeys(): void
+    {
+        // Decision C ("id + FK ids + audit"): FK columns must always be kept so
+        // FK expansion still runs for hooks that read expanded FK data (e.g.
+        // KytePage/KyteScript/Media read $r['site']['region']).
+        $always = ModelController::alwaysIncludeColumns($this->struct);
+        $this->assertContains('id', $always);
+        $this->assertContains('kyte_account', $always);   // account/audit
+        $this->assertContains('date_created', $always);
+        $this->assertContains('client', $always);          // FK column always kept
+        $this->assertNotContains('name', $always);         // plain column not auto-included
+        $this->assertNotContains('body', $always);         // large column not auto-included
+        $this->assertSame(count($always), count(array_unique($always)));
+    }
+
+    public function testProjectionKeepsForeignKeysSoExpansionStillRuns(): void
+    {
+        // End-to-end of the fix: a client projecting only `name` still gets the
+        // FK `client` back (via always-include), so FK expansion isn't dropped.
+        $p = ModelController::resolveProjection(
+            $this->struct,
+            'name',
+            ModelController::alwaysIncludeColumns($this->struct),
+            []
+        );
+        $this->assertContains('name', $p);
+        $this->assertContains('client', $p);   // FK preserved even though unrequested
+        $this->assertNotContains('body', $p);  // large column still trimmed
+    }
+
     public function testStripEagerHelpersRemovesObjectKeysButKeepsRealFields(): void
     {
         // Eager-load attaches `<fk>_object` helper props that getAllParams
