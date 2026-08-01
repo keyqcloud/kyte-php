@@ -44,6 +44,9 @@ class OAuthEndpoint
     /** Authorization codes are short-lived (single-use besides). */
     private const CODE_TTL_SECONDS  = 300;
 
+    /** Default access-token lifetime (30d) — override with KYTE_OAUTH_ACCESS_TTL. */
+    private const DEFAULT_ACCESS_TTL = 2592000;
+
     public static function handle(Api $api): void
     {
         self::emitCorsHeaders();
@@ -126,7 +129,10 @@ class OAuthEndpoint
                     }
                     return self::error(404, 'not_found', "Unknown OAuth endpoint: /{$path}.");
                 case 'token':      // code+verifier -> mint kmcp_live_       [P1-D / #555]
-                    return self::notImplemented('token');
+                    if ($method !== 'POST') {
+                        return self::error(405, 'invalid_request', 'POST required for /oauth/token.');
+                    }
+                    return self::token(self::parseTokenBody($rawBody, $server));
                 default:
                     return self::error(404, 'not_found', "Unknown OAuth endpoint: /{$path}.");
             }
@@ -541,6 +547,129 @@ class OAuthEndpoint
         }
         $out = [];
         parse_str($qs, $out);
+        return $out;
+    }
+
+    // ----- P1-D: token endpoint ------------------------------------------
+
+    /**
+     * OAuth 2.1 token endpoint (authorization_code grant + PKCE). Redeems a
+     * single-use KyteOAuthCode for a freshly-minted scoped `kmcp_live_` token —
+     * the OAuth access token IS a normal MCP bearer, so every downstream MCP
+     * request is authenticated exactly as before.
+     *
+     * @param array<string,mixed> $body
+     */
+    private static function token(array $body): array
+    {
+        $grantType = isset($body['grant_type']) ? (string)$body['grant_type'] : '';
+        if ($grantType !== 'authorization_code') {
+            return self::error(400, 'unsupported_grant_type', 'Only the authorization_code grant is supported.');
+        }
+
+        $rawCode  = isset($body['code']) ? (string)$body['code'] : '';
+        $clientId = isset($body['client_id']) ? (string)$body['client_id'] : '';
+        $redirect = isset($body['redirect_uri']) ? (string)$body['redirect_uri'] : '';
+        $verifier = isset($body['code_verifier']) ? (string)$body['code_verifier'] : '';
+
+        if ($rawCode === '' || $clientId === '' || $redirect === '' || $verifier === '') {
+            return self::error(400, 'invalid_request', 'code, client_id, redirect_uri and code_verifier are required.');
+        }
+
+        $code = new \Kyte\Core\ModelObject(KyteOAuthCode);
+        if (!$code->retrieve('code_hash', hash('sha256', $rawCode))) {
+            return self::error(400, 'invalid_grant', 'Invalid authorization code.');
+        }
+        if ((int)$code->consumed_at !== 0) {
+            return self::error(400, 'invalid_grant', 'Authorization code already used.');
+        }
+        if ((int)$code->expires_at < time()) {
+            return self::error(400, 'invalid_grant', 'Authorization code expired.');
+        }
+        if ((string)$code->client_id !== $clientId) {
+            return self::error(400, 'invalid_grant', 'client_id mismatch.');
+        }
+        if ((string)$code->redirect_uri !== $redirect) {
+            return self::error(400, 'invalid_grant', 'redirect_uri mismatch.');
+        }
+
+        // PKCE S256: base64url(sha256(verifier)) must equal the stored challenge.
+        $computed = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
+        if (!hash_equals((string)$code->code_challenge, $computed)) {
+            return self::error(400, 'invalid_grant', 'PKCE verification failed.');
+        }
+
+        // Single-use: burn the code before issuing the token.
+        $code->save(['consumed_at' => time()]);
+
+        $ttl = (defined('KYTE_OAUTH_ACCESS_TTL') && (int)KYTE_OAUTH_ACCESS_TTL > 0)
+            ? (int)KYTE_OAUTH_ACCESS_TTL
+            : self::DEFAULT_ACCESS_TTL;
+        $kyteScopes = (string)$code->kyte_scopes !== '' ? (string)$code->kyte_scopes : 'read';
+
+        $accessToken = self::mintMcpToken(
+            (int)$code->kyte_account,
+            $kyteScopes,
+            'OAuth connector',
+            (int)$code->created_by,
+            time() + $ttl
+        );
+
+        return [
+            'status'  => 200,
+            'headers' => ['Cache-Control: no-store', 'Pragma: no-cache'],
+            'body'    => [
+                'access_token' => $accessToken,
+                'token_type'   => 'Bearer',
+                'expires_in'   => $ttl,
+                'scope'        => str_replace(',', ' ', $kyteScopes),
+            ],
+        ];
+    }
+
+    /**
+     * Mint a scoped kmcp_live_ token (account-wide) as the OAuth access token.
+     * Same format/storage as a Shipyard-issued token, so McpTokenStrategy
+     * validates it identically. Returns the raw token (shown once).
+     */
+    private static function mintMcpToken(int $account, string $scopesCsv, string $name, int $createdBy, int $expiresAt): string
+    {
+        $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        $len = strlen($alphabet);
+        $suffix = '';
+        $bytes = random_bytes(32);
+        for ($i = 0; $i < 32; $i++) {
+            $suffix .= $alphabet[ord($bytes[$i]) % $len];
+        }
+        $raw = McpTokenStrategy::TOKEN_PREFIX . $suffix;
+
+        $token = new \Kyte\Core\ModelObject(KyteMCPToken);
+        $token->create([
+            'token_hash'   => hash('sha256', $raw),
+            'token_prefix' => substr($raw, 0, 16),
+            'name'         => $name,
+            'application'  => null,       // account-wide (v1)
+            'scopes'       => $scopesCsv,
+            'expires_at'   => $expiresAt,
+            'kyte_account' => $account,
+        ], $createdBy > 0 ? $createdBy : null);
+
+        return $raw;
+    }
+
+    /**
+     * The OAuth token endpoint is application/x-www-form-urlencoded by spec;
+     * accept JSON too for lenience. @return array<string,mixed>
+     * @param array<string,mixed> $server
+     */
+    private static function parseTokenBody(string $rawBody, array $server): array
+    {
+        $ct = strtolower((string)($server['CONTENT_TYPE'] ?? $server['HTTP_CONTENT_TYPE'] ?? ''));
+        if (strpos($ct, 'application/json') !== false) {
+            return self::decodeBody($rawBody);
+        }
+        $out = [];
+        parse_str($rawBody, $out);
         return $out;
     }
 
