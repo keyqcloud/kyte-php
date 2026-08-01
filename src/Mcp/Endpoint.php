@@ -75,7 +75,13 @@ final class Endpoint
         try {
             self::authenticate($api, $request);
         } catch (SessionException $e) {
-            return self::jsonRpcError($psr17, 401, -32001, $e->getMessage());
+            // RFC 9728 / MCP auth: point unauthenticated clients at this
+            // install's protected-resource metadata so Claude.ai / ChatGPT can
+            // auto-discover the OAuth authorization server (KYTE-#551).
+            $resourceMetadata = \Kyte\Core\Auth\OAuthEndpoint::baseUrl($request->getServerParams())
+                . '/.well-known/oauth-protected-resource';
+            return self::jsonRpcError($psr17, 401, -32001, $e->getMessage())
+                ->withHeader('WWW-Authenticate', 'Bearer resource_metadata="' . $resourceMetadata . '"');
         } catch (\Throwable $e) {
             return self::jsonRpcError($psr17, 500, -32603, 'Internal MCP error: ' . $e->getMessage());
         }
