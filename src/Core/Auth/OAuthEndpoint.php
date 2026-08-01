@@ -695,12 +695,17 @@ class OAuthEndpoint
 
     private static function emitCorsHeaders(): void
     {
-        // Browser-based connectors (claude.ai) hit discovery + token cross-origin.
+        // The Shipyard consent page + browser connectors hit these endpoints
+        // cross-origin. Auth is ALWAYS header-based (Authorization: Bearer /
+        // X-Kyte-*) — never an ambient cookie — so we reflect the Origin but
+        // deliberately do NOT send Access-Control-Allow-Credentials: an
+        // auth-code endpoint must not combine credentialed CORS with a
+        // reflected origin. Without credentials, a reflected origin exposes
+        // nothing: cross-site JS still cannot obtain the required bearer.
         $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
         if ($origin !== '') {
             header("Access-Control-Allow-Origin: {$origin}");
             header('Vary: Origin');
         }
-        header('Access-Control-Allow-Credentials: true');
     }
 }
