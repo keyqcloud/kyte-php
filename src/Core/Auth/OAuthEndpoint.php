@@ -37,6 +37,10 @@ class OAuthEndpoint
      */
     private const SUPPORTED_SCOPES = ['read', 'draft', 'commit', 'provision', 'schema'];
 
+    /** Registration guardrails (open DCR — hardening tracked in #556). */
+    private const MAX_REDIRECT_URIS = 10;
+    private const MAX_URI_LENGTH    = 2048;
+
     public static function handle(Api $api): void
     {
         self::emitCorsHeaders();
@@ -82,11 +86,15 @@ class OAuthEndpoint
                 return self::protectedResourceMetadata($server);
             }
 
+            $method = strtoupper((string)($server['REQUEST_METHOD'] ?? 'GET'));
             $segments = explode('/', $path);
             $action = $segments[1] ?? '';   // oauth/<action>
             switch ($action) {
                 case 'register':   // RFC 7591 dynamic client registration [P1-B / #553]
-                    return self::notImplemented('register');
+                    if ($method !== 'POST') {
+                        return self::error(405, 'invalid_request', 'POST required for /oauth/register.');
+                    }
+                    return self::register(self::decodeBody($rawBody));
                 case 'authorize':  // authorization-code + PKCE + consent   [P1-C / #554]
                     return self::notImplemented('authorize');
                 case 'token':      // code+verifier -> mint kmcp_live_       [P1-D / #555]
@@ -147,6 +155,154 @@ class OAuthEndpoint
     private static function notImplemented(string $what): array
     {
         return self::error(501, 'not_implemented', "OAuth /{$what} is not implemented yet (KYTE-#551).");
+    }
+
+    /**
+     * RFC 7591 dynamic client registration. Claude / ChatGPT self-register as
+     * PUBLIC clients (PKCE, no secret, token_endpoint_auth_method=none) before
+     * running the authorization-code flow. Open registration is the MCP model;
+     * the real gate is user consent (P1-C) + PKCE (P1-D), not client auth.
+     *
+     * @param array<string,mixed> $body
+     */
+    private static function register(array $body): array
+    {
+        // redirect_uris — required, non-empty; each https (or http on loopback
+        // for native/desktop per RFC 8252). Exact-matched at authorize/token.
+        $redirectUris = $body['redirect_uris'] ?? null;
+        if (!is_array($redirectUris) || count($redirectUris) === 0) {
+            return self::error(400, 'invalid_redirect_uri', 'redirect_uris is required (non-empty array).');
+        }
+        if (count($redirectUris) > self::MAX_REDIRECT_URIS) {
+            return self::error(400, 'invalid_redirect_uri', 'Too many redirect_uris.');
+        }
+        $uriError = self::validateRedirectUris($redirectUris);
+        if ($uriError !== null) {
+            return self::error(400, 'invalid_redirect_uri', $uriError);
+        }
+
+        // Only the public-client authorization-code + PKCE profile is supported.
+        $grantTypes = self::intersectCsv($body['grant_types'] ?? ['authorization_code'], ['authorization_code']);
+        if ($grantTypes === '') {
+            return self::error(400, 'invalid_client_metadata', 'Only the authorization_code grant is supported.');
+        }
+        $responseTypes = self::intersectCsv($body['response_types'] ?? ['code'], ['code']);
+        if ($responseTypes === '') {
+            return self::error(400, 'invalid_client_metadata', 'Only the "code" response_type is supported.');
+        }
+
+        $scope      = self::filterScope(isset($body['scope']) ? (string)$body['scope'] : '');
+        $clientName = isset($body['client_name']) && is_string($body['client_name'])
+            ? substr($body['client_name'], 0, 255)
+            : null;
+        $clientId   = self::generateClientId();
+
+        $client = new \Kyte\Core\ModelObject(KyteOAuthClient);
+        $client->create([
+            'client_id'                  => $clientId,
+            'client_name'                => $clientName,
+            'redirect_uris'              => json_encode(array_values($redirectUris)),
+            'grant_types'                => $grantTypes,
+            'response_types'             => $responseTypes,
+            'token_endpoint_auth_method' => 'none',
+            'scope'                      => $scope,
+            'kyte_account'               => 0,   // unscoped until consent binds an account
+        ]);
+
+        // RFC 7591 §3.2.1 client information response.
+        return [
+            'status'  => 201,
+            'headers' => ['Cache-Control: no-store', 'Pragma: no-cache'],
+            'body'    => [
+                'client_id'                  => $clientId,
+                'client_id_issued_at'        => (int)$client->date_created,
+                'client_name'                => $clientName,
+                'redirect_uris'              => array_values($redirectUris),
+                'grant_types'                => explode(',', $grantTypes),
+                'response_types'             => explode(',', $responseTypes),
+                'token_endpoint_auth_method' => 'none',
+                'scope'                      => $scope,
+            ],
+        ];
+    }
+
+    /** @param array<int,mixed> $uris  Returns an error string, or null on pass. */
+    private static function validateRedirectUris(array $uris): ?string
+    {
+        foreach ($uris as $uri) {
+            if (!is_string($uri) || $uri === '' || strlen($uri) > self::MAX_URI_LENGTH) {
+                return 'Each redirect_uri must be a non-empty URI under ' . self::MAX_URI_LENGTH . ' chars.';
+            }
+            $parts = parse_url($uri);
+            if ($parts === false || empty($parts['scheme']) || empty($parts['host'])) {
+                return "Invalid redirect_uri: {$uri}";
+            }
+            $scheme   = strtolower($parts['scheme']);
+            $host     = strtolower($parts['host']);
+            $loopback = in_array($host, ['localhost', '127.0.0.1', '::1', '[::1]'], true);
+            if ($scheme === 'https' || ($scheme === 'http' && $loopback)) {
+                continue;
+            }
+            return "redirect_uri must use https (or http on a loopback host): {$uri}";
+        }
+        return null;
+    }
+
+    /**
+     * Opaque, unguessable public client identifier. `kyoc_` = kyte-oauth-client.
+     * ~140 bits from a CSPRNG; the UNIQUE index is the collision backstop.
+     */
+    private static function generateClientId(): string
+    {
+        $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        $len = strlen($alphabet);
+        $body = '';
+        $bytes = random_bytes(24);
+        for ($i = 0; $i < 24; $i++) {
+            $body .= $alphabet[ord($bytes[$i]) % $len];
+        }
+        return 'kyoc_' . $body;
+    }
+
+    /**
+     * Intersect a JSON-array-or-string metadata value with an allowlist,
+     * returning a CSV for storage. @param mixed $value
+     */
+    private static function intersectCsv($value, array $allow): string
+    {
+        if (is_array($value)) {
+            $items = $value;
+        } elseif (is_string($value) && trim($value) !== '') {
+            $items = preg_split('/[\s,]+/', trim($value)) ?: [];
+        } else {
+            $items = [];
+        }
+        $keep = array_values(array_intersect(array_map('strval', $items), $allow));
+        return implode(',', array_unique($keep));
+    }
+
+    /**
+     * Filter a requested OAuth scope string to what this AS grants; default to
+     * least-privilege "read" when nothing valid is requested. Space-separated
+     * per OAuth convention. The effective grant is re-confirmed at consent.
+     */
+    private static function filterScope(string $scope): string
+    {
+        $requested = trim($scope) !== '' ? (preg_split('/\s+/', trim($scope)) ?: []) : [];
+        $keep = array_values(array_intersect(array_map('strval', $requested), self::SUPPORTED_SCOPES));
+        if (empty($keep)) {
+            $keep = ['read'];
+        }
+        return implode(' ', array_unique($keep));
+    }
+
+    private static function decodeBody(string $rawBody): array
+    {
+        if (trim($rawBody) === '') {
+            return [];
+        }
+        $decoded = json_decode($rawBody, true);
+        return is_array($decoded) ? $decoded : [];
     }
 
     /** @param array<string,mixed> $body */
