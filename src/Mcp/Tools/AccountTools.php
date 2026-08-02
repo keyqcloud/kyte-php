@@ -152,4 +152,77 @@ final class AccountTools
         $out['sites'] = $siteOut;
         return $out;
     }
+
+    /**
+     * The KyteJS reference for writing page/script JavaScript. Kyte apps talk to
+     * the backend through an injected client, NOT REST URLs — this tool gives an
+     * AI client the exact API so generated page/script JS actually works.
+     *
+     * @return array<string,mixed>
+     */
+    #[McpTool(name: 'get_kytejs_guide', description: 'How to write JavaScript for Kyte pages/scripts. Kyte injects a global API client `k` into every published page; page/script JS calls the backend via k.get/k.post/k.put/k.delete(model, ...). Returns the exact signatures, the response shape, session helpers, and a worked example. Call this BEFORE writing any page or script JavaScript.')]
+    #[RequiresScope('read')]
+    public function getKytejsGuide(): array
+    {
+        return [
+            'overview' =>
+                'Kyte publishes each page with an API client already instantiated as the '
+                . 'GLOBAL variable `k` (a Kyte instance, from the kyte-api-js SDK loaded on the '
+                . 'page). In page HTML/JS and in site scripts, use `k` directly for all backend '
+                . 'calls. Do NOT create your own client (no `new Kyte(...)`), and do NOT hard-code '
+                . 'the API URL, keys, or fetch()/REST paths — `k` is pre-configured with the '
+                . "app's endpoint + credentials.",
+            'data_model' =>
+                'Access is MODEL-based, not URL-based. The first argument to every call is a '
+                . 'model/controller NAME (a string, e.g. "Task", "UserProfile") — the same name '
+                . 'you gave create_model / create_controller. Kyte routes it to that controller.',
+            'methods' => [
+                'get'    => 'k.get(model, field, value, headers, onSuccess, onError) — READ. '
+                    . 'Pass field+value to filter (e.g. "id", 42), or field=null & value=null for all rows.',
+                'post'   => 'k.post(model, data, formData, headers, onSuccess, onError) — CREATE. '
+                    . '`data` is a plain object of column→value; pass formData=null unless uploading files.',
+                'put'    => 'k.put(model, field, value, data, formData, headers, onSuccess, onError) — '
+                    . 'UPDATE the row(s) matching field=value with the `data` object.',
+                'delete' => 'k.delete(model, field, value, headers, onSuccess, onError) — DELETE the '
+                    . 'row(s) matching field=value.',
+            ],
+            'callbacks' =>
+                'onSuccess(response): response.data is ALWAYS an array — a single record is '
+                . 'response.data[0]. onError(error): error is a string message (or object). Both '
+                . 'callbacks are required for robust code. `headers` is usually an empty array [].',
+            'session' => [
+                'create'  => 'k.sessionCreate(credentials, onSuccess, onError) — log a user in.',
+                'destroy' => 'k.sessionDestroy(onSuccess, onError) — log out; then redirect.',
+                'note'    => 'Session state is managed by `k`; authenticated calls carry it automatically.',
+            ],
+            'example' => implode("\n", [
+                "// Read all Task rows for the current user",
+                "k.get('Task', null, null, [], function (response) {",
+                "    const tasks = response.data;           // always an array",
+                "    tasks.forEach(t => renderTask(t));",
+                "}, function (err) {",
+                "    console.error('load failed:', err);",
+                "});",
+                "",
+                "// Create a Task",
+                "k.post('Task', { title: 'Buy milk', quadrant: 'urgent_important', done: 0 }, null, [], function (response) {",
+                "    const created = response.data[0];       // the new row",
+                "    addTaskToDom(created);",
+                "}, function (err) { showError(err); });",
+                "",
+                "// Update a Task",
+                "k.put('Task', 'id', taskId, { done: 1 }, null, [], function (r) { /* ok */ }, function (e) {});",
+                "",
+                "// Delete a Task",
+                "k.delete('Task', 'id', taskId, [], function (r) { /* ok */ }, function (e) {});",
+            ]),
+            'rules' => [
+                'Use the injected global `k` — never instantiate a client or hard-code the endpoint/keys.',
+                'First arg is a model/controller NAME string, not a URL path.',
+                'response.data is always an array (single record = response.data[0]).',
+                'Attach both success and error callbacks.',
+                'Get the endpoint/identifier/site URLs from get_app_info; you do not put them in JS yourself.',
+            ],
+        ];
+    }
 }

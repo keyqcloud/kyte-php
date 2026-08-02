@@ -116,10 +116,26 @@ final class Endpoint
                 'Kyte low-code framework MCP endpoint'
             )
             ->setInstructions(
-                'Tools operate on the account associated with the bearer token. ' .
-                'Use list_applications to discover apps, then traditional Kyte ' .
-                'workflows for further work. Additional tools land in subsequent ' .
-                'Phase 2 commits.'
+                'Tools operate on the Kyte account tied to the bearer token. Start with '
+                . 'list_applications (or get_app_info) to discover apps, then work down: '
+                . 'models + controllers/functions (backend), sites + pages + scripts (frontend). '
+                . "\n\n"
+                . 'CONNECTION: call get_app_info(application_id) for the API endpoint, the app '
+                . 'identifier, and each site URL — do not guess or hard-code the endpoint.'
+                . "\n\n"
+                . 'WRITING PAGE / SCRIPT JS: Kyte injects a ready-to-use API client into every '
+                . 'published page as the GLOBAL variable `k` (a Kyte instance). Do NOT create your '
+                . 'own client or hard-code URLs/keys — just call `k`. Data access is model-based, '
+                . 'not REST URLs: k.get(model, field, value, headers, onOk, onErr) to read, '
+                . 'k.post(model, data, formData, headers, onOk, onErr) to create, '
+                . 'k.put(model, field, value, data, formData, headers, onOk, onErr) to update, '
+                . 'k.delete(model, field, value, headers, onOk, onErr) to delete. onOk receives a '
+                . 'response whose `.data` is ALWAYS an array. `model` is a controller/model name '
+                . '(e.g. "Task"). Call get_kytejs_guide for the full signatures + a worked example '
+                . 'BEFORE writing any page or script JavaScript.'
+                . "\n\n"
+                . 'EDIT FLOW: create_* makes a draft; add code/content with write_page_part / '
+                . 'write_script_content / write_function_code; publish with commit_draft.'
             )
             ->setContainer($container)
             ->setRegistry($registry)

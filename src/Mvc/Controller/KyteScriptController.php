@@ -232,11 +232,18 @@ class KyteScriptController extends ModelController
 
         // Check if this exact content already exists
         $existingContent = $this->findExistingScriptContent($contentHash);
-        
+
+        // 'initial' is a SENTINEL (see the guard above) that forces the first
+        // version even with no diff — it is NOT a valid version_type enum value
+        // (auto_save|manual_save|publish|mcp_draft|mcp_commit) and would be
+        // rejected as "Data truncated for column 'version_type'". Store the
+        // baseline as manual_save. (Mirrors the FunctionController fix.)
+        $storedVersionType = ($versionType === 'initial') ? 'manual_save' : $versionType;
+
         $versionData = [
             'script' => $scriptObj->id,
             'version_number' => $nextVersion,
-            'version_type' => $versionType,
+            'version_type' => $storedVersionType,
             'change_summary' => $changeSummary,
             'changes_detected' => json_encode($changes),
             'content_hash' => $contentHash,
