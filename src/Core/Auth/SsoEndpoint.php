@@ -329,7 +329,7 @@ class SsoEndpoint
 
         $user = self::resolveSsoUser(
             $app, $cfg, (string)$st->provider, $subject, $tid, $email,
-            (int)$cfg->jit_enabled === 1, (int)$cfg->restrict_to_existing === 1
+            (int)$cfg->jit_enabled === 1, (int)$cfg->restrict_to_existing === 1, $claims
         );
         if (is_string($user)) {
             return self::backToApp($returnUrl, ['error' => $user]);
@@ -475,7 +475,7 @@ class SsoEndpoint
      *
      * @return ModelObject|string
      */
-    private static function resolveSsoUser(ModelObject $app, ModelObject $cfg, string $provider, string $subject, string $tid, ?string $email, bool $jit, bool $restrict)
+    private static function resolveSsoUser(ModelObject $app, ModelObject $cfg, string $provider, string $subject, string $tid, ?string $email, bool $jit, bool $restrict, array $claims = [])
     {
         $ctx = JwtEndpoint::resolveAuthContext((string)$app->identifier);
         $userModel     = $ctx['user_model'];
@@ -508,20 +508,44 @@ class SsoEndpoint
                 }
                 return $user;
             }
-            // Dangling link (user deleted) — fall through to re-provision/deny.
+            // Dangling link (the linked user was deleted). Re-provision and
+            // REBIND this same link row rather than minting a fresh orphan on
+            // every login (a second link row would violate the unique index).
+            if ($restrict || !$jit) {
+                return 'user_not_provisioned';
+            }
+            $newId = self::jitCreateUser($app, $userModel, $usernameField, $passwordField, $email);
+            if ($newId === null) {
+                return 'user_not_provisioned';
+            }
+            $link->save(['sso_user_id' => $newId, 'email' => $email ?? '']);
+            $rebound = new ModelObject($userModel);
+            return $rebound->retrieve('id', $newId) ? $rebound : 'user_not_provisioned';
         }
 
         // 2. First login for this subject.
-        //    Only link to a PRE-EXISTING app user by email when the asserting
-        //    tenant is authoritative for that email — i.e. a pinned single-tenant
-        //    config whose tid matches. In a multi-tenant / 'common' config any
-        //    tenant can assert any email, so email must never match an existing
-        //    account (that is the takeover vector).
+        //    Link to a PRE-EXISTING app user by email ONLY when the token is a
+        //    trustworthy assertion of that email's owner:
+        //      (a) the config pins a single tenant AND the token's tid matches
+        //          it (multi-tenant/'common' lets any tenant assert any email),
+        //      (b) the user is a native MEMBER of that tenant, not a B2B guest
+        //          (a guest's email is set by their home tenant, which the
+        //          resource tenant does not own), and
+        //      (c) the target account is not already bound to a different
+        //          subject (never re-bind / hijack an account).
+        //    Otherwise fall through to JIT (a fresh, subject-bound account).
         $tenantAuthoritative = !empty($cfg->tenant) && $tid !== '' && $tid === (string)$cfg->tenant;
+        $isGuest = isset($claims['idp']) || (isset($claims['acct']) && (int)$claims['acct'] === 1);
 
-        if ($email !== null && $tenantAuthoritative) {
+        if ($email !== null && $tenantAuthoritative && !$isGuest) {
             $existing = new ModelObject($userModel);
             if ($existing->retrieve($usernameField, $email)) {
+                if (self::userAlreadyLinked($app, $provider, (int)$existing->id)) {
+                    // Account already claimed by another SSO subject — refuse to
+                    // attach a second identity to it.
+                    error_log("SsoEndpoint: refusing to link subject to app user {$existing->id} already bound to another SSO identity.");
+                    return 'user_not_provisioned';
+                }
                 self::createLink($app, $provider, $subject, $tid, (int)$existing->id, $email);
                 return $existing;
             }
@@ -531,9 +555,25 @@ class SsoEndpoint
             return 'user_not_provisioned';
         }
 
-        // 3. JIT-provision a fresh app user bound to this subject. SSO users
-        //    never password-login, but the model may require a password column —
-        //    set a random (unusable) hash.
+        // 3. JIT-provision a fresh app user bound to this subject.
+        $newId = self::jitCreateUser($app, $userModel, $usernameField, $passwordField, $email);
+        if ($newId === null) {
+            return 'user_not_provisioned';
+        }
+        self::createLink($app, $provider, $subject, $tid, $newId, $email);
+        $newUser = new ModelObject($userModel);
+        return $newUser->retrieve('id', $newId) ? $newUser : 'user_not_provisioned';
+    }
+
+    /**
+     * Create a fresh app user for a JIT SSO provision. SSO users never
+     * password-login, but the model may require a password column — set a random
+     * (unusable) hash. Returns the new user id, or null on failure.
+     *
+     * @param array<string,mixed> $userModel
+     */
+    private static function jitCreateUser(ModelObject $app, array $userModel, string $usernameField, string $passwordField, ?string $email): ?int
+    {
         $data = [];
         if ($email !== null && isset($userModel['struct'][$usernameField])) {
             $data[$usernameField] = $email;
@@ -547,14 +587,25 @@ class SsoEndpoint
         try {
             $newUser = new ModelObject($userModel);
             if (!$newUser->create($data)) {
-                return 'user_not_provisioned';
+                return null;
             }
-            self::createLink($app, $provider, $subject, $tid, (int)$newUser->id, $email);
-            return $newUser;
+            return (int)$newUser->id;
         } catch (\Throwable $e) {
             error_log('SsoEndpoint JIT user create failed: ' . $e->getMessage());
-            return 'user_not_provisioned';
+            return null;
         }
+    }
+
+    /** Does this app user already have an SSO identity link for this provider? */
+    private static function userAlreadyLinked(ModelObject $app, string $provider, int $userId): bool
+    {
+        $links = new Model(\KyteSsoIdentity);
+        $links->retrieve('sso_user_id', $userId, false, [
+            ['field' => 'application', 'value' => (int)$app->id],
+            ['field' => 'provider',    'value' => $provider],
+            ['field' => 'deleted',     'value' => 0],
+        ]);
+        return count($links->objects) > 0;
     }
 
     /** Persist the (application, provider, subject) -> app-user identity link. */
