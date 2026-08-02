@@ -366,7 +366,10 @@ class SsoEndpoint
             if ($jwks === null || empty($jwks['keys'])) {
                 return null;
             }
-            $keys = \Firebase\JWT\JWK::parseKeySet($jwks);
+            // Azure/Microsoft JWKS keys omit the per-key "alg"; supply RS256 as
+            // the default so parseKeySet doesn't reject them. All Microsoft v2.0
+            // id_tokens are RS256, and JWT::decode still enforces the header alg.
+            $keys = \Firebase\JWT\JWK::parseKeySet($jwks, 'RS256');
             // JWT::decode validates the signature + exp/nbf and throws otherwise.
             $claims = (array)\Firebase\JWT\JWT::decode($idToken, $keys);
         } catch (\Throwable $e) {
