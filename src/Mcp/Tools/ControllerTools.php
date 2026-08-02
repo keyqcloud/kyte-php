@@ -232,6 +232,133 @@ final class ControllerTools
         ]);
     }
 
+    /**
+     * Create a new custom API controller in an application. It is created with
+     * its generated base code; attach behaviour afterward with
+     * write_function_code (hooks / method overrides / custom helpers). Optionally
+     * bind a data model so the generated controller wires up shipyard_init.
+     *
+     * @param int         $application_id Application id (from list_applications).
+     * @param string      $name           Controller name — unique within the app; must not collide with a built-in controller class.
+     * @param int|null    $data_model_id  Optional DataModel id to bind (from list_models).
+     * @param string|null $description    Optional description.
+     * @return array{created: bool, controller?: array<string,mixed>|null, error?: string}
+     */
+    #[McpTool(name: 'create_controller', description: 'Create a new custom API controller in a Kyte application (with generated base code). Optionally bind a data model. Add behaviour afterward with write_function_code.')]
+    #[RequiresScope('schema')]
+    public function createController(int $application_id, string $name, ?int $data_model_id = null, ?string $description = null): array
+    {
+        $accountId = $this->accountIdOrZero();
+        if ($accountId === 0 || !$this->applicationBelongsToAccount($application_id, $accountId)) {
+            return ['created' => false, 'error' => 'Application not found in this account.'];
+        }
+        if ($data_model_id !== null && !$this->dataModelBelongsToApp($data_model_id, $application_id, $accountId)) {
+            return ['created' => false, 'error' => 'Data model not found in this application.'];
+        }
+
+        $api  = $this->api;
+        $resp = [];
+        try {
+            $controller = new \Kyte\Mvc\Controller\ControllerController(\Controller, $api, 'm/d/Y H:i:s', $resp, true);
+            $data = ['name' => $name, 'application' => $application_id];
+            if ($data_model_id !== null) { $data['dataModel']  = $data_model_id; }
+            if ($description !== null)   { $data['description'] = $description; }
+            $controller->new($data);
+        } catch (\Throwable $e) {
+            return ['created' => false, 'error' => $e->getMessage()];
+        }
+
+        $newId = isset($resp['data'][0]['id']) ? (int)$resp['data'][0]['id'] : 0;
+        if ($newId === 0) {
+            return ['created' => false, 'error' => 'Controller was not created.'];
+        }
+        return ['created' => true, 'controller' => $this->readController($newId)];
+    }
+
+    /**
+     * Update a controller's name, description, or bound data model. Changing the
+     * name or bound model regenerates the controller's base code. Controller
+     * behaviour (functions) is edited with write_function_code, not here.
+     *
+     * @param int         $controller_id Controller id.
+     * @param string|null $name          New name (unique within the app).
+     * @param string|null $description   New description.
+     * @param int|null    $data_model_id New DataModel id to bind.
+     * @return array{updated: bool, controller?: array<string,mixed>|null, error?: string}
+     */
+    #[McpTool(name: 'update_controller', description: 'Update a controller\'s name, description, or bound data model. Edit controller behaviour (functions) with write_function_code.')]
+    #[RequiresScope('schema')]
+    public function updateController(int $controller_id, ?string $name = null, ?string $description = null, ?int $data_model_id = null): array
+    {
+        $accountId = $this->accountIdOrZero();
+        if ($accountId === 0 || !$this->controllerBelongsToAccount($controller_id, $accountId)) {
+            return ['updated' => false, 'error' => 'Controller not found in this account.'];
+        }
+
+        $ctrl = new \Kyte\Core\ModelObject(\Controller);
+        $ctrl->retrieve('id', $controller_id);
+        $appId = (int)$ctrl->application;
+
+        $data = [];
+        // A name change is validated against the app scope by
+        // ControllerController::validateControllerUpdate, which reads
+        // application off the payload — so carry it whenever name is set.
+        if ($name !== null)        { $data['name'] = $name; $data['application'] = $appId; }
+        if ($description !== null) { $data['description'] = $description; }
+        if ($data_model_id !== null) {
+            if (!$this->dataModelBelongsToApp($data_model_id, $appId, $accountId)) {
+                return ['updated' => false, 'error' => 'Data model not found in this controller\'s application.'];
+            }
+            $data['dataModel'] = $data_model_id;
+        }
+        if (empty($data)) {
+            return ['updated' => false, 'error' => 'No updatable fields provided (name, description, data_model_id).'];
+        }
+
+        $api  = $this->api;
+        $resp = [];
+        try {
+            $controller = new \Kyte\Mvc\Controller\ControllerController(\Controller, $api, 'm/d/Y H:i:s', $resp, true);
+            $controller->update('id', $controller_id, $data);
+        } catch (\Throwable $e) {
+            return ['updated' => false, 'error' => $e->getMessage()];
+        }
+        return ['updated' => true, 'controller' => $this->readController($controller_id)];
+    }
+
+    /**
+     * Delete a controller and all of its functions.
+     *
+     * @param int $controller_id Controller id.
+     * @return array{deleted: bool, controller_id?: int, error?: string}
+     */
+    #[McpTool(name: 'delete_controller', description: 'Delete a controller and all its functions.')]
+    #[RequiresScope('schema')]
+    public function deleteController(int $controller_id): array
+    {
+        $accountId = $this->accountIdOrZero();
+        if ($accountId === 0 || !$this->controllerBelongsToAccount($controller_id, $accountId)) {
+            return ['deleted' => false, 'error' => 'Controller not found in this account.'];
+        }
+        $api  = $this->api;
+        $resp = [];
+        try {
+            $controller = new \Kyte\Mvc\Controller\ControllerController(\Controller, $api, 'm/d/Y H:i:s', $resp, true);
+            $controller->delete('id', $controller_id);
+        } catch (\Throwable $e) {
+            return ['deleted' => false, 'error' => $e->getMessage()];
+        }
+        return ['deleted' => true, 'controller_id' => $controller_id];
+    }
+
+    private function dataModelBelongsToApp(int $modelId, int $applicationId, int $accountId): bool
+    {
+        $m = new \Kyte\Core\ModelObject(\DataModel);
+        return $m->retrieve('id', $modelId)
+            && (int)$m->application === $applicationId
+            && (int)$m->kyte_account === $accountId;
+    }
+
     private function accountIdOrZero(): int
     {
         return isset($this->api->account->id) ? (int)$this->api->account->id : 0;
