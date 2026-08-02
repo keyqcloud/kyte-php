@@ -100,45 +100,57 @@ final class AppTools
     }
 
     /**
-     * Delete a Kyte application (drops its tenant database). Refuses if the app
-     * still has live sites — delete those first with delete_site.
+     * Delete a Kyte application. This starts an ASYNCHRONOUS teardown: the app
+     * (and each of its sites) is marked "deleting", a background worker tears
+     * down all site AWS infrastructure (S3 + CloudFront + ACM), and once that's
+     * done it drops the tenant database and removes the app. Poll
+     * list_applications until the app disappears.
      *
      * @param int $application_id Application id.
-     * @return array{deleted: bool, application_id?: int, error?: string}
+     * @return array{deleting: bool, application_id?: int, sites_tearing_down?: int, message?: string, error?: string}
      */
-    #[McpTool(name: 'delete_application', description: 'Delete a Kyte application (drops its tenant database). Refuses if the app still has live sites — delete those first with delete_site (their AWS teardown is asynchronous).')]
+    #[McpTool(name: 'delete_application', description: 'Delete a Kyte application — starts an asynchronous teardown of its sites (S3/CloudFront/ACM) and then its tenant database. Poll list_applications until the app disappears.')]
     #[RequiresScope('provision')]
     public function deleteApplication(int $application_id): array
     {
         $accountId = $this->accountIdOrZero();
         if ($accountId === 0 || !$this->appBelongsToAccount($application_id, $accountId)) {
-            return ['deleted' => false, 'error' => 'Application not found in this account.'];
+            return ['deleting' => false, 'error' => 'Application not found in this account.'];
         }
 
-        // Guard: don't orphan site infrastructure (S3 + CloudFront + ACM), whose
-        // teardown is asynchronous. Any site not fully "deleted" blocks the app
-        // delete; the caller tears sites down with delete_site first.
-        $sites = new \Kyte\Core\Model(\KyteSite);
-        $sites->retrieve('application', $application_id, false, [
-            ['field' => 'kyte_account', 'value' => $accountId],
-        ]);
-        $live = 0;
-        foreach ($sites->objects as $s) {
-            if ((string)($s->status ?? '') !== 'deleted') { $live++; }
-        }
-        if ($live > 0) {
-            return ['deleted' => false, 'error' => "Application still has {$live} live site(s). Delete them first with delete_site (their S3/CloudFront teardown runs in the background), then retry."];
+        $app = new \Kyte\Core\ModelObject(\Application);
+        $app->retrieve('id', $application_id);
+        if ((string)($app->status ?? '') === 'deleting') {
+            return ['deleting' => true, 'application_id' => $application_id, 'message' => 'Teardown already in progress. Poll list_applications until the app disappears.'];
         }
 
+        // ApplicationController's delete hook marks the app + its sites 'deleting'
+        // (it does NOT drop anything synchronously); the SiteProvisioningWorker
+        // finalizes the teardown.
         $api  = $this->api;
         $resp = [];
         try {
             $controller = new \Kyte\Mvc\Controller\ApplicationController(\Application, $api, 'm/d/Y H:i:s', $resp, true);
             $controller->delete('id', $application_id);
         } catch (\Throwable $e) {
-            return ['deleted' => false, 'error' => $e->getMessage()];
+            return ['deleting' => false, 'error' => $e->getMessage()];
         }
-        return ['deleted' => true, 'application_id' => $application_id];
+
+        $sites = new \Kyte\Core\Model(\KyteSite);
+        $sites->retrieve('application', $application_id, false, [
+            ['field' => 'kyte_account', 'value' => $accountId],
+        ]);
+        $n = 0;
+        foreach ($sites->objects as $s) {
+            if ((string)($s->status ?? '') === 'deleting') { $n++; }
+        }
+
+        return [
+            'deleting'           => true,
+            'application_id'     => $application_id,
+            'sites_tearing_down' => $n,
+            'message'            => "Teardown started. {$n} site(s) tearing down in the background (S3/CloudFront take minutes); the tenant database drops and the app is removed once they're gone. Poll list_applications until it disappears.",
+        ];
     }
 
     /** @return array<string,mixed>|null */
@@ -153,6 +165,7 @@ final class AppTools
             'name'       => isset($app->name) ? (string)$app->name : '',
             'identifier' => isset($app->identifier) ? (string)$app->identifier : '',
             'language'   => isset($app->language) ? (string)$app->language : null,
+            'status'     => isset($app->status) ? (string)$app->status : 'active',
         ];
     }
 

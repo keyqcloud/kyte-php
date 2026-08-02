@@ -162,11 +162,23 @@ class ApplicationController extends ModelController
                 // // delete distribution
                 // $cf->delete();
 
-                // drop the tenant database + its dedicated user via the
-                // privileged provisioning connection (KYTE-#205). NOTE: this
-                // still ORPHANS the app's site AWS infra (S3/CloudFront/ACM) —
-                // full async cascade teardown is a separate build (see #559).
-                \Kyte\Core\DBI::dropDatabase($o->db_name, $o->db_username);
+                // Async teardown (KYTE-#559): don't drop anything synchronously.
+                // Mark the app + its sites 'deleting'; the SiteProvisioningWorker
+                // tears down each site's AWS infra (S3/CloudFront/ACM) over ticks,
+                // then finalizes the app (drops the tenant DB + its user, sets
+                // deleted=1/status='deleted'). $r is the base controller's
+                // $autodelete flag — set it false so the app row survives for the
+                // worker to finalize (and its sites aren't row-deleted out from
+                // under the teardown).
+                $r = false;
+                $o->save(['status' => 'deleting']);
+                $sites = new \Kyte\Core\Model(KyteSite);
+                $sites->retrieve('application', $o->id, false, []);
+                foreach ($sites->objects as $s) {
+                    if ((string)($s->status ?? '') !== 'deleted') {
+                        $s->save(['status' => 'deleting']);
+                    }
+                }
 
                 // // delete acm certificate
                 // $acm = new \Kyte\Aws\Acm($credentials, $o->AcmArn);
