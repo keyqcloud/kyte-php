@@ -827,11 +827,6 @@ class SsoEndpoint
         return 'https://' . $host;
     }
 
-    private static function notImplemented(string $what): array
-    {
-        return self::error(501, 'not_implemented', "SSO /{$what} is not implemented yet (KYTE-#560 P1 next slice).");
-    }
-
     /** @param array<string,mixed> $server @return array<string,mixed> */
     private static function queryParams(array $server): array
     {
