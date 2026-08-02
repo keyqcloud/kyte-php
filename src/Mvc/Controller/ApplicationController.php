@@ -162,8 +162,11 @@ class ApplicationController extends ModelController
                 // // delete distribution
                 // $cf->delete();
 
-                // delete database from cluster
-                \Kyte\Core\DBI::query("DROP DATABASE `{$o->db_name}`;");
+                // drop the tenant database + its dedicated user via the
+                // privileged provisioning connection (KYTE-#205). NOTE: this
+                // still ORPHANS the app's site AWS infra (S3/CloudFront/ACM) —
+                // full async cascade teardown is a separate build (see #559).
+                \Kyte\Core\DBI::dropDatabase($o->db_name, $o->db_username);
 
                 // // delete acm certificate
                 // $acm = new \Kyte\Aws\Acm($credentials, $o->AcmArn);

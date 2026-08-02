@@ -326,6 +326,85 @@ class DBI {
 		}
 	}
 
+	// Dedicated privileged connection for provisioning (CREATE/DROP DATABASE +
+	// CREATE/DROP USER), kept separate from the scoped runtime connection.
+	private static $provConn = null;
+
+	/*
+	 * Privileged provisioning connection. Used ONLY by createDatabase /
+	 * dropDatabase so a SQL-injection or compromise on the scoped runtime user
+	 * cannot escalate to server-level DDL — normal queries run on the scoped
+	 * connection, which lacks CREATE/DROP DATABASE.
+	 *
+	 * Configured via KYTE_DB_PROVISION_USERNAME / KYTE_DB_PROVISION_PASSWORD
+	 * (same host + CA bundle as the main connection; no default database — it
+	 * creates them). When unset, falls back to the main connection so installs
+	 * that don't provision, or that keep the privileges on the runtime user,
+	 * behave exactly as before.
+	 */
+	private static function getProvisioningConnection()
+	{
+		if (!defined('KYTE_DB_PROVISION_USERNAME') || KYTE_DB_PROVISION_USERNAME === '') {
+			return self::getConnection();
+		}
+
+		if (self::$provConn) {
+			return self::$provConn;
+		}
+
+		$user = KYTE_DB_PROVISION_USERNAME;
+		$pass = defined('KYTE_DB_PROVISION_PASSWORD') ? KYTE_DB_PROVISION_PASSWORD : '';
+
+		if (defined('KYTE_DB_CA_BUNDLE')) {
+			$conn = new \mysqli();
+			$conn->ssl_set(null, null, KYTE_DB_CA_BUNDLE, null, null);
+			if (!$conn->real_connect(self::$dbHost, $user, $pass, null, null, null, MYSQLI_CLIENT_SSL)) {
+				throw new \Exception('Provisioning DB connection failed (SSL): ' . $conn->connect_error, (int)$conn->connect_errno);
+			}
+		} else {
+			$conn = new \mysqli(self::$dbHost, $user, $pass);
+			if ($conn->connect_error) {
+				throw new \Exception('Provisioning DB connection failed: ' . $conn->connect_error, (int)$conn->connect_errno);
+			}
+		}
+		if (true !== $conn->set_charset(self::$charset)) {
+			throw new \Exception($conn->error, (int)$conn->errno);
+		}
+
+		self::$provConn = $conn;
+		return self::$provConn;
+	}
+
+	/*
+	 * Drop a tenant database (and optionally its dedicated user) via the
+	 * privileged provisioning connection. Idempotent (IF EXISTS).
+	 *
+	 * @param string      $name     Database name.
+	 * @param string|null $username Optional dedicated DB user to drop too.
+	 */
+	public static function dropDatabase($name, $username = null)
+	{
+		if (!$name) {
+			throw new \Exception("Database name must be specified");
+		}
+
+		$con = self::getProvisioningConnection();
+
+		$result = $con->query("DROP DATABASE IF EXISTS `{$name}`;");
+		if ($result === false) {
+			throw new \Exception("Unable to drop database. [Error]:  " . htmlspecialchars($con->error));
+		}
+
+		if ($username) {
+			// Best-effort user cleanup — a stray user is harmless if this fails
+			// (e.g. still referenced), so don't abort the teardown over it.
+			$con->query("DROP USER IF EXISTS '{$username}'@'%';");
+			$con->query("FLUSH PRIVILEGES;");
+		}
+
+		return true;
+	}
+
 	/**
 	 * Begin database transaction
 	 * Provides ACID guarantees for multi-step operations
@@ -611,8 +690,9 @@ class DBI {
 			throw new \Exception("Database username must be specified");
 		}
 
-		// db connection
-		$con = self::getConnection();
+		// privileged provisioning connection (falls back to main when no
+		// dedicated provisioning identity is configured)
+		$con = self::getProvisioningConnection();
 
 		// create password
 		$password = '';
