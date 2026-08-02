@@ -346,7 +346,9 @@ class OAuthEndpoint
         $base = (defined('SHIPYARD_URL') && SHIPYARD_URL)
             ? rtrim((string)SHIPYARD_URL, '/')
             : self::baseUrl($_SERVER);
-        return $base . '/oauth/authorize';
+        // Root .html (served like login/password/reset) — avoids the deploy
+        // bundle + directory-index concerns of a nested path.
+        return $base . '/oauth-authorize.html';
     }
 
     /**
