@@ -12,57 +12,54 @@ class ApplicationController extends ModelController
     public function hook_preprocess($method, &$r, &$o = null) {
         switch ($method) {
             case 'new':
-                // check aws creds and add if not present
-                if (!isset($r['aws_public_key'], $r['aws_private_key'], $r['aws_username'])) {
-                    throw new \Exception('AWS Access and Secret key are required along with the username associated with the credential.');
-                }
+                // Resolve the AWS credential for this application.
+                //
+                // Two paths: the Shipyard create form supplies a key inline; the
+                // MCP create_app tool does NOT pass secrets and instead relies on
+                // the account's already-configured key. Either way the resolved
+                // key's public/private values are copied onto the Application row
+                // (aws_public_key/aws_private_key) — the denormalized copy the
+                // publish/media/CloudFront paths read today.
+                //
+                // FORWARD-LOOKING (KYTE-#205): this is the single resolution point
+                // for application AWS credentials. When the credential model is
+                // consolidated — a platform default via the EC2 instance role plus
+                // an optional per-account override — only this block changes; the
+                // rest of app creation is credential-agnostic.
                 $aws = new \Kyte\Core\ModelObject(KyteAWSKey);
-                if ($aws->retrieve('private_key', $r['aws_private_key'], [['field'=>'public_key', 'value'=>$r['aws_public_key']], ['field' => 'kyte_account', 'value' => $this->user->kyte_account]])) {
-                    $r['aws_key'] = $aws->id;
-                } else {
-                    if ($aws->create([
-                        'private_key' => $r['aws_private_key'],
-                        'public_key' => $r['aws_public_key'],
-                        'username' => $r['aws_username'],
-                        'created_by' => $this->user->id,
-                        'kyte_account' => $this->account->id,
-                    ])) {
-                        $r['aws_key'] = $aws->id;
-                    } else {
-                        throw new \Exception("Unable to create new AWS credentials.");
+                $createdBy = isset($this->user->id) ? $this->user->id : null;
+                if (isset($r['aws_public_key'], $r['aws_private_key'], $r['aws_username'])) {
+                    // Inline key (Shipyard): reuse the account's matching row or create it.
+                    if (!$aws->retrieve('private_key', $r['aws_private_key'], [['field' => 'public_key', 'value' => $r['aws_public_key']], ['field' => 'kyte_account', 'value' => $this->account->id]])) {
+                        if (!$aws->create([
+                            'private_key'  => $r['aws_private_key'],
+                            'public_key'   => $r['aws_public_key'],
+                            'username'     => $r['aws_username'],
+                            'created_by'   => $createdBy,
+                            'kyte_account' => $this->account->id,
+                        ])) {
+                            throw new \Exception("Unable to create new AWS credentials.");
+                        }
                     }
+                } else {
+                    // No inline key (MCP): use the account's existing credential.
+                    if (!$aws->retrieve('kyte_account', $this->account->id)) {
+                        throw new \Exception('No AWS credentials are configured for this account. Add them in Shipyard before creating an application.');
+                    }
+                    $r['aws_public_key']  = $aws->public_key;
+                    $r['aws_private_key'] = $aws->private_key;
+                }
+                $r['aws_key'] = $aws->id;
+
+                // Application identifier + isolated tenant database (on the
+                // platform RDS — no S3 credentials needed for app creation).
+                $r['identifier']  = uniqid();
+                $r['db_name']     = $r['identifier'] . '_' . $this->account->number;
+                $r['db_username'] = 'db' . $r['identifier'];
+                if (empty($r['db_password'])) {
+                    $r['db_password'] = bin2hex(random_bytes(16));
                 }
 
-                // create new application identifier
-                $r['identifier'] = uniqid();
-                // create db name
-                $r['db_name'] = $r['identifier'].'_'.$this->account->number;
-
-                // TODO: create new user and add privs to isolate db
-                // create new username
-                $r['db_username'] = 'db'.$r['identifier'];
-
-                // TODO: create db in different cluster
-                // $r['db_host'] = '';
-
-                // create a bucket for storing logs
-                // get AWS credential - default to us-east-1
-                $region = 'us-east-1';
-                $credentials = new \Kyte\Aws\Credentials($region, $aws->aws_public_key, $aws->aws_private_key);
-
-                // create s3 bucket for site data
-                $bucketName = strtolower(preg_replace('/[^A-Za-z0-9_-]/', '-', $r['name']).'-logs-'.$r['identifier'].'-'.time());
-                $r['s3LogBucketName'] = $bucketName;
-                $r['s3LogBucketRegion'] = $region;
-
-                $s3 = new \Kyte\Aws\S3($credentials, $bucketName);
-                try {
-                    $s3->createBucket();
-                } catch(\Exception $e) {
-                    throw new \Exception("Unable to create new bucket for logs.");
-                }
-
-                // create database
                 \Kyte\Core\DBI::createDatabase($r['db_name'], $r['db_username'], $r['db_password']);
 
                 break;
@@ -165,8 +162,23 @@ class ApplicationController extends ModelController
                 // // delete distribution
                 // $cf->delete();
 
-                // delete database from cluster
-                \Kyte\Core\DBI::query("DROP DATABASE `{$o->db_name}`;");
+                // Async teardown (KYTE-#559): don't drop anything synchronously.
+                // Mark the app + its sites 'deleting'; the SiteProvisioningWorker
+                // tears down each site's AWS infra (S3/CloudFront/ACM) over ticks,
+                // then finalizes the app (drops the tenant DB + its user, sets
+                // deleted=1/status='deleted'). $r is the base controller's
+                // $autodelete flag — set it false so the app row survives for the
+                // worker to finalize (and its sites aren't row-deleted out from
+                // under the teardown).
+                $r = false;
+                $o->save(['status' => 'deleting']);
+                $sites = new \Kyte\Core\Model(KyteSite);
+                $sites->retrieve('application', $o->id, false, []);
+                foreach ($sites->objects as $s) {
+                    if ((string)($s->status ?? '') !== 'deleted') {
+                        $s->save(['status' => 'deleting']);
+                    }
+                }
 
                 // // delete acm certificate
                 // $acm = new \Kyte\Aws\Acm($credentials, $o->AcmArn);
