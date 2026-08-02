@@ -1,0 +1,855 @@
+<?php
+namespace Kyte\Core\Auth;
+
+use Kyte\Core\Api;
+use Kyte\Core\Model;
+use Kyte\Core\ModelObject;
+
+/**
+ * URL handler for app-level SSO (OIDC) — an app's END USERS sign in with their
+ * identity provider (Microsoft/Entra first) and receive a Kyte JWT session
+ * (KYTE-#560). Kyte is the OIDC relying party (the mirror of the #551 hosted-MCP
+ * OAuth server, where Kyte was the provider).
+ *
+ * Endpoints (routed by Api::route() before the MVC pipeline, like /jwt, /mcp,
+ * /oauth):
+ *
+ *   GET  /sso/authorize?app_identifier=&provider=microsoft&redirect=<app url>
+ *          Look up the app's provider config, run OIDC discovery, build
+ *          state+nonce+PKCE, persist a KyteSsoState, 302 to the provider.
+ *   GET  /sso/callback?code=&state=      [P1 next slice #561]
+ *          Validate state, exchange the code, validate the id_token, map the
+ *          user (JIT), mint a Kyte session, redirect back with a one-time code.
+ *   POST /sso/exchange   body {sso_code}  [P1 next slice #561]
+ *          Redeem the one-time code -> the Kyte JWT session (access+refresh).
+ *
+ * Config (KyteAppIdentityProvider) is Shipyard-managed and carries a
+ * KMS-encrypted client secret — never exposed via MCP. Design:
+ * docs/design/app-microsoft-sso.md.
+ */
+class SsoEndpoint
+{
+    private const STATE_TTL = 600; // 10 min to complete the provider round-trip
+
+    public static function handle(Api $api): void
+    {
+        self::emitCorsHeaders();
+        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+            $reqHeaders = $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'] ?? '';
+            header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+            header("Access-Control-Allow-Headers: {$reqHeaders}");
+            http_response_code(204);
+            return;
+        }
+
+        $rawBody = (string)file_get_contents('php://input');
+        $result = self::process($api, $_SERVER, $rawBody);
+
+        foreach (($result['headers'] ?? []) as $header) {
+            header($header);
+        }
+        http_response_code((int)$result['status']);
+        if (array_key_exists('raw', $result)) {
+            echo $result['raw'];
+        } elseif (isset($result['body'])) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($result['body']);
+        }
+    }
+
+    /**
+     * Pure dispatcher. @return array{status:int, body?:array, raw?:string, headers?:string[]}
+     */
+    public static function process(Api $api, array $server, string $rawBody): array
+    {
+        $path = ltrim((string)parse_url($server['REQUEST_URI'] ?? '', PHP_URL_PATH), '/');
+        $segments = explode('/', $path);
+        $action = $segments[1] ?? '';   // sso/<action>
+
+        try {
+            switch ($action) {
+                case 'authorize':
+                    return self::authorize(self::queryParams($server));
+                case 'callback':
+                    return self::callback(self::queryParams($server));
+                case 'exchange':
+                    return self::exchange(self::parseBody($rawBody, $server), self::clientIp($server));
+                default:
+                    return self::error(404, 'not_found', "Unknown SSO endpoint: /{$path}.");
+            }
+        } catch (\Throwable $e) {
+            error_log('SsoEndpoint: ' . $e->getMessage());
+            return self::error(500, 'server_error', 'SSO error.');
+        }
+    }
+
+    /**
+     * Begin an SSO login: resolve the app's provider, discover the provider's
+     * authorization endpoint, and redirect the user there with state + nonce +
+     * PKCE (all persisted in a short-lived KyteSsoState for the callback).
+     *
+     * @param array<string,mixed> $params
+     */
+    private static function authorize(array $params): array
+    {
+        $appIdentifier = isset($params['app_identifier']) ? (string)$params['app_identifier'] : '';
+        $providerName  = isset($params['provider']) && $params['provider'] !== '' ? (string)$params['provider'] : 'microsoft';
+        $returnUrl     = isset($params['redirect']) ? (string)$params['redirect'] : '';
+
+        if ($appIdentifier === '') {
+            return self::error(400, 'invalid_request', 'app_identifier is required.');
+        }
+
+        $app = new ModelObject(\Application);
+        if (!$app->retrieve('identifier', $appIdentifier)) {
+            return self::error(404, 'not_found', 'Application not found.');
+        }
+
+        // Reject an off-app return target before we ever redirect to the IdP —
+        // the single-use sso_code must only ever be handed back to one of this
+        // app's own site domains (open-redirect / code-interception defense).
+        if (!self::isAllowedReturnUrl($app, $returnUrl)) {
+            return self::error(400, 'invalid_request', 'redirect is not an allowed return URL for this application.');
+        }
+
+        $cfg = new ModelObject(\KyteAppIdentityProvider);
+        $found = $cfg->retrieve('application', (int)$app->id, [
+            ['field' => 'provider', 'value' => $providerName],
+            ['field' => 'enabled',  'value' => 1],
+        ]);
+        if (!$found) {
+            return self::error(404, 'sso_not_configured', "SSO ({$providerName}) is not enabled for this application.");
+        }
+        if (empty($cfg->client_id)) {
+            return self::error(500, 'sso_misconfigured', 'SSO provider is missing a client_id.');
+        }
+
+        // OIDC discovery → authorization_endpoint.
+        $discovery = self::discover($cfg);
+        if ($discovery === null || empty($discovery['authorization_endpoint'])) {
+            return self::error(502, 'discovery_failed', 'Could not load the SSO provider configuration.');
+        }
+
+        // state + nonce + PKCE + a browser-bound correlator (login-CSRF defense).
+        $state    = self::randToken(32);
+        $nonce    = self::randToken(32);
+        $verifier = self::randToken(64);
+        $browser  = self::randToken(32);
+        $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
+
+        $redirectUri = !empty($cfg->redirect_uri) ? (string)$cfg->redirect_uri : (self::baseUrl($_SERVER) . '/sso/callback');
+
+        $stateRow = new ModelObject(\KyteSsoState);
+        $stateRow->create([
+            'state'         => $state,
+            'nonce'         => $nonce,
+            'code_verifier' => $verifier,
+            'browser_hash'  => hash('sha256', $browser),
+            'application'   => (int)$app->id,
+            'provider'      => $providerName,
+            'return_url'    => $returnUrl,
+            'redirect_uri'  => $redirectUri,
+            'expires_at'    => time() + self::STATE_TTL,
+            'consumed_at'   => 0,
+            'kyte_account'  => (int)$app->kyte_account,
+        ]);
+
+        $scopes = !empty($cfg->scopes) ? (string)$cfg->scopes : 'openid profile email';
+        $authUrl = (string)$discovery['authorization_endpoint'] . '?' . http_build_query([
+            'client_id'             => (string)$cfg->client_id,
+            'response_type'         => 'code',
+            'redirect_uri'          => $redirectUri,
+            'response_mode'         => 'query',
+            'scope'                 => $scopes,
+            'state'                 => $state,
+            'nonce'                 => $nonce,
+            'code_challenge'        => $challenge,
+            'code_challenge_method' => 'S256',
+        ]);
+
+        // SameSite=Lax so the cookie rides the top-level GET redirect back from
+        // the IdP to /callback, but not arbitrary cross-site subrequests.
+        // Scoped to /sso; short-lived to match the state TTL.
+        $cookie = 'kyte_sso_bt=' . $browser
+            . '; Max-Age=' . self::STATE_TTL . '; Path=/sso; HttpOnly; Secure; SameSite=Lax';
+
+        return ['status' => 302, 'headers' => [
+            'Location: ' . $authUrl,
+            'Set-Cookie: ' . $cookie,
+            'Cache-Control: no-store',
+        ]];
+    }
+
+    /**
+     * Fetch the provider's OIDC discovery document (authorization/token
+     * endpoints + jwks_uri). Uses the explicit discovery_url, else the issuer +
+     * /.well-known/openid-configuration.
+     *
+     * @return array<string,mixed>|null
+     */
+    private static function discover(ModelObject $cfg): ?array
+    {
+        $url = !empty($cfg->discovery_url)
+            ? (string)$cfg->discovery_url
+            : rtrim((string)$cfg->issuer, '/') . '/.well-known/openid-configuration';
+        if ($url === '/.well-known/openid-configuration') {
+            return null;
+        }
+        return self::httpGetJson($url);
+    }
+
+    /** @return array<string,mixed>|null */
+    private static function httpGetJson(string $url): ?array
+    {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_HTTPHEADER     => ['Accept: application/json'],
+        ]);
+        $body = curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($body === false || $code < 200 || $code >= 300) {
+            return null;
+        }
+        $decoded = json_decode((string)$body, true);
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    // ----- callback + exchange (KYTE-#560 P1) ----------------------------
+
+    /**
+     * OIDC callback: validate the state, exchange the code, validate the
+     * id_token, map/JIT the app user, and hand back a single-use sso_code the
+     * app front-end redeems at /sso/exchange.
+     *
+     * @param array<string,mixed> $params
+     */
+    private static function callback(array $params): array
+    {
+        $state   = isset($params['state']) ? (string)$params['state'] : '';
+        $code    = isset($params['code']) ? (string)$params['code'] : '';
+        $provErr = isset($params['error']) ? (string)$params['error'] : '';
+
+        if ($state === '') {
+            return self::error(400, 'invalid_request', 'Missing state.');
+        }
+
+        // Look up + single-use consume the in-flight state.
+        $st = new ModelObject(\KyteSsoState);
+        if (!$st->retrieve('state', $state)) {
+            return self::error(400, 'invalid_state', 'Unknown or expired login state.');
+        }
+        if ((int)$st->consumed_at !== 0) {
+            return self::error(400, 'invalid_state', 'Login state already used.');
+        }
+        if ((int)$st->expires_at < time()) {
+            return self::error(400, 'invalid_state', 'Login state expired.');
+        }
+
+        // Bind the callback to the browser that began the flow (login-CSRF /
+        // session-fixation defense). The correlator was set as an HttpOnly
+        // cookie at /authorize; require its hash to match this state row before
+        // consuming anything.
+        $expectHash = (string)($st->browser_hash ?? '');
+        $browserTok = self::readCookie('kyte_sso_bt');
+        if ($expectHash === '' || $browserTok === '' || !hash_equals($expectHash, hash('sha256', $browserTok))) {
+            return self::error(400, 'invalid_state', 'Login state not bound to this browser.');
+        }
+
+        $st->save(['consumed_at' => time()]);
+
+        $returnUrl = (string)($st->return_url ?? '');
+
+        if ($provErr !== '') {
+            return self::backToApp($returnUrl, ['error' => $provErr]);
+        }
+        if ($code === '') {
+            return self::backToApp($returnUrl, ['error' => 'no_code']);
+        }
+
+        $app = new ModelObject(\Application);
+        if (!$app->retrieve('id', (int)$st->application)) {
+            return self::error(400, 'invalid_state', 'Application not found.');
+        }
+        $cfg = new ModelObject(\KyteAppIdentityProvider);
+        if (!$cfg->retrieve('application', (int)$app->id, [
+            ['field' => 'provider', 'value' => (string)$st->provider],
+            ['field' => 'enabled',  'value' => 1],
+        ])) {
+            return self::backToApp($returnUrl, ['error' => 'sso_not_configured']);
+        }
+
+        $disc = self::discover($cfg);
+        if ($disc === null || empty($disc['token_endpoint']) || empty($disc['jwks_uri'])) {
+            return self::backToApp($returnUrl, ['error' => 'discovery_failed']);
+        }
+
+        // Exchange the authorization code (client_secret decrypted server-side).
+        try {
+            $secret = self::decryptSecret((string)$cfg->client_secret);
+        } catch (\Throwable $e) {
+            error_log('SsoEndpoint: secret decrypt failed - ' . $e->getMessage());
+            return self::backToApp($returnUrl, ['error' => 'secret_error']);
+        }
+        $tok = self::httpPostForm((string)$disc['token_endpoint'], [
+            'grant_type'    => 'authorization_code',
+            'code'          => $code,
+            'redirect_uri'  => (string)$st->redirect_uri,
+            'client_id'     => (string)$cfg->client_id,
+            'client_secret' => $secret,
+            'code_verifier' => (string)$st->code_verifier,
+            'scope'         => (string)($cfg->scopes ?: 'openid profile email'),
+        ]);
+        if ($tok === null || empty($tok['id_token'])) {
+            return self::backToApp($returnUrl, ['error' => 'token_exchange_failed']);
+        }
+
+        // Validate the id_token (signature + aud + nonce + tenant).
+        $claims = self::validateIdToken((string)$tok['id_token'], $disc, $cfg, (string)$st->nonce);
+        if ($claims === null) {
+            return self::backToApp($returnUrl, ['error' => 'id_token_invalid']);
+        }
+
+        // Map to an app user by the IMMUTABLE subject (sub) — never by the
+        // mutable/unverified email or preferred_username (account-takeover
+        // defense). Email is a display attribute + a first-login match hint,
+        // trusted only when the asserting tenant is authoritative.
+        $subject = isset($claims['sub']) ? (string)$claims['sub'] : '';
+        if ($subject === '') {
+            return self::backToApp($returnUrl, ['error' => 'no_subject']);
+        }
+        $tid = isset($claims['tid']) ? (string)$claims['tid'] : '';
+
+        $emailClaim = (string)($cfg->user_email_claim ?: 'email');
+        $rawEmail = $claims[$emailClaim] ?? ($claims['email'] ?? null);
+        $email = (is_string($rawEmail) && $rawEmail !== '') ? $rawEmail : null;
+
+        $user = self::resolveSsoUser(
+            $app, $cfg, (string)$st->provider, $subject, $tid, $email,
+            (int)$cfg->jit_enabled === 1, (int)$cfg->restrict_to_existing === 1, $claims
+        );
+        if (is_string($user)) {
+            return self::backToApp($returnUrl, ['error' => $user]);
+        }
+
+        // Single-use hand-off code (no tokens at rest).
+        $rawCode = self::randToken(48);
+        $codeRow = new ModelObject(\KyteSsoCode);
+        $codeRow->create([
+            'code_hash'    => hash('sha256', $rawCode),
+            'application'  => (int)$app->id,
+            'sso_user_id'  => (int)$user->id,
+            'expires_at'   => time() + 120,
+            'consumed_at'  => 0,
+            'kyte_account' => (int)$app->kyte_account,
+        ]);
+
+        // Defense in depth: the return_url was validated at /authorize, but never
+        // redirect the code to a host that isn't (still) one of the app's own —
+        // fall back to returning it as JSON rather than leaking it off-app.
+        if (!self::isAllowedReturnUrl($app, $returnUrl)) {
+            return self::backToApp('', ['sso_code' => $rawCode]);
+        }
+
+        return self::backToApp($returnUrl, ['sso_code' => $rawCode]);
+    }
+
+    /**
+     * Redeem a single-use sso_code for the Kyte JWT session (access + refresh).
+     *
+     * @param array<string,mixed> $body
+     */
+    private static function exchange(array $body, string $ip): array
+    {
+        $rawCode = isset($body['sso_code']) ? (string)$body['sso_code'] : '';
+        if ($rawCode === '') {
+            return self::error(400, 'invalid_request', 'sso_code is required.');
+        }
+
+        $codeRow = new ModelObject(\KyteSsoCode);
+        if (!$codeRow->retrieve('code_hash', hash('sha256', $rawCode))) {
+            return self::error(400, 'invalid_grant', 'Invalid sso_code.');
+        }
+        if ((int)$codeRow->consumed_at !== 0) {
+            return self::error(400, 'invalid_grant', 'sso_code already used.');
+        }
+        if ((int)$codeRow->expires_at < time()) {
+            return self::error(400, 'invalid_grant', 'sso_code expired.');
+        }
+        $codeRow->save(['consumed_at' => time()]);
+
+        $app = new ModelObject(\Application);
+        if (!$app->retrieve('id', (int)$codeRow->application)) {
+            return self::error(400, 'invalid_grant', 'Application not found.');
+        }
+        // resolveAuthContext registers the app's user_model + sets its DB context.
+        $ctx = JwtEndpoint::resolveAuthContext((string)$app->identifier);
+        if ($ctx['user_model'] === constant('KyteUser')) {
+            // Never mint a platform-user session from an SSO code (mirrors the
+            // callback-side refusal; a code should not exist for this case).
+            return self::error(400, 'invalid_grant', 'SSO requires a dedicated user model.');
+        }
+        $user = new ModelObject($ctx['user_model']);
+        if (!$user->retrieve('id', (int)$codeRow->sso_user_id)) {
+            return self::error(400, 'invalid_grant', 'User not found.');
+        }
+        $account = new ModelObject(\KyteAccount);
+        if (!$account->retrieve('id', (int)$app->kyte_account)) {
+            return self::error(500, 'server_error', 'Account not found.');
+        }
+
+        $session = JwtEndpoint::issueSession($user, $account, $app, $ip);
+        return ['status' => 200, 'headers' => ['Cache-Control: no-store'], 'body' => $session];
+    }
+
+    /**
+     * Validate an OIDC id_token: signature via the provider JWKS (firebase JWK),
+     * then audience, nonce, issuer, and tenant (tid) scoping. Returns the claims
+     * or null.
+     *
+     * @param array<string,mixed> $disc
+     * @return array<string,mixed>|null
+     */
+    private static function validateIdToken(string $idToken, array $disc, ModelObject $cfg, string $expectedNonce): ?array
+    {
+        try {
+            $jwks = self::httpGetJson((string)$disc['jwks_uri']);
+            if ($jwks === null || empty($jwks['keys'])) {
+                return null;
+            }
+            // Azure/Microsoft JWKS keys omit the per-key "alg"; supply RS256 as
+            // the default so parseKeySet doesn't reject them. All Microsoft v2.0
+            // id_tokens are RS256, and JWT::decode still enforces the header alg.
+            $keys = \Firebase\JWT\JWK::parseKeySet($jwks, 'RS256');
+            // JWT::decode validates the signature + exp/nbf and throws otherwise.
+            $claims = (array)\Firebase\JWT\JWT::decode($idToken, $keys);
+        } catch (\Throwable $e) {
+            error_log('SsoEndpoint id_token validation: ' . $e->getMessage());
+            return null;
+        }
+
+        // Audience must be our client_id.
+        $aud = $claims['aud'] ?? null;
+        $clientId = (string)$cfg->client_id;
+        if (is_array($aud)) {
+            if (!in_array($clientId, array_map('strval', $aud), true)) {
+                return null;
+            }
+        } elseif ((string)$aud !== $clientId) {
+            return null;
+        }
+
+        // Nonce must match the one we issued (id_token replay defense).
+        if (!isset($claims['nonce']) || !hash_equals($expectedNonce, (string)$claims['nonce'])) {
+            return null;
+        }
+
+        // Issuer: exact-match the discovered issuer when it's concrete (a
+        // tenant-specific config). Skip when it carries a {placeholder} (the
+        // 'common'/'organizations' endpoints) — tenant scoping below covers it.
+        if (!empty($disc['issuer']) && strpos((string)$disc['issuer'], '{') === false
+            && isset($claims['iss']) && (string)$claims['iss'] !== (string)$disc['issuer']) {
+            return null;
+        }
+
+        // Tenant scoping: the token's tid must match the app's configured tenant.
+        if (!empty($cfg->tenant) && (!isset($claims['tid']) || (string)$claims['tid'] !== (string)$cfg->tenant)) {
+            return null;
+        }
+
+        return $claims;
+    }
+
+    /**
+     * Resolve the app user for a validated SSO login, keyed on the immutable
+     * provider subject (never the mutable email). Runs in the app's user_model +
+     * DB context (resolveAuthContext sets that up).
+     *
+     * Returns the app-user ModelObject on success, or a string error code:
+     *   'sso_requires_user_model' — app has no dedicated user_model (would land
+     *                               on the platform KyteUser table — refused).
+     *   'user_not_provisioned'    — restrict_to_existing / JIT off and no link.
+     *
+     * @return ModelObject|string
+     */
+    private static function resolveSsoUser(ModelObject $app, ModelObject $cfg, string $provider, string $subject, string $tid, ?string $email, bool $jit, bool $restrict, array $claims = [])
+    {
+        $ctx = JwtEndpoint::resolveAuthContext((string)$app->identifier);
+        $userModel     = $ctx['user_model'];
+        $usernameField = (string)$ctx['username_field'];
+        $passwordField = (string)($ctx['password_field'] ?? '');
+
+        // SSO must map into an app-specific user model, NEVER the shared platform
+        // KyteUser table (the Shipyard/console admin identity store). If the app
+        // hasn't configured user_model/username/password, resolveAuthContext
+        // falls back to KyteUser — refuse rather than provision/bind a platform
+        // identity for an external IdP user.
+        if ($userModel === constant('KyteUser')) {
+            error_log("SsoEndpoint: app '{$app->identifier}' has no dedicated user_model; refusing SSO into the platform KyteUser table.");
+            return 'sso_requires_user_model';
+        }
+
+        // 1. Returning user: resolve by the immutable (application, provider,
+        //    subject) link. A token bearing someone else's email cannot reach
+        //    another user's account here.
+        $link = new ModelObject(\KyteSsoIdentity);
+        $haveLink = $link->retrieve('subject', $subject, [
+            ['field' => 'application', 'value' => (int)$app->id],
+            ['field' => 'provider',    'value' => $provider],
+        ]);
+        if ($haveLink) {
+            $user = new ModelObject($userModel);
+            if ($user->retrieve('id', (int)$link->sso_user_id)) {
+                if ($email !== null && $email !== (string)$link->email) {
+                    $link->save(['email' => $email]); // refresh display attribute
+                }
+                return $user;
+            }
+            // Dangling link (the linked user was deleted). Re-provision and
+            // REBIND this same link row rather than minting a fresh orphan on
+            // every login (a second link row would violate the unique index).
+            if ($restrict || !$jit) {
+                return 'user_not_provisioned';
+            }
+            $newId = self::jitCreateUser($app, $userModel, $usernameField, $passwordField, $email);
+            if ($newId === null) {
+                return 'user_not_provisioned';
+            }
+            $link->save(['sso_user_id' => $newId, 'email' => $email ?? '']);
+            $rebound = new ModelObject($userModel);
+            return $rebound->retrieve('id', $newId) ? $rebound : 'user_not_provisioned';
+        }
+
+        // 2. First login for this subject.
+        //    Link to a PRE-EXISTING app user by email ONLY when the token is a
+        //    trustworthy assertion of that email's owner:
+        //      (a) the config pins a single tenant AND the token's tid matches
+        //          it (multi-tenant/'common' lets any tenant assert any email),
+        //      (b) the user is a native MEMBER of that tenant, not a B2B guest
+        //          (a guest's email is set by their home tenant, which the
+        //          resource tenant does not own), and
+        //      (c) the target account is not already bound to a different
+        //          subject (never re-bind / hijack an account).
+        //    Otherwise fall through to JIT (a fresh, subject-bound account).
+        $tenantAuthoritative = !empty($cfg->tenant) && $tid !== '' && $tid === (string)$cfg->tenant;
+        $isGuest = isset($claims['idp']) || (isset($claims['acct']) && (int)$claims['acct'] === 1);
+
+        if ($email !== null && $tenantAuthoritative && !$isGuest) {
+            $existing = new ModelObject($userModel);
+            if ($existing->retrieve($usernameField, $email)) {
+                if (self::userAlreadyLinked($app, $provider, (int)$existing->id)) {
+                    // Account already claimed by another SSO subject — refuse to
+                    // attach a second identity to it.
+                    error_log("SsoEndpoint: refusing to link subject to app user {$existing->id} already bound to another SSO identity.");
+                    return 'user_not_provisioned';
+                }
+                self::createLink($app, $provider, $subject, $tid, (int)$existing->id, $email);
+                return $existing;
+            }
+        }
+
+        if ($restrict || !$jit) {
+            return 'user_not_provisioned';
+        }
+
+        // 3. JIT-provision a fresh app user bound to this subject.
+        $newId = self::jitCreateUser($app, $userModel, $usernameField, $passwordField, $email);
+        if ($newId === null) {
+            return 'user_not_provisioned';
+        }
+        self::createLink($app, $provider, $subject, $tid, $newId, $email);
+        $newUser = new ModelObject($userModel);
+        return $newUser->retrieve('id', $newId) ? $newUser : 'user_not_provisioned';
+    }
+
+    /**
+     * Create a fresh app user for a JIT SSO provision. SSO users never
+     * password-login, but the model may require a password column — set a random
+     * (unusable) hash. Returns the new user id, or null on failure.
+     *
+     * @param array<string,mixed> $userModel
+     */
+    private static function jitCreateUser(ModelObject $app, array $userModel, string $usernameField, string $passwordField, ?string $email): ?int
+    {
+        $data = [];
+        if ($email !== null && isset($userModel['struct'][$usernameField])) {
+            $data[$usernameField] = $email;
+        }
+        if ($passwordField !== '' && isset($userModel['struct'][$passwordField])) {
+            $data[$passwordField] = password_hash(bin2hex(random_bytes(24)), PASSWORD_DEFAULT);
+        }
+        if (isset($userModel['struct']['kyte_account'])) {
+            $data['kyte_account'] = (int)$app->kyte_account;
+        }
+        try {
+            $newUser = new ModelObject($userModel);
+            if (!$newUser->create($data)) {
+                return null;
+            }
+            return (int)$newUser->id;
+        } catch (\Throwable $e) {
+            error_log('SsoEndpoint JIT user create failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /** Does this app user already have an SSO identity link for this provider? */
+    private static function userAlreadyLinked(ModelObject $app, string $provider, int $userId): bool
+    {
+        $links = new Model(\KyteSsoIdentity);
+        $links->retrieve('sso_user_id', $userId, false, [
+            ['field' => 'application', 'value' => (int)$app->id],
+            ['field' => 'provider',    'value' => $provider],
+            ['field' => 'deleted',     'value' => 0],
+        ]);
+        return count($links->objects) > 0;
+    }
+
+    /** Persist the (application, provider, subject) -> app-user identity link. */
+    private static function createLink(ModelObject $app, string $provider, string $subject, string $tid, int $userId, ?string $email): void
+    {
+        try {
+            $link = new ModelObject(\KyteSsoIdentity);
+            $link->create([
+                'application'  => (int)$app->id,
+                'provider'     => $provider,
+                'subject'      => $subject,
+                'tenant_id'    => $tid,
+                'sso_user_id'  => $userId,
+                'email'        => $email ?? '',
+                'kyte_account' => (int)$app->kyte_account,
+            ]);
+        } catch (\Throwable $e) {
+            error_log('SsoEndpoint identity-link create failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Redirect back to the app's return URL with a query (sso_code or error);
+     * JSON if no return URL was given.
+     *
+     * SECURITY: validating return_url against the app's own sites (open-redirect
+     * / code-interception defense) is required before exposure — flagged for the
+     * P1 security review (#561).
+     *
+     * @param array<string,string> $query
+     */
+    /**
+     * Is $returnUrl a safe place to hand the single-use sso_code back to?
+     * An empty return_url is allowed (the code is returned as JSON, no redirect).
+     * Otherwise it must be an absolute https URL — http only on loopback, for
+     * local dev — whose host is one of the app's own site domains. This stops an
+     * attacker-crafted /authorize link (?redirect=https://evil/) from delivering
+     * the code to a host they control.
+     */
+    private static function isAllowedReturnUrl(ModelObject $app, string $returnUrl): bool
+    {
+        if ($returnUrl === '') {
+            return true;
+        }
+        $parts = parse_url($returnUrl);
+        if ($parts === false || empty($parts['host']) || empty($parts['scheme'])) {
+            return false;
+        }
+        $scheme = strtolower((string)$parts['scheme']);
+        $host   = strtolower((string)$parts['host']);
+        $isLoopback = in_array($host, ['localhost', '127.0.0.1', '::1'], true);
+        if ($scheme !== 'https' && !($scheme === 'http' && $isLoopback)) {
+            return false;
+        }
+        return in_array($host, self::appReturnHosts($app), true);
+    }
+
+    /**
+     * Lower-cased host names the app owns: every non-deleted KyteSite's cfDomain
+     * and aliasDomain, plus any custom Domain.domainName attached to those sites.
+     *
+     * @return string[]
+     */
+    private static function appReturnHosts(ModelObject $app): array
+    {
+        $hosts = [];
+        $sites = new Model(\KyteSite);
+        $sites->retrieve('application', (int)$app->id, false, [['field' => 'deleted', 'value' => 0]]);
+        foreach ($sites->objects as $s) {
+            foreach (['cfDomain', 'aliasDomain'] as $f) {
+                $h = isset($s->$f) ? strtolower(trim((string)$s->$f)) : '';
+                if ($h !== '') {
+                    $hosts[] = $h;
+                }
+            }
+            $domains = new Model(\Domain);
+            $domains->retrieve('site', (int)$s->id, false, [['field' => 'deleted', 'value' => 0]]);
+            foreach ($domains->objects as $d) {
+                $h = isset($d->domainName) ? strtolower(trim((string)$d->domainName)) : '';
+                if ($h !== '') {
+                    $hosts[] = $h;
+                }
+            }
+        }
+        return array_values(array_unique($hosts));
+    }
+
+    private static function backToApp(string $returnUrl, array $query): array
+    {
+        if ($returnUrl === '') {
+            return ['status' => 200, 'body' => $query, 'headers' => ['Cache-Control: no-store']];
+        }
+        $sep = strpos($returnUrl, '?') !== false ? '&' : '?';
+        return [
+            'status'  => 302,
+            'headers' => ['Location: ' . $returnUrl . $sep . http_build_query($query), 'Cache-Control: no-store'],
+        ];
+    }
+
+    /** @param array<string,string> $fields @return array<string,mixed>|null */
+    private static function httpPostForm(string $url, array $fields): ?array
+    {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => http_build_query($fields),
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded', 'Accept: application/json'],
+        ]);
+        $body = curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($body === false) {
+            return null;
+        }
+        $decoded = json_decode((string)$body, true);
+        if (!is_array($decoded)) {
+            return null;
+        }
+        if ($code < 200 || $code >= 300) {
+            error_log('SsoEndpoint token endpoint ' . $code . ': ' . substr((string)$body, 0, 300));
+            return null;
+        }
+        return $decoded;
+    }
+
+    /** @param array<string,mixed> $server @return array<string,mixed> */
+    private static function parseBody(string $raw, array $server): array
+    {
+        $ct = strtolower((string)($server['CONTENT_TYPE'] ?? $server['HTTP_CONTENT_TYPE'] ?? ''));
+        if (strpos($ct, 'application/json') !== false) {
+            $d = json_decode($raw, true);
+            return is_array($d) ? $d : [];
+        }
+        $out = [];
+        parse_str($raw, $out);
+        return $out;
+    }
+
+    /** @param array<string,mixed> $server */
+    private static function clientIp(array $server): string
+    {
+        return (string)($server['REMOTE_ADDR'] ?? '');
+    }
+
+    /** Read a single request cookie value from the Cookie header. */
+    private static function readCookie(string $name): string
+    {
+        $header = (string)($_SERVER['HTTP_COOKIE'] ?? '');
+        foreach (explode(';', $header) as $part) {
+            $kv = explode('=', trim($part), 2);
+            if (count($kv) === 2 && $kv[0] === $name) {
+                return urldecode($kv[1]);
+            }
+        }
+        return '';
+    }
+
+    /**
+     * 32-byte libsodium key for the client_secret at rest. Prefers an explicit
+     * install key, else derives deterministically from KYTE_JWT_SECRET (both are
+     * install-level secrets). See docs/design/app-microsoft-sso.md §6.
+     */
+    private static function ssoKey(): string
+    {
+        if (defined('KYTE_SSO_SECRET_KEY') && KYTE_SSO_SECRET_KEY !== '') {
+            $k = base64_decode((string)KYTE_SSO_SECRET_KEY, true);
+            if ($k !== false && strlen($k) === SODIUM_CRYPTO_SECRETBOX_KEYBYTES) {
+                return $k;
+            }
+        }
+        if (defined('KYTE_JWT_SECRET') && KYTE_JWT_SECRET !== '') {
+            return hash('sha256', 'kyte-sso-secret:' . KYTE_JWT_SECRET, true); // 32 bytes
+        }
+        throw new \Exception('No SSO encryption key (set KYTE_SSO_SECRET_KEY or KYTE_JWT_SECRET).');
+    }
+
+    /** Encrypt a provider client_secret for storage (base64 of nonce+ciphertext). */
+    public static function encryptSecret(string $plain): string
+    {
+        $nonce = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+        return base64_encode($nonce . sodium_crypto_secretbox($plain, $nonce, self::ssoKey()));
+    }
+
+    private static function decryptSecret(string $stored): string
+    {
+        $raw = base64_decode($stored, true);
+        if ($raw === false || strlen($raw) <= SODIUM_CRYPTO_SECRETBOX_NONCEBYTES) {
+            throw new \Exception('Invalid encrypted secret.');
+        }
+        $nonce  = substr($raw, 0, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+        $cipher = substr($raw, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+        $plain  = sodium_crypto_secretbox_open($cipher, $nonce, self::ssoKey());
+        if ($plain === false) {
+            throw new \Exception('Secret decryption failed.');
+        }
+        return $plain;
+    }
+
+    private static function randToken(int $len): string
+    {
+        $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        $max = strlen($alphabet) - 1;
+        $out = '';
+        $bytes = random_bytes($len);
+        for ($i = 0; $i < $len; $i++) {
+            $out .= $alphabet[ord($bytes[$i]) % ($max + 1)];
+        }
+        return $out;
+    }
+
+    public static function baseUrl(array $server): string
+    {
+        if (defined('KYTE_OAUTH_ISSUER') && KYTE_OAUTH_ISSUER) {
+            return rtrim((string)KYTE_OAUTH_ISSUER, '/');
+        }
+        $host = (defined('API_URL') && API_URL) ? (string)API_URL : (string)($server['HTTP_HOST'] ?? 'localhost');
+        return 'https://' . $host;
+    }
+
+    /** @param array<string,mixed> $server @return array<string,mixed> */
+    private static function queryParams(array $server): array
+    {
+        $qs = (string)($server['QUERY_STRING'] ?? '');
+        if ($qs === '') {
+            return [];
+        }
+        $out = [];
+        parse_str($qs, $out);
+        return $out;
+    }
+
+    private static function error(int $status, string $code, string $message): array
+    {
+        return ['status' => $status, 'body' => ['error' => $code, 'error_description' => $message], 'headers' => ['Cache-Control: no-store']];
+    }
+
+    private static function emitCorsHeaders(): void
+    {
+        $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+        if ($origin !== '') {
+            header("Access-Control-Allow-Origin: {$origin}");
+            header('Vary: Origin');
+        }
+    }
+}
