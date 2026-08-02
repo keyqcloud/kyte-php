@@ -701,6 +701,17 @@ class Api
 				return;
 			}
 
+			// /oauth/* (authorization server) and /.well-known/oauth-*
+			// (RFC 8414 / RFC 9728 discovery) are served by OAuthEndpoint — the
+			// OAuth 2.1 front door that lets Claude.ai / ChatGPT add /mcp as a
+			// hosted connector (KYTE-#551). Runs before the MVC pipeline, same
+			// rationale as /mcp and /jwt (own response shapes, pre-auth flow).
+			if (strcasecmp($firstSegment, 'oauth') === 0
+				|| stripos($path, '.well-known/oauth-') === 0) {
+				\Kyte\Core\Auth\OAuthEndpoint::handle($this);
+				return;
+			}
+
 			if (isset($_SERVER['HTTP_X_KYTE_APPID'])) {
 				$this->appId = $_SERVER['HTTP_X_KYTE_APPID'];
 			}
