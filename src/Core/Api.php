@@ -701,6 +701,14 @@ class Api
 				return;
 			}
 
+			// /sso/* — app-level OIDC SSO. An app's end users sign in via their
+			// identity provider (Microsoft/Entra first) and get a Kyte JWT
+			// session (KYTE-#560). Runs before the MVC pipeline like /jwt, /mcp.
+			if (strcasecmp($firstSegment, 'sso') === 0) {
+				\Kyte\Core\Auth\SsoEndpoint::handle($this);
+				return;
+			}
+
 			if (isset($_SERVER['HTTP_X_KYTE_APPID'])) {
 				$this->appId = $_SERVER['HTTP_X_KYTE_APPID'];
 			}
