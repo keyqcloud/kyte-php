@@ -714,8 +714,18 @@ class DBI {
   			throw new \Exception("Unable to create user. [Error]:  ".htmlspecialchars($con->error));
 		}
 
-		// set privs
-		$result = $con->query("GRANT ALL PRIVILEGES ON `{$name}`.* TO '{$username}'@'%';");
+		// Grant the tenant user the full app-relevant db-level privilege set.
+		// NOT "ALL PRIVILEGES": on a managed engine (RDS) the provisioning
+		// identity can only grant privileges it explicitly holds, and GRANT ALL
+		// is denied when it lacks even one privilege ALL expands to. This
+		// explicit list matches what the provisioning user is granted (KYTE-#205)
+		// and covers every normal application DB operation (DML + DDL + views /
+		// routines / triggers) — i.e. ALL minus GRANT OPTION, which a tenant
+		// user must never hold anyway.
+		$tenantPrivs = 'SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, '
+			. 'CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, CREATE VIEW, SHOW VIEW, '
+			. 'CREATE ROUTINE, ALTER ROUTINE, EVENT, TRIGGER, REFERENCES';
+		$result = $con->query("GRANT {$tenantPrivs} ON `{$name}`.* TO '{$username}'@'%';");
 		if($result === false) {
   			throw new \Exception("Unable to grant privileges. [Error]:  ".htmlspecialchars($con->error));
 		}
