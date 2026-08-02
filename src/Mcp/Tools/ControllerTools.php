@@ -351,6 +351,86 @@ final class ControllerTools
         return ['deleted' => true, 'controller_id' => $controller_id];
     }
 
+    /**
+     * Add a function to a controller: a hook, a CRUD method override, or a
+     * custom helper. Created with the generated stub for its type; add real
+     * behaviour afterward with write_function_code, then publish with
+     * commit_draft (which regenerates the controller). Mirrors how Shipyard's
+     * function editor creates functions.
+     *
+     * Types: hooks — hook_init, hook_auth, hook_prequery, hook_preprocess,
+     * hook_response_data, hook_process_get_response; method overrides — new,
+     * update, get, delete; and custom (arbitrary helper). Hooks and overrides
+     * are unique per controller (one each); custom allows many.
+     *
+     * @param int         $controller_id Controller id (from list_controllers).
+     * @param string      $type          Function type (see list above).
+     * @param string      $name          Function name — the PHP method name for a
+     *                                    custom function; a label for hooks/overrides
+     *                                    (the type is the slot).
+     * @param string|null $description   Optional description.
+     * @return array{created: bool, function?: array<string,mixed>|null, error?: string}
+     */
+    #[McpTool(name: 'create_function', description: 'Add a function to a controller: a hook (hook_preprocess / hook_response_data / hook_init / hook_auth / hook_prequery / hook_process_get_response), a CRUD method override (new / update / get / delete), or a custom helper. Created as a stub — add behaviour with write_function_code then publish with commit_draft. Hooks and overrides are unique per controller; custom allows multiple.')]
+    #[RequiresScope('schema')]
+    public function createFunction(int $controller_id, string $type, string $name, ?string $description = null): array
+    {
+        $accountId = $this->accountIdOrZero();
+        if ($accountId === 0 || !$this->controllerBelongsToAccount($controller_id, $accountId)) {
+            return ['created' => false, 'error' => 'Controller not found in this account.'];
+        }
+
+        $validTypes = [
+            'hook_init', 'hook_auth', 'hook_prequery', 'hook_preprocess',
+            'hook_response_data', 'hook_process_get_response',
+            'new', 'update', 'get', 'delete', 'custom',
+        ];
+        if (!in_array($type, $validTypes, true)) {
+            return ['created' => false, 'error' => "Invalid function type '{$type}'. Valid types: " . implode(', ', $validTypes) . '.'];
+        }
+        if (trim($name) === '') {
+            return ['created' => false, 'error' => 'Function name is required.'];
+        }
+
+        // FunctionController's initial-version write attributes created_by to
+        // $api->user (and kyte_account to $api->account). MCP tokens populate
+        // account but NOT user, so bind a representative account user for the
+        // internal call and restore it after — without it the version write
+        // dereferences null. (create_controller doesn't need this; its
+        // controller never versions on create.)
+        $api = $this->api;
+        $priorUser = isset($api->user) ? $api->user : null;
+        $acctUser = new \Kyte\Core\ModelObject(\KyteUser);
+        if (!$acctUser->retrieve('kyte_account', $accountId)) {
+            return ['created' => false, 'error' => 'No user is available for this account to attribute the change to.'];
+        }
+        $api->user = $acctUser;
+
+        $resp = [];
+        try {
+            $fnCtrl = new \Kyte\Mvc\Controller\FunctionController(constant('Function'), $api, 'm/d/Y H:i:s', $resp, true);
+            $data = ['name' => $name, 'controller' => $controller_id, 'type' => $type];
+            if ($description !== null) {
+                $data['description'] = $description;
+            }
+            $fnCtrl->new($data);
+        } catch (\Throwable $e) {
+            return ['created' => false, 'error' => $e->getMessage()];
+        } finally {
+            $api->user = $priorUser;
+        }
+
+        $newId = isset($resp['data'][0]['id']) ? (int)$resp['data'][0]['id'] : 0;
+        if ($newId === 0) {
+            return ['created' => false, 'error' => 'Function was not created.'];
+        }
+        return [
+            'created'  => true,
+            'function' => $this->readFunction($newId),
+            'note'     => 'Stub created. Add behaviour with write_function_code, then publish with commit_draft.',
+        ];
+    }
+
     private function dataModelBelongsToApp(int $modelId, int $applicationId, int $accountId): bool
     {
         $m = new \Kyte\Core\ModelObject(\DataModel);
