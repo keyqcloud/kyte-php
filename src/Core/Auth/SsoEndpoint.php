@@ -2,6 +2,7 @@
 namespace Kyte\Core\Auth;
 
 use Kyte\Core\Api;
+use Kyte\Core\Model;
 use Kyte\Core\ModelObject;
 
 /**
@@ -102,6 +103,13 @@ class SsoEndpoint
         $app = new ModelObject(\Application);
         if (!$app->retrieve('identifier', $appIdentifier)) {
             return self::error(404, 'not_found', 'Application not found.');
+        }
+
+        // Reject an off-app return target before we ever redirect to the IdP —
+        // the single-use sso_code must only ever be handed back to one of this
+        // app's own site domains (open-redirect / code-interception defense).
+        if (!self::isAllowedReturnUrl($app, $returnUrl)) {
+            return self::error(400, 'invalid_request', 'redirect is not an allowed return URL for this application.');
         }
 
         $cfg = new ModelObject(\KyteAppIdentityProvider);
@@ -305,6 +313,13 @@ class SsoEndpoint
             'kyte_account' => (int)$app->kyte_account,
         ]);
 
+        // Defense in depth: the return_url was validated at /authorize, but never
+        // redirect the code to a host that isn't (still) one of the app's own —
+        // fall back to returning it as JSON rather than leaking it off-app.
+        if (!self::isAllowedReturnUrl($app, $returnUrl)) {
+            return self::backToApp('', ['sso_code' => $rawCode]);
+        }
+
         return self::backToApp($returnUrl, ['sso_code' => $rawCode]);
     }
 
@@ -460,6 +475,62 @@ class SsoEndpoint
      *
      * @param array<string,string> $query
      */
+    /**
+     * Is $returnUrl a safe place to hand the single-use sso_code back to?
+     * An empty return_url is allowed (the code is returned as JSON, no redirect).
+     * Otherwise it must be an absolute https URL — http only on loopback, for
+     * local dev — whose host is one of the app's own site domains. This stops an
+     * attacker-crafted /authorize link (?redirect=https://evil/) from delivering
+     * the code to a host they control.
+     */
+    private static function isAllowedReturnUrl(ModelObject $app, string $returnUrl): bool
+    {
+        if ($returnUrl === '') {
+            return true;
+        }
+        $parts = parse_url($returnUrl);
+        if ($parts === false || empty($parts['host']) || empty($parts['scheme'])) {
+            return false;
+        }
+        $scheme = strtolower((string)$parts['scheme']);
+        $host   = strtolower((string)$parts['host']);
+        $isLoopback = in_array($host, ['localhost', '127.0.0.1', '::1'], true);
+        if ($scheme !== 'https' && !($scheme === 'http' && $isLoopback)) {
+            return false;
+        }
+        return in_array($host, self::appReturnHosts($app), true);
+    }
+
+    /**
+     * Lower-cased host names the app owns: every non-deleted KyteSite's cfDomain
+     * and aliasDomain, plus any custom Domain.domainName attached to those sites.
+     *
+     * @return string[]
+     */
+    private static function appReturnHosts(ModelObject $app): array
+    {
+        $hosts = [];
+        $sites = new Model(\KyteSite);
+        $sites->retrieve('application', (int)$app->id, false, [['field' => 'deleted', 'value' => 0]]);
+        foreach ($sites->objects as $s) {
+            foreach (['cfDomain', 'aliasDomain'] as $f) {
+                $h = isset($s->$f) ? strtolower(trim((string)$s->$f)) : '';
+                if ($h !== '') {
+                    $hosts[] = $h;
+                }
+            }
+            $domains = new Model(\Domain);
+            $domains->retrieve('site', (int)$s->id, false, [['field' => 'deleted', 'value' => 0]]);
+            foreach ($domains->objects as $d) {
+                $h = isset($d->domainName) ? strtolower(trim((string)$d->domainName)) : '';
+                if ($h !== '') {
+                    $hosts[] = $h;
+                }
+            }
+        }
+        return array_values(array_unique($hosts));
+    }
+
     private static function backToApp(string $returnUrl, array $query): array
     {
         if ($returnUrl === '') {
