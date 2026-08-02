@@ -218,12 +218,15 @@ final class MediaTools
     /** @return array<string,mixed> */
     private function mediaToArray(\Kyte\Core\ModelObject $m): array
     {
+        // isset() (not `?? ` / `!== null`) so a freshly-created object that
+        // never populated an optional column (e.g. thumbnail) doesn't emit an
+        // undefined-property warning into the response stream.
         return [
             'id'        => (int)$m->id,
-            'name'      => (string)($m->name ?? ''),
-            's3key'     => $m->s3key !== null ? (string)$m->s3key : null,
-            'thumbnail' => $m->thumbnail !== null ? (string)$m->thumbnail : null,
-            'site'      => $m->site !== null ? (int)$m->site : null,
+            'name'      => isset($m->name) ? (string)$m->name : '',
+            's3key'     => isset($m->s3key) ? (string)$m->s3key : null,
+            'thumbnail' => isset($m->thumbnail) ? (string)$m->thumbnail : null,
+            'site'      => isset($m->site) ? (int)$m->site : null,
         ];
     }
 
