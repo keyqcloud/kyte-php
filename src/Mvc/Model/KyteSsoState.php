@@ -55,6 +55,12 @@ $KyteSsoState = [
 		// The redirect_uri sent to the provider (must match at token exchange).
 		'redirect_uri'	=> ['type' => 's', 'required' => false, 'size' => 1024, 'date' => false],
 
+		// sha256 of a browser-bound correlator set as an HttpOnly cookie at
+		// /authorize and required to match at /callback — ties the callback to
+		// the user agent that started the flow (login-CSRF / session-fixation
+		// defense; the OAuth `state` alone does not bind the browser).
+		'browser_hash'	=> ['type' => 's', 'required' => false, 'size' => 64, 'date' => false],
+
 		'expires_at'	=> [
 			'type' => 'i', 'required' => true, 'size' => 11, 'unsigned' => true, 'default' => 0, 'date' => true,
 		],

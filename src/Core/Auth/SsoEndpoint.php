@@ -130,10 +130,11 @@ class SsoEndpoint
             return self::error(502, 'discovery_failed', 'Could not load the SSO provider configuration.');
         }
 
-        // state + nonce + PKCE.
+        // state + nonce + PKCE + a browser-bound correlator (login-CSRF defense).
         $state    = self::randToken(32);
         $nonce    = self::randToken(32);
         $verifier = self::randToken(64);
+        $browser  = self::randToken(32);
         $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
 
         $redirectUri = !empty($cfg->redirect_uri) ? (string)$cfg->redirect_uri : (self::baseUrl($_SERVER) . '/sso/callback');
@@ -143,6 +144,7 @@ class SsoEndpoint
             'state'         => $state,
             'nonce'         => $nonce,
             'code_verifier' => $verifier,
+            'browser_hash'  => hash('sha256', $browser),
             'application'   => (int)$app->id,
             'provider'      => $providerName,
             'return_url'    => $returnUrl,
@@ -165,7 +167,17 @@ class SsoEndpoint
             'code_challenge_method' => 'S256',
         ]);
 
-        return ['status' => 302, 'headers' => ['Location: ' . $authUrl, 'Cache-Control: no-store']];
+        // SameSite=Lax so the cookie rides the top-level GET redirect back from
+        // the IdP to /callback, but not arbitrary cross-site subrequests.
+        // Scoped to /sso; short-lived to match the state TTL.
+        $cookie = 'kyte_sso_bt=' . $browser
+            . '; Max-Age=' . self::STATE_TTL . '; Path=/sso; HttpOnly; Secure; SameSite=Lax';
+
+        return ['status' => 302, 'headers' => [
+            'Location: ' . $authUrl,
+            'Set-Cookie: ' . $cookie,
+            'Cache-Control: no-store',
+        ]];
     }
 
     /**
@@ -236,6 +248,17 @@ class SsoEndpoint
         if ((int)$st->expires_at < time()) {
             return self::error(400, 'invalid_state', 'Login state expired.');
         }
+
+        // Bind the callback to the browser that began the flow (login-CSRF /
+        // session-fixation defense). The correlator was set as an HttpOnly
+        // cookie at /authorize; require its hash to match this state row before
+        // consuming anything.
+        $expectHash = (string)($st->browser_hash ?? '');
+        $browserTok = self::readCookie('kyte_sso_bt');
+        if ($expectHash === '' || $browserTok === '' || !hash_equals($expectHash, hash('sha256', $browserTok))) {
+            return self::error(400, 'invalid_state', 'Login state not bound to this browser.');
+        }
+
         $st->save(['consumed_at' => time()]);
 
         $returnUrl = (string)($st->return_url ?? '');
@@ -290,15 +313,26 @@ class SsoEndpoint
             return self::backToApp($returnUrl, ['error' => 'id_token_invalid']);
         }
 
-        // Map to an app user.
-        $emailClaim = (string)($cfg->user_email_claim ?: 'email');
-        $email = $claims[$emailClaim] ?? ($claims['email'] ?? ($claims['preferred_username'] ?? null));
-        if (!$email || !is_string($email)) {
-            return self::backToApp($returnUrl, ['error' => 'no_email_claim']);
+        // Map to an app user by the IMMUTABLE subject (sub) — never by the
+        // mutable/unverified email or preferred_username (account-takeover
+        // defense). Email is a display attribute + a first-login match hint,
+        // trusted only when the asserting tenant is authoritative.
+        $subject = isset($claims['sub']) ? (string)$claims['sub'] : '';
+        if ($subject === '') {
+            return self::backToApp($returnUrl, ['error' => 'no_subject']);
         }
-        $user = self::findOrCreateUser($app, $email, (int)$cfg->jit_enabled === 1, (int)$cfg->restrict_to_existing === 1);
-        if ($user === null) {
-            return self::backToApp($returnUrl, ['error' => 'user_not_provisioned']);
+        $tid = isset($claims['tid']) ? (string)$claims['tid'] : '';
+
+        $emailClaim = (string)($cfg->user_email_claim ?: 'email');
+        $rawEmail = $claims[$emailClaim] ?? ($claims['email'] ?? null);
+        $email = (is_string($rawEmail) && $rawEmail !== '') ? $rawEmail : null;
+
+        $user = self::resolveSsoUser(
+            $app, $cfg, (string)$st->provider, $subject, $tid, $email,
+            (int)$cfg->jit_enabled === 1, (int)$cfg->restrict_to_existing === 1
+        );
+        if (is_string($user)) {
+            return self::backToApp($returnUrl, ['error' => $user]);
         }
 
         // Single-use hand-off code (no tokens at rest).
@@ -353,6 +387,11 @@ class SsoEndpoint
         }
         // resolveAuthContext registers the app's user_model + sets its DB context.
         $ctx = JwtEndpoint::resolveAuthContext((string)$app->identifier);
+        if ($ctx['user_model'] === constant('KyteUser')) {
+            // Never mint a platform-user session from an SSO code (mirrors the
+            // callback-side refusal; a code should not exist for this case).
+            return self::error(400, 'invalid_grant', 'SSO requires a dedicated user model.');
+        }
         $user = new ModelObject($ctx['user_model']);
         if (!$user->retrieve('id', (int)$codeRow->sso_user_id)) {
             return self::error(400, 'invalid_grant', 'User not found.');
@@ -425,28 +464,80 @@ class SsoEndpoint
     }
 
     /**
-     * Find the app user by the mapped email, or JIT-create it (unless
-     * restrict_to_existing / jit disabled). Runs in the app's user_model + DB
-     * context (resolveAuthContext sets that up).
+     * Resolve the app user for a validated SSO login, keyed on the immutable
+     * provider subject (never the mutable email). Runs in the app's user_model +
+     * DB context (resolveAuthContext sets that up).
+     *
+     * Returns the app-user ModelObject on success, or a string error code:
+     *   'sso_requires_user_model' — app has no dedicated user_model (would land
+     *                               on the platform KyteUser table — refused).
+     *   'user_not_provisioned'    — restrict_to_existing / JIT off and no link.
+     *
+     * @return ModelObject|string
      */
-    private static function findOrCreateUser(ModelObject $app, string $email, bool $jit, bool $restrict): ?ModelObject
+    private static function resolveSsoUser(ModelObject $app, ModelObject $cfg, string $provider, string $subject, string $tid, ?string $email, bool $jit, bool $restrict)
     {
         $ctx = JwtEndpoint::resolveAuthContext((string)$app->identifier);
         $userModel     = $ctx['user_model'];
         $usernameField = (string)$ctx['username_field'];
         $passwordField = (string)($ctx['password_field'] ?? '');
 
-        $user = new ModelObject($userModel);
-        if ($user->retrieve($usernameField, $email)) {
-            return $user;
-        }
-        if ($restrict || !$jit) {
-            return null;
+        // SSO must map into an app-specific user model, NEVER the shared platform
+        // KyteUser table (the Shipyard/console admin identity store). If the app
+        // hasn't configured user_model/username/password, resolveAuthContext
+        // falls back to KyteUser — refuse rather than provision/bind a platform
+        // identity for an external IdP user.
+        if ($userModel === constant('KyteUser')) {
+            error_log("SsoEndpoint: app '{$app->identifier}' has no dedicated user_model; refusing SSO into the platform KyteUser table.");
+            return 'sso_requires_user_model';
         }
 
-        // JIT provision. SSO users never password-login, but the model may
-        // require a password column — set a random (unusable) hash.
-        $data = [$usernameField => $email];
+        // 1. Returning user: resolve by the immutable (application, provider,
+        //    subject) link. A token bearing someone else's email cannot reach
+        //    another user's account here.
+        $link = new ModelObject(\KyteSsoIdentity);
+        $haveLink = $link->retrieve('subject', $subject, [
+            ['field' => 'application', 'value' => (int)$app->id],
+            ['field' => 'provider',    'value' => $provider],
+        ]);
+        if ($haveLink) {
+            $user = new ModelObject($userModel);
+            if ($user->retrieve('id', (int)$link->sso_user_id)) {
+                if ($email !== null && $email !== (string)$link->email) {
+                    $link->save(['email' => $email]); // refresh display attribute
+                }
+                return $user;
+            }
+            // Dangling link (user deleted) — fall through to re-provision/deny.
+        }
+
+        // 2. First login for this subject.
+        //    Only link to a PRE-EXISTING app user by email when the asserting
+        //    tenant is authoritative for that email — i.e. a pinned single-tenant
+        //    config whose tid matches. In a multi-tenant / 'common' config any
+        //    tenant can assert any email, so email must never match an existing
+        //    account (that is the takeover vector).
+        $tenantAuthoritative = !empty($cfg->tenant) && $tid !== '' && $tid === (string)$cfg->tenant;
+
+        if ($email !== null && $tenantAuthoritative) {
+            $existing = new ModelObject($userModel);
+            if ($existing->retrieve($usernameField, $email)) {
+                self::createLink($app, $provider, $subject, $tid, (int)$existing->id, $email);
+                return $existing;
+            }
+        }
+
+        if ($restrict || !$jit) {
+            return 'user_not_provisioned';
+        }
+
+        // 3. JIT-provision a fresh app user bound to this subject. SSO users
+        //    never password-login, but the model may require a password column —
+        //    set a random (unusable) hash.
+        $data = [];
+        if ($email !== null && isset($userModel['struct'][$usernameField])) {
+            $data[$usernameField] = $email;
+        }
         if ($passwordField !== '' && isset($userModel['struct'][$passwordField])) {
             $data[$passwordField] = password_hash(bin2hex(random_bytes(24)), PASSWORD_DEFAULT);
         }
@@ -456,12 +547,32 @@ class SsoEndpoint
         try {
             $newUser = new ModelObject($userModel);
             if (!$newUser->create($data)) {
-                return null;
+                return 'user_not_provisioned';
             }
+            self::createLink($app, $provider, $subject, $tid, (int)$newUser->id, $email);
             return $newUser;
         } catch (\Throwable $e) {
             error_log('SsoEndpoint JIT user create failed: ' . $e->getMessage());
-            return null;
+            return 'user_not_provisioned';
+        }
+    }
+
+    /** Persist the (application, provider, subject) -> app-user identity link. */
+    private static function createLink(ModelObject $app, string $provider, string $subject, string $tid, int $userId, ?string $email): void
+    {
+        try {
+            $link = new ModelObject(\KyteSsoIdentity);
+            $link->create([
+                'application'  => (int)$app->id,
+                'provider'     => $provider,
+                'subject'      => $subject,
+                'tenant_id'    => $tid,
+                'sso_user_id'  => $userId,
+                'email'        => $email ?? '',
+                'kyte_account' => (int)$app->kyte_account,
+            ]);
+        } catch (\Throwable $e) {
+            error_log('SsoEndpoint identity-link create failed: ' . $e->getMessage());
         }
     }
 
@@ -588,6 +699,19 @@ class SsoEndpoint
     private static function clientIp(array $server): string
     {
         return (string)($server['REMOTE_ADDR'] ?? '');
+    }
+
+    /** Read a single request cookie value from the Cookie header. */
+    private static function readCookie(string $name): string
+    {
+        $header = (string)($_SERVER['HTTP_COOKIE'] ?? '');
+        foreach (explode(';', $header) as $part) {
+            $kv = explode('=', trim($part), 2);
+            if (count($kv) === 2 && $kv[0] === $name) {
+                return urldecode($kv[1]);
+            }
+        }
+        return '';
     }
 
     /**
