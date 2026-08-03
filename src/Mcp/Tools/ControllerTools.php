@@ -479,6 +479,14 @@ final class ControllerTools
      * controller are template-specific — an AI writing function code needs them
      * to produce code that runs. Call before write_function_code.
      *
+     * ⚠️ MCP KNOWLEDGE BASE — KEEP IN SYNC. This guide is verified against
+     * FunctionController::FUNCTION_TYPES (the hook/override templates) and
+     * ModelController (hook firing order, $this context, account scoping) plus
+     * Core/Model.php + Core/ModelObject.php (query API). Any MATERIAL change to a
+     * hook/override signature, the hook dispatch order, the $this context, the
+     * Model/ModelObject query API, or the response/error contract MUST update this
+     * guide in the same change, or AI-generated controller code will drift.
+     *
      * @return array<string,mixed>
      */
     #[McpTool(name: 'get_controller_guide', description: 'How to write PHP for Kyte controllers/functions: the exact hook + method-override signatures (which params are by-reference), the $this context ($this->user / $this->account / $this->response / $this->model), the Model/ModelObject query API, error handling, and worked examples. Call this BEFORE writing controller function code with write_function_code.')]

@@ -158,6 +158,13 @@ final class AccountTools
      * the backend through an injected client, NOT REST URLs — this tool gives an
      * AI client the exact API so generated page/script JS actually works.
      *
+     * ⚠️ MCP KNOWLEDGE BASE — KEEP IN SYNC. This guide is verified against the
+     * kyte-api-js SDK (kyte-source.js: get/post/put/delete, sessionCreate/Destroy,
+     * response + error handling). Any MATERIAL change to that SDK's method
+     * signatures, response/error shape, or the injected `k` bootstrap MUST update
+     * this guide in the same change, or AI-generated page JS will drift out of
+     * spec. Treat this as part of the SDK's public contract.
+     *
      * @return array<string,mixed>
      */
     #[McpTool(name: 'get_kytejs_guide', description: 'How to write JavaScript for Kyte pages/scripts. Kyte injects a global API client `k` into every published page; page/script JS calls the backend via k.get/k.post/k.put/k.delete(model, ...). Returns the exact signatures, the response shape, session helpers, and a worked example. Call this BEFORE writing any page or script JavaScript.')]

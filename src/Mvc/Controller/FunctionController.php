@@ -4,6 +4,10 @@ namespace Kyte\Mvc\Controller;
 
 class FunctionController extends ModelController
 {
+    // ⚠️ These templates (hook + method-override signatures) are the source of
+    // truth for the MCP authoring guide (ControllerTools::getControllerGuide /
+    // the get_controller_guide tool). If you change a signature here, update that
+    // guide in the same change so AI-generated controller code doesn't drift.
     // Configuration for function types and their templates
     private const FUNCTION_TYPES = [
         'hook_init' => [
