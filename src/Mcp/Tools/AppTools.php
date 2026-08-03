@@ -61,7 +61,53 @@ final class AppTools
         if ($newId === 0) {
             return ['created' => false, 'error' => 'Application was not created.'];
         }
+
+        // Generate the app's kyte_connect snippet. Shipyard normally builds this;
+        // an MCP-created app would otherwise have an EMPTY one, and since it's
+        // injected into every published page (KytePageController) that leaves the
+        // global `k` client undefined — all frontend JS then fails at runtime.
+        $this->generateKyteConnect($newId, $accountId);
+
         return ['created' => true, 'application' => $this->appToArray($newId)];
+    }
+
+    /**
+     * Build + persist the Application.kyte_connect snippet — the
+     * `var k = new Kyte(endpoint, publicKey, identifier, accountNumber, appId);`
+     * bootstrap injected into every published page so page/script JS has the
+     * global `k` client. Deterministic from the account's API key + the app
+     * identifier. No-op (logged) if there's no API key or no resolvable endpoint,
+     * or if kyte_connect is already set.
+     */
+    private function generateKyteConnect(int $appId, int $accountId): void
+    {
+        try {
+            $app = new \Kyte\Core\ModelObject(\Application);
+            if (!$app->retrieve('id', $appId) || (string)($app->kyte_connect ?? '') !== '') {
+                return;
+            }
+            $acct = new \Kyte\Core\ModelObject(\KyteAccount);
+            $key  = new \Kyte\Core\ModelObject(\KyteAPIKey);
+            if (!$acct->retrieve('id', $accountId) || !$key->retrieve('kyte_account', $accountId)) {
+                error_log("create_application: no API key/account for kyte_connect (app {$appId}); pages will need it set before publish.");
+                return;
+            }
+            $host = (defined('API_URL') && API_URL) ? (string)API_URL : (string)($_SERVER['HTTP_HOST'] ?? '');
+            if ($host === '') {
+                return;
+            }
+            $connect = sprintf(
+                "let endpoint = 'https://%s';var k = new Kyte(endpoint, '%s', '%s', '%s', '%s');k.init();",
+                $host,
+                (string)$key->public_key,
+                (string)$key->identifier,
+                (string)$acct->number,
+                (string)$app->identifier
+            );
+            $app->save(['kyte_connect' => $connect]);
+        } catch (\Throwable $e) {
+            error_log('create_application: kyte_connect generation failed - ' . $e->getMessage());
+        }
     }
 
     /**

@@ -134,6 +134,12 @@ final class Endpoint
                 . '(e.g. "Task"). Call get_kytejs_guide for the full signatures + a worked example '
                 . 'BEFORE writing any page or script JavaScript.'
                 . "\n\n"
+                . 'WRITING CONTROLLER / FUNCTION PHP: controller hooks and method overrides have '
+                . 'template-specific signatures (several params are by-reference) and a specific '
+                . '$this context ($this->user, $this->account, $this->response, $this->model) + '
+                . 'query API. Call get_controller_guide for the exact signatures + examples BEFORE '
+                . 'writing function code with write_function_code.'
+                . "\n\n"
                 . 'EDIT FLOW: create_* makes a draft; add code/content with write_page_part / '
                 . 'write_script_content / write_function_code; publish with commit_draft.'
             )

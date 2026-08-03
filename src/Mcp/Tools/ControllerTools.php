@@ -431,6 +431,91 @@ final class ControllerTools
         ];
     }
 
+    /**
+     * The authoring reference for controller/function PHP. The signatures,
+     * by-reference params, available $this context, and query API of a Kyte
+     * controller are template-specific — an AI writing function code needs them
+     * to produce code that runs. Call before write_function_code.
+     *
+     * @return array<string,mixed>
+     */
+    #[McpTool(name: 'get_controller_guide', description: 'How to write PHP for Kyte controllers/functions: the exact hook + method-override signatures (which params are by-reference), the $this context ($this->user / $this->account / $this->response / $this->model), the Model/ModelObject query API, error handling, and worked examples. Call this BEFORE writing controller function code with write_function_code.')]
+    #[RequiresScope('read')]
+    public function getControllerGuide(): array
+    {
+        return [
+            'overview' =>
+                'A Kyte controller extends the base ModelController and is bound to a data model. '
+                . 'The base already implements default CRUD (new/update/get/delete) over the bound '
+                . 'model — you only add what you need: HOOKS (fire around the default flow) or '
+                . 'METHOD OVERRIDES (replace a default operation). Author each as a function '
+                . '(create_function to add the slot, write_function_code to fill it, commit_draft '
+                . 'to publish). Write ONLY the function body/signature shown — it is spliced into '
+                . 'the generated controller class.',
+            'context' => [
+                '$this->user'     => 'The authenticated user object, or null if unauthenticated. ALWAYS guard: if (!$this->user || !isset($this->user->id)) { throw new \\Exception("auth required"); }. For app endpoints this is the app user_model row.',
+                '$this->account'  => 'The Kyte account (->id, ->number). Scope cross-model queries by it where relevant.',
+                '$this->response' => "The response envelope. For get/custom endpoints, set your payload with \$this->response['data'] = [...]; (an array/object). Default CRUD fills this for you.",
+                '$this->model'    => 'The bound model definition constant. The base CRUD operates on it.',
+                '$this->api'      => 'The Api instance (advanced use).',
+            ],
+            'hooks' => [
+                'hook_init()' => 'Runs when the controller initialises. No params.',
+                'hook_auth()' => 'Custom authentication gate. No params.',
+                'hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order)' =>
+                    'Fires BEFORE the query. $field/$value/$conditions/$all/$order are BY-REFERENCE — '
+                    . 'mutate them to scope/filter. Classic use: force a row to the current user — '
+                    . "\$field='id'; \$value=\$this->user->id;. \$method is 'new'|'update'|'get'|'delete'.",
+                'hook_preprocess($method, &$r, &$o = null)' =>
+                    'Fires BEFORE a create/update write. $r is the incoming data (BY-REFERENCE — '
+                    . 'validate/transform/inject fields). $o is the existing row on update/delete. '
+                    . 'throw \\Exception to abort the write.',
+                'hook_response_data($method, $o, &$r = null, &$d = null)' =>
+                    'Fires AFTER the operation. $o is the affected row; $r is the response row '
+                    . '(BY-REFERENCE — augment/redact it); $d is the original request data.',
+                'hook_process_get_response(&$r)' =>
+                    'Shape the assembled GET response ($r is BY-REFERENCE).',
+            ],
+            'method_overrides' => [
+                'new($data)'                 => 'Replace create. $data = the posted object. Set $this->response[\'data\'] with the result.',
+                'update($field, $value, $data)' => 'Replace update of the row(s) where $field=$value with $data.',
+                'get($field, $value)'        => "Replace read. Filter by \$field=\$value (or both null for all). Return via \$this->response['data'] = [...].",
+                'delete($field, $value)'     => 'Replace delete of the row(s) where $field=$value.',
+                'custom'                     => 'A custom function is any additional method — a custom endpoint / helper. Its name is the method name.',
+            ],
+            'query_api' => [
+                'multi'  => "\$m = new \\Kyte\\Core\\Model(ModelName); \$m->retrieve('field', \$value, \$isLike=false, \$conditions=[], \$all=false, \$order=[]); then \$m->objects (array) and \$m->count().",
+                'single' => "\$o = new \\Kyte\\Core\\ModelObject(ModelName); \$o->retrieve('id', \$id); \$o->create([...]); \$o->save([...]); \$o->delete();",
+                'conditions' => "\$conditions is an array of ['field'=>..., 'value'=>...] AND-clauses. ModelName is the model's bare CONSTANT (e.g. Task), not a string.",
+            ],
+            'errors' =>
+                'Throw \\Exception with a user-facing message to fail a request — it is delivered to '
+                . "the frontend's k.* error callback. Do not echo or return; use exceptions + "
+                . '$this->response.',
+            'example_get_override' => implode("\n", [
+                "public function get(\$field, \$value) {",
+                "    if (!\$this->user || !isset(\$this->user->id)) { throw new \\Exception('auth required'); }",
+                "    if (\$field !== 'subdomain') { throw new \\Exception('invalid field'); }",
+                "    \$sub = strtolower(trim(\$value));",
+                "    \$sites = new \\Kyte\\Core\\Model(Site);",
+                "    \$sites->retrieve('subdomain', \$sub, false);",
+                "    \$this->response['data'] = ['subdomain' => \$sub, 'available' => (\$sites->count() === 0)];",
+                "}",
+            ]),
+            'example_hook_prequery' => implode("\n", [
+                "public function hook_prequery(\$method, &\$field, &\$value, &\$conditions, &\$all, &\$order) {",
+                "    switch (\$method) {",
+                "        case 'update':",
+                "        case 'get':",
+                "            \$field = 'id';               // scope every read/update to the caller",
+                "            \$value = (int)\$this->user->id;",
+                "            break;",
+                "    }",
+                "}",
+            ]),
+        ];
+    }
+
     private function dataModelBelongsToApp(int $modelId, int $applicationId, int $accountId): bool
     {
         $m = new \Kyte\Core\ModelObject(\DataModel);
