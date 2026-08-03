@@ -1,3 +1,37 @@
+## 4.20.0
+
+Convergence release: the hosted MCP OAuth connector, the full MCP app-building tool surface, app-level Microsoft/OIDC SSO, and the provisioning/teardown hardening — all validated end-to-end by a real A→Z app build in Claude.ai.
+
+### Feature: Hosted MCP OAuth 2.1 connector — KYTE-#551
+
+Claude.ai / ChatGPT can add this install's `/mcp` endpoint as a hosted connector via the standard OAuth handshake (no pasted tokens). New `OAuthEndpoint` (RFC 8414 + 9728 discovery, RFC 7591 dynamic client registration, authorize/consent + PKCE S256, token endpoint) mints a scoped `kmcp_live_` token — all downstream MCP enforcement unchanged. Consent reuses the Shipyard login. Migration `4.17.0_oauth_as.sql` (`KyteOAuthClient`/`KyteOAuthCode`).
+
+### Feature: MCP app-building tools (full CRUD + authoring guides + auth config)
+
+The MCP can now build a complete app from scratch. Added, all account-scoped, over the existing `read`/`draft`/`commit`/`provision`/`schema` scopes:
+- **Applications:** `create_application` (provisions the tenant DB **and** auto-generates the app's `kyte_connect` client bootstrap so published pages get the injected `k` client), `update_application`, `delete_application` (async teardown), `read_application`, and **`configure_app_login`** (sets `user_model`/username/password columns so the login endpoint authenticates the app's own users).
+- **Controllers + functions:** `create/update/delete_controller`, `create_function`, `delete_function`.
+- **Pages + scripts:** `create_page`/`delete_page`, `create/list/read/delete_script`.
+- **Media:** `list/read/create/delete_media` (base64 S3 upload).
+- **Attribute flags:** `add_attribute`/`update_attribute` now accept `password` (auto-hash for login), `protected` (blank in API output), and `sensitive` (log redaction).
+- **Connection + authoring guides:** `get_app_info` (API endpoint, app identifier, site URLs), `get_kytejs_guide` and `get_controller_guide` (audited references for writing page JS with the injected `k` client and controller hooks/overrides), plus a richer MCP server `instructions` string. Guides carry keep-in-sync markers back to the SDK / controller source.
+
+### Feature: App-level Microsoft / OIDC SSO (relying party) — KYTE-#560
+
+An app's end users can sign in with Microsoft/Entra (generic OIDC; Google/Okta by config). Kyte is the relying party: `/sso/authorize` → `/sso/callback` (JWKS id_token validation, tenant scoping, PKCE, browser-bound state) → one-time code → `/sso/exchange` mints the app's Kyte session. Identity is bound to the immutable `sub` (never the mutable email); JIT provisioning with a restrict-to-existing option. `client_secret` encrypted at rest (libsodium). Migration `4.19.0_app_sso.sql`. Passed a full security review.
+
+### Feature: Provisioning identity + async application teardown
+
+- `DBI::getProvisioningConnection()` — a separate privileged DB identity (`KYTE_DB_PROVISION_USERNAME`/`_PASSWORD`) for CREATE/DROP DATABASE, so the runtime user stays least-privilege. `createDatabase` grants an explicit privilege list (RDS-compatible).
+- Deleting an app no longer orphans site AWS infra: `Application.status` (`active`/`deleting`/`deleted`) + `SiteProvisioningWorker` finalizes teardown (drop tenant DB) once all sites are gone. Migration `4.18.0_application_status.sql`.
+
+### Fix
+
+- Function/script **initial version** creation stored `version_type='initial'`, which is not a valid `version_type` enum value → "Data truncated", silently breaking initial-version creation for both Shipyard and MCP function/script creation. Store the baseline as `manual_save`.
+- `ModelController::update()` passed `$order` to `hook_prequery` uninitialized (undefined-variable-by-ref); initialise it (matches `get()`).
+
+**Migrations:** `4.17.0_oauth_as.sql`, `4.18.0_application_status.sql`, `4.19.0_app_sso.sql` — all idempotent.
+
 ## 4.15.1
 
 ### Fix: make the `kyte_locked` migration portable to MySQL — KYTE-#325
