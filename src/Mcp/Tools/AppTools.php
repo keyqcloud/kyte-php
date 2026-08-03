@@ -200,6 +200,67 @@ final class AppTools
     }
 
     /**
+     * Configure an application's built-in login: which user data model and which
+     * of its columns hold the username and password. WITHOUT this, the platform
+     * login/session endpoint authenticates against the platform user table and
+     * rejects your app's users — this is the usual reason "login rejects valid
+     * credentials."
+     *
+     * Pair it with a password column flagged password=true (add_attribute /
+     * update_attribute) so the framework hashes credentials for login. Your
+     * signup should store the PLAINTEXT password and let Kyte hash it — do not
+     * hash it yourself, or logins fail on a double-hash.
+     *
+     * @param int    $application_id Application id (from list_applications).
+     * @param string $user_model     DataModel name that holds app users (e.g. "User").
+     * @param string $username_field Column used as the login username (e.g. "email").
+     * @param string $password_field Column that holds the (hashed) password (e.g. "password").
+     * @return array{configured: bool, application_id?: int, user_model?: string, username_field?: string, password_field?: string, error?: string}
+     */
+    #[McpTool(name: 'configure_app_login', description: 'Configure an app\'s built-in login: which user data model + the username and password columns to authenticate against. Required for the login/session endpoint to accept your app\'s users (without it, login rejects valid credentials). Pair with a password column flagged password=true via add_attribute; signup should store the plaintext password and let Kyte hash it.')]
+    #[RequiresScope('provision')]
+    public function configureAppLogin(int $application_id, string $user_model, string $username_field, string $password_field): array
+    {
+        $accountId = $this->accountIdOrZero();
+        if ($accountId === 0 || !$this->appBelongsToAccount($application_id, $accountId)) {
+            return ['configured' => false, 'error' => 'Application not found in this account.'];
+        }
+        if (trim($user_model) === '' || trim($username_field) === '' || trim($password_field) === '') {
+            return ['configured' => false, 'error' => 'user_model, username_field, and password_field are all required.'];
+        }
+
+        // Verify the named user model exists in this app (clear error on a typo).
+        $dm = new \Kyte\Core\Model(\DataModel);
+        $dm->retrieve('application', $application_id, false, [
+            ['field' => 'name',         'value' => $user_model],
+            ['field' => 'kyte_account', 'value' => $accountId],
+            ['field' => 'deleted',      'value' => 0],
+        ]);
+        if (count($dm->objects) === 0) {
+            return ['configured' => false, 'error' => "No data model named '{$user_model}' in this application."];
+        }
+
+        $app = new \Kyte\Core\ModelObject(\Application);
+        if (!$app->retrieve('id', $application_id)) {
+            return ['configured' => false, 'error' => 'Application not found.'];
+        }
+        $app->save([
+            'user_model'       => $user_model,
+            'username_colname' => $username_field,
+            'password_colname' => $password_field,
+        ]);
+
+        return [
+            'configured'     => true,
+            'application_id' => $application_id,
+            'user_model'     => $user_model,
+            'username_field' => $username_field,
+            'password_field' => $password_field,
+            'note'           => 'Login now authenticates against this model. Ensure the password column is flagged password=true (add_attribute) and that signup stores the plaintext password (Kyte hashes it).',
+        ];
+    }
+
+    /**
      * Read a single application's details (name, identifier, language, status).
      *
      * @param int $application_id Application id (from list_applications).
@@ -229,6 +290,11 @@ final class AppTools
             'identifier' => isset($app->identifier) ? (string)$app->identifier : '',
             'language'   => isset($app->language) ? (string)$app->language : null,
             'status'     => isset($app->status) ? (string)$app->status : 'active',
+            // Built-in login config (configure_app_login). Null user_model means
+            // the app has no login wired — the login endpoint won't accept app users.
+            'user_model'     => !empty($app->user_model) ? (string)$app->user_model : null,
+            'username_field' => !empty($app->username_colname) ? (string)$app->username_colname : null,
+            'password_field' => !empty($app->password_colname) ? (string)$app->password_colname : null,
         ];
     }
 
