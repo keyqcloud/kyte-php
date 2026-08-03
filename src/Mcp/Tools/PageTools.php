@@ -283,6 +283,49 @@ final class PageTools
         ];
     }
 
+    /**
+     * Delete a page. Removes the page, its content/versions, and its library/
+     * script assignments; for a PUBLISHED page it also removes the live file
+     * from S3, rewrites the sitemap, and invalidates CloudFront (KytePageController).
+     *
+     * @param int $page_id KytePage id (from list_pages).
+     * @return array{deleted: bool, page_id?: int, error?: string}
+     */
+    #[McpTool(name: 'delete_page', description: 'Delete a page (and its versions). If the page was published, also removes the live file from S3 and invalidates CloudFront.')]
+    #[RequiresScope('schema')]
+    public function deletePage(int $page_id): array
+    {
+        $accountId = $this->accountIdOrZero();
+        if ($accountId === 0) {
+            return ['deleted' => false, 'error' => 'No account context.'];
+        }
+        $page = new \Kyte\Core\ModelObject(\KytePage);
+        if (!$page->retrieve('id', $page_id) || (int)$page->kyte_account !== $accountId) {
+            return ['deleted' => false, 'error' => 'Page not found in this account.'];
+        }
+
+        // KytePageController's delete cleans up page-data/versions/assignments
+        // (and S3/CloudFront for published pages) and attributes via $api->user,
+        // which MCP tokens don't populate. Bind a representative account user.
+        $api = $this->api;
+        $priorUser = isset($api->user) ? $api->user : null;
+        $acctUser = new \Kyte\Core\ModelObject(\KyteUser);
+        if ($acctUser->retrieve('kyte_account', $accountId)) {
+            $api->user = $acctUser;
+        }
+
+        $resp = [];
+        try {
+            $ctrl = new \Kyte\Mvc\Controller\KytePageController(\KytePage, $api, 'm/d/Y H:i:s', $resp, true);
+            $ctrl->delete('id', $page_id);
+        } catch (\Throwable $e) {
+            return ['deleted' => false, 'error' => $e->getMessage()];
+        } finally {
+            $api->user = $priorUser;
+        }
+        return ['deleted' => true, 'page_id' => $page_id];
+    }
+
     private function accountIdOrZero(): int
     {
         return isset($this->api->account->id) ? (int)$this->api->account->id : 0;

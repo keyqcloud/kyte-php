@@ -199,6 +199,23 @@ final class AppTools
         ];
     }
 
+    /**
+     * Read a single application's details (name, identifier, language, status).
+     *
+     * @param int $application_id Application id (from list_applications).
+     * @return array<string,mixed>|null
+     */
+    #[McpTool(name: 'read_application', description: 'Read a single Kyte application by id: name, identifier, default language, and status.')]
+    #[RequiresScope('read')]
+    public function readApplication(int $application_id): ?array
+    {
+        $accountId = $this->accountIdOrZero();
+        if ($accountId === 0 || !$this->appBelongsToAccount($application_id, $accountId)) {
+            return null;
+        }
+        return $this->appToArray($application_id);
+    }
+
     /** @return array<string,mixed>|null */
     private function appToArray(int $appId): ?array
     {

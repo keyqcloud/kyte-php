@@ -432,6 +432,48 @@ final class ControllerTools
     }
 
     /**
+     * Delete a single function from a controller. Removes the function + its
+     * versions and regenerates the parent controller's code without it. To
+     * remove a whole controller (and all its functions) use delete_controller.
+     *
+     * @param int $function_id Function id (from list_functions).
+     * @return array{deleted: bool, function_id?: int, error?: string}
+     */
+    #[McpTool(name: 'delete_function', description: 'Delete a single function from a controller (removes its versions and regenerates the controller code). Use delete_controller to remove a whole controller.')]
+    #[RequiresScope('schema')]
+    public function deleteFunction(int $function_id): array
+    {
+        $accountId = $this->accountIdOrZero();
+        if ($accountId === 0) {
+            return ['deleted' => false, 'error' => 'No account context.'];
+        }
+        $fn = new \Kyte\Core\ModelObject(constant('Function'));
+        if (!$fn->retrieve('id', $function_id) || (int)$fn->kyte_account !== $accountId) {
+            return ['deleted' => false, 'error' => 'Function not found in this account.'];
+        }
+
+        // FunctionController's delete cleans up versions (content refcounting uses
+        // $api->user) — bind a representative account user, restored after.
+        $api = $this->api;
+        $priorUser = isset($api->user) ? $api->user : null;
+        $acctUser = new \Kyte\Core\ModelObject(\KyteUser);
+        if ($acctUser->retrieve('kyte_account', $accountId)) {
+            $api->user = $acctUser;
+        }
+
+        $resp = [];
+        try {
+            $ctrl = new \Kyte\Mvc\Controller\FunctionController(constant('Function'), $api, 'm/d/Y H:i:s', $resp, true);
+            $ctrl->delete('id', $function_id);
+        } catch (\Throwable $e) {
+            return ['deleted' => false, 'error' => $e->getMessage()];
+        } finally {
+            $api->user = $priorUser;
+        }
+        return ['deleted' => true, 'function_id' => $function_id];
+    }
+
+    /**
      * The authoring reference for controller/function PHP. The signatures,
      * by-reference params, available $this context, and query API of a Kyte
      * controller are template-specific — an AI writing function code needs them
