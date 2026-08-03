@@ -487,69 +487,109 @@ final class ControllerTools
     {
         return [
             'overview' =>
-                'A Kyte controller extends the base ModelController and is bound to a data model. '
-                . 'The base already implements default CRUD (new/update/get/delete) over the bound '
-                . 'model — you only add what you need: HOOKS (fire around the default flow) or '
-                . 'METHOD OVERRIDES (replace a default operation). Author each as a function '
-                . '(create_function to add the slot, write_function_code to fill it, commit_draft '
-                . 'to publish). Write ONLY the function body/signature shown — it is spliced into '
-                . 'the generated controller class.',
+                'A Kyte controller extends \\Kyte\\Mvc\\Controller\\ModelController and is bound to a '
+                . 'data model. The base implements default CRUD (new/update/get/delete) INCLUDING '
+                . 'automatic per-account (kyte_account) tenant scoping, auth, FK handling, and '
+                . 'populating $this->response. You customise via HOOKS (fire around the default flow) '
+                . 'or METHOD OVERRIDES (replace a default operation). Author each with create_function '
+                . '+ write_function_code + commit_draft. Write the COMPLETE method — the full '
+                . '`public function ...(...) { ... }` matching the template signature (for a custom '
+                . 'function you write the whole method). The framework wraps your functions in the '
+                . 'controller class, so do NOT add a class wrapper.',
             'context' => [
-                '$this->user'     => 'The authenticated user object, or null if unauthenticated. ALWAYS guard: if (!$this->user || !isset($this->user->id)) { throw new \\Exception("auth required"); }. For app endpoints this is the app user_model row.',
-                '$this->account'  => 'The Kyte account (->id, ->number). Scope cross-model queries by it where relevant.',
-                '$this->response' => "The response envelope. For get/custom endpoints, set your payload with \$this->response['data'] = [...]; (an array/object). Default CRUD fills this for you.",
-                '$this->model'    => 'The bound model definition constant. The base CRUD operates on it.',
-                '$this->api'      => 'The Api instance (advanced use).',
+                '$this->user'     => 'ALWAYS a ModelObject — when there is no session it is an EMPTY '
+                    . 'object with no id (it is NEVER literally null). Guard with isset($this->user->id) '
+                    . '(NOT !$this->user, which is always false). For default CRUD, auth is already '
+                    . 'enforced (requireAuth defaults true) so $this->user->id is set there.',
+                '$this->account'  => 'The Kyte account ModelObject ($this->account->id, ->number). Use ->id to scope your queries.',
+                '$this->response' => "The response envelope (array). Default CRUD sets \$this->response['data'] "
+                    . "to a LIST of row arrays (one element even for a single create/update). In a custom "
+                    . "get/override you may set it to whatever shape your page JS reads (a list, a plain "
+                    . "object, or a scalar) — just keep the k.get response.data handling in sync.",
+                '$this->model'    => "The resolved model-definition ARRAY (\$this->model['name'], "
+                    . "\$this->model['struct'][<col>]), set by shipyard_init() — it is the array value, not the constant name.",
+                '$this->api'      => 'The Api instance.',
             ],
             'hooks' => [
-                'hook_init()' => 'Runs when the controller initialises. No params.',
-                'hook_auth()' => 'Custom authentication gate. No params.',
+                'hook_init()' => 'Runs during construction, BEFORE authentication — do NOT assume a '
+                    . 'logged-in user here ($this->user->id may be unset). Use for controller config (flags, allowableActions).',
+                'hook_auth()' => 'Runs AFTER the session is validated — post-auth checks.',
                 'hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order)' =>
-                    'Fires BEFORE the query. $field/$value/$conditions/$all/$order are BY-REFERENCE — '
-                    . 'mutate them to scope/filter. Classic use: force a row to the current user — '
-                    . "\$field='id'; \$value=\$this->user->id;. \$method is 'new'|'update'|'get'|'delete'.",
+                    'Fires immediately before the DB query in GET and UPDATE ONLY ($method is "get" or '
+                    . '"update"). It is NOT called for new (no query) or delete. Mutate the by-ref params '
+                    . "to scope/filter — e.g. \$field='id'; \$value=\$this->user->id;. To constrain a "
+                    . 'delete, override delete() or add conditions in hook_response_data("delete", ...).',
                 'hook_preprocess($method, &$r, &$o = null)' =>
-                    'Fires BEFORE a create/update write. $r is the incoming data (BY-REFERENCE — '
-                    . 'validate/transform/inject fields). $o is the existing row on update/delete. '
-                    . 'throw \\Exception to abort the write.',
+                    'Fires before the WRITE for new ($o is null) and update ($o = the existing row). NOT '
+                    . 'called for get or delete. $r is the incoming data BY-REFERENCE (validate/transform/'
+                    . 'inject). throw \\Exception to abort.',
                 'hook_response_data($method, $o, &$r = null, &$d = null)' =>
-                    'Fires AFTER the operation. $o is the affected row; $r is the response row '
-                    . '(BY-REFERENCE — augment/redact it); $d is the original request data.',
+                    'For new/update/get: fires AFTER the op — $o = affected row, &$r = the outgoing '
+                    . 'response row (augment/redact), $d = original request data. FOR DELETE IT DIFFERS: '
+                    . 'it fires BEFORE the delete and &$r is the $autodelete BOOLEAN (default true) — set '
+                    . '$r=false to VETO the delete; there is no response row or $d for delete.',
                 'hook_process_get_response(&$r)' =>
-                    'Shape the assembled GET response ($r is BY-REFERENCE).',
+                    'Fires once at the end of get() with the assembled list ($r BY-REFERENCE) — final shaping of the GET response.',
             ],
             'method_overrides' => [
-                'new($data)'                 => 'Replace create. $data = the posted object. Set $this->response[\'data\'] with the result.',
+                '_warning' => 'An override COMPLETELY REPLACES the base method — the base is NOT called '
+                    . 'for you, so you LOSE automatic kyte_account scoping, the auth gate, FK handling, '
+                    . 'and the default $this->response population. Either call the parent (parent::new'
+                    . '($data), parent::get($field,$value), ...) and adjust, OR re-implement it: on WRITES '
+                    . 'set $data["kyte_account"] = $this->account->id; on READS add a kyte_account '
+                    . 'condition; and set $this->response["data"]. FORGETTING ACCOUNT SCOPING LEAKS OR '
+                    . 'WRITES CROSS-TENANT DATA.',
+                'new($data)'                 => 'Replace create. $data = the posted object.',
                 'update($field, $value, $data)' => 'Replace update of the row(s) where $field=$value with $data.',
-                'get($field, $value)'        => "Replace read. Filter by \$field=\$value (or both null for all). Return via \$this->response['data'] = [...].",
+                'get($field, $value)'        => "Replace read (filter by \$field=\$value, or both null for all). Set \$this->response['data'].",
                 'delete($field, $value)'     => 'Replace delete of the row(s) where $field=$value.',
-                'custom'                     => 'A custom function is any additional method — a custom endpoint / helper. Its name is the method name.',
+                'custom'                     => 'A custom function is a HELPER method on the controller — '
+                    . 'it is NOT reachable from the API by name. Only POST->new, PUT->update, GET->get, '
+                    . 'DELETE->delete are dispatched. Call a custom function yourself from a hook/override. '
+                    . 'To expose new behavior to the client, override one of the four CRUD methods (or '
+                    . 'branch on request state inside a hook).',
             ],
             'query_api' => [
-                'multi'  => "\$m = new \\Kyte\\Core\\Model(ModelName); \$m->retrieve('field', \$value, \$isLike=false, \$conditions=[], \$all=false, \$order=[]); then \$m->objects (array) and \$m->count().",
-                'single' => "\$o = new \\Kyte\\Core\\ModelObject(ModelName); \$o->retrieve('id', \$id); \$o->create([...]); \$o->save([...]); \$o->delete();",
-                'conditions' => "\$conditions is an array of ['field'=>..., 'value'=>...] AND-clauses. ModelName is the model's bare CONSTANT (e.g. Task), not a string.",
+                'model_multi'   => "new \\Kyte\\Core\\Model(ModelName) — MANY rows. "
+                    . "->retrieve(\$field=null, \$value=null, \$isLike=false, \$conditions=null, \$all=false, "
+                    . "\$order=null, \$limit=null); then ->objects (array of ModelObject) and ->count() "
+                    . "(number RETRIEVED, not the DB total). \$all=true includes soft-deleted rows.",
+                'object_single' => "new \\Kyte\\Core\\ModelObject(ModelName) — ONE row. "
+                    . "->retrieve(\$field, \$value, \$conditions=null, \$id=null, \$all=false) — NOTE the 3rd "
+                    . "arg is \$conditions, NOT \$isLike (this DIFFERS from Model::retrieve — do not copy "
+                    . "its arg order); returns bool. ->create(\$params, \$user=null) (auto-stamps "
+                    . "deleted=0/date_created/created_by). ->save(\$params, \$user=null) (retrieve first). "
+                    . "->delete(null,null,\$userId) is a SOFT delete (sets deleted=1); ->purge() hard-deletes.",
+                'conditions'    => "\$conditions = [['field'=>..., 'value'=>..., 'operator'=>'>=' (optional)]] "
+                    . "AND-clauses; \$order = [['field'=>..., 'direction'=>'asc|desc']]. ModelName is the "
+                    . "model's bare CONSTANT (e.g. Task), not a string.",
+                'scoping'       => 'Your ad-hoc Model/ModelObject queries are NOT auto-scoped by account — '
+                    . 'add the condition yourself: ->retrieve("f", $v, false, [["field"=>"kyte_account","value"=>$this->account->id]]).',
             ],
             'errors' =>
-                'Throw \\Exception with a user-facing message to fail a request — it is delivered to '
-                . "the frontend's k.* error callback. Do not echo or return; use exceptions + "
-                . '$this->response.',
+                'Throw \\Exception with a user-facing message to fail a request — the framework returns '
+                . 'HTTP 400 with {error: message} (a SessionException gives 403), delivered to the '
+                . "frontend's k.* error callback. Do not echo or return; use exceptions + \$this->response.",
             'example_get_override' => implode("\n", [
+                "// A custom get override. Reachable from JS as k.get('SubdomainCheck', 'subdomain', value, [], ok, err).",
                 "public function get(\$field, \$value) {",
-                "    if (!\$this->user || !isset(\$this->user->id)) { throw new \\Exception('auth required'); }",
+                "    if (!isset(\$this->user->id)) { throw new \\Exception('auth required'); }  // NOT !\$this->user",
                 "    if (\$field !== 'subdomain') { throw new \\Exception('invalid field'); }",
                 "    \$sub = strtolower(trim(\$value));",
                 "    \$sites = new \\Kyte\\Core\\Model(Site);",
-                "    \$sites->retrieve('subdomain', \$sub, false);",
+                "    // scope your own queries by account",
+                "    \$sites->retrieve('subdomain', \$sub, false, [['field' => 'kyte_account', 'value' => \$this->account->id]]);",
+                "    // custom shape — the page reads response.data.available (this override returns an object, not a list)",
                 "    \$this->response['data'] = ['subdomain' => \$sub, 'available' => (\$sites->count() === 0)];",
                 "}",
             ]),
             'example_hook_prequery' => implode("\n", [
+                "// hook_prequery fires for get + update ONLY (never new/delete)",
                 "public function hook_prequery(\$method, &\$field, &\$value, &\$conditions, &\$all, &\$order) {",
                 "    switch (\$method) {",
-                "        case 'update':",
                 "        case 'get':",
-                "            \$field = 'id';               // scope every read/update to the caller",
+                "        case 'update':",
+                "            \$field = 'id';                 // scope every read/update to the caller",
                 "            \$value = (int)\$this->user->id;",
                 "            break;",
                 "    }",
