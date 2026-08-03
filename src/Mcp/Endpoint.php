@@ -75,7 +75,13 @@ final class Endpoint
         try {
             self::authenticate($api, $request);
         } catch (SessionException $e) {
-            return self::jsonRpcError($psr17, 401, -32001, $e->getMessage());
+            // RFC 9728 / MCP auth: point unauthenticated clients at this
+            // install's protected-resource metadata so Claude.ai / ChatGPT can
+            // auto-discover the OAuth authorization server (KYTE-#551).
+            $resourceMetadata = \Kyte\Core\Auth\OAuthEndpoint::baseUrl($request->getServerParams())
+                . '/.well-known/oauth-protected-resource';
+            return self::jsonRpcError($psr17, 401, -32001, $e->getMessage())
+                ->withHeader('WWW-Authenticate', 'Bearer resource_metadata="' . $resourceMetadata . '"');
         } catch (\Throwable $e) {
             return self::jsonRpcError($psr17, 500, -32603, 'Internal MCP error: ' . $e->getMessage());
         }
@@ -110,10 +116,32 @@ final class Endpoint
                 'Kyte low-code framework MCP endpoint'
             )
             ->setInstructions(
-                'Tools operate on the account associated with the bearer token. ' .
-                'Use list_applications to discover apps, then traditional Kyte ' .
-                'workflows for further work. Additional tools land in subsequent ' .
-                'Phase 2 commits.'
+                'Tools operate on the Kyte account tied to the bearer token. Start with '
+                . 'list_applications (or get_app_info) to discover apps, then work down: '
+                . 'models + controllers/functions (backend), sites + pages + scripts (frontend). '
+                . "\n\n"
+                . 'CONNECTION: call get_app_info(application_id) for the API endpoint, the app '
+                . 'identifier, and each site URL — do not guess or hard-code the endpoint.'
+                . "\n\n"
+                . 'WRITING PAGE / SCRIPT JS: Kyte injects a ready-to-use API client into every '
+                . 'published page as the GLOBAL variable `k` (a Kyte instance). Do NOT create your '
+                . 'own client or hard-code URLs/keys — just call `k`. Data access is model-based, '
+                . 'not REST URLs: k.get(model, field, value, headers, onOk, onErr) to read, '
+                . 'k.post(model, data, formData, headers, onOk, onErr) to create, '
+                . 'k.put(model, field, value, data, formData, headers, onOk, onErr) to update, '
+                . 'k.delete(model, field, value, headers, onOk, onErr) to delete. onOk receives a '
+                . 'response whose `.data` is ALWAYS an array. `model` is a controller/model name '
+                . '(e.g. "Task"). Call get_kytejs_guide for the full signatures + a worked example '
+                . 'BEFORE writing any page or script JavaScript.'
+                . "\n\n"
+                . 'WRITING CONTROLLER / FUNCTION PHP: controller hooks and method overrides have '
+                . 'template-specific signatures (several params are by-reference) and a specific '
+                . '$this context ($this->user, $this->account, $this->response, $this->model) + '
+                . 'query API. Call get_controller_guide for the exact signatures + examples BEFORE '
+                . 'writing function code with write_function_code.'
+                . "\n\n"
+                . 'EDIT FLOW: create_* makes a draft; add code/content with write_page_part / '
+                . 'write_script_content / write_function_code; publish with commit_draft.'
             )
             ->setContainer($container)
             ->setRegistry($registry)

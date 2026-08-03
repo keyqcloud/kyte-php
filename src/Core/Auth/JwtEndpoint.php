@@ -483,6 +483,45 @@ final class JwtEndpoint
      *   email user email (if available)
      *   app   application identifier when app-scoped, omitted otherwise
      */
+    /**
+     * Issue a full Kyte session (access JWT + refresh token) for an already-
+     * authenticated user. Shared by /jwt/login and app-level SSO (KYTE-#560) so
+     * both hand back the identical session shape. `$app` is the resolved
+     * Application ModelObject (or null for platform/KyteUser).
+     *
+     * @return array<string,mixed>
+     */
+    public static function issueSession(ModelObject $user, ModelObject $account, ?ModelObject $app, string $ip): array
+    {
+        $appIdentifier = $app !== null ? (string)$app->identifier : null;
+        $appId = $app !== null ? (int)$app->id : null;
+
+        $accessToken = self::mintAccessJwt($user, $account, $appIdentifier);
+        $refresh = RefreshTokenStore::issue((int)$user->id, (int)$account->id, $appId, $ip);
+
+        if (isset($user->kyte_model['struct']['lastLogin'])) {
+            try {
+                $user->save(['lastLogin' => time()]);
+            } catch (\Throwable $e) {
+                error_log('JwtEndpoint::issueSession lastLogin update failed - ' . $e->getMessage());
+            }
+        }
+
+        $userData = self::userToArray($user);
+        $useSessionMap = defined('USE_SESSION_MAP') && USE_SESSION_MAP;
+
+        return [
+            'access_token'       => $accessToken,
+            'token_type'         => 'Bearer',
+            'expires_in'         => self::accessTtl(),
+            'refresh_token'      => $refresh['raw'],
+            'refresh_expires_at' => $refresh['expires_at'],
+            'uid'                => (int)$user->id,
+            'account_id'         => (int)$account->id,
+            'data'               => $useSessionMap ? $userData : [$userData],
+        ];
+    }
+
     private static function mintAccessJwt(ModelObject $user, ModelObject $account, ?string $appIdentifier): string
     {
         if (!defined('KYTE_JWT_SECRET') || KYTE_JWT_SECRET === '') {
@@ -516,7 +555,7 @@ final class JwtEndpoint
      *
      * @return array{user_model: array, username_field: string, password_field: string, app: ?ModelObject}
      */
-    private static function resolveAuthContext(?string $appIdentifier): array
+    public static function resolveAuthContext(?string $appIdentifier): array
     {
         $defaultUserField = defined('USERNAME_FIELD') ? USERNAME_FIELD : 'email';
         $defaultPassField = defined('PASSWORD_FIELD') ? PASSWORD_FIELD : 'password';

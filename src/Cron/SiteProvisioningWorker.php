@@ -38,10 +38,6 @@ class SiteProvisioningWorker extends CronJobBase
             '',
             []
         );
-        if (empty($sites)) {
-            return json_encode(['processed' => 0, 'message' => 'No sites provisioning/deprovisioning.']);
-        }
-
         $summary = [];
         foreach ($sites as $i => $site) {
             $id = (int) $site['id'];
@@ -71,7 +67,67 @@ class SiteProvisioningWorker extends CronJobBase
             $this->heartbeat();
         }
 
-        return json_encode(['processed' => count($sites), 'sites' => $summary]);
+        // Finalize applications pending teardown (KYTE-#559): once ALL of an
+        // app's sites are fully deleted, drop its tenant DB + user and
+        // soft-delete the app row. Runs every tick, independent of the site loop.
+        $appSummary = $this->finalizeDeletingApplications();
+
+        if (empty($sites) && empty($appSummary)) {
+            return json_encode(['processed' => 0, 'message' => 'Nothing provisioning/deprovisioning.']);
+        }
+        return json_encode(['processed' => count($sites), 'sites' => $summary, 'apps' => $appSummary]);
+    }
+
+    /**
+     * Complete teardown for applications marked 'deleting'. An app is finalized
+     * only once every one of its sites is fully deleted (their AWS infra torn
+     * down by advanceDelete) — then the tenant database + its user are dropped
+     * and the app row is soft-deleted. Idempotent + safe to re-run each tick.
+     *
+     * @return array<int,string>
+     */
+    private function finalizeDeletingApplications(): array
+    {
+        $apps = DBI::prepared_query(
+            "SELECT id, db_name, db_username FROM Application WHERE status = 'deleting' AND deleted = 0",
+            '',
+            []
+        );
+
+        $out = [];
+        foreach ((array) $apps as $app) {
+            $id = (int) $app['id'];
+            try {
+                // Wait until no site of this app is still pending teardown.
+                $remaining = DBI::prepared_query(
+                    "SELECT COUNT(*) AS c FROM KyteSite WHERE application = ? AND deleted = 0 AND status <> 'deleted'",
+                    'i',
+                    [$id]
+                );
+                $left = isset($remaining[0]['c']) ? (int) $remaining[0]['c'] : 0;
+                if ($left > 0) {
+                    $out[$id] = "waiting on {$left} site(s)";
+                    continue;
+                }
+
+                // All sites gone — drop the tenant DB + user, then soft-delete.
+                if (!empty($app['db_name'])) {
+                    DBI::dropDatabase($app['db_name'], $app['db_username'] ?? null);
+                }
+                $appObj = new ModelObject(Application);
+                if ($appObj->retrieve('id', $id)) {
+                    $appObj->save(['status' => 'deleted', 'deleted' => 1]);
+                }
+                $out[$id] = 'deleted';
+                $this->log("App #{$id} finalized (tenant DB dropped, app removed).");
+            } catch (\Throwable $e) {
+                $out[$id] = 'error: ' . $e->getMessage();
+                $this->log("App #{$id} finalize failed: " . $e->getMessage());
+            }
+            $this->heartbeat();
+        }
+
+        return $out;
     }
 
     /**

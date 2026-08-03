@@ -4,6 +4,10 @@ namespace Kyte\Mvc\Controller;
 
 class FunctionController extends ModelController
 {
+    // ⚠️ These templates (hook + method-override signatures) are the source of
+    // truth for the MCP authoring guide (ControllerTools::getControllerGuide /
+    // the get_controller_guide tool). If you change a signature here, update that
+    // guide in the same change so AI-generated controller code doesn't drift.
     // Configuration for function types and their templates
     private const FUNCTION_TYPES = [
         'hook_init' => [
@@ -239,11 +243,19 @@ class FunctionController extends ModelController
 
         // Check if this exact content already exists
         $existingContent = $this->findExistingFunctionContent($contentHash);
-        
+
+        // 'initial' is a SENTINEL (see the guard above) that forces the first
+        // version even with no diff — it is NOT a valid version_type enum value
+        // (auto_save|manual_save|publish|mcp_draft|mcp_commit). Persisting it
+        // verbatim gets rejected as "Data truncated for column 'version_type'",
+        // which silently broke initial-version creation on every function-create
+        // (Shipyard + MCP). Store the baseline as manual_save.
+        $storedVersionType = ($versionType === 'initial') ? 'manual_save' : $versionType;
+
         $versionData = [
             'function' => $functionObj->id,
             'version_number' => $nextVersion,
-            'version_type' => $versionType,
+            'version_type' => $storedVersionType,
             'change_summary' => $changeSummary,
             'changes_detected' => json_encode($changes),
             'content_hash' => $contentHash,

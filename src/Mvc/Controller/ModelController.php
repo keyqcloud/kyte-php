@@ -824,7 +824,8 @@ class ModelController
             
 
             $all = false;
-            
+            $order = null; // initialise before passing by-ref to hook_prequery (matches get())
+
             $this->hook_prequery('update', $field, $value, $conditions, $all, $order);
             
             // init object
@@ -1125,6 +1126,11 @@ class ModelController
     public function shipyard_init() {}
     
     // hook function - user defined
+    // ⚠️ These hook signatures + their dispatch order/semantics (which method
+    // each fires for, by-ref params, the delete $autodelete flag) are documented
+    // for AI clients in the get_controller_guide MCP tool
+    // (ControllerTools::getControllerGuide). Keep that guide in sync with any
+    // change here or to when/how these are invoked in new/update/get/delete.
     public function hook_init() {}
     public function hook_auth() {}
     public function hook_prequery($method, &$field, &$value, &$conditions, &$all, &$order) {}

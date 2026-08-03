@@ -207,9 +207,9 @@ final class ModelTools
      * @param int|null    $foreign_key_model Referenced model id for a foreign-key column.
      * @return array{added: bool, attribute?: array<string,mixed>, error?: string}
      */
-    #[McpTool(name: 'add_attribute', description: 'Add an attribute (column) to a data model. Applies a real ADD COLUMN migration. Decimal (d) needs precision+scale; varchar (s) needs size.')]
+    #[McpTool(name: 'add_attribute', description: 'Add an attribute (column) to a data model. Applies a real ADD COLUMN migration. Decimal (d) needs precision+scale; varchar (s) needs size. For a user-model password column set password=true (auto-hashes for login — store the PLAINTEXT in signup, do not hash it yourself) and protected=true (never return the hash via the API).')]
     #[RequiresScope('schema')]
-    public function addAttribute(int $model_id, string $name, string $type, ?int $size = null, ?int $precision = null, ?int $scale = null, bool $unsigned = false, bool $required = false, ?string $default = null, ?int $foreign_key_model = null): array
+    public function addAttribute(int $model_id, string $name, string $type, ?int $size = null, ?int $precision = null, ?int $scale = null, bool $unsigned = false, bool $required = false, ?string $default = null, ?int $foreign_key_model = null, bool $password = false, bool $protected = false, bool $sensitive = false): array
     {
         $accountId = $this->accountIdOrZero();
         if ($accountId === 0 || !$this->modelBelongsToAccount($model_id, $accountId)) {
@@ -222,7 +222,7 @@ final class ModelTools
             return ['added' => false, 'error' => 'Foreign-key model not found in this account.'];
         }
 
-        $data = $this->attributeData($model_id, $name, $type, $size, $precision, $scale, $unsigned, $required, $default, $foreign_key_model);
+        $data = $this->attributeData($model_id, $name, $type, $size, $precision, $scale, $unsigned, $required, $default, $foreign_key_model, $password, $protected, $sensitive);
 
         $resp = [];
         try {
@@ -259,9 +259,9 @@ final class ModelTools
      * @param int|null    $foreign_key_model Referenced model id for a foreign-key column.
      * @return array{updated: bool, attribute?: array<string,mixed>, error?: string}
      */
-    #[McpTool(name: 'update_attribute', description: 'Update an attribute definition (applies a real CHANGE COLUMN migration). name is required since the column definition is rewritten in full.')]
+    #[McpTool(name: 'update_attribute', description: 'Update an attribute definition (applies a real CHANGE COLUMN migration). name is required since the column definition is rewritten in full. Flags password/protected/sensitive default to false — pass them each time you want them kept (an omitted flag reverts to false).')]
     #[RequiresScope('schema')]
-    public function updateAttribute(int $attribute_id, string $name, string $type, ?int $size = null, ?int $precision = null, ?int $scale = null, bool $unsigned = false, bool $required = false, ?string $default = null, ?int $foreign_key_model = null): array
+    public function updateAttribute(int $attribute_id, string $name, string $type, ?int $size = null, ?int $precision = null, ?int $scale = null, bool $unsigned = false, bool $required = false, ?string $default = null, ?int $foreign_key_model = null, bool $password = false, bool $protected = false, bool $sensitive = false): array
     {
         $accountId = $this->accountIdOrZero();
         $attr = $this->ownedAttribute($attribute_id, $accountId);
@@ -275,7 +275,7 @@ final class ModelTools
             return ['updated' => false, 'error' => 'Foreign-key model not found in this account.'];
         }
 
-        $data = $this->attributeData((int)$attr->dataModel, $name, $type, $size, $precision, $scale, $unsigned, $required, $default, $foreign_key_model);
+        $data = $this->attributeData((int)$attr->dataModel, $name, $type, $size, $precision, $scale, $unsigned, $required, $default, $foreign_key_model, $password, $protected, $sensitive);
         unset($data['dataModel']); // not editable on update
 
         $resp = [];
@@ -434,7 +434,7 @@ final class ModelTools
      *
      * @return array<string,mixed>
      */
-    private function attributeData(int $modelId, string $name, string $type, ?int $size, ?int $precision, ?int $scale, bool $unsigned, bool $required, ?string $default, ?int $foreignKeyModel): array
+    private function attributeData(int $modelId, string $name, string $type, ?int $size, ?int $precision, ?int $scale, bool $unsigned, bool $required, ?string $default, ?int $foreignKeyModel, bool $password = false, bool $protected = false, bool $sensitive = false): array
     {
         $data = [
             'dataModel' => $modelId,
@@ -442,6 +442,15 @@ final class ModelTools
             'type'      => $type,
             'required'  => $required ? 1 : 0,
             'unsigned'  => $unsigned ? 1 : 0,
+            // Column metadata flags. `password` makes the framework hash the value
+            // on write (bcrypt) so the built-in login can password_verify it —
+            // your signup must store the PLAINTEXT and let Kyte hash it (do NOT
+            // hash it yourself, or it double-hashes). `protected` blanks the value
+            // in API responses (use with password so hashes never leave the
+            // server). `sensitive` marks it for redaction in logs.
+            'password'  => $password ? 1 : 0,
+            'protected' => $protected ? 1 : 0,
+            'sensitive' => $sensitive ? 1 : 0,
         ];
         if ($size !== null)            { $data['size']      = $size; }
         if ($precision !== null)       { $data['precision'] = $precision; }
@@ -483,6 +492,9 @@ final class ModelTools
             'scale'     => $a->scale !== null ? (int)$a->scale : null,
             'required'  => (int)($a->required ?? 0) === 1,
             'unsigned'  => (int)($a->unsigned ?? 0) === 1,
+            'password'  => (int)($a->password ?? 0) === 1,
+            'protected' => (int)($a->protected ?? 0) === 1,
+            'sensitive' => (int)($a->sensitive ?? 0) === 1,
             'foreign_key_model' => $a->foreignKeyModel !== null ? (int)$a->foreignKeyModel : null,
         ];
     }

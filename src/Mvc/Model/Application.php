@@ -199,6 +199,17 @@ $Application = [
 			'date'		=> false,
 		],
 
+		// Lifecycle status: 'active' (default), or 'deleting' while the
+		// SiteProvisioningWorker tears down the app's sites + drops the tenant
+		// DB (KYTE-#559). 'deleted' is set with deleted=1 at finalization.
+		'status'	=> [
+			'type'		=> 's',
+			'required'	=> false,
+			'size'		=> 20,
+			'default'	=> 'active',
+			'date'		=> false,
+		],
+
 		// framework attributes
 
 		'kyte_account'	=> [
