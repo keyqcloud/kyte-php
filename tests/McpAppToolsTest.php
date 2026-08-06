@@ -34,7 +34,7 @@ class McpAppToolsTest extends TestCase
 
         $this->api = new Api();
 
-        foreach ([KyteAccount, Application] as $model) {
+        foreach ([KyteAccount, Application, KyteAPIKey] as $model) {
             \Kyte\Core\DBI::createTable($model);
         }
 
@@ -53,7 +53,7 @@ class McpAppToolsTest extends TestCase
 
         $this->tools = new AppTools($this->api);
 
-        $_SERVER = ['REMOTE_ADDR' => '127.0.0.1'];
+        $_SERVER = ['REMOTE_ADDR' => '127.0.0.1', 'HTTP_HOST' => 'test.local'];
     }
 
     public function testDefaultAnonymousAccessIsNone(): void
@@ -106,6 +106,43 @@ class McpAppToolsTest extends TestCase
     public function testReadApplicationRejectsForeignApp(): void
     {
         $this->assertNull($this->tools->readApplication($this->otherAppId), 'a foreign app_id must not be readable');
+    }
+
+    public function testDefaultAuthModeIsHmac(): void
+    {
+        $this->assertSame('hmac', $this->tools->readApplication($this->ownAppId)['auth_mode']);
+    }
+
+    public function testSetAuthModeToJwtRegeneratesBootstrap(): void
+    {
+        $result = $this->tools->setAppAuthMode($this->ownAppId, 'jwt');
+        $this->assertTrue($result['updated'], $result['error'] ?? 'set failed');
+        $this->assertSame('jwt', $result['auth_mode']);
+        $this->assertSame('jwt', $this->tools->readApplication($this->ownAppId)['auth_mode']);
+
+        $app = new \Kyte\Core\ModelObject(Application);
+        $app->retrieve('id', $this->ownAppId);
+        $this->assertStringContainsString("authMode: 'jwt'", (string)$app->kyte_connect, 'the injected bootstrap must be regenerated for JWT');
+    }
+
+    public function testSetAuthModeBackToHmac(): void
+    {
+        $this->tools->setAppAuthMode($this->ownAppId, 'jwt');
+        $this->tools->setAppAuthMode($this->ownAppId, 'hmac');
+        $this->assertSame('hmac', $this->tools->readApplication($this->ownAppId)['auth_mode']);
+    }
+
+    public function testSetAuthModeRejectsInvalidMode(): void
+    {
+        $result = $this->tools->setAppAuthMode($this->ownAppId, 'saml');
+        $this->assertFalse($result['updated'], 'only hmac/jwt are valid');
+        $this->assertSame('hmac', $this->tools->readApplication($this->ownAppId)['auth_mode'], 'a rejected mode leaves the app unchanged');
+    }
+
+    public function testSetAuthModeRejectsForeignApp(): void
+    {
+        $result = $this->tools->setAppAuthMode($this->otherAppId, 'jwt');
+        $this->assertFalse($result['updated'], 'cannot change another account\'s app');
     }
 
     private function createAccount(string $number, string $name): int

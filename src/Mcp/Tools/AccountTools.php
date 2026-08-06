@@ -219,12 +219,22 @@ final class AccountTools
                 . '403 the SDK auto-runs session-destroy + redirect-to-login — do NOT write your own 403 re-login.',
             'session' => [
                 'create'  => 'k.sessionCreate(identity, onSuccess, onError) — log in. identity is an '
-                    . 'object (e.g. {email, password}). Optional 4th arg = a custom session controller name.',
+                    . 'object (e.g. {email, password}). Optional 4th arg = a custom login/session controller '
+                    . 'name (defaults to the built-in "Session").',
+                'signup'  => 'MEMBERSHIP app: a not-yet-logged-in visitor registers with an ANONYMOUS create — '
+                    . 'k.post("User", {email, password, name}, null, [], onOk, onErr) — pointed at your user '
+                    . 'model / signup controller. This only works when the app is in JWT auth mode with anonymous '
+                    . 'access enabled AND a requireAuth=false signup controller permits it. In HMAC mode there is '
+                    . 'NO anonymous request path, so public signup cannot work. Call get_auth_guide for the full '
+                    . 'server+client recipe (auth_mode=jwt, allow_public=2, signup controller, then these calls).',
                 'destroy' => 'k.sessionDestroy(onComplete) — takes ONE callback that runs after logout '
                     . 'whether it succeeded or failed; put your redirect there: '
                     . 'k.sessionDestroy(function(){ location.href = "/"; }). It is NOT (onSuccess, onError) '
                     . '— a redirect passed as a 2nd arg is ignored. (Or k.addLogoutHandler(selector) wires '
                     . 'a logout+redirect click handler for you.)',
+                'check'   => 'k.checkSession() returns a BOOLEAN — true when a session is active. Use it to '
+                    . 'gate protected pages (redirect unauthenticated visitors). The page bootstrap already '
+                    . 'ran k.init(), so an existing session is loaded.',
             ],
             'example' => implode("\n", [
                 "// READ (default CRUD) — response.data is an ARRAY of rows",
@@ -254,6 +264,7 @@ final class AccountTools
                 'onSuccess gets the full response object; onError may get a string OR an object OR not fire at all.',
                 '`formData` is a URL-encoded string, not a browser FormData object.',
                 'k.sessionDestroy takes ONE completion callback (put the redirect there).',
+                'Building login / signup / a membership app? Call get_auth_guide — the full recipe spans app settings (auth_mode=jwt, allow_public=2) + a signup controller + these client calls, and is easy to assemble wrong.',
             ],
         ];
     }

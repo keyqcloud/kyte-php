@@ -503,7 +503,9 @@ final class ControllerTools
                 . '+ write_function_code + commit_draft. Write the COMPLETE method — the full '
                 . '`public function ...(...) { ... }` matching the template signature (for a custom '
                 . 'function you write the whole method). The framework wraps your functions in the '
-                . 'controller class, so do NOT add a class wrapper.',
+                . 'controller class, so do NOT add a class wrapper. '
+                . '(Building a signup/login controller for a membership app? Call get_auth_guide for the '
+                . 'end-to-end recipe — it needs app settings auth_mode=jwt + allow_public=2 alongside this controller.)',
             'context' => [
                 '$this->user'     => 'ALWAYS a ModelObject — when there is no session it is an EMPTY '
                     . 'object with no id (it is NEVER literally null). Guard with isset($this->user->id) '

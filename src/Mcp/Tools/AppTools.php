@@ -96,18 +96,37 @@ final class AppTools
             if ($host === '') {
                 return;
             }
-            $connect = sprintf(
-                "let endpoint = 'https://%s';var k = new Kyte(endpoint, '%s', '%s', '%s', '%s');k.init();",
-                $host,
-                (string)$key->public_key,
-                (string)$key->identifier,
-                (string)$acct->number,
-                (string)$app->identifier
-            );
+            // New apps default to HMAC (Application.auth_mode default). set_app_auth_mode
+            // regenerates this snippet if the app is switched to JWT.
+            $connect = $this->buildKyteConnect($host, (string)$app->identifier, 'hmac', (string)$key->public_key, (string)$key->identifier, (string)$acct->number);
             $app->save(['kyte_connect' => $connect]);
         } catch (\Throwable $e) {
             error_log('create_application: kyte_connect generation failed - ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Build the `kyte_connect` bootstrap (the injected global `k`) for an app's
+     * auth mode. HMAC uses the signed-request keys; JWT nulls them and passes
+     * { authMode: 'jwt' } so the client uses bearer sessions + the anonymous path.
+     */
+    private function buildKyteConnect(string $host, string $appIdentifier, string $mode, ?string $publicKey = null, ?string $keyIdentifier = null, ?string $accountNumber = null): string
+    {
+        if ($mode === 'jwt') {
+            return sprintf(
+                "let endpoint = 'https://%s';\nvar k = new Kyte(endpoint, null, null, null, '%s', { authMode: 'jwt' });\nk.init();",
+                $host,
+                $appIdentifier
+            );
+        }
+        return sprintf(
+            "let endpoint = 'https://%s';var k = new Kyte(endpoint, '%s', '%s', '%s', '%s');k.init();",
+            $host,
+            (string)$publicKey,
+            (string)$keyIdentifier,
+            (string)$accountNumber,
+            $appIdentifier
+        );
     }
 
     /**
@@ -217,7 +236,7 @@ final class AppTools
      * @param string $password_field Column that holds the (hashed) password (e.g. "password").
      * @return array{configured: bool, application_id?: int, user_model?: string, username_field?: string, password_field?: string, error?: string}
      */
-    #[McpTool(name: 'configure_app_login', description: 'Configure an app\'s built-in login: which user data model + the username and password columns to authenticate against. Required for the login/session endpoint to accept your app\'s users (without it, login rejects valid credentials). Pair with a password column flagged password=true via add_attribute; signup should store the plaintext password and let Kyte hash it.')]
+    #[McpTool(name: 'configure_app_login', description: 'Configure an app\'s built-in login: which user data model + the username and password columns to authenticate against. Required for the login/session endpoint to accept your app\'s users (without it, login rejects valid credentials). Pair with a password column flagged password=true via add_attribute; signup should store the plaintext password and let Kyte hash it. Building login + public signup end-to-end? Call get_auth_guide first (you also need auth_mode=jwt + allow_public=2).')]
     #[RequiresScope('provision')]
     public function configureAppLogin(int $application_id, string $user_model, string $username_field, string $password_field): array
     {
@@ -307,7 +326,71 @@ final class AppTools
             'application_id' => $application_id,
             'allow_public'   => $level,
             'note'           => "Anonymous access set to {$level} ({$labels[$level]})."
-                . ($level === 2 ? ' For public signup, ensure the signup controller sets requireAuth=false and permits create.' : ''),
+                . ($level === 2 ? ' For PUBLIC SIGNUP this is necessary but NOT sufficient: also set auth_mode=jwt (set_app_auth_mode) and give the signup controller requireAuth=false. Call get_auth_guide for the full recipe.' : ''),
+        ];
+    }
+
+    /**
+     * Set an application's API auth mode: 'hmac' (default, signed requests) or
+     * 'jwt' (bearer-token sessions + the anonymous/public path that PUBLIC SIGNUP
+     * needs). Also REGENERATES the app's injected `k` bootstrap (kyte_connect) to
+     * match — without that, published pages keep booting the old mode. Because the
+     * bootstrap is baked in at publish time, existing pages must be REPUBLISHED to
+     * pick up the change.
+     *
+     * @param int    $application_id Application id (from list_applications).
+     * @param string $mode           'hmac' or 'jwt'.
+     * @return array{updated: bool, application_id?: int, auth_mode?: string, error?: string}
+     */
+    #[McpTool(name: 'set_app_auth_mode', description: 'Set an app\'s API auth mode: "hmac" (default; signed requests, no anonymous path) or "jwt" (bearer-token sessions AND the anonymous/public path required for PUBLIC SIGNUP). Also regenerates the injected `k` client bootstrap to match — REPUBLISH pages afterward to pick it up. For a public-signup membership app you need auth_mode=jwt AND set_app_anonymous_access(2) AND a signup controller with requireAuth=false; the install must also have KYTE_JWT_SECRET set. Call get_auth_guide for the full recipe. Changing an existing app\'s mode changes how ALL its clients authenticate.')]
+    #[RequiresScope('provision')]
+    public function setAppAuthMode(int $application_id, string $mode): array
+    {
+        $accountId = $this->accountIdOrZero();
+        if ($accountId === 0 || !$this->appBelongsToAccount($application_id, $accountId)) {
+            return ['updated' => false, 'error' => 'Application not found in this account.'];
+        }
+        if (!in_array($mode, ['hmac', 'jwt'], true)) {
+            return ['updated' => false, 'error' => "mode must be 'hmac' or 'jwt'."];
+        }
+
+        $app = new \Kyte\Core\ModelObject(\Application);
+        if (!$app->retrieve('id', $application_id)) {
+            return ['updated' => false, 'error' => 'Application not found.'];
+        }
+
+        // Regenerate the injected `k` bootstrap to match the mode (else published
+        // pages keep booting the old auth mode).
+        $host = (defined('API_URL') && API_URL) ? (string)API_URL : (string)($_SERVER['HTTP_HOST'] ?? '');
+        $connect = null;
+        if ($host !== '') {
+            if ($mode === 'jwt') {
+                $connect = $this->buildKyteConnect($host, (string)$app->identifier, 'jwt');
+            } else {
+                $acct = new \Kyte\Core\ModelObject(\KyteAccount);
+                $key  = new \Kyte\Core\ModelObject(\KyteAPIKey);
+                if ($acct->retrieve('id', $accountId) && $key->retrieve('kyte_account', $accountId)) {
+                    $connect = $this->buildKyteConnect($host, (string)$app->identifier, 'hmac', (string)$key->public_key, (string)$key->identifier, (string)$acct->number);
+                }
+            }
+        }
+
+        $save = ['auth_mode' => $mode];
+        if ($connect !== null) { $save['kyte_connect'] = $connect; }
+        try {
+            $app->save($save);
+        } catch (\Throwable $e) {
+            return ['updated' => false, 'error' => $e->getMessage()];
+        }
+
+        return [
+            'updated'                  => true,
+            'application_id'           => $application_id,
+            'auth_mode'                => $mode,
+            'kyte_connect_regenerated' => $connect !== null,
+            'note'                     => $mode === 'jwt'
+                ? 'Set to JWT (bearer sessions + anonymous/public path). Bootstrap regenerated — REPUBLISH pages to apply. Public signup also needs set_app_anonymous_access(2), a requireAuth=false signup controller, and KYTE_JWT_SECRET on the install. See get_auth_guide.'
+                : 'Set to HMAC (signed requests; no anonymous path). Bootstrap regenerated — REPUBLISH pages to apply.',
         ];
     }
 
@@ -327,6 +410,64 @@ final class AppTools
             return null;
         }
         return $this->appToArray($application_id);
+    }
+
+    /**
+     * Consolidated membership recipe. Keep in sync with: set_app_auth_mode +
+     * set_app_anonymous_access + configure_app_login (this file), add_attribute
+     * flags (ModelTools), the signup-controller pattern (get_controller_guide /
+     * KytePasswordResetController), and the client calls (get_kytejs_guide /
+     * kyte-api-js sessionCreate/sessionDestroy/checkSession).
+     *
+     * @return array<string,mixed>
+     */
+    #[McpTool(name: 'get_auth_guide', description: 'How to build user login + PUBLIC SIGNUP (a membership app) on Kyte end-to-end: the required app settings (auth_mode=jwt, allow_public=2), the user model + password flag, configure_app_login, the signup-controller pattern, and the client `k` calls. Call this BEFORE building any login/signup/membership flow — it ties together tools that are otherwise easy to assemble wrong.')]
+    #[RequiresScope('read')]
+    public function getAuthGuide(): array
+    {
+        return [
+            'overview' =>
+                'A membership app lets an app\'s OWN end-users sign up + log in (separate from the Kyte platform '
+                . 'account). Two app-level settings are REQUIRED and are the usual reason signup/login silently '
+                . 'fails: (1) auth_mode=jwt (set_app_auth_mode) — the anonymous/public request path and bearer '
+                . 'sessions only exist in JWT mode; HMAC has NO anonymous path, so public signup is impossible in '
+                . 'HMAC regardless of other settings. (2) allow_public=2 (set_app_anonymous_access) — lets an '
+                . 'unauthenticated visitor reach a requireAuth=false controller to create their account. Verify both '
+                . 'with read_application.',
+            'recipe' => [
+                '1. set_app_auth_mode(app, "jwt") — enables anonymous + JWT sessions; regenerates the injected `k`. Republish pages after.',
+                '2. set_app_anonymous_access(app, 2) — allow anonymous, controller-governed writes (needed for signup).',
+                '3. create_model "User" + add_attribute: email (s), password (s, password=true + protected=true), plus profile fields. password=true bcrypt-hashes on write; protected=true keeps the hash out of API output.',
+                '4. configure_app_login(app, "User", "email", "password") — points the login/session endpoint at your model.',
+                '5. Signup controller on the User model (see signup_controller) so an anonymous visitor can create an account.',
+                '6. Client pages: signup via anonymous k.post, login via k.sessionCreate, logout via k.sessionDestroy (see get_kytejs_guide).',
+            ],
+            'signup_controller' =>
+                'Bind a controller to the User model, then override new() so anonymous visitors can register. In '
+                . 'hook_init set $this->requireAuth = false and $this->allowableActions = ["new"] (ONLY create is '
+                . 'public — reads/updates/deletes still require login). In new(), create the user with the PLAINTEXT '
+                . 'password (Kyte hashes it via the password=true flag — do NOT hash it yourself or login double-hashes) '
+                . 'and set $this->response["data"]. Mirrors KytePasswordResetController. Author with create_controller + '
+                . 'create_function("hook_init") + create_function("new") + commit_draft. See get_controller_guide for exact '
+                . 'signatures + the account-scoping rules.',
+            'client' => [
+                'signup' => 'Anonymous create (visitor not logged in yet): k.post("User", {email, password, name}, null, [], onOk, onErr). Works ONLY with auth_mode=jwt + allow_public=2 + the signup controller\'s requireAuth=false.',
+                'login'  => 'k.sessionCreate({email, password}, onOk, onErr) — mints a JWT session (cookies; sent as Bearer on later calls).',
+                'logout' => 'k.sessionDestroy(function(){ location.href = "/"; }) — ONE completion callback. Or k.addLogoutHandler(selector).',
+                'gate'   => 'k.checkSession() returns a boolean — redirect unauthenticated visitors off protected pages.',
+            ],
+            'prerequisites' =>
+                'The INSTALL must have KYTE_JWT_SECRET configured for JWT sessions to mint/verify (platform config, '
+                . 'not per-app). If login errors even with the recipe correct, verify the install has it.',
+            'gotchas' => [
+                'You need BOTH: auth_mode=jwt WITHOUT allow_public=2 → anonymous signup still rejected; allow_public=2 WITHOUT auth_mode=jwt → the client cannot make the anonymous request at all.',
+                'Changing auth_mode regenerates the injected `k` bootstrap — REPUBLISH existing pages or they keep booting the old mode.',
+                'Do NOT hash the password in signup — the password=true flag hashes it; hashing yourself breaks login (double-hash).',
+                'requireAuth=false belongs on the SIGNUP controller only, scoped to allowableActions=["new"] — never open the whole app.',
+                '"Unauthorized API request." during signup/login almost always means: auth_mode not jwt, allow_public not 2, or the controller still requireAuth=true.',
+            ],
+            'verify' => 'read_application(app) returns auth_mode + allow_public — confirm jwt + 2 before debugging anything else.',
+        ];
     }
 
     /** @return array<string,mixed>|null */
