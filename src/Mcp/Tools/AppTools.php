@@ -261,12 +261,64 @@ final class AppTools
     }
 
     /**
-     * Read a single application's details (name, identifier, language, status).
+     * Set an application's anonymous (public, unauthenticated) access level.
+     *
+     * allow_public is a tri-state gate applied BEFORE controller auth:
+     *   0 = none (default): every request must authenticate (login/session or HMAC).
+     *   1 = read-only: unauthenticated callers may GET, regardless of a
+     *       controller's allowableActions. Writes still require auth.
+     *   2 = controller-governed: unauthenticated callers may also write IF the
+     *       target controller sets $this->requireAuth = false and permits the
+     *       action. This is what PUBLIC SIGNUP needs — an anonymous visitor
+     *       creating their own account before they can log in.
+     *
+     * Security: levels 1 and 2 expose data/behavior to unauthenticated callers.
+     * Use the narrowest level that works; pair level 2 with a signup controller
+     * that only permits the create it needs.
+     *
+     * @param int $application_id Application id (from list_applications).
+     * @param int $level          0 = none, 1 = read-only, 2 = controller-governed.
+     * @return array{updated: bool, application_id?: int, allow_public?: int, error?: string}
+     */
+    #[McpTool(name: 'set_app_anonymous_access', description: 'Set an app\'s anonymous (unauthenticated) access level: 0 = none (default, all requests need auth), 1 = anonymous read-only (GET), 2 = controller-governed (anonymous writes allowed where a controller sets requireAuth=false + allowableActions). PUBLIC SIGNUP requires level 2 plus a signup controller with requireAuth=false. Levels 1-2 expose the app to unauthenticated callers — use the narrowest that works. Check the current level with read_application.')]
+    #[RequiresScope('provision')]
+    public function setAppAnonymousAccess(int $application_id, int $level): array
+    {
+        $accountId = $this->accountIdOrZero();
+        if ($accountId === 0 || !$this->appBelongsToAccount($application_id, $accountId)) {
+            return ['updated' => false, 'error' => 'Application not found in this account.'];
+        }
+        if (!in_array($level, [0, 1, 2], true)) {
+            return ['updated' => false, 'error' => 'level must be 0 (none), 1 (read-only), or 2 (controller-governed).'];
+        }
+
+        $api  = $this->api;
+        $resp = [];
+        try {
+            $controller = new \Kyte\Mvc\Controller\ApplicationController(\Application, $api, 'm/d/Y H:i:s', $resp, true);
+            $controller->update('id', $application_id, ['allow_public' => $level]);
+        } catch (\Throwable $e) {
+            return ['updated' => false, 'error' => $e->getMessage()];
+        }
+
+        $labels = [0 => 'none', 1 => 'read-only', 2 => 'controller-governed'];
+        return [
+            'updated'        => true,
+            'application_id' => $application_id,
+            'allow_public'   => $level,
+            'note'           => "Anonymous access set to {$level} ({$labels[$level]})."
+                . ($level === 2 ? ' For public signup, ensure the signup controller sets requireAuth=false and permits create.' : ''),
+        ];
+    }
+
+    /**
+     * Read a single application's details (name, identifier, language, status,
+     * login config, auth_mode, allow_public).
      *
      * @param int $application_id Application id (from list_applications).
      * @return array<string,mixed>|null
      */
-    #[McpTool(name: 'read_application', description: 'Read a single Kyte application by id: name, identifier, default language, and status.')]
+    #[McpTool(name: 'read_application', description: 'Read a single Kyte application by id: name, identifier, language, status, login config (user_model + username/password fields), auth_mode, and allow_public (anonymous-access level: 0 none, 1 read-only, 2 controller-governed).')]
     #[RequiresScope('read')]
     public function readApplication(int $application_id): ?array
     {
@@ -295,6 +347,12 @@ final class AppTools
             'user_model'     => !empty($app->user_model) ? (string)$app->user_model : null,
             'username_field' => !empty($app->username_colname) ? (string)$app->username_colname : null,
             'password_field' => !empty($app->password_colname) ? (string)$app->password_colname : null,
+            // Access control. auth_mode = how API requests authenticate (e.g. hmac/jwt).
+            // allow_public = anonymous-access level: 0 none, 1 read-only (GET), 2
+            // controller-governed (anonymous writes where a controller sets
+            // requireAuth=false). Public signup needs level 2. Set via set_app_anonymous_access.
+            'auth_mode'    => !empty($app->auth_mode) ? (string)$app->auth_mode : null,
+            'allow_public' => isset($app->allow_public) ? (int)$app->allow_public : 0,
         ];
     }
 

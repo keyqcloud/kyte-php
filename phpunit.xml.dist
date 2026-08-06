@@ -16,6 +16,7 @@
       <file>tests/HmacSessionStrategyTest.php</file>
       <file>tests/JwtEndpointTest.php</file>
       <file>tests/JwtSessionStrategyTest.php</file>
+      <file>tests/McpAppToolsTest.php</file>
       <file>tests/McpControllerToolsTest.php</file>
       <file>tests/McpEndpointTest.php</file>
       <file>tests/McpModelToolsTest.php</file>
