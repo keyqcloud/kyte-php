@@ -210,6 +210,25 @@ final class AccountTools
                 . 'record is response.data[0]); a CUSTOM controller (a get override) returns whatever '
                 . 'it set — often a plain object or scalar. Do NOT assume response.data is an array '
                 . 'when calling a custom controller — match how that controller sets its data.',
+            'foreign_keys' =>
+                'CRITICAL and easy to miss: a FOREIGN-KEY column comes back EXPANDED as the full '
+                . 'nested referenced object, NOT the scalar id you wrote. If Loan has an `asset` FK, '
+                . 'then loan.asset is the whole Asset row ({ id, name, ... }) — loan.asset === 42 is '
+                . 'ALWAYS false, so id comparisons/lookups silently match nothing and you get a wrong '
+                . 'answer with NO error (the worst failure for an agent build). Expansion is ONE level '
+                . 'deep: the FK columns INSIDE that nested object stay scalar ids. Normalise before '
+                . 'comparing: `function fkId(v){ return (v && typeof v === "object") ? v.id : v; }` then '
+                . 'use fkId(loan.asset) === asset.id. (Reading loan.asset.id directly also works when '
+                . 'you know it is expanded — fkId() is the safe form that tolerates either shape.)',
+            'raw_requests' =>
+                'NEVER hand-roll a request with fetch()/XHR/axios — always go through `k`. `k` attaches '
+                . 'the auth headers the server REQUIRES, and they are not obvious: in JWT mode every call '
+                . 'sends x-kyte-appid (always) + Authorization: Bearer <jwt> (when a session exists); in '
+                . 'HMAC mode it sends a computed x-kyte-signature + x-kyte-identity that you CANNOT '
+                . 'reproduce client-side (they come from k.sign()). A raw request missing x-kyte-appid '
+                . 'never even enters the anonymous app-context path server-side, so it silently goes '
+                . 'nowhere — no useful error. If you think you need a raw request, you do not: use '
+                . 'k.get/k.post/k.put/k.delete.',
             'errors' =>
                 'onError usually receives the server error message STRING, but on transport / '
                 . 'token-refresh failures it may receive an OBJECT (jqXHR or {error, detail}), and on a '
@@ -255,12 +274,22 @@ final class AccountTools
                 "k.get('TaskStats', null, null, [], function (response) {",
                 "    var stats = response.data;   // e.g. { total: 10, done: 4 } — NOT an array",
                 "}, function (err) {});",
+                "",
+                "// FOREIGN KEYS come back EXPANDED — normalise before comparing ids",
+                "function fkId(v){ return (v && typeof v === 'object') ? v.id : v; }",
+                "k.get('Loan', null, null, [], function (response) {",
+                "    var onLoan = response.data.filter(function (loan) {",
+                "        return fkId(loan.asset) === assetId;   // loan.asset is the whole Asset row, not 42",
+                "    });",
+                "}, function (err) {});",
             ]),
             'rules' => [
                 'Use the injected global `k` (already constructed + init()-ed) — never new Kyte(...), never hard-code endpoint/keys.',
                 'First arg is the exact model/controller NAME string (not a URL); get names from get_app_info / list_models / list_controllers.',
                 '`headers` is a required positional [] before the callbacks.',
                 'response.data is an ARRAY for default CRUD, but whatever the controller sets for a custom override — do not assume.',
+                'A foreign-key column returns the FULL nested object, not a scalar id (loan.asset is the Asset row) — normalise with fkId() before any id comparison, or lookups silently match nothing.',
+                'Never hand-roll fetch()/XHR — `k` attaches required auth headers (x-kyte-appid, Bearer, or HMAC signature) you cannot reliably reproduce; a raw request silently goes nowhere.',
                 'onSuccess gets the full response object; onError may get a string OR an object OR not fire at all.',
                 '`formData` is a URL-encoded string, not a browser FormData object.',
                 'k.sessionDestroy takes ONE completion callback (put the redirect there).',

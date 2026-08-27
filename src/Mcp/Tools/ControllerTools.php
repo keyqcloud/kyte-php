@@ -519,6 +519,11 @@ final class ControllerTools
                 '$this->model'    => "The resolved model-definition ARRAY (\$this->model['name'], "
                     . "\$this->model['struct'][<col>]), set by shipyard_init() — it is the array value, not the constant name.",
                 '$this->api'      => 'The Api instance.',
+                'KYTE_APP_ENV'    => "App config + secrets are exposed as the GLOBAL constant KYTE_APP_ENV, an "
+                    . "associative array of this app's environment variables (e.g. KYTE_APP_ENV['STRIPE_KEY']). "
+                    . "Read config/keys from it — do NOT hard-code secrets in controller code. Values are managed "
+                    . "per-app in Shipyard → Configuration → Environment Variables (there is currently no MCP tool "
+                    . "to set them). Guard with isset(KYTE_APP_ENV['KEY']) — a missing key is undefined, not null.",
             ],
             'hooks' => [
                 'hook_init()' => 'Runs during construction, BEFORE authentication — do NOT assume a '

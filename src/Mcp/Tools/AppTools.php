@@ -299,7 +299,7 @@ final class AppTools
      * @param int $level          0 = none, 1 = read-only, 2 = controller-governed.
      * @return array{updated: bool, application_id?: int, allow_public?: int, error?: string}
      */
-    #[McpTool(name: 'set_app_anonymous_access', description: 'Set an app\'s anonymous (unauthenticated) access level: 0 = none (default, all requests need auth), 1 = anonymous read-only (GET), 2 = controller-governed (anonymous writes allowed where a controller sets requireAuth=false + allowableActions). PUBLIC SIGNUP requires level 2 plus a signup controller with requireAuth=false. Levels 1-2 expose the app to unauthenticated callers — use the narrowest that works. Check the current level with read_application.')]
+    #[McpTool(name: 'set_app_anonymous_access', description: 'Set an app\'s anonymous (unauthenticated) access level. This is only a GATE — it never serves anything by itself; the target model ALWAYS needs its own controller with requireAuth=false, or the default controller (requireAuth=true) still returns "Unauthorized API request." 0 = none (default, all requests need auth). 1 = read-only gate: anonymous requests may reach a requireAuth=false controller but are clamped to GET at the platform. 2 = controller-governed: the requireAuth=false controller\'s own allowableActions govern, including writes. PUBLIC SIGNUP needs level 2 + a requireAuth=false signup controller (+ auth_mode=jwt). PUBLIC READ-ONLY catalog needs level 1 + a requireAuth=false read controller. Also requires auth_mode=jwt (HMAC has no anonymous path). Use the narrowest level that works. Call get_auth_guide for the full recipe; check the current level with read_application.')]
     #[RequiresScope('provision')]
     public function setAppAnonymousAccess(int $application_id, int $level): array
     {
@@ -326,6 +326,7 @@ final class AppTools
             'application_id' => $application_id,
             'allow_public'   => $level,
             'note'           => "Anonymous access set to {$level} ({$labels[$level]})."
+                . ($level === 1 ? ' This is only a GATE (clamped to GET): the model STILL needs a controller with requireAuth=false or reads return "Unauthorized API request." Also requires auth_mode=jwt. Call get_auth_guide for the read-only recipe.' : '')
                 . ($level === 2 ? ' For PUBLIC SIGNUP this is necessary but NOT sufficient: also set auth_mode=jwt (set_app_auth_mode) and give the signup controller requireAuth=false. Call get_auth_guide for the full recipe.' : ''),
         ];
     }
@@ -401,7 +402,7 @@ final class AppTools
      * @param int $application_id Application id (from list_applications).
      * @return array<string,mixed>|null
      */
-    #[McpTool(name: 'read_application', description: 'Read a single Kyte application by id: name, identifier, language, status, login config (user_model + username/password fields), auth_mode, and allow_public (anonymous-access level: 0 none, 1 read-only, 2 controller-governed).')]
+    #[McpTool(name: 'read_application', description: 'Read a single Kyte application by id: name, identifier, language, status, login config (user_model + username/password fields), auth_mode, and allow_public (anonymous-access GATE level: 0 none, 1 read-only gate, 2 controller-governed — note the gate alone never serves a request; the model still needs a requireAuth=false controller).')]
     #[RequiresScope('read')]
     public function readApplication(int $application_id): ?array
     {
@@ -421,7 +422,7 @@ final class AppTools
      *
      * @return array<string,mixed>
      */
-    #[McpTool(name: 'get_auth_guide', description: 'How to build user login + PUBLIC SIGNUP (a membership app) on Kyte end-to-end: the required app settings (auth_mode=jwt, allow_public=2), the user model + password flag, configure_app_login, the signup-controller pattern, and the client `k` calls. Call this BEFORE building any login/signup/membership flow — it ties together tools that are otherwise easy to assemble wrong.')]
+    #[McpTool(name: 'get_auth_guide', description: 'How to build ANY anonymous/public or membership access on Kyte end-to-end: user login + PUBLIC SIGNUP (auth_mode=jwt, allow_public=2, signup controller) AND public READ-ONLY catalog/storefront access (allow_public=1 + a requireAuth=false read controller). Covers the required app settings, the user model + password flag, configure_app_login, the controller patterns, the load-bearing "default controllers are closed" rule, and the client `k` calls. Call this BEFORE building any login/signup/membership/public-read flow — these tools are easy to assemble wrong.')]
     #[RequiresScope('read')]
     public function getAuthGuide(): array
     {
@@ -456,10 +457,27 @@ final class AppTools
                 'logout' => 'k.sessionDestroy(function(){ location.href = "/"; }) — ONE completion callback. Or k.addLogoutHandler(selector).',
                 'gate'   => 'k.checkSession() returns a boolean — redirect unauthenticated visitors off protected pages.',
             ],
+            'public_readonly_recipe' =>
+                'DIFFERENT from signup: to expose PUBLIC READ-ONLY data (a catalog/storefront/landing page an '
+                . 'anonymous visitor can browse), use allow_public=1 instead of 2. But note the load-bearing rule '
+                . 'below — allow_public is only a GATE; it never serves anything by itself. Steps: (1) '
+                . 'set_app_auth_mode(app, "jwt") + republish. (2) set_app_anonymous_access(app, 1) — opens the gate '
+                . 'AND clamps the anonymous surface to GET at the platform (writes are refused even if a controller '
+                . 'allows them). (3) Bind a controller to the model and in hook_init set $this->requireAuth = false '
+                . '(scope it, e.g. $this->allowableActions = ["get"]). WITHOUT that controller the model falls to the '
+                . 'default ModelController (requireAuth=true) and every anonymous read still returns "Unauthorized API '
+                . 'request." (4) Client reads via k.get as usual.',
+            'default_closed_rule' =>
+                'LOAD-BEARING: Kyte controllers are CLOSED BY DEFAULT. allow_public (1 or 2) only lets an anonymous '
+                . 'request REACH a controller — it does not grant access. The model still needs its OWN controller '
+                . 'with $this->requireAuth = false, or the default ModelController (requireAuth=true) rejects it. '
+                . 'Gate open + no requireAuth=false controller = still 403. This is the single most common reason '
+                . '"I enabled anonymous access but it still says Unauthorized".',
             'prerequisites' =>
                 'The INSTALL must have KYTE_JWT_SECRET configured for JWT sessions to mint/verify (platform config, '
                 . 'not per-app). If login errors even with the recipe correct, verify the install has it.',
             'gotchas' => [
+                'allow_public is only a GATE — it never serves anything alone. The target model ALWAYS needs a controller with requireAuth=false (default controllers stay closed → "Unauthorized API request.").',
                 'You need BOTH: auth_mode=jwt WITHOUT allow_public=2 → anonymous signup still rejected; allow_public=2 WITHOUT auth_mode=jwt → the client cannot make the anonymous request at all.',
                 'Changing auth_mode regenerates the injected `k` bootstrap — REPUBLISH existing pages or they keep booting the old mode.',
                 'Do NOT hash the password in signup — the password=true flag hashes it; hashing yourself breaks login (double-hash).',
