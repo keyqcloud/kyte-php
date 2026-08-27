@@ -256,11 +256,21 @@ class Api
      * This method defines various constants required by the API if they are not already defined.
      */
 	private function defineEnvironmentConstants() {
+		// The "using defaults" notice below is a diagnostic, so honor VERBOSE_LOG
+		// (default false) rather than logging on EVERY request for every constant
+		// an install has not explicitly set. Resolve the effective flag up front:
+		// VERBOSE_LOG may itself be one of the constants defined in the loop, so
+		// read the config override if present, else its declared default.
+		$verbose = defined('VERBOSE_LOG')
+			? VERBOSE_LOG
+			: ($this->defaultEnvironmentConstants['VERBOSE_LOG'] ?? false);
 		foreach ($this->defaultEnvironmentConstants as $key => $value) {
 			// check if each key is defined, and if not define key as value
 			if (!defined($key)) {
 				define($key, $value);
-				error_log("$key constant not defined...using defaults ($value)");
+				if ($verbose) {
+					error_log("$key constant not defined...using defaults ($value)");
+				}
 			}
 		}
 		
