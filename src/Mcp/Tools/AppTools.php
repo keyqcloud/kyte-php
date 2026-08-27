@@ -485,6 +485,96 @@ final class AppTools
                 '"Unauthorized API request." during signup/login almost always means: auth_mode not jwt, allow_public not 2, or the controller still requireAuth=true.',
             ],
             'verify' => 'read_application(app) returns auth_mode + allow_public — confirm jwt + 2 before debugging anything else.',
+            'see_also' => 'Something already failing? Call get_debugging_guide — it decodes the exact error string to a cause + what to check.',
+        ];
+    }
+
+    /**
+     * Decode a failing request/login/signup/build. Maps the framework error
+     * strings (verified against SessionManager, ModelController, AppContextStrategy,
+     * Api HMAC, and the MCP endpoint) + the common SILENT wrong-answers to a likely
+     * cause and exactly what to check. The error strings themselves are terse by
+     * design (no server internals leaked); this decoder is for the authenticated
+     * builder, it does not change them.
+     *
+     * @return array<string,mixed>
+     */
+    #[McpTool(name: 'get_debugging_guide', description: 'Decode a failing Kyte build/login/signup/request: maps the common error messages ("Unauthorized API request.", "Invalid username or password.", the anonymous-access errors, HMAC signature mismatch, /mcp auth errors) AND silent wrong-answers (FK lookups matching nothing, filter-by-0) to their likely cause and exactly what to check. Call this the moment a request, login, signup, or page is not working.')]
+    #[RequiresScope('read')]
+    public function getDebuggingGuide(): array
+    {
+        return [
+            'how_to_use' => 'Match your EXACT symptom below. The error strings are intentionally terse (they leak no server internals) — decode them here rather than inferring server state from them.',
+            'errors' => [
+                '"Unauthorized API request." (HTTP 403)' => [
+                    'means'  => 'A controller with requireAuth=true rejected the request because there is no valid session (ModelController::authenticate).',
+                    'causes' => [
+                        'PUBLIC endpoint with NO requireAuth=false controller: the model fell through to the DEFAULT ModelController (requireAuth=true). allow_public only OPENS THE GATE — it never serves a request by itself; the model still needs its own requireAuth=false controller.',
+                        'CONTROLLER NAMING (very common, silent): a controller bound to a model must be NAMED EXACTLY the model name. Kyte routes model "User" to class UserController (= {model}Controller). A controller record named "UserController" generates class UserControllerController, which nothing routes to — so your requireAuth=false override is ignored and the default controller answers. Name it "User", not "UserController". Same trap for Task/Step/etc.',
+                        'A genuinely protected endpoint hit without logging in, or after the session expired.',
+                    ],
+                    'check'  => [
+                        'list_controllers(app): is there a controller for THIS model, named EXACTLY the model name (not <Model>Controller)?',
+                        'read_controller: does hook_init set $this->requireAuth = false (and a scoped allowableActions)?',
+                        'read_application: auth_mode=jwt, and allow_public 1 (read) or 2 (writes/signup)?',
+                    ],
+                ],
+                '"Invalid username or password." (login)' => [
+                    'means'  => 'SessionManager could not find the user by the configured login field, OR password_verify failed.',
+                    'causes' => [
+                        'The account was never actually created — signup silently failed (see "Unauthorized API request." above); there is no row to log in as.',
+                        'Login points at the wrong model/fields (configure_app_login user_model / username / password).',
+                        'The password was double-hashed: the signup controller hashed it AND the password=true flag hashed it again. Do NOT hash in the controller.',
+                        'Genuinely wrong credentials.',
+                    ],
+                    'check'  => [
+                        'read_application: user_model + username_field + password_field are the ones you built.',
+                        'list_models / query the user model: did signup create the row?',
+                        'Signup stores the PLAINTEXT password (the password=true flag hashes it once).',
+                    ],
+                ],
+                '"Anonymous access is not enabled for this application."' => [
+                    'means' => 'AppContextStrategy rejected an anonymous (appid-only) request because allow_public=0.',
+                    'check' => ['set_app_anonymous_access(app, 1) for public reads or 2 for signup/writes, AND set_app_auth_mode(app, "jwt").'],
+                ],
+                '"Anonymous access to this application is read-only."' => [
+                    'means' => 'allow_public=1 and the request was not a GET (level 1 clamps the anonymous surface to GET at the platform).',
+                    'check' => ['For anonymous writes (e.g. signup) use set_app_anonymous_access(app, 2).'],
+                ],
+                '"Anonymous access requires a valid application context (x-kyte-appid)."' => [
+                    'means'  => 'An anonymous request arrived with no x-kyte-appid header.',
+                    'causes' => ['A hand-rolled fetch/XHR instead of the injected `k` client — `k` sends x-kyte-appid automatically; raw requests do not.'],
+                    'check'  => ['Use k.get/k.post/k.put/k.delete, never raw fetch. See get_kytejs_guide (raw_requests).'],
+                ],
+                '"Calculated signature does not match provided signature."' => [
+                    'means'  => 'HMAC signature mismatch (Api HMAC verification).',
+                    'causes' => ['A hand-rolled request in HMAC mode — the signature comes from k.sign() and cannot be reproduced by hand.', 'Wrong/expired keys or clock skew.', 'The app is in HMAC mode when you intended JWT.'],
+                    'check'  => ['Use the injected `k`. read_application: is auth_mode what you expect?'],
+                ],
+                '"No valid session." / "Invalid session." / "Session expired."' => [
+                    'means' => 'The session token is missing, malformed, or past expiry (SessionManager).',
+                    'check' => ['Log in again via k.sessionCreate; let `k` carry the cookie/bearer (do not hand-manage it). For JWT, confirm the install has KYTE_JWT_SECRET (get_auth_guide prerequisites).'],
+                ],
+                '"[ERROR] Unable to create controller for model: X."' => [
+                    'means' => 'The resolved controller class could not be instantiated — usually a fatal PHP error inside a custom hook/override.',
+                    'check' => ['read_controller / read_function on that model: look for a PHP error in a recently committed hook or override.'],
+                ],
+                '"[ERROR] /mcp requires an Authorization header." / "...MCP bearer token (kmcp_live_...)"' => [
+                    'means' => 'The MCP endpoint itself was called without a valid bearer token — the connector is not linked or the token is missing/expired.',
+                    'check' => ['Re-link the MCP connector / verify the MCP token. This is a connector-level issue, not an app build issue.'],
+                ],
+            ],
+            'silent_wrong_answers' => [
+                'A foreign-key lookup matches nothing / renders "0" with correct data present' => 'A foreign-key column returns the FULL nested object, not a scalar id (loan.asset is the whole Asset row, so loan.asset === 42 is always false). Normalise with fkId() before comparing. See get_kytejs_guide (foreign_keys).',
+                'k.get filtered by 0 or "" returns everything' => 'A falsy field value is dropped from the request. Do not filter by a literal 0 or "".',
+                'Signup appears to succeed but no user exists / cannot log in' => 'The signup controller was never routed (naming) or requireAuth was still true, so the default controller ran or 403d. Verify the controller NAME + requireAuth=false, then confirm the row was actually created.',
+            ],
+            'first_moves' => [
+                'read_application(app) — auth_mode + allow_public in one call.',
+                'list_controllers(app) — confirm the model has a correctly-NAMED requireAuth=false controller.',
+                'Do not infer server state from an error string — they are deliberately terse.',
+            ],
+            'see_also' => 'get_auth_guide (membership + public-read recipes), get_controller_guide (requireAuth + naming), get_kytejs_guide (client calls, required headers, FK expansion).',
         ];
     }
 

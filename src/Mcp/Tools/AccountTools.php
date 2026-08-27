@@ -294,6 +294,7 @@ final class AccountTools
                 '`formData` is a URL-encoded string, not a browser FormData object.',
                 'k.sessionDestroy takes ONE completion callback (put the redirect there).',
                 'Building login / signup / a membership app? Call get_auth_guide — the full recipe spans app settings (auth_mode=jwt, allow_public=2) + a signup controller + these client calls, and is easy to assemble wrong.',
+                'Something not working (request/login/signup fails, or a lookup returns the wrong answer)? Call get_debugging_guide — it decodes the exact error string to a cause + what to check.',
             ],
         ];
     }

@@ -521,9 +521,9 @@ final class ControllerTools
                 '$this->api'      => 'The Api instance.',
                 'KYTE_APP_ENV'    => "App config + secrets are exposed as the GLOBAL constant KYTE_APP_ENV, an "
                     . "associative array of this app's environment variables (e.g. KYTE_APP_ENV['STRIPE_KEY']). "
-                    . "Read config/keys from it — do NOT hard-code secrets in controller code. Values are managed "
-                    . "per-app in Shipyard → Configuration → Environment Variables (there is currently no MCP tool "
-                    . "to set them). Guard with isset(KYTE_APP_ENV['KEY']) — a missing key is undefined, not null.",
+                    . "Read config/keys from it — do NOT hard-code secrets in controller code. Manage the values with "
+                    . "the MCP env-var tools (list_app_env_vars / set_app_env_var / delete_app_env_var) or in Shipyard "
+                    . "→ Configuration → Environment Variables. Guard with isset(KYTE_APP_ENV['KEY']) — a missing key is undefined, not null.",
             ],
             'hooks' => [
                 'hook_init()' => 'Runs during construction, BEFORE authentication — do NOT assume a '

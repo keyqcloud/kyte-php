@@ -19,6 +19,7 @@
       <file>tests/McpAppToolsTest.php</file>
       <file>tests/McpControllerToolsTest.php</file>
       <file>tests/McpEndpointTest.php</file>
+      <file>tests/McpEnvVarToolsTest.php</file>
       <file>tests/McpModelToolsTest.php</file>
       <file>tests/McpPageToolsTest.php</file>
       <file>tests/McpScopeTest.php</file>
