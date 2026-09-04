@@ -1,3 +1,19 @@
+## 4.21.0
+
+MCP tooling expansion — per-app environment variables, an error-decoding guide, and script→page assignment — closing gaps surfaced by QA and daily MCP use.
+
+### Feature: environment-variable MCP tools — KYTE-#615
+
+`list_app_env_vars` / `set_app_env_var` / `delete_app_env_var` manage an app's environment variables, which controllers/functions read as `KYTE_APP_ENV['KEY']` (config + secrets, instead of hard-coding them). Keys are listed; values are **write-only** (never returned by any read). Account-scoped, `provision` scope. Closes the gap where an MCP-driven build could write a controller needing a secret but couldn't provision it.
+
+### Feature: `get_debugging_guide`
+
+Decodes the framework's deliberately-terse error strings ("Unauthorized API request.", "Invalid username or password.", the anonymous-access errors, HMAC signature mismatch, the `/mcp` auth errors) and the common **silent** wrong-answers (foreign-key expansion, filter-by-0, signup-never-routed) to a likely cause + exactly what to check. Error strings themselves are unchanged.
+
+### Feature: script → page assignment — KYTE-#346
+
+`assign_script` / `unassign_script` attach a **published** site script to a specific page (per-page; `global_scope=0`) and regenerate the page so the `<script>`/`<link>` tag appears/removes. `create_script` and `get_kytejs_guide` now document the full publish flow (`create_script → write_script_content → commit_draft(surface="script") → assign_script`) so an MCP build stops falling back to manual S3 upload. (The global/site-wide assignment path is intentionally not exposed via MCP pending a separate fix.)
+
 ## 4.20.1
 
 Log-hygiene patch: silence the cron worker's per-execution DEBUG/heartbeat chatter and the per-request "constant not defined" notice unless `VERBOSE_LOG` is enabled. Both were flooding install logs — the cron DEBUG alone was ~90% of journal volume on small instances, refilling the journal cap every few days.
