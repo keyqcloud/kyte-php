@@ -121,7 +121,7 @@ class CronWorker
 		$orphaned = DBI::prepared_query($sql, 'i', [$now]);
 
 		if (empty($orphaned)) {
-			echo "[" . date('Y-m-d H:i:s') . "] No orphaned executions found\n";
+			$this->verbose("No orphaned executions found");
 			return;
 		}
 
@@ -313,7 +313,7 @@ class CronWorker
 	 * Phase 4: Enhanced with dependency checking before execution
 	 */
 	private function processExecution($execution) {
-		echo "[" . date('Y-m-d H:i:s') . "] DEBUG: processExecution started for execution #{$execution['id']}\n";
+		$this->verbose("DEBUG: processExecution started for execution #{$execution['id']}");
 
 		// Phase 4: Get full job details to check dependencies
 		$sql = "SELECT * FROM CronJob WHERE id = ?";
@@ -325,7 +325,7 @@ class CronWorker
 		}
 
 		$job = $job[0];
-		echo "[" . date('Y-m-d H:i:s') . "] DEBUG: Job #{$job['id']} loaded\n";
+		$this->verbose("DEBUG: Job #{$job['id']} loaded");
 
 		// Phase 4: Check if job has dependency
 		if (!empty($job['depends_on_job'])) {
@@ -336,23 +336,23 @@ class CronWorker
 		}
 
 		// Check concurrent execution
-		echo "[" . date('Y-m-d H:i:s') . "] DEBUG: Checking concurrency...\n";
+		$this->verbose("DEBUG: Checking concurrency...");
 		if (!$this->checkConcurrency($execution)) {
 			$this->skipExecution($execution['id'], "Job already running (concurrent execution disabled)");
 			return;
 		}
 
 		// Try to acquire lock
-		echo "[" . date('Y-m-d H:i:s') . "] DEBUG: Attempting to acquire lock...\n";
+		$this->verbose("DEBUG: Attempting to acquire lock...");
 		if (!$this->acquireLock($execution['id'])) {
-			echo "[" . date('Y-m-d H:i:s') . "] DEBUG: Failed to acquire lock\n";
+			$this->verbose("DEBUG: Failed to acquire lock");
 			return; // Another worker got it
 		}
-		echo "[" . date('Y-m-d H:i:s') . "] DEBUG: Lock acquired! Calling executeJob...\n";
+		$this->verbose("DEBUG: Lock acquired! Calling executeJob...");
 
 		// Execute the job
 		$this->executeJob($execution);
-		echo "[" . date('Y-m-d H:i:s') . "] DEBUG: executeJob returned\n";
+		$this->verbose("DEBUG: executeJob returned");
 	}
 
 	/**
@@ -430,7 +430,7 @@ class CronWorker
 		$this->activeExecution = $execution;
 		$this->stats['jobs_executed']++;
 
-		echo "[" . date('Y-m-d H:i:s') . "] Forking worker for job #{$execution['cron_job']} ({$execution['job_name']}) - execution #{$execution['id']}\n";
+		$this->verbose("Forking worker for job #{$execution['cron_job']} ({$execution['job_name']}) - execution #{$execution['id']}");
 
 		// Fork a child process
 		$pid = pcntl_fork();
@@ -469,7 +469,7 @@ class CronWorker
 			if ($exitCode === 0) {
 				// Job completed successfully (child updated database)
 				$this->stats['jobs_completed']++;
-				echo "[" . date('Y-m-d H:i:s') . "] Worker completed job #{$execution['cron_job']} in " . round($duration) . "ms (exit code: 0)\n";
+				$this->verbose("Worker completed job #{$execution['cron_job']} in " . round($duration) . "ms (exit code: 0)");
 			} else {
 				// Job failed (child updated database with error)
 				$this->stats['jobs_failed']++;
@@ -573,7 +573,7 @@ class CronWorker
 		$this->activeExecution = $execution;
 		$this->stats['jobs_executed']++;
 
-		echo "[" . date('Y-m-d H:i:s') . "] Executing job #{$execution['cron_job']} ({$execution['job_name']}) - execution #{$execution['id']}\n";
+		$this->verbose("Executing job #{$execution['cron_job']} ({$execution['job_name']}) - execution #{$execution['id']}");
 
 		try {
 			// Decompress code
@@ -1000,6 +1000,22 @@ class CronWorker
 	private function logError($message) {
 		error_log("[CronWorker] " . $message);
 		echo "[" . date('Y-m-d H:i:s') . "] ERROR: {$message}\n";
+	}
+
+	/**
+	 * Diagnostic line — emitted ONLY when VERBOSE_LOG is enabled (default false).
+	 *
+	 * The worker polls every few seconds across several jobs, so per-execution
+	 * DEBUG/heartbeat chatter otherwise floods the journal (it was ~90% of all
+	 * log volume on a small instance). Genuine failures use logError() and stay
+	 * unconditional; only routine success/trace lines route through here.
+	 * Guard defined() because the worker entrypoint may run before Api defines
+	 * the default constants.
+	 */
+	private function verbose($message) {
+		if (defined('VERBOSE_LOG') && VERBOSE_LOG) {
+			echo "[" . date('Y-m-d H:i:s') . "] {$message}\n";
+		}
 	}
 
 	/**

@@ -1,3 +1,17 @@
+## 4.20.1
+
+Log-hygiene patch: silence the cron worker's per-execution DEBUG/heartbeat chatter and the per-request "constant not defined" notice unless `VERBOSE_LOG` is enabled. Both were flooding install logs — the cron DEBUG alone was ~90% of journal volume on small instances, refilling the journal cap every few days.
+
+### Fix: gate CronWorker diagnostics behind VERBOSE_LOG — KYTE-#735
+
+`CronWorker` polls every few seconds across several jobs and emitted 8 lines per execution (6 DEBUG + 2 operational) unconditionally. Routine per-execution DEBUG + success chatter (the `processExecution` trace, `Forking`/`Executing`/`Worker completed`, the "no orphans" heartbeat) now route through a `verbose()` helper gated by the framework's existing `VERBOSE_LOG` flag (default off). Genuine failures — `logError`, fork failure, non-zero worker exit, orphan/lease events — remain unconditional.
+
+### Fix: gate the missing-constant notice behind VERBOSE_LOG
+
+`Api::defineEnvironmentConstants` logged `"<CONST> constant not defined...using defaults"` on every request for each default constant an install had not set. It now honors `VERBOSE_LOG`; behavior is unchanged (defaults still apply).
+
+Also includes the MCP authoring-guide hardening from #125 (FK-expansion + `fkId()`, the "always use the injected `k` client" rule, `KYTE_APP_ENV` documentation, the `allow_public` gate-vs-controller wording, and the public read-only recipe).
+
 ## 4.20.0
 
 Convergence release: the hosted MCP OAuth connector, the full MCP app-building tool surface, app-level Microsoft/OIDC SSO, and the provisioning/teardown hardening — all validated end-to-end by a real A→Z app build in Claude.ai.
