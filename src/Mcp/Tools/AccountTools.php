@@ -193,6 +193,14 @@ final class AccountTools
                 'delete' => 'k.delete(model, field, value, headers, onSuccess, onError) — DELETE the '
                     . 'row(s) matching field=value.',
             ],
+            'custom_scripts' =>
+                'Adding a standalone JS/CSS asset file (separate from a page\'s inline JS) is done '
+                . 'ENTIRELY via MCP — never tell the user to upload to S3 manually. Flow: '
+                . 'create_script(site_id, name, filename) -> write_script_content(script_id, source) -> '
+                . 'commit_draft(surface="script", draft_id) to PUBLISH the asset to S3/CloudFront -> '
+                . 'assign_script(script_id, page_id) to include it on a page (adds the <script>/<link> tag). '
+                . 'A script renders on a page only once it is BOTH published AND assigned. Set '
+                . 'include_all=true on create_script to auto-load it on every page instead of assigning per page.',
             'arguments' => [
                 'headers'   => '`headers` is a REQUIRED positional slot BEFORE the callbacks — always '
                     . 'pass [] when you have none. If you omit it and pass a callback in its place, the '
