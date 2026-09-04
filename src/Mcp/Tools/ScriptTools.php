@@ -102,7 +102,7 @@ final class ScriptTools
      * @param bool        $include_all  Auto-include on every page of the site (default false).
      * @return array{created: bool, script?: array<string,mixed>|null, error?: string}
      */
-    #[McpTool(name: 'create_script', description: 'Create a site script (JS/CSS asset), empty. Provide a filename like app.js or tasks.js. Add source with write_script_content, then publish with commit_draft. Set include_all to auto-load it on every page.')]
+    #[McpTool(name: 'create_script', description: 'Create a site script (JS/CSS asset), empty. Provide a filename like app.js or tasks.js. Full flow (all via MCP — do NOT tell the user to upload to S3 manually): write_script_content to add source -> commit_draft(surface="script") to PUBLISH the asset to S3/CloudFront -> assign_script(script_id, page_id) to include it on a page. Or set include_all=true to auto-load it on every page of the site.')]
     #[RequiresScope('schema')]
     public function createScript(int $site_id, string $name, string $filename, ?string $script_type = 'js', bool $include_all = false): array
     {
@@ -153,7 +153,7 @@ final class ScriptTools
         return [
             'created' => true,
             'script'  => $this->readScript($newId),
-            'note'    => 'Empty script created. Add source with write_script_content, then publish with commit_draft.',
+            'note'    => 'Empty script created. Next: write_script_content -> commit_draft(surface="script") to publish -> assign_script(script_id, page_id) to include it on a page (skip assign if include_all=true).',
         ];
     }
 
@@ -189,6 +189,96 @@ final class ScriptTools
             $api->user = $priorUser;
         }
         return ['deleted' => true, 'script_id' => $script_id];
+    }
+
+    /**
+     * Assign a published script to a specific page so the page includes it.
+     *
+     * @param int $script_id KyteScript id (from list_scripts).
+     * @param int $page_id   KytePage id (from list_pages) — must be on the same site.
+     * @return array{ok: bool, action?: string, script_id?: int, page_id?: int, page_regenerated?: bool, note?: string, error?: string}
+     */
+    #[McpTool(name: 'assign_script', description: 'Attach a published site script to a specific page so the page includes it (adds a <script> or <link> tag). The script and page must be on the SAME site. Full flow: create_script -> write_script_content -> commit_draft(surface="script") -> assign_script. The script must be PUBLISHED for the tag to actually render; assign_script returns a note if it is not yet published. Per-page only (no global/site-wide scope).')]
+    #[RequiresScope('schema')]
+    public function assignScript(int $script_id, int $page_id): array
+    {
+        return $this->setAssignment($script_id, $page_id, true);
+    }
+
+    /**
+     * Remove a script's assignment from a page (removes the tag) + regenerate.
+     *
+     * @param int $script_id KyteScript id.
+     * @param int $page_id   KytePage id.
+     * @return array{ok: bool, action?: string, script_id?: int, page_id?: int, page_regenerated?: bool, note?: string, error?: string}
+     */
+    #[McpTool(name: 'unassign_script', description: 'Remove a script assignment from a page (removes the <script>/<link> tag) and regenerate the page.')]
+    #[RequiresScope('schema')]
+    public function unassignScript(int $script_id, int $page_id): array
+    {
+        return $this->setAssignment($script_id, $page_id, false);
+    }
+
+    /**
+     * Shared create/remove-and-regenerate for a per-page script assignment.
+     * Re-asserts that both the script and page belong to the token's account and
+     * share a site, then delegates to KyteScriptController::setPageAssignment
+     * (creates/removes the global_scope=0 row + regenerates the published page).
+     */
+    private function setAssignment(int $script_id, int $page_id, bool $assign): array
+    {
+        $action = $assign ? 'assign' : 'unassign';
+        $accountId = $this->accountIdOrZero();
+        if ($accountId === 0) {
+            return ['ok' => false, 'action' => $action, 'error' => 'No account context.'];
+        }
+
+        $script = new \Kyte\Core\ModelObject(\KyteScript);
+        if (!$script->retrieve('id', $script_id) || (int)$script->kyte_account !== $accountId) {
+            return ['ok' => false, 'action' => $action, 'error' => 'Script not found in this account.'];
+        }
+        $page = new \Kyte\Core\ModelObject(\KytePage);
+        if (!$page->retrieve('id', $page_id) || (int)$page->kyte_account !== $accountId) {
+            return ['ok' => false, 'action' => $action, 'error' => 'Page not found in this account.'];
+        }
+        if ((int)$page->site !== (int)$script->site) {
+            return ['ok' => false, 'action' => $action, 'error' => 'The script and page must belong to the same site.'];
+        }
+
+        // KyteScriptController attributes assignment audit fields to $api->user,
+        // which MCP tokens don't populate (account only). Bind a representative
+        // account user for the internal call, restored after.
+        $api = $this->api;
+        $priorUser = isset($api->user) ? $api->user : null;
+        $acctUser = new \Kyte\Core\ModelObject(\KyteUser);
+        if (!$acctUser->retrieve('kyte_account', $accountId)) {
+            return ['ok' => false, 'action' => $action, 'error' => 'No user is available for this account to attribute the change to.'];
+        }
+        $api->user = $acctUser;
+
+        $resp = [];
+        try {
+            $ctrl = new \Kyte\Mvc\Controller\KyteScriptController(\KyteScript, $api, 'm/d/Y H:i:s', $resp, true);
+            $res = $ctrl->setPageAssignment($script, $page, $assign);
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'action' => $action, 'error' => $e->getMessage()];
+        } finally {
+            $api->user = $priorUser;
+        }
+
+        $out = [
+            'ok'               => true,
+            'action'           => $action,
+            'script_id'        => $script_id,
+            'page_id'          => $page_id,
+            'page_regenerated' => (bool)$res['page_regenerated'],
+        ];
+        if ($assign && empty($res['script_published'])) {
+            $out['note'] = 'Assignment saved, but the script is not published yet — run commit_draft(surface="script") so the tag renders on the page.';
+        } elseif (empty($res['page_regenerated'])) {
+            $out['note'] = 'Assignment updated; the page is not published yet, so the change applies on its next publish.';
+        }
+        return $out;
     }
 
     private function accountIdOrZero(): int

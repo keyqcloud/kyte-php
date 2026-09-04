@@ -551,6 +551,82 @@ class KyteScriptController extends ModelController
     }
 
     /**
+     * Per-page script assignment for MCP (assign_script / unassign_script).
+     *
+     * Creates ($assign=true) or soft-removes ($assign=false) a KyteScriptAssignment
+     * row (global_scope=0 — a MANUAL, page-specific link; the global/include_all
+     * path is deliberately untouched) linking $scriptObj to $pageObj. If the page
+     * is published (state=1) it then regenerates that ONE page's HTML so the
+     * <script>/<link> tag appears/disappears, and invalidates CloudFront (best
+     * effort). Unpublished pages get the assignment row now and the tag on their
+     * next publish. S3/CloudFront are resolved from the page's site + application
+     * directly (no reliance on FK-expansion depth). Construct this controller in
+     * internal mode from a trusted server-side caller.
+     *
+     * @param object $scriptObj The KyteScript ModelObject to (un)assign.
+     * @param object $pageObj   The KytePage ModelObject to attach it to.
+     * @param bool   $assign    true = assign, false = unassign.
+     * @return array{page_id:int, assigned:bool, script_published:bool, page_regenerated:bool, changed:bool}
+     */
+    public function setPageAssignment($scriptObj, $pageObj, bool $assign): array {
+        $userId = isset($this->api->user->id) ? $this->api->user->id : null;
+
+        // Create-or-remove the manual (global_scope=0) assignment.
+        $assignment = new \Kyte\Core\ModelObject(KyteScriptAssignment);
+        $exists = $assignment->retrieve('script', $scriptObj->id, [['field' => 'page', 'value' => $pageObj->id]]);
+        $changed = false;
+        if ($assign && !$exists) {
+            if (!$assignment->create([
+                'script'       => $scriptObj->id,
+                'global_scope' => 0,
+                'page'         => $pageObj->id,
+                'site'         => $pageObj->site,
+                'kyte_account' => $pageObj->kyte_account,
+            ], $userId)) {
+                throw new \Exception("Failed to assign script to page.");
+            }
+            $changed = true;
+        } elseif (!$assign && $exists) {
+            $assignment->delete(null, null, $userId);
+            $changed = true;
+        }
+
+        // Apply immediately only for a published page; otherwise the tag renders
+        // on the page's next publish. Resolve S3/CF from the page's site + app.
+        $regenerated = false;
+        if ((int)$pageObj->state === 1) {
+            $site = new \Kyte\Core\ModelObject(KyteSite);
+            if (!$site->retrieve('id', $pageObj->site)) {
+                throw new \Exception("Unable to resolve the page's site.");
+            }
+            $app = new \Kyte\Core\ModelObject(Application);
+            if (!$app->retrieve('id', $site->application)) {
+                throw new \Exception("Unable to resolve the site's application.");
+            }
+            $credential = new \Kyte\Aws\Credentials($site->region, $app->aws_public_key, $app->aws_private_key);
+            $s3 = new \Kyte\Aws\S3($credential, $site->s3BucketName);
+
+            $this->regeneratePageHtml($pageObj, $s3);
+            $regenerated = true;
+
+            try {
+                $cf = new \Kyte\Aws\CloudFront($credential);
+                $cf->createInvalidation($site->cfDistributionId, ['/*']);
+            } catch (\Throwable $e) {
+                error_log("CloudFront invalidation failed (best-effort): " . $e->getMessage());
+            }
+        }
+
+        return [
+            'page_id'          => (int)$pageObj->id,
+            'assigned'         => $assign,
+            'script_published' => ((int)$scriptObj->state === 1),
+            'page_regenerated' => $regenerated,
+            'changed'          => $changed,
+        ];
+    }
+
+    /**
      * Handle script deletion (extracted from original delete case)
      */
     private function handleScriptDeletion($o): void {
