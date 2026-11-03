@@ -492,4 +492,119 @@ SQL;
         $this->assertSame($state, DBI::snapshotState());
         $this->assertSame(KYTE_DB_DATABASE, DBI::query("SELECT DATABASE() AS db")[0]['db']);
     }
+
+    // ------------------------------------------------------------------
+    // Interval re-seed after completion (related to #895)
+    // ------------------------------------------------------------------
+
+    /**
+     * Seed, lock and complete the job's first execution the way the worker
+     * cycle does, then return [completed row, re-seeded pending row].
+     * Execution ids are pushed well away from job ids so that using one in
+     * place of the other can't accidentally give the right answer.
+     */
+    private function completeFirstRun(int $jobId): array
+    {
+        DBI::query("ALTER TABLE CronJobExecution AUTO_INCREMENT = 5000");
+        $this->call('scheduleDueJobs');
+        $due = array_values(array_filter(
+            $this->call('findPendingExecutions'),
+            fn($e) => (int)$e['cron_job'] === $jobId
+        ));
+        if (!$due) {
+            // non-interval jobs are seeded in the future; make the slot due now
+            DBI::prepared_query("UPDATE CronJobExecution SET next_run_time = ? WHERE cron_job = ?", 'ii', [time() - 1, $jobId]);
+            $due = $this->call('findPendingExecutions');
+        }
+        $this->assertCount(1, $due);
+        $this->assertTrue($this->call('acquireLock', $due[0]['id']));
+
+        $this->call('completeExecution', $due[0], 'out', 1, 1);
+
+        $completed = $this->executions($jobId, 'completed');
+        $pending = $this->executions($jobId, 'pending');
+        $this->assertCount(1, $completed);
+        $this->assertCount(1, $pending, 'completion must re-seed exactly one next execution');
+        return [$completed[0], $pending[0]];
+    }
+
+    public function testIntervalJobIsReseededOneIntervalAfterCompletion(): void
+    {
+        $jobId = $this->insertJob(['schedule_type' => 'interval', 'interval_seconds' => 3600]);
+
+        [$completed, $pending] = $this->completeFirstRun($jobId);
+
+        $this->assertSame(
+            (int)$completed['completed_at'] + 3600,
+            (int)$pending['next_run_time'],
+            'next interval run = last completed_at + interval_seconds (not now)'
+        );
+        $this->assertSame([], $this->call('findPendingExecutions'), 'the next run must not be due yet');
+    }
+
+    public function testIntervalJobRunViaWorkerIsReseededOneIntervalLater(): void
+    {
+        // Same, through the real inline execution path.
+        DBI::query("ALTER TABLE CronJobExecution AUTO_INCREMENT = 5000");
+        $exec = $this->prepareExecution("        return 'ran';");
+
+        $this->call('executeJobInline', $exec);
+
+        $jobId = (int)$exec['cron_job'];
+        $completed = $this->executions($jobId, 'completed');
+        $pending = $this->executions($jobId, 'pending');
+        $this->assertCount(1, $completed);
+        $this->assertCount(1, $pending);
+        $this->assertSame((int)$completed[0]['completed_at'] + 3600, (int)$pending[0]['next_run_time']);
+    }
+
+    public function testIntervalJobFirstRunIsImmediate(): void
+    {
+        $jobId = $this->insertJob(['schedule_type' => 'interval', 'interval_seconds' => 3600]);
+
+        $this->call('scheduleDueJobs');
+
+        $due = $this->call('findPendingExecutions');
+        $this->assertCount(1, $due, 'first interval run is due in the same cycle');
+        $this->assertSame($jobId, (int)$due[0]['cron_job']);
+    }
+
+    public function testOverdueIntervalJobIsDueImmediately(): void
+    {
+        // Last completed two intervals ago (e.g. the job was disabled): due now.
+        $jobId = $this->insertJob(['schedule_type' => 'interval', 'interval_seconds' => 3600]);
+        $last = time() - 7200;
+        DBI::prepared_query(
+            "INSERT INTO CronJobExecution (cron_job, scheduled_time, next_run_time, status, kyte_account, date_created, completed_at)
+             VALUES (?, ?, ?, 'completed', 1, ?, ?)",
+            'iiiii',
+            [$jobId, $last, $last, $last, $last]
+        );
+
+        $this->call('scheduleDueJobs');
+
+        $pending = $this->executions($jobId, 'pending');
+        $this->assertCount(1, $pending);
+        $this->assertSame($last + 3600, (int)$pending[0]['next_run_time']);
+        $this->assertCount(1, $this->call('findPendingExecutions'));
+    }
+
+    public static function nonIntervalScheduleTypes(): array
+    {
+        $all = self::scheduleTypes();
+        unset($all['interval']);
+        return $all;
+    }
+
+    #[DataProvider('nonIntervalScheduleTypes')]
+    public function testNonIntervalJobIsReseededAtItsNextScheduledTime(array $schedule, bool $unused): void
+    {
+        $jobId = $this->insertJob($schedule);
+
+        [, $pending] = $this->completeFirstRun($jobId);
+
+        $expected = $this->call('calculateNextRun', $this->getJob($jobId));
+        $this->assertGreaterThan(time(), (int)$pending['next_run_time']);
+        $this->assertSame($expected, (int)$pending['next_run_time']);
+    }
 }

@@ -719,8 +719,15 @@ class CronWorker
 
 		// Schedule next execution
 		try {
-			$nextRun = $this->calculateNextRun($execution);
-			$this->createExecution(['id' => $execution['cron_job'], 'application' => $execution['application'], 'kyte_account' => $execution['kyte_account']], $nextRun);
+			// $execution is an execution row (cje.* + the job's schedule
+			// fields), so its 'id' is the EXECUTION id. calculateNextRun()
+			// treats 'id' as the job id (the interval branch looks up the
+			// job's last completed_at by it), so hand it a job-shaped row.
+			// Passing $execution directly found no completions for the
+			// "job", returned time(), and re-ran interval jobs every poll.
+			$job = array_merge($execution, ['id' => $execution['cron_job']]);
+			$nextRun = $this->calculateNextRun($job);
+			$this->createExecution($job, $nextRun);
 		} catch (\Exception $e) {
 			$this->logError("Error scheduling next run for job #{$execution['cron_job']}: " . $e->getMessage());
 		}
