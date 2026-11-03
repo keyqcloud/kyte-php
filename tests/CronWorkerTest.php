@@ -521,11 +521,11 @@ SQL;
 
         $this->call('completeExecution', $due[0], 'out', 1, 1);
 
-        $completed = $this->executions($jobId, 'completed');
+        $completed = $this->executionStatus((int)$due[0]['id']);
         $pending = $this->executions($jobId, 'pending');
-        $this->assertCount(1, $completed);
+        $this->assertSame('completed', $completed['status']);
         $this->assertCount(1, $pending, 'completion must re-seed exactly one next execution');
-        return [$completed[0], $pending[0]];
+        return [$completed, $pending[0]];
     }
 
     public function testIntervalJobIsReseededOneIntervalAfterCompletion(): void
@@ -587,6 +587,76 @@ SQL;
         $this->assertCount(1, $pending);
         $this->assertSame($last + 3600, (int)$pending[0]['next_run_time']);
         $this->assertCount(1, $this->call('findPendingExecutions'));
+    }
+
+    public function testIntervalReseedUsesMostRecentCompletion(): void
+    {
+        // Several past completions (plus a later failure) — the next run is
+        // based on the newest *completed* one.
+        $jobId = $this->insertJob(['schedule_type' => 'interval', 'interval_seconds' => 3600]);
+        $base = time() - 10000;
+        $rows = [
+            ['completed', $base],
+            ['completed', $base + 1000],
+            ['completed', $base + 2000],   // most recent completion
+            ['failed',    $base + 3000],
+        ];
+        foreach ($rows as [$status, $at]) {
+            DBI::prepared_query(
+                "INSERT INTO CronJobExecution (cron_job, scheduled_time, next_run_time, status, kyte_account, date_created, completed_at)
+                 VALUES (?, ?, ?, ?, 1, ?, ?)",
+                'iiisii',
+                [$jobId, $at, $at, $status, $at, $at]
+            );
+        }
+
+        $this->assertSame($base + 2000 + 3600, $this->call('calculateNextRun', $this->getJob($jobId)));
+
+        $this->call('scheduleDueJobs');
+        $pending = $this->executions($jobId, 'pending');
+        $this->assertCount(1, $pending);
+        $this->assertSame($base + 2000 + 3600, (int)$pending[0]['next_run_time']);
+    }
+
+    public function testLastCompletionLookupFallsBackWhenIndexIsMissing(): void
+    {
+        // Installs whose table lacks idx_cron_job must still schedule correctly.
+        DBI::query("ALTER TABLE CronJobExecution DROP INDEX idx_cron_job");
+        $jobId = $this->insertJob(['schedule_type' => 'interval', 'interval_seconds' => 3600]);
+        $at = time() - 100;
+        foreach ([$at - 500, $at] as $t) {
+            DBI::prepared_query(
+                "INSERT INTO CronJobExecution (cron_job, scheduled_time, next_run_time, status, kyte_account, date_created, completed_at)
+                 VALUES (?, ?, ?, 'completed', 1, ?, ?)",
+                'iiiii',
+                [$jobId, $t, $t, $t, $t]
+            );
+        }
+
+        $this->assertSame($at + 3600, $this->call('calculateNextRun', $this->getJob($jobId)));
+        $this->assertSame($at + 3600, $this->call('calculateNextRun', $this->getJob($jobId)), 'second call uses the remembered fallback');
+
+        $flag = new \ReflectionProperty(CronWorker::class, 'noCronJobIndex');
+        $flag->setAccessible(true);
+        $this->assertTrue($flag->getValue($this->worker));
+    }
+
+    public function testIntervalReseedAfterCompletionIgnoresOlderHistory(): void
+    {
+        // completeExecution re-seeds from this run's completion time, not
+        // from older history rows.
+        $jobId = $this->insertJob(['schedule_type' => 'interval', 'interval_seconds' => 3600]);
+        $old = time() - 50000;
+        DBI::prepared_query(
+            "INSERT INTO CronJobExecution (cron_job, scheduled_time, next_run_time, status, kyte_account, date_created, completed_at)
+             VALUES (?, ?, ?, 'completed', 1, ?, ?)",
+            'iiiii',
+            [$jobId, $old, $old, $old, $old]
+        );
+
+        [$completed, $pending] = $this->completeFirstRun($jobId);
+
+        $this->assertSame((int)$completed['completed_at'] + 3600, (int)$pending['next_run_time']);
     }
 
     public static function nonIntervalScheduleTypes(): array

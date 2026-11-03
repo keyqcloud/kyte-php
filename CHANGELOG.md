@@ -16,6 +16,8 @@ Job code is `eval`'d and run inside the worker process, sharing its static `DBI`
 
 After a successful run, `completeExecution` passed the *execution* row to `calculateNextRun()`, whose interval branch looks up the job's last `completed_at` by `id`, so it used the execution id instead of the job id. That lookup normally found nothing, so the "first run" branch returned `now` and the job was re-seeded as due immediately, re-running on every worker poll (~10s plus run time) regardless of `interval_seconds`. The re-seed now uses a job-shaped row (`id` = the job id), so the next run is again `last completed_at + interval_seconds`; the first run is still immediate. Other schedule types were unaffected (they don't use the id). **Operational effect:** the built-in site-provisioning (30s) and Shipyard-update (60s) jobs, and any tenant interval jobs, return to their configured interval, and `CronJobExecution` row growth (and worker log volume) drops sharply.
 
+The re-seed no longer queries history: an interval job's next run is computed from the completion just recorded. Where the last completion *is* looked up (first seeding, after a timeout/skip), `MAX(completed_at)` — a scan of the job's whole history, tens of seconds at ~1.4M rows per job — is replaced by an indexed `ORDER BY id DESC LIMIT 1` walk of `idx_cron_job` (forced, since MariaDB otherwise plans an index_merge + filesort; falls back to the unhinted query if the index is absent). `checkDependencyMet` likewise orders by `id` instead of the unindexed `date_created`. No schema change.
+
 ## 4.21.0
 
 MCP tooling expansion — per-app environment variables, an error-decoding guide, and script→page assignment — closing gaps surfaced by QA and daily MCP use.

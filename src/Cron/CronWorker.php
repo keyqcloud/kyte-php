@@ -24,6 +24,7 @@ class CronWorker
 	private $running = true;
 	private $activeExecution = null; // Track currently running job
 	private $shutdownGracePeriod = 30; // Seconds to wait for job completion on shutdown
+	private $noCronJobIndex = false; // idx_cron_job missing on this install (see findLastCompletion)
 
 	// Phase 2: Lock contention metrics
 	private $stats = [
@@ -701,10 +702,12 @@ class CronWorker
 	 * Mark execution as completed
 	 */
 	private function completeExecution($execution, $output, $duration, $memoryPeak) {
+		$completedAt = time();
+
 		$sql = "
 			UPDATE CronJobExecution
 			SET status = 'completed',
-				completed_at = UNIX_TIMESTAMP(),
+				completed_at = ?,
 				duration_ms = ?,
 				memory_peak_mb = ?,
 				output = ?,
@@ -712,7 +715,7 @@ class CronWorker
 			WHERE id = ?
 		";
 
-		DBI::prepared_query($sql, 'idsi', [$duration, $memoryPeak, $output, $execution['id']]);
+		DBI::prepared_query($sql, 'iidsi', [$completedAt, $duration, $memoryPeak, $output, $execution['id']]);
 
 		// Phase 3: Reset consecutive failures on success
 		$this->resetConsecutiveFailures($execution['cron_job']);
@@ -726,7 +729,15 @@ class CronWorker
 			// Passing $execution directly found no completions for the
 			// "job", returned time(), and re-ran interval jobs every poll.
 			$job = array_merge($execution, ['id' => $execution['cron_job']]);
-			$nextRun = $this->calculateNextRun($job);
+
+			// This run IS the job's latest completion, so an interval job's
+			// next run is simply completed_at + interval: no need to look the
+			// last completion up in the (multi-million-row) history.
+			if ($job['schedule_type'] === 'interval' && !empty($job['interval_seconds'])) {
+				$nextRun = $completedAt + (int)$job['interval_seconds'];
+			} else {
+				$nextRun = $this->calculateNextRun($job);
+			}
 			$this->createExecution($job, $nextRun);
 		} catch (\Exception $e) {
 			$this->logError("Error scheduling next run for job #{$execution['cron_job']}: " . $e->getMessage());
@@ -801,8 +812,7 @@ class CronWorker
 				}
 
 				// Check if this is the first run (no completed executions)
-				$sql = "SELECT MAX(completed_at) as last_completed FROM CronJobExecution WHERE cron_job = ? AND status = 'completed'";
-				$result = DBI::prepared_query($sql, 'i', [$job['id']]);
+				$result = $this->findLastCompletion($job['id']);
 
 				if (!empty($result) && $result[0]['last_completed'] !== null) {
 					// Schedule based on last completion
@@ -824,6 +834,46 @@ class CronWorker
 			default:
 				throw new \Exception("Unknown schedule type: {$job['schedule_type']}");
 		}
+	}
+
+	/**
+	 * Latest completed execution of a job, as [['last_completed' => ts]] or [].
+	 *
+	 * Walks idx_cron_job — ordered by (cron_job, id) — backwards and stops at
+	 * the first completed row. MAX(completed_at) had to visit the job's whole
+	 * history (a row lookup per execution: tens of seconds at ~1.4M rows per
+	 * job). The FORCE INDEX matters: on MariaDB 10.5 the unhinted ORDER BY id
+	 * DESC LIMIT 1 is planned as an idx_cron_job+idx_status index_merge +
+	 * filesort, which is no faster than MAX. If the index doesn't exist on
+	 * this install (tables not created from the migrations), fall back to the
+	 * unhinted query once and stop trying.
+	 */
+	private function findLastCompletion($jobId) {
+		$where = "WHERE cron_job = ? AND status = 'completed' ORDER BY id DESC LIMIT 1";
+
+		if (!$this->noCronJobIndex) {
+			try {
+				return DBI::prepared_query(
+					"SELECT completed_at AS last_completed FROM CronJobExecution FORCE INDEX (idx_cron_job) {$where}",
+					'i',
+					[$jobId]
+				);
+			} catch (\Exception $e) {
+				// Only a missing index ("Key 'idx_cron_job' doesn't exist")
+				// downgrades the lookup; anything else is a real error.
+				if (stripos($e->getMessage(), 'idx_cron_job') === false) {
+					throw $e;
+				}
+				$this->noCronJobIndex = true;
+				$this->logError("idx_cron_job unavailable, using unhinted last-completion lookup: " . $e->getMessage());
+			}
+		}
+
+		return DBI::prepared_query(
+			"SELECT completed_at AS last_completed FROM CronJobExecution {$where}",
+			'i',
+			[$jobId]
+		);
 	}
 
 	/**
@@ -1482,7 +1532,7 @@ class CronWorker
 			SELECT id, status, completed_at
 			FROM CronJobExecution
 			WHERE cron_job = ?
-			ORDER BY date_created DESC
+			ORDER BY id DESC
 			LIMIT 1
 		";
 
