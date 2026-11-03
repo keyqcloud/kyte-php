@@ -134,6 +134,13 @@ SQL;
         $this->worker = new CronWorker();
     }
 
+    protected function tearDown(): void
+    {
+        // Never leak a switched DBI state into later tests, whatever happened.
+        Api::dbswitch(false);
+        DBI::reconnect();
+    }
+
     // ------------------------------------------------------------------
     // helpers
     // ------------------------------------------------------------------
@@ -320,5 +327,169 @@ SQL;
         $pending = $this->executions($jobId, 'pending');
         $this->assertCount(1, $pending);
         $this->assertGreaterThan(time(), (int)$pending[0]['next_run_time']);
+    }
+
+    // ------------------------------------------------------------------
+    // #896 — job code must not poison the worker's DB connection
+    // ------------------------------------------------------------------
+
+    private const TENANT_DB   = 'kyte_cron_tenant_test';
+    private const TENANT_USER = 'kyte_cron_tenant_test';
+    private const TENANT_PASS = 'tenant-pw-1';
+
+    /** Create a second database + scoped user for jobs to switch to. */
+    private function provisionTenantDb(): void
+    {
+        DBI::query("CREATE DATABASE IF NOT EXISTS `" . self::TENANT_DB . "`");
+        DBI::query("CREATE USER IF NOT EXISTS '" . self::TENANT_USER . "'@'%' IDENTIFIED BY '" . self::TENANT_PASS . "'");
+        DBI::query("GRANT ALL PRIVILEGES ON `" . self::TENANT_DB . "`.* TO '" . self::TENANT_USER . "'@'%'");
+        DBI::query("FLUSH PRIVILEGES");
+    }
+
+    /**
+     * Register an interval job whose execute() body is $body, seed + lock its
+     * first execution exactly as the worker cycle would, and return the
+     * execution row (as findPendingExecutions returns it).
+     */
+    private function prepareExecution(string $body): array
+    {
+        $class = 'CronIsolationTestJob_' . bin2hex(random_bytes(6));
+        $code = "<?php\nclass {$class} extends \\Kyte\\Core\\CronJobBase {\n"
+            . "    public function execute() {\n{$body}\n    }\n}\n";
+
+        $jobId = $this->insertJob([
+            'schedule_type'    => 'interval',
+            'interval_seconds' => 3600,
+            'code'             => bzcompress($code, 9),
+        ]);
+
+        $this->call('scheduleDueJobs');
+        $due = $this->call('findPendingExecutions');
+        $this->assertCount(1, $due);
+        $this->assertTrue($this->call('acquireLock', $due[0]['id']));
+        $this->assertSame($jobId, (int)$due[0]['cron_job']);
+
+        return $due[0];
+    }
+
+    private function executionStatus(int $executionId): array
+    {
+        return DBI::prepared_query("SELECT * FROM CronJobExecution WHERE id = ?", 'i', [$executionId])[0];
+    }
+
+    /** The worker is back on the main kyte DB with app-DB mode off. */
+    private function assertWorkerDbRestored(): void
+    {
+        $this->assertFalse(DBI::$useAppDB, 'app-DB mode must be switched back off');
+        $this->assertSame(KYTE_DB_DATABASE, DBI::$dbName);
+        $this->assertSame(KYTE_DB_DATABASE, DBI::query("SELECT DATABASE() AS db")[0]['db']);
+        // ...and the worker's own tables are reachable again.
+        $this->assertIsArray(DBI::query("SELECT COUNT(*) AS n FROM CronJob"));
+    }
+
+    private const SWITCH_TO_TENANT = "        \\Kyte\\Core\\Api::dbappconnect('" . self::TENANT_DB . "', '" . self::TENANT_USER . "', '" . self::TENANT_PASS . "');\n"
+        . "        \\Kyte\\Core\\Api::dbswitch(true);\n"
+        . "        \\Kyte\\Core\\DBI::query('SELECT 1');\n";
+
+    public function testJobThatSwitchesToAppDbIsIsolatedOnSuccess(): void
+    {
+        $this->provisionTenantDb();
+        $exec = $this->prepareExecution(self::SWITCH_TO_TENANT . "        return 'job-done';");
+
+        $this->call('executeJobInline', $exec);
+
+        $this->assertWorkerDbRestored();
+        $row = $this->executionStatus((int)$exec['id']);
+        $this->assertSame('completed', $row['status']);
+        $this->assertStringContainsString('job-done', (string)$row['output']);
+        // completeExecution re-seeded the next run in the MAIN database
+        $this->assertCount(1, $this->executions((int)$exec['cron_job'], 'pending'));
+    }
+
+    public function testJobThatSwitchesToAppDbIsIsolatedOnException(): void
+    {
+        $this->provisionTenantDb();
+        $exec = $this->prepareExecution(self::SWITCH_TO_TENANT . "        throw new \\Exception('boom');");
+
+        $this->call('executeJobInline', $exec);
+
+        $this->assertWorkerDbRestored();
+        $row = $this->executionStatus((int)$exec['id']);
+        $this->assertSame('failed', $row['status']);
+        $this->assertStringContainsString('boom', (string)$row['error']);
+    }
+
+    public function testJobThatSwitchesToAppDbIsIsolatedOnError(): void
+    {
+        // An \Error (not \Exception) used to escape the catch entirely.
+        $this->provisionTenantDb();
+        $exec = $this->prepareExecution(self::SWITCH_TO_TENANT . "        kyte_cron_test_undefined_function();");
+
+        $this->call('executeJobInline', $exec);
+
+        $this->assertWorkerDbRestored();
+        $row = $this->executionStatus((int)$exec['id']);
+        $this->assertSame('failed', $row['status']);
+        $this->assertStringContainsString('kyte_cron_test_undefined_function', (string)$row['error']);
+    }
+
+    public function testJobThatIssuesUseOnMainConnectionIsIsolated(): void
+    {
+        $this->provisionTenantDb();
+        $exec = $this->prepareExecution("        \\Kyte\\Core\\DBI::query('USE `" . self::TENANT_DB . "`');\n        return 'used';");
+
+        $this->call('executeJobInline', $exec);
+
+        $this->assertWorkerDbRestored();
+        $this->assertSame('completed', $this->executionStatus((int)$exec['id'])['status']);
+    }
+
+    public function testJobThatRepointsMainCredentialsIsIsolated(): void
+    {
+        $this->provisionTenantDb();
+        $exec = $this->prepareExecution(
+            "        \\Kyte\\Core\\DBI::close();\n"
+            . "        \\Kyte\\Core\\DBI::setDbName('" . self::TENANT_DB . "');\n"
+            . "        \\Kyte\\Core\\DBI::setDbUser('" . self::TENANT_USER . "');\n"
+            . "        \\Kyte\\Core\\DBI::setDbPassword('" . self::TENANT_PASS . "');\n"
+            . "        \\Kyte\\Core\\DBI::query('SELECT 1');\n"
+            . "        throw new \\Exception('after-repoint');"
+        );
+
+        $this->call('executeJobInline', $exec);
+
+        $this->assertWorkerDbRestored();
+        $this->assertSame(KYTE_DB_USERNAME, DBI::$dbUser);
+        $this->assertSame('failed', $this->executionStatus((int)$exec['id'])['status']);
+    }
+
+    public function testFailingJobThatClosedTheWorkersBufferDoesNotCloseCallersBuffer(): void
+    {
+        // The old catch did a blind ob_end_clean(): if the worker's own buffer
+        // was already gone, it closed the caller's buffer instead.
+        $exec = $this->prepareExecution("        ob_end_clean();\n        throw new \\Exception('closed-buffer');");
+
+        ob_start();
+        $level = ob_get_level();
+        try {
+            $this->call('executeJobInline', $exec);
+            $this->assertSame($level, ob_get_level(), "the worker must not close a buffer it didn't open");
+        } finally {
+            while (ob_get_level() >= $level) {
+                ob_end_clean();
+            }
+        }
+
+        $this->assertSame('failed', $this->executionStatus((int)$exec['id'])['status']);
+    }
+
+    public function testRestoreStateIsNoOpWhenNothingChanged(): void
+    {
+        DBI::query("SELECT 1"); // open the main connection
+        $state = DBI::snapshotState();
+        DBI::restoreState($state);
+
+        $this->assertSame($state, DBI::snapshotState());
+        $this->assertSame(KYTE_DB_DATABASE, DBI::query("SELECT DATABASE() AS db")[0]['db']);
     }
 }

@@ -497,6 +497,8 @@ class CronWorker
 		$startTime = microtime(true);
 		$startMemory = memory_get_peak_usage(true);
 
+		$obLevel = ob_get_level();
+
 		try {
 			// Get fresh database connection (parent's connection is not inherited properly)
 			DBI::reconnect();
@@ -514,28 +516,37 @@ class CronWorker
 			// Set timeout
 			set_time_limit($execution['timeout_seconds']);
 
+			// Job code shares this process's DBI state. Snapshot it so a job
+			// that switches database (e.g. to an app/tenant DB) can't leave the
+			// worker's own bookkeeping queries pointed at the wrong DB (#896).
+			$dbState = DBI::snapshotState();
+
 			// Capture output
 			ob_start();
 
-			// Eval the code (always fresh, no class_exists check needed)
-			eval($code);
+			try {
+				// Eval the code (always fresh, no class_exists check needed)
+				eval($code);
 
-			// Extract class name and instantiate
-			$className = $this->extractClassName($code);
-			if (!class_exists($className, false)) {
-				throw new \Exception("Job class {$className} not found after eval");
+				// Extract class name and instantiate
+				$className = $this->extractClassName($code);
+				if (!class_exists($className, false)) {
+					throw new \Exception("Job class {$className} not found after eval");
+				}
+
+				$job = new $className();
+				$job->setExecution($execution);
+
+				// Run job lifecycle
+				$job->setUp();
+				$result = $job->execute();
+				$job->tearDown();
+			} finally {
+				DBI::restoreState($dbState);
 			}
 
-			$job = new $className();
-			$job->setExecution($execution);
-
-			// Run job lifecycle
-			$job->setUp();
-			$result = $job->execute();
-			$job->tearDown();
-
 			// Capture output
-			$output = ob_get_clean();
+			$output = $this->endOutputBuffers($obLevel);
 
 			// Add result to output if it's a string
 			if (is_string($result)) {
@@ -552,8 +563,10 @@ class CronWorker
 			// Worker exits with success code
 			exit(0);
 
-		} catch (\Exception $e) {
-			ob_end_clean();
+		} catch (\Throwable $e) {
+			// \Throwable, not \Exception: an \Error from job code (TypeError,
+			// ParseError from eval, ...) must still be recorded as a failure.
+			$this->endOutputBuffers($obLevel);
 
 			$duration = (microtime(true) - $startTime) * 1000;
 			$memoryPeak = (memory_get_peak_usage(true) - $startMemory) / 1024 / 1024;
@@ -579,6 +592,8 @@ class CronWorker
 
 		$this->verbose("Executing job #{$execution['cron_job']} ({$execution['job_name']}) - execution #{$execution['id']}");
 
+		$obLevel = ob_get_level();
+
 		try {
 			// Decompress code
 			$code = bzdecompress($execution['code']);
@@ -593,32 +608,42 @@ class CronWorker
 			// Set timeout
 			set_time_limit($execution['timeout_seconds']);
 
+			// Inline jobs run in the long-lived worker process itself, so a job
+			// that switches database and doesn't switch back would break every
+			// subsequent worker query (completeExecution, scheduling, other
+			// jobs). Snapshot DBI state and always restore it (#896).
+			$dbState = DBI::snapshotState();
+
 			// Capture output
 			ob_start();
 
-			// Extract class name from code first
-			$className = $this->extractClassName($code);
+			try {
+				// Extract class name from code first
+				$className = $this->extractClassName($code);
 
-			// Only eval if class doesn't exist yet (avoid redeclaration)
-			if (!class_exists($className, false)) {
-				eval($code);
-
+				// Only eval if class doesn't exist yet (avoid redeclaration)
 				if (!class_exists($className, false)) {
-					throw new \Exception("Job class {$className} not found after eval");
+					eval($code);
+
+					if (!class_exists($className, false)) {
+						throw new \Exception("Job class {$className} not found after eval");
+					}
 				}
+
+				// Instantiate and execute job
+				$job = new $className();
+				$job->setExecution($execution);
+
+				// Run job lifecycle
+				$job->setUp();
+				$result = $job->execute();
+				$job->tearDown();
+			} finally {
+				DBI::restoreState($dbState);
 			}
 
-			// Instantiate and execute job
-			$job = new $className();
-			$job->setExecution($execution);
-
-			// Run job lifecycle
-			$job->setUp();
-			$result = $job->execute();
-			$job->tearDown();
-
 			// Capture output
-			$output = ob_get_clean();
+			$output = $this->endOutputBuffers($obLevel);
 
 			// Add result to output if it's a string
 			if (is_string($result)) {
@@ -635,8 +660,11 @@ class CronWorker
 
 			echo "[" . date('Y-m-d H:i:s') . "] Job #{$execution['cron_job']} completed in " . round($duration) . "ms\n";
 
-		} catch (\Exception $e) {
-			ob_end_clean();
+		} catch (\Throwable $e) {
+			// \Throwable, not \Exception: an \Error from job code (TypeError,
+			// ParseError from eval, ...) previously escaped here and, with no
+			// \Throwable handler up the stack, killed the worker loop.
+			$this->endOutputBuffers($obLevel);
 
 			$duration = (microtime(true) - $startTime) * 1000;
 			$memoryPeak = (memory_get_peak_usage(true) - $startMemory) / 1024 / 1024;
@@ -649,6 +677,24 @@ class CronWorker
 			// Clear active execution
 			$this->activeExecution = null;
 		}
+	}
+
+	/**
+	 * Close every output buffer opened since $level and return their contents.
+	 *
+	 * Replaces a bare ob_get_clean()/ob_end_clean(): those assume exactly one
+	 * buffer (ours) is open, but the failure path can run before our
+	 * ob_start() (e.g. undecompressable code) and job code may open or close
+	 * buffers itself, so a blind ob_end_clean() emits a notice or discards a
+	 * buffer that belongs to the caller.
+	 */
+	private function endOutputBuffers($level) {
+		$output = '';
+		while (ob_get_level() > $level) {
+			$chunk = ob_get_clean();
+			$output = ($chunk === false ? '' : $chunk) . $output;
+		}
+		return $output;
 	}
 
 	/**
