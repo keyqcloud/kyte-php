@@ -4,6 +4,10 @@
 
 `Api::__construct` fetched IMDS metadata (instance-id, instance-type, AMI, private IPv4, AZ, region) on every non-CLI request and returned it as `response['imds']` — including in 403 bodies sent to anonymous callers. The fetch and the `imds` response key are removed, which also drops the several local `169.254.169.254` HTTP calls (IMDSv2 token + v1 fallback) every request was paying for. No Kyte client (kyte-api-js, Shipyard) reads `imds`. `\Kyte\Util\IMDS` itself is unchanged for any server-side caller.
 
+### Fix: cron/daily/weekly/monthly jobs were never scheduled — KYTE-#895
+
+`CronWorker::scheduleDueJobs` only seeded a job's first execution when `calculateNextRun()` returned a time `<= now`. That is only ever true for an `interval` job's first run; `cron`, `daily`, `weekly` and `monthly` always return a *future* time, so those jobs never got an execution row and never ran (unless something else, e.g. a completed run, had seeded them). The worker now seeds every eligible job (enabled, not deleted/DLQ, no pending/running execution) at its next run time, and `findPendingExecutions` picks it up once due. Interval behaviour is unchanged. `createExecution` is now an atomic "insert only if the job has no pending execution" so repeated loops, re-seeding paths, or multiple workers can't create duplicate pending rows (a duplicate re-seeds itself on every completion). **On deploy, previously never-seeded non-interval jobs will start running at their next scheduled time** (no catch-up burst).
+
 ## 4.21.0
 
 MCP tooling expansion — per-app environment variables, an error-decoding guide, and script→page assignment — closing gaps surfaced by QA and daily MCP use.

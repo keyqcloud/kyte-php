@@ -273,11 +273,15 @@ class CronWorker
 					}
 				}
 
+				// Seed the job's next execution at its next run time, even when
+				// that time is in the future. findPendingExecutions() only picks
+				// a pending row once next_run_time <= now, so seeding early is
+				// safe. Gating on `$nextRun <= time()` (the old behaviour) meant
+				// cron/daily/weekly/monthly jobs were never seeded, because
+				// calculateNextRun() always returns a future time for them —
+				// only an interval job's first run returns time() (#895).
 				$nextRun = $this->calculateNextRun($job);
-
-				if ($nextRun <= time()) {
-					$this->createExecution($job, $nextRun);
-				}
+				$this->createExecution($job, $nextRun);
 			} catch (\Exception $e) {
 				$this->logError("Error scheduling job #{$job['id']}: " . $e->getMessage());
 			}
@@ -924,37 +928,60 @@ class CronWorker
 
 	/**
 	 * Create new execution record
+	 *
+	 * The insert is conditional: it is a no-op when the job already has a
+	 * pending execution. Every caller (scheduleDueJobs, completeExecution,
+	 * cleanupExpiredLeases) wants "the job's next run", never a second one, and
+	 * a duplicate pending row is self-perpetuating — each copy re-seeds on
+	 * completion — so the job would run twice per slot forever. Doing the
+	 * check inside the INSERT (rather than a separate SELECT first) closes the
+	 * check-then-insert race between workers polling the same database (#895).
+	 *
+	 * @return bool True if a new execution row was inserted
 	 */
 	private function createExecution($job, $scheduledTime) {
+		$guard = "
+			FROM DUAL
+			WHERE NOT EXISTS (
+				SELECT 1 FROM CronJobExecution
+				WHERE cron_job = ?
+				AND status = 'pending'
+			)
+		";
+
 		// Handle NULL application - can't use 'i' type for NULL in mysqli
 		if ($job['application'] === null || $job['application'] === '') {
 			$sql = "
 				INSERT INTO CronJobExecution (
 					cron_job, scheduled_time, next_run_time, status, application, kyte_account, date_created
-				) VALUES (?, ?, ?, 'pending', NULL, ?, UNIX_TIMESTAMP())
-			";
-
-			DBI::prepared_query($sql, 'iiii', [
-				$job['id'],
-				$scheduledTime,
-				$scheduledTime,
-				$job['kyte_account']
-			]);
-		} else {
-			$sql = "
-				INSERT INTO CronJobExecution (
-					cron_job, scheduled_time, next_run_time, status, application, kyte_account, date_created
-				) VALUES (?, ?, ?, 'pending', ?, ?, UNIX_TIMESTAMP())
-			";
+				) SELECT ?, ?, ?, 'pending', NULL, ?, UNIX_TIMESTAMP()
+			" . $guard;
 
 			DBI::prepared_query($sql, 'iiiii', [
 				$job['id'],
 				$scheduledTime,
 				$scheduledTime,
+				$job['kyte_account'],
+				$job['id']
+			]);
+		} else {
+			$sql = "
+				INSERT INTO CronJobExecution (
+					cron_job, scheduled_time, next_run_time, status, application, kyte_account, date_created
+				) SELECT ?, ?, ?, 'pending', ?, ?, UNIX_TIMESTAMP()
+			" . $guard;
+
+			DBI::prepared_query($sql, 'iiiiii', [
+				$job['id'],
+				$scheduledTime,
+				$scheduledTime,
 				$job['application'],
-				$job['kyte_account']
+				$job['kyte_account'],
+				$job['id']
 			]);
 		}
+
+		return DBI::affected_rows() > 0;
 	}
 
 	/**
