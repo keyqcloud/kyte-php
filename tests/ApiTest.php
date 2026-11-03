@@ -45,4 +45,20 @@ class APiTest extends TestCase
         $this->assertNotNull($apiKey->id);
         $this->assertNotNull($account->id);
     }
+
+    /**
+     * KYTE-#613: the API response must never carry EC2 instance metadata.
+     * The old fetch was gated on a non-CLI SAPI, which PHPUnit can't simulate,
+     * so also guard the constructor source against the call coming back.
+     */
+    public function testResponseHasNoImdsKey() {
+        $api = new \Kyte\Core\Api();
+        $this->assertArrayNotHasKey('imds', $api->response);
+
+        $ctor = new \ReflectionMethod(\Kyte\Core\Api::class, '__construct');
+        $lines = file($ctor->getFileName());
+        $body = implode('', array_slice($lines, $ctor->getStartLine() - 1, $ctor->getEndLine() - $ctor->getStartLine() + 1));
+        $this->assertStringNotContainsString('IMDS::fetchMetadata', $body);
+        $this->assertStringNotContainsString("response['imds']", $body);
+    }
 }
