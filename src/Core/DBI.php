@@ -305,6 +305,88 @@ class DBI {
 	}
 
 	/**
+	 * Capture the connection-selection state (which DB, which credentials,
+	 * main vs app) so it can be put back with restoreState().
+	 *
+	 * Used by the cron worker to isolate in-process job code: a job may
+	 * switch to an app/tenant database (Api::dbappconnect + Api::dbswitch,
+	 * setDbName, `USE other_db`, ...) and not switch back, which would point
+	 * the worker's own bookkeeping queries at the wrong database (#896).
+	 *
+	 * @return array Opaque state for restoreState()
+	 */
+	public static function snapshotState()
+	{
+		return [
+			'useAppDB'      => self::$useAppDB,
+			'dbUser'        => self::$dbUser,
+			'dbPassword'    => self::$dbPassword,
+			'dbName'        => self::$dbName,
+			'dbHost'        => self::$dbHost,
+			'charset'       => self::$charset,
+			'dbUserApp'     => self::$dbUserApp,
+			'dbPasswordApp' => self::$dbPasswordApp,
+			'dbNameApp'     => self::$dbNameApp,
+			'dbHostApp'     => self::$dbHostApp,
+		];
+	}
+
+	/**
+	 * Restore state captured by snapshotState().
+	 *
+	 * If the main credentials/target changed, the main connection is closed so
+	 * the next query reconnects lazily with the restored settings; otherwise
+	 * the live main connection is re-pointed at the configured database
+	 * (undoing any `USE` / select_db issued on the shared handle). The app
+	 * connection is closed if its target changed. Never throws: a connection
+	 * that cannot be re-pointed is dropped and recreated on next use.
+	 *
+	 * @param array $state Value returned by snapshotState()
+	 * @return void
+	 */
+	public static function restoreState(array $state)
+	{
+		$mainChanged = self::$dbUser !== $state['dbUser']
+			|| self::$dbPassword !== $state['dbPassword']
+			|| self::$dbName !== $state['dbName']
+			|| self::$dbHost !== $state['dbHost']
+			|| self::$charset !== $state['charset'];
+
+		$appChanged = self::$dbUserApp !== $state['dbUserApp']
+			|| self::$dbPasswordApp !== $state['dbPasswordApp']
+			|| self::$dbNameApp !== $state['dbNameApp']
+			|| self::$dbHostApp !== $state['dbHostApp']
+			|| self::$charset !== $state['charset'];
+
+		self::$useAppDB      = $state['useAppDB'];
+		self::$dbUser        = $state['dbUser'];
+		self::$dbPassword    = $state['dbPassword'];
+		self::$dbName        = $state['dbName'];
+		self::$dbHost        = $state['dbHost'];
+		self::$charset       = $state['charset'];
+		self::$dbUserApp     = $state['dbUserApp'];
+		self::$dbPasswordApp = $state['dbPasswordApp'];
+		self::$dbNameApp     = $state['dbNameApp'];
+		self::$dbHostApp     = $state['dbHostApp'];
+
+		if ($mainChanged) {
+			self::close();
+		} elseif (self::$dbConn && self::$dbName !== null && self::$dbName !== '') {
+			try {
+				if (!@self::$dbConn->select_db(self::$dbName)) {
+					self::close();
+				}
+			} catch (\Throwable $e) {
+				self::close();
+			}
+		}
+
+		if ($appChanged) {
+			self::closeApp();
+		}
+	}
+
+	/**
 	 * Get current database connection
 	 * Eliminates code duplication across query methods
 	 *

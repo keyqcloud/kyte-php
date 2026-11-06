@@ -24,6 +24,7 @@ class CronWorker
 	private $running = true;
 	private $activeExecution = null; // Track currently running job
 	private $shutdownGracePeriod = 30; // Seconds to wait for job completion on shutdown
+	private $noCronJobIndex = false; // idx_cron_job missing on this install (see findLastCompletion)
 
 	// Phase 2: Lock contention metrics
 	private $stats = [
@@ -273,11 +274,15 @@ class CronWorker
 					}
 				}
 
+				// Seed the job's next execution at its next run time, even when
+				// that time is in the future. findPendingExecutions() only picks
+				// a pending row once next_run_time <= now, so seeding early is
+				// safe. Gating on `$nextRun <= time()` (the old behaviour) meant
+				// cron/daily/weekly/monthly jobs were never seeded, because
+				// calculateNextRun() always returns a future time for them —
+				// only an interval job's first run returns time() (#895).
 				$nextRun = $this->calculateNextRun($job);
-
-				if ($nextRun <= time()) {
-					$this->createExecution($job, $nextRun);
-				}
+				$this->createExecution($job, $nextRun);
 			} catch (\Exception $e) {
 				$this->logError("Error scheduling job #{$job['id']}: " . $e->getMessage());
 			}
@@ -493,6 +498,8 @@ class CronWorker
 		$startTime = microtime(true);
 		$startMemory = memory_get_peak_usage(true);
 
+		$obLevel = ob_get_level();
+
 		try {
 			// Get fresh database connection (parent's connection is not inherited properly)
 			DBI::reconnect();
@@ -510,28 +517,37 @@ class CronWorker
 			// Set timeout
 			set_time_limit($execution['timeout_seconds']);
 
+			// Job code shares this process's DBI state. Snapshot it so a job
+			// that switches database (e.g. to an app/tenant DB) can't leave the
+			// worker's own bookkeeping queries pointed at the wrong DB (#896).
+			$dbState = DBI::snapshotState();
+
 			// Capture output
 			ob_start();
 
-			// Eval the code (always fresh, no class_exists check needed)
-			eval($code);
+			try {
+				// Eval the code (always fresh, no class_exists check needed)
+				eval($code);
 
-			// Extract class name and instantiate
-			$className = $this->extractClassName($code);
-			if (!class_exists($className, false)) {
-				throw new \Exception("Job class {$className} not found after eval");
+				// Extract class name and instantiate
+				$className = $this->extractClassName($code);
+				if (!class_exists($className, false)) {
+					throw new \Exception("Job class {$className} not found after eval");
+				}
+
+				$job = new $className();
+				$job->setExecution($execution);
+
+				// Run job lifecycle
+				$job->setUp();
+				$result = $job->execute();
+				$job->tearDown();
+			} finally {
+				DBI::restoreState($dbState);
 			}
 
-			$job = new $className();
-			$job->setExecution($execution);
-
-			// Run job lifecycle
-			$job->setUp();
-			$result = $job->execute();
-			$job->tearDown();
-
 			// Capture output
-			$output = ob_get_clean();
+			$output = $this->endOutputBuffers($obLevel);
 
 			// Add result to output if it's a string
 			if (is_string($result)) {
@@ -548,8 +564,10 @@ class CronWorker
 			// Worker exits with success code
 			exit(0);
 
-		} catch (\Exception $e) {
-			ob_end_clean();
+		} catch (\Throwable $e) {
+			// \Throwable, not \Exception: an \Error from job code (TypeError,
+			// ParseError from eval, ...) must still be recorded as a failure.
+			$this->endOutputBuffers($obLevel);
 
 			$duration = (microtime(true) - $startTime) * 1000;
 			$memoryPeak = (memory_get_peak_usage(true) - $startMemory) / 1024 / 1024;
@@ -575,6 +593,8 @@ class CronWorker
 
 		$this->verbose("Executing job #{$execution['cron_job']} ({$execution['job_name']}) - execution #{$execution['id']}");
 
+		$obLevel = ob_get_level();
+
 		try {
 			// Decompress code
 			$code = bzdecompress($execution['code']);
@@ -589,32 +609,42 @@ class CronWorker
 			// Set timeout
 			set_time_limit($execution['timeout_seconds']);
 
+			// Inline jobs run in the long-lived worker process itself, so a job
+			// that switches database and doesn't switch back would break every
+			// subsequent worker query (completeExecution, scheduling, other
+			// jobs). Snapshot DBI state and always restore it (#896).
+			$dbState = DBI::snapshotState();
+
 			// Capture output
 			ob_start();
 
-			// Extract class name from code first
-			$className = $this->extractClassName($code);
+			try {
+				// Extract class name from code first
+				$className = $this->extractClassName($code);
 
-			// Only eval if class doesn't exist yet (avoid redeclaration)
-			if (!class_exists($className, false)) {
-				eval($code);
-
+				// Only eval if class doesn't exist yet (avoid redeclaration)
 				if (!class_exists($className, false)) {
-					throw new \Exception("Job class {$className} not found after eval");
+					eval($code);
+
+					if (!class_exists($className, false)) {
+						throw new \Exception("Job class {$className} not found after eval");
+					}
 				}
+
+				// Instantiate and execute job
+				$job = new $className();
+				$job->setExecution($execution);
+
+				// Run job lifecycle
+				$job->setUp();
+				$result = $job->execute();
+				$job->tearDown();
+			} finally {
+				DBI::restoreState($dbState);
 			}
 
-			// Instantiate and execute job
-			$job = new $className();
-			$job->setExecution($execution);
-
-			// Run job lifecycle
-			$job->setUp();
-			$result = $job->execute();
-			$job->tearDown();
-
 			// Capture output
-			$output = ob_get_clean();
+			$output = $this->endOutputBuffers($obLevel);
 
 			// Add result to output if it's a string
 			if (is_string($result)) {
@@ -631,8 +661,11 @@ class CronWorker
 
 			echo "[" . date('Y-m-d H:i:s') . "] Job #{$execution['cron_job']} completed in " . round($duration) . "ms\n";
 
-		} catch (\Exception $e) {
-			ob_end_clean();
+		} catch (\Throwable $e) {
+			// \Throwable, not \Exception: an \Error from job code (TypeError,
+			// ParseError from eval, ...) previously escaped here and, with no
+			// \Throwable handler up the stack, killed the worker loop.
+			$this->endOutputBuffers($obLevel);
 
 			$duration = (microtime(true) - $startTime) * 1000;
 			$memoryPeak = (memory_get_peak_usage(true) - $startMemory) / 1024 / 1024;
@@ -648,13 +681,33 @@ class CronWorker
 	}
 
 	/**
+	 * Close every output buffer opened since $level and return their contents.
+	 *
+	 * Replaces a bare ob_get_clean()/ob_end_clean(): those assume exactly one
+	 * buffer (ours) is open, but the failure path can run before our
+	 * ob_start() (e.g. undecompressable code) and job code may open or close
+	 * buffers itself, so a blind ob_end_clean() emits a notice or discards a
+	 * buffer that belongs to the caller.
+	 */
+	private function endOutputBuffers($level) {
+		$output = '';
+		while (ob_get_level() > $level) {
+			$chunk = ob_get_clean();
+			$output = ($chunk === false ? '' : $chunk) . $output;
+		}
+		return $output;
+	}
+
+	/**
 	 * Mark execution as completed
 	 */
 	private function completeExecution($execution, $output, $duration, $memoryPeak) {
+		$completedAt = time();
+
 		$sql = "
 			UPDATE CronJobExecution
 			SET status = 'completed',
-				completed_at = UNIX_TIMESTAMP(),
+				completed_at = ?,
 				duration_ms = ?,
 				memory_peak_mb = ?,
 				output = ?,
@@ -662,15 +715,30 @@ class CronWorker
 			WHERE id = ?
 		";
 
-		DBI::prepared_query($sql, 'idsi', [$duration, $memoryPeak, $output, $execution['id']]);
+		DBI::prepared_query($sql, 'iidsi', [$completedAt, $duration, $memoryPeak, $output, $execution['id']]);
 
 		// Phase 3: Reset consecutive failures on success
 		$this->resetConsecutiveFailures($execution['cron_job']);
 
 		// Schedule next execution
 		try {
-			$nextRun = $this->calculateNextRun($execution);
-			$this->createExecution(['id' => $execution['cron_job'], 'application' => $execution['application'], 'kyte_account' => $execution['kyte_account']], $nextRun);
+			// $execution is an execution row (cje.* + the job's schedule
+			// fields), so its 'id' is the EXECUTION id. calculateNextRun()
+			// treats 'id' as the job id (the interval branch looks up the
+			// job's last completed_at by it), so hand it a job-shaped row.
+			// Passing $execution directly found no completions for the
+			// "job", returned time(), and re-ran interval jobs every poll.
+			$job = array_merge($execution, ['id' => $execution['cron_job']]);
+
+			// This run IS the job's latest completion, so an interval job's
+			// next run is simply completed_at + interval: no need to look the
+			// last completion up in the (multi-million-row) history.
+			if ($job['schedule_type'] === 'interval' && !empty($job['interval_seconds'])) {
+				$nextRun = $completedAt + (int)$job['interval_seconds'];
+			} else {
+				$nextRun = $this->calculateNextRun($job);
+			}
+			$this->createExecution($job, $nextRun);
 		} catch (\Exception $e) {
 			$this->logError("Error scheduling next run for job #{$execution['cron_job']}: " . $e->getMessage());
 		}
@@ -744,8 +812,7 @@ class CronWorker
 				}
 
 				// Check if this is the first run (no completed executions)
-				$sql = "SELECT MAX(completed_at) as last_completed FROM CronJobExecution WHERE cron_job = ? AND status = 'completed'";
-				$result = DBI::prepared_query($sql, 'i', [$job['id']]);
+				$result = $this->findLastCompletion($job['id']);
 
 				if (!empty($result) && $result[0]['last_completed'] !== null) {
 					// Schedule based on last completion
@@ -767,6 +834,46 @@ class CronWorker
 			default:
 				throw new \Exception("Unknown schedule type: {$job['schedule_type']}");
 		}
+	}
+
+	/**
+	 * Latest completed execution of a job, as [['last_completed' => ts]] or [].
+	 *
+	 * Walks idx_cron_job — ordered by (cron_job, id) — backwards and stops at
+	 * the first completed row. MAX(completed_at) had to visit the job's whole
+	 * history (a row lookup per execution: tens of seconds at ~1.4M rows per
+	 * job). The FORCE INDEX matters: on MariaDB 10.5 the unhinted ORDER BY id
+	 * DESC LIMIT 1 is planned as an idx_cron_job+idx_status index_merge +
+	 * filesort, which is no faster than MAX. If the index doesn't exist on
+	 * this install (tables not created from the migrations), fall back to the
+	 * unhinted query once and stop trying.
+	 */
+	private function findLastCompletion($jobId) {
+		$where = "WHERE cron_job = ? AND status = 'completed' ORDER BY id DESC LIMIT 1";
+
+		if (!$this->noCronJobIndex) {
+			try {
+				return DBI::prepared_query(
+					"SELECT completed_at AS last_completed FROM CronJobExecution FORCE INDEX (idx_cron_job) {$where}",
+					'i',
+					[$jobId]
+				);
+			} catch (\Exception $e) {
+				// Only a missing index ("Key 'idx_cron_job' doesn't exist")
+				// downgrades the lookup; anything else is a real error.
+				if (stripos($e->getMessage(), 'idx_cron_job') === false) {
+					throw $e;
+				}
+				$this->noCronJobIndex = true;
+				$this->logError("idx_cron_job unavailable, using unhinted last-completion lookup: " . $e->getMessage());
+			}
+		}
+
+		return DBI::prepared_query(
+			"SELECT completed_at AS last_completed FROM CronJobExecution {$where}",
+			'i',
+			[$jobId]
+		);
 	}
 
 	/**
@@ -924,37 +1031,60 @@ class CronWorker
 
 	/**
 	 * Create new execution record
+	 *
+	 * The insert is conditional: it is a no-op when the job already has a
+	 * pending execution. Every caller (scheduleDueJobs, completeExecution,
+	 * cleanupExpiredLeases) wants "the job's next run", never a second one, and
+	 * a duplicate pending row is self-perpetuating — each copy re-seeds on
+	 * completion — so the job would run twice per slot forever. Doing the
+	 * check inside the INSERT (rather than a separate SELECT first) closes the
+	 * check-then-insert race between workers polling the same database (#895).
+	 *
+	 * @return bool True if a new execution row was inserted
 	 */
 	private function createExecution($job, $scheduledTime) {
+		$guard = "
+			FROM DUAL
+			WHERE NOT EXISTS (
+				SELECT 1 FROM CronJobExecution
+				WHERE cron_job = ?
+				AND status = 'pending'
+			)
+		";
+
 		// Handle NULL application - can't use 'i' type for NULL in mysqli
 		if ($job['application'] === null || $job['application'] === '') {
 			$sql = "
 				INSERT INTO CronJobExecution (
 					cron_job, scheduled_time, next_run_time, status, application, kyte_account, date_created
-				) VALUES (?, ?, ?, 'pending', NULL, ?, UNIX_TIMESTAMP())
-			";
-
-			DBI::prepared_query($sql, 'iiii', [
-				$job['id'],
-				$scheduledTime,
-				$scheduledTime,
-				$job['kyte_account']
-			]);
-		} else {
-			$sql = "
-				INSERT INTO CronJobExecution (
-					cron_job, scheduled_time, next_run_time, status, application, kyte_account, date_created
-				) VALUES (?, ?, ?, 'pending', ?, ?, UNIX_TIMESTAMP())
-			";
+				) SELECT ?, ?, ?, 'pending', NULL, ?, UNIX_TIMESTAMP()
+			" . $guard;
 
 			DBI::prepared_query($sql, 'iiiii', [
 				$job['id'],
 				$scheduledTime,
 				$scheduledTime,
+				$job['kyte_account'],
+				$job['id']
+			]);
+		} else {
+			$sql = "
+				INSERT INTO CronJobExecution (
+					cron_job, scheduled_time, next_run_time, status, application, kyte_account, date_created
+				) SELECT ?, ?, ?, 'pending', ?, ?, UNIX_TIMESTAMP()
+			" . $guard;
+
+			DBI::prepared_query($sql, 'iiiiii', [
+				$job['id'],
+				$scheduledTime,
+				$scheduledTime,
 				$job['application'],
-				$job['kyte_account']
+				$job['kyte_account'],
+				$job['id']
 			]);
 		}
+
+		return DBI::affected_rows() > 0;
 	}
 
 	/**
@@ -1402,7 +1532,7 @@ class CronWorker
 			SELECT id, status, completed_at
 			FROM CronJobExecution
 			WHERE cron_job = ?
-			ORDER BY date_created DESC
+			ORDER BY id DESC
 			LIMIT 1
 		";
 
