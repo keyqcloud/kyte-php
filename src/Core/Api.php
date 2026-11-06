@@ -241,13 +241,12 @@ class Api
 		// initialize base framework
 		self::dbconnect();
 
-		// if not cli, register error handler and attempt IMDS/IMDSv2 retrieval
-		if (php_sapi_name() !== 'cli') {
-			// retrieve IMDS data
-			$imdsData = \Kyte\Util\IMDS::fetchMetadata();
-
-			$this->response['imds'] = $imdsData;
-		}
+		// NOTE (KYTE-#613): EC2 instance metadata (IMDS) is intentionally NOT
+		// fetched here or added to the response. It leaked infrastructure
+		// details (instance-id/type, AMI, private IP, AZ, region) to every
+		// caller -- including anonymous 403s -- and cost several local HTTP
+		// calls per request. \Kyte\Util\IMDS remains available to callers that
+		// need it server-side.
 	}
 
 	/**

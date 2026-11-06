@@ -1,3 +1,9 @@
+## 4.21.1
+
+### Fix: stop leaking EC2 instance metadata in API responses — KYTE-#613
+
+`Api::__construct` fetched IMDS metadata (instance-id, instance-type, AMI, private IPv4, AZ, region) on every non-CLI request and returned it as `response['imds']` — including in 403 bodies sent to anonymous callers. The fetch and the `imds` response key are removed, which also drops the several local `169.254.169.254` HTTP calls (IMDSv2 token + v1 fallback) every request was paying for. No Kyte client (kyte-api-js, Shipyard) reads `imds`. `\Kyte\Util\IMDS` itself is unchanged for any server-side caller.
+
 ## 4.21.0
 
 MCP tooling expansion — per-app environment variables, an error-decoding guide, and script→page assignment — closing gaps surfaced by QA and daily MCP use.
