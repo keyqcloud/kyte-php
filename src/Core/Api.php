@@ -1026,7 +1026,7 @@ class Api
 	* Safely decodes a URL-encoded string, handling cases of multiple encoding.
 	*
 	* This method repeatedly applies urldecode() until no further changes occur,
-	* which handles browser double-encoding issues (e.g., kenneth%2540getpage.co -> kenneth@getpage.co).
+	* which handles browser double-encoding issues (e.g., user%2540example.com -> user@example.com).
 	* Limited to 3 iterations to prevent infinite loops and performance issues.
 	*
 	* @param string|null $str The URL-encoded string to decode
