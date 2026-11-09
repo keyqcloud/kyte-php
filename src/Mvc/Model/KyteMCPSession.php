@@ -8,7 +8,7 @@
  * Why this exists (the multi-instance problem):
  *   The mcp/sdk ships a `FileSessionStore` that writes one file per session
  *   under `sys_get_temp_dir()` — local to a single PHP host. On a deployment
- *   behind a load balancer (e.g. ETOM's 2 instances), `initialize` lands on
+ *   behind a load balancer (e.g. a two-instance install), `initialize` lands on
  *   instance A and the follow-up request hits instance B, which has no such
  *   file → SDK returns `-32600 "Session not found or has expired"` → the MCP
  *   client falls back to OAuth discovery (which Kyte doesn't serve) and the

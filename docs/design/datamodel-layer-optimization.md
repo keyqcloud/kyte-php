@@ -76,7 +76,7 @@ list path platform-wide and is invisible to existing callers.*
 
 - Generic, opt-in retention/pruning framework driven by the CronWorker (ties to
   #61). **PK/id-range based — never an unbounded `date_created` full-scan**
-  (the ETOM purge burned EBS burst-I/O credits doing exactly that).
+  (an earlier production purge burned EBS burst-I/O credits doing exactly that).
 - First consumers: `KyteActivityLog`, `KyteError`; opt-in for user models.
 
 ## 4. Part B — brainstorm agenda (live working session; **lead with index management**)
@@ -149,9 +149,9 @@ Full working session with Kenneth. Everything below is decided.
 - **Composite (multi-column) indexes = fast-follow → card #331.**
 - **Retro-fit approach (a):** new models get indexes going forward + an
   **opt-in, throttled backfill** for existing tables (CronWorker-driven,
-  off-peak — PK/id-range, never an unbounded scan; ETOM burst-credit lesson).
+  off-peak — PK/id-range, never an unbounded scan; burst-credit lesson).
   **⚠️ Per-deploy backfill:** once the feature ships, run the backfill for
-  EACH install (dev + ORB/ORT + ETOM + TBG) together as a deliberate off-peak
+  EACH install (dev + every production install) together as a deliberate off-peak
   op. Do not forget.
 
 ### 6.3 Pagination guardrails (P1) — grounded in industry research

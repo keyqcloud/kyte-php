@@ -153,7 +153,7 @@ Direct CloudFront invalidation (shipped + verified in 4.11.1) is now the only pa
 
 `DBI::connectApp()` — the per-application/tenant connection used by `Api::dbappconnect()` — opened a plain `mysqli` connection with **no TLS**, unlike `DBI::connect()`. Against a database with `require_secure_transport=ON` this fails with *"Connections using insecure transport are prohibited"*: the control-plane connection (already SSL) succeeds so **login works**, but opening any application backed by a **dedicated per-app database** fails. Latent until a deployment runs on an SSL-required server — surfaced migrating the dev server from Aurora (`require_secure_transport=OFF`) to a MariaDB RDS with it `ON`.
 
-- `connectApp()` now mirrors `connect()`: when `KYTE_DB_CA_BUNDLE` is defined it connects via `ssl_set()` + `MYSQLI_CLIENT_SSL`, with the same non-SSL fallback on failure. **Gated on the constant**, so deployments that don't define a CA bundle keep identical non-SSL behavior (no-op) — verified against ORB/ORT and ETOM, which are unaffected.
+- `connectApp()` now mirrors `connect()`: when `KYTE_DB_CA_BUNDLE` is defined it connects via `ssl_set()` + `MYSQLI_CLIENT_SSL`, with the same non-SSL fallback on failure. **Gated on the constant**, so deployments that don't define a CA bundle keep identical non-SSL behavior (no-op) — verified against the production installs, which are unaffected.
 - Fixed the `Api::dbappconnect()` per-app routing guard: it compared the **main** connection's statics (`$dbUser`/`$dbName`/`$dbHost`) instead of the **app** statics (`$dbUserApp`/`$dbNameApp`/`$dbHostApp`), so the "already connected to this app" short-circuit never fired. Corrected the comparison **and** added `DBI::closeApp()` when the app target changes, so in-process app switching reconnects to the right tenant DB instead of reusing the previous app's cached handle. Latent cross-tenant hazard, previously masked by single-app-per-request + the cron worker's fork/`reconnect()` (which clears the app handle).
 - Removed dead method `DBI::dbInitApp()` — it could never run (called non-existent `setCharsetApp()`/`setEngineApp()`), had no callers anywhere, and duplicated the live `Api::dbappconnect()` path.
 
@@ -215,7 +215,7 @@ Tests: `tests/JwtEndpointTest.php` gains the `/jwt/password-*` suite (no-reveal,
 
 ### Fix: MCP commit_draft published raw bzip2 bytes into page HTML (header/footer section CSS not decompressed)
 
-Publishing a page through the MCP `commit_draft` flow could inject raw bzip2-compressed binary (magic `BZh9…`) into the published HTML, inside `<style>`/`<footer>` blocks, producing a browser UTF-8 decode error and garbled header/footer CSS. Surfaced on FrameVTO / doctor.etometry.com (page 58, published to v13).
+Publishing a page through the MCP `commit_draft` flow could inject raw bzip2-compressed binary (magic `BZh9…`) into the published HTML, inside `<style>`/`<footer>` blocks, producing a browser UTF-8 decode error and garbled header/footer CSS. Surfaced on a production site.
 
 **Root cause.** A page's `header`/`footer` are FKs to `KyteSectionTemplate`, which stores `html`/`stylesheet`/`javascript`/`block_layout` **bzip2-compressed**. `getObject()`'s FK expansion returns those fields RAW. The page-assembly path (`createHtml` → `buildHeaderFooterStyles` etc.) concatenates them straight into the output, so they must be decompressed first. The **human publish** path (HTTP `update`, `state=1`) was saved only incidentally — `KytePageController::hook_response_data()` runs first and decompresses `$r['header']`/`$r['footer']`. The **MCP commit** path (`DraftService::commitDraft` → `publishForSurface` → `KytePageController::publishFromContent`) calls `getObject()` and goes straight to `publishPage()`, never invoking that hook — so the compressed bytes shipped. Deterministic per-path (not a race): any page with a populated header/footer section template was affected; the "re-publish cleared it" report was a re-publish via the human path.
 
@@ -256,7 +256,7 @@ Token scopes (`read` / `draft` / `commit`) on `KyteMCPToken` already existed; ne
 
 2. **List-view projection (the OOM fix).** The framework `SELECT *` (`DBI::select`) pulls both `LONGTEXT` columns for every row, and the admin log **list** never uses them — only the single-record **detail** view does. `KyteActivityLogController` now detects a by-`id` detail fetch in `hook_prequery` and, on every other (list) response, omits `request_data`/`changes` and skips the JSON decode. The detail view (Shipyard `get("KyteActivityLog","id",idx)`) still returns the full decoded payload, so no Shipyard change is required. Severity/action colors are still added to both list and detail rows.
 
-**Not in this release (deferred to the data-model initiative, KYTE-#190):** index coverage on `KyteActivityLog`'s filter/sort columns and a retention policy. The earlier one-off ETOM purge (10.4GB → 1.56GB) was the band-aid; the write-cap above is what prevents recurrence.
+**Not in this release (deferred to the data-model initiative, KYTE-#190):** index coverage on `KyteActivityLog`'s filter/sort columns and a retention policy. An earlier one-off purge on a production install (10.4GB → 1.56GB) was the band-aid; the write-cap above is what prevents recurrence.
 
 ## 4.8.1
 
@@ -316,7 +316,7 @@ Fix: `KyteMCPSession.payload` is now **`LONGTEXT`** (model type `lt`). `migratio
 
 ### Feature: DB-backed MCP session store (cross-instance / load-balanced support)
 
-MCP protocol sessions were stored via the SDK's `FileSessionStore` under `sys_get_temp_dir()` — **local to a single host**. On a deployment behind a load balancer (e.g. ETOM's two instances), the `initialize` request lands on instance A and the follow-up request hits instance B, which has no session file → the SDK returns `-32600 "Session not found or has expired"` → the MCP client falls back to OAuth discovery (which Kyte doesn't serve) → the connection fails. Single-instance installs were unaffected.
+MCP protocol sessions were stored via the SDK's `FileSessionStore` under `sys_get_temp_dir()` — **local to a single host**. On a deployment behind a load balancer (e.g. a two-instance install), the `initialize` request lands on instance A and the follow-up request hits instance B, which has no session file → the SDK returns `-32600 "Session not found or has expired"` → the MCP client falls back to OAuth discovery (which Kyte doesn't serve) → the connection fails. Single-instance installs were unaffected.
 
 This release adds `Kyte\Mcp\Session\DbSessionStore`, which persists protocol sessions in a new `KyteMCPSession` table so **any instance sharing the database resolves any session**, and makes it the default backend.
 
@@ -328,7 +328,7 @@ This release adds `Kyte\Mcp\Session\DbSessionStore`, which persists protocol ses
 
 4. **Tenancy & cleanup.** Reads/writes/destroys are scoped to the bearer token's `kyte_account` (a session resolves only under the account that created it). `gc()` (the SDK runs it on ~1% of requests) is a global sweep of TTL-expired rows, capped at 1000 per call; rows are hard-deleted (purged), not tombstoned, so the `session_id` UNIQUE index stays clean.
 
-**Operational note:** run `migrations/4.6.0_mcp_session_store.sql` as part of the upgrade. With the default DB backend active, the table must exist before MCP traffic is served. Multi-instance installs (ETOM) require no per-instance config beyond the shared DB; this unblocks the `kyte-etometry` MCP connection (Tempo KYTE-183). No change to MCP auth (`KyteMCPToken`), which was already DB-backed.
+**Operational note:** run `migrations/4.6.0_mcp_session_store.sql` as part of the upgrade. With the default DB backend active, the table must exist before MCP traffic is served. Multi-instance installs require no per-instance config beyond the shared DB; this unblocks hosted MCP connections on those installs (Tempo KYTE-183). No change to MCP auth (`KyteMCPToken`), which was already DB-backed.
 
 ## 4.5.3
 
@@ -448,7 +448,7 @@ No schema changes. Composer upgrade is sufficient.
 
 The enhanced v4.4 ErrorHandler bound `$this->apiContext->key` directly into the `KyteError.api_key` string column. `$this->key` is set in `Api.php` as `new \Kyte\Core\ModelObject(KyteAPIKey)` — an object, not a string. `mysqli_stmt::execute()` then threw `Object of class Kyte\Core\ModelObject could not be converted to string` *inside* the error handler. That secondary fatal swallowed the original error and surfaced to clients as a **blank HTTP 500** with no log row written and no stack trace recoverable.
 
-Customer-visible impact: any request that triggered the error handler — including expected exceptions on routes like POST `/Session`, GET on a controller hitting a runtime error, etc. — returned 500 with no body. Production traffic at ETOM was affected from the v4.4.0 deploy onward.
+Customer-visible impact: any request that triggered the error handler — including expected exceptions on routes like POST `/Session`, GET on a controller hitting a runtime error, etc. — returned 500 with no body. Production traffic was affected from the v4.4.0 deploy onward.
 
 Fix: `'api_key' => isset($this->apiContext->key->public_key) ? (string)$this->apiContext->key->public_key : null` — extract the scalar `public_key` string (which is the audit-relevant value anyway). Falls back to `null` when the ModelObject hasn't been retrieved or when there's no key context at all.
 
